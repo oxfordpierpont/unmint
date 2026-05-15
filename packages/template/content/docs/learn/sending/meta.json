@@ -1,0 +1,12 @@
+{
+  "title": "Sending",
+  "pages": [
+    "index",
+    "introduction",
+    "attachments",
+    "batch-sending",
+    "custom-headers",
+    "schedule-message"
+  ],
+  "defaultOpen": true
+}

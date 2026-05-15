@@ -1,0 +1,15 @@
+---
+title: "Custom Headers"
+description: "Pass custom metadata with outbound messages."
+---
+Custom headers allow you to attach metadata to outbound requests for tracking, routing, or downstream processing in your n8n workflows.
+
+```json
+{
+  "to": "user@example.com",
+  "headers": {
+    "X-Client-ID": "client_123",
+    "X-Campaign": "q2-outreach"
+  }
+}
+```

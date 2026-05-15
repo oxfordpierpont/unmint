@@ -1,0 +1,60 @@
+---
+title: "Introduction"
+description: "Build the aiConnected platform against the documented shell, OS, and module contracts in this repository."
+---
+## What this section covers
+
+This API reference turns the repository's planning and product docs into a developer-facing contract set for the aiConnected platform.
+
+Use it to understand:
+
+- The platform shell APIs every module depends on
+- The aiConnectedOS service contracts for personas, memory, and workspace features
+- The first-party module contracts for Knowledge, Chat, Contact Forms, Co-Browser, Voice, Paper, LogicLegal, and macEngine
+
+## How to read these docs
+
+Each page labels the contract type clearly:
+
+- `Canonical route contract` means the source docs define concrete endpoints
+- `Canonical interface contract` means the source docs define required operations, entities, events, or manifests but not fixed route paths
+- `Derived implementation contract` means the repository defines behavior strongly enough to support implementation, but the final path names still need to be locked in code
+
+This matters because the repo mixes PRDs, architectural docs, and developer guides. These reference pages preserve that distinction instead of pretending everything was already finalized as OpenAPI.
+
+## Source documents
+
+This section is based on the documentation already in the repository, especially:
+
+- [aiConnected Platform overview](/docs/knowledge-base/aiconnected-business-platform/aiconnected-platform-overview)
+- [aiConnected Platform foundation PRD](/docs/knowledge-base/aiconnected-business-platform/aiconnected-platform-foundation-prd)
+- [aiConnected Platform MVP specification](/docs/knowledge-base/aiconnected-business-platform/aiconnected-platform-v1-mvp-specification)
+- [aiConnected Platform v2 port map](/docs/knowledge-base/aiconnected-business-platform/aiconnected-platform-v2-port-map)
+- [What is the platform shell](/docs/knowledge-base/aiconnected-business-platform/what-is-the-platform-shell)
+- [aiConnectedOS developer documentation](/docs/knowledge-base/aiconnected-os/aiconnected-os-developer-documentation)
+- [aiConnected modules overview](/docs/knowledge-base/aiconnected-apps-and-modules/modules/aiconnected-modules-overview)
+
+## Coverage map
+
+The API Reference tab is organized into three layers:
+
+1. `Platform core`
+The multi-tenant shell, shared entities, event bus, module registry, themes, layouts, and developer extension model.
+
+2. `aiConnectedOS`
+Persistent personas, instances, Neurigraph-backed memory, and the feature-level workspace contracts described in the OS docs.
+
+3. `First-party modules`
+The first modules called out across the MVP and module docs: Knowledge, Chat, Contact Forms, Chat Monitor, Co-Browser, Voice, Paper, LogicLegal, and macEngine.
+
+## Implementation guidance
+
+Build the platform in this order:
+
+1. Ship the shell contracts first.
+2. Implement shared entities and event routing next.
+3. Add aiConnectedOS services that provide persona and memory infrastructure.
+4. Layer first-party modules on top of the shared shell and event bus.
+5. Keep every module manifest-first and container-isolated.
+
+That sequence is consistent with the repo's foundation PRD, MVP spec, and v2 build plan.

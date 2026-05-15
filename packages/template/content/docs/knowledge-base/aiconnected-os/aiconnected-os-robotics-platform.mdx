@@ -1,0 +1,616 @@
+---
+title: "aiConnected Robotics Platform"
+description: "Developer Documentation v0.1 (Internal Draft) Table of Contents 1. Introduction and Platform Philosophy 2. The Three Layer Architecture 3. The Factory Integr..."
+---
+<Info>
+Normalized for Mintlify from `knowledge-base/aiconnected-os/aiConnectedOS-robotics-developer-docs.mdx`.
+</Info>
+# aiConnected Robotics Platform
+## Developer Documentation v0.1 (Internal Draft)
+
+---
+
+## Table of Contents
+
+1. [Introduction and Platform Philosophy](#1-introduction-and-platform-philosophy)
+2. [The Three-Layer Architecture](#2-the-three-layer-architecture)
+3. [The Factory Integration Model](#3-the-factory-integration-model)
+4. [Robot Classes](#4-robot-classes)
+5. [The Certification Level System](#5-the-certification-level-system)
+6. [The Neurigraph Memory Layer](#6-the-neurigraph-memory-layer)
+7. [The Developer Marketplace](#7-the-developer-marketplace)
+8. [The First-Party Software Suite](#8-the-first-party-software-suite)
+9. [Platform Governance and Accreditation](#9-platform-governance-and-accreditation)
+10. [Liability Framework](#10-liability-framework)
+11. [Security Architecture](#11-security-architecture)
+12. [Getting Started as a Developer](#12-getting-started-as-a-developer)
+13. [Getting Started as a Manufacturer](#13-getting-started-as-a-manufacturer)
+14. [Glossary](#14-glossary)
+
+---
+
+## 1. Introduction and Platform Philosophy
+
+### 1.1 What aiConnected Robotics Is
+
+aiConnected Robotics is a standardized intelligence platform for robotic and embodied AI systems. It provides any robotics manufacturer — regardless of hardware type, form factor, or use case — with a unified, pre-built cognitive foundation that their devices can ship with from the factory.
+
+Think of it as the Android Auto or Apple CarPlay of robotics. Just as CarPlay provides a consistent, intelligent interface across a Toyota and a BMW without caring about what engine is under the hood, aiConnected Robotics provides a consistent, intelligent cognitive layer across a humanoid robot, an industrial arm, a drone, or a surgical assistant — without caring about what motors, sensors, or actuators are underneath.
+
+The platform has one primary goal: **to become the universal standard by which robots think, remember, communicate, and are extended by third-party developers.**
+
+### 1.2 Why This Exists
+
+Today, the robotics industry is deeply fragmented at the intelligence layer. A developer who wants to build a capability for robots must build it once for Boston Dynamics, rebuild it entirely for Figure, rebuild it again for Agility Robotics, and so on. There is no write-once-deploy-everywhere standard for robotic cognition. There is no unified marketplace where robot capabilities can be discovered, certified, and distributed across hardware platforms.
+
+aiConnected Robotics exists to solve this. By creating a shared intelligence standard that any manufacturer can adopt, the platform allows:
+
+- Developers to build once and deploy across any compatible hardware
+- Manufacturers to ship intelligent robots without building cognition from scratch
+- End users to have consistent, predictable experiences regardless of which robot brand they own
+- The entire industry to evolve through a shared, governed ecosystem rather than isolated silos
+
+### 1.3 The Core Philosophy: Everything is Conversational
+
+A foundational principle of the aiConnected platform — carried fully into the robotics context — is that **everything is conversational**.
+
+This is not a UI decision. It is a statement about how intelligence works. Traditional software interfaces (buttons, menus, settings panels, touchscreens) were workarounds for the fact that machines could not understand language. That constraint is now gone.
+
+When you interact with a robot, you are not reading a chat history on a screen. You are not adjusting a settings panel. You are talking to it the way you would talk to a person — and it responds accordingly. The robot's intelligence layer must therefore behave the way a person would: with memory, continuity, personality, context, and the ability to hold a meaningful exchange across time.
+
+This has a direct architectural implication: **the cognitive layer must function without a screen.** A robot in a factory, on a surgical table, or in a living room does not have a UI panel. The conversation *is* the interface. Everything else is an optional surface on top of it.
+
+---
+
+## 2. The Three-Layer Architecture
+
+The aiConnected Robotics platform is built on a strict three-layer model. Understanding these layers is essential before building anything on the platform.
+
+```
+┌─────────────────────────────────────────────┐
+│         LAYER 3: DEVELOPER EXTENSIONS        │
+│  Third-party apps, skills, and capabilities  │
+│  built on top of the manufacturer's SDK      │
+├─────────────────────────────────────────────┤
+│         LAYER 2: MANUFACTURER SDK            │
+│  Hardware capability declarations, exposed   │
+│  APIs, device-specific extensions, and       │
+│  manufacturer-defined safety boundaries      │
+├─────────────────────────────────────────────┤
+│      LAYER 1: aiCONNECTED ROBOTICS OS        │
+│  Standardized intelligence foundation:       │
+│  Neurigraph memory, Cipher orchestration,    │
+│  persona engine, communication protocols,    │
+│  safety enforcement layer                    │
+└─────────────────────────────────────────────┘
+```
+
+### 2.1 Layer 1 — aiConnected Robotics OS (Your Foundation)
+
+This is the layer that aiConnected owns, maintains, and provides to manufacturers. It is the non-negotiable foundation that every compatible device ships with. A manufacturer cannot modify or replace this layer — they can only build on top of it.
+
+Layer 1 provides:
+
+- **The Neurigraph Memory Architecture** — the persistent, evolving memory system that gives the robot continuity across sessions, interactions, and contexts (detailed in Section 6)
+- **The Cipher Orchestration Layer** — the hidden master intelligence layer that coordinates all cognitive activity (this layer is never exposed to end users or developers)
+- **The Persona Engine** — the system that gives the robot its identity, communication style, and relational depth
+- **The Communication Protocol Standard** — a unified interface for how the robot sends and receives information from all connected systems
+- **The Safety Enforcement Layer** — the platform-level mechanism that enforces certification boundaries and prevents uncertified software from accessing restricted hardware capabilities
+- **The Core Capability Suite** — approximately 30 built-in capabilities that every compatible device ships with on day one, before any third-party extensions are installed (detailed in Section 8)
+
+### 2.2 Layer 2 — Manufacturer SDK
+
+This is the layer the hardware manufacturer controls. Once a manufacturer has integrated Layer 1 into their device, they define Layer 2 by declaring what their hardware can physically do and what portions of that capability they are willing to expose to third-party developers.
+
+Layer 2 contains:
+
+- **The Hardware Capability Registry** — a standardized declaration of what the device can physically do (fly, walk, lift, perceive, manipulate, etc.)
+- **The Capability Exposure Map** — the manufacturer's decision about which capabilities are accessible to developers at which certification levels
+- **Manufacturer-Specific Extensions** — proprietary features, branding, or software the manufacturer ships on top of the platform (equivalent to OEM bloatware on a Windows PC — expected and permitted)
+- **Level X Certification Definitions** — the manufacturer's own advanced certification requirements for accessing capabilities that exceed the platform's standard level definitions (detailed in Section 5.6)
+
+The critical rule: **manufacturers select from the platform's defined vocabulary. They cannot redefine what certification levels mean.** They can only declare which levels apply to their device and what hardware capabilities fall under each level.
+
+### 2.3 Layer 3 — Developer Extensions
+
+This is the layer third-party developers operate in. Developers build applications, skills, and capabilities that extend the robot's usefulness beyond what ships from the factory. All developer extensions must:
+
+- Operate within the capability boundaries the manufacturer has declared in their SDK
+- Be certified at the appropriate level for the capabilities they intend to access
+- Route all memory and communication functions through Neurigraph (they cannot bring or implement their own memory systems)
+- Pass platform review before being listed in the marketplace
+
+A developer working at this layer never interacts directly with the hardware. They interact with the manufacturer's SDK, which in turn interacts with the hardware through Layer 1's safety enforcement layer.
+
+---
+
+## 3. The Factory Integration Model
+
+### 3.1 How a Device Becomes Compatible
+
+aiConnected Robotics is designed to be **factory pre-installed**, not downloaded and added after the fact. A compatible device ships from the manufacturer with the platform already embedded as the cognitive foundation — the same way a Dell laptop ships with Windows pre-installed.
+
+The integration process for a manufacturer follows this sequence:
+
+1. **Platform Licensing Agreement** — the manufacturer signs the aiConnected Robotics manufacturer agreement, which defines liability boundaries, SDK usage rights, and marketplace participation terms
+2. **Hardware Integration** — the manufacturer integrates the Layer 1 OS into their device's software stack, mapping their hardware's physical capabilities to the platform's standardized interfaces
+3. **Capability Registry Declaration** — the manufacturer formally declares their device class, the capabilities they are exposing, and the certification levels required for each
+4. **First-Party Suite Configuration** — the manufacturer configures which of the 30 core capabilities are active and relevant for their hardware type
+5. **Manufacturer Layer Build** — the manufacturer adds their own SDK, proprietary features, and any Level X certification definitions
+6. **Platform Certification** — aiConnected reviews and approves the integration before the device is allowed to list in the marketplace as a compatible platform
+
+### 3.2 What Manufacturers Can and Cannot Do
+
+**Manufacturers can:**
+- Add proprietary software, branding, and features on top of the platform
+- Restrict which platform capabilities are active on their device
+- Define their own Level X certification requirements for advanced features
+- Set additional review criteria for developers beyond the platform's baseline requirements
+- Choose not to expose certain hardware capabilities to third-party developers at all
+
+**Manufacturers cannot:**
+- Remove or replace the Layer 1 foundation
+- Redefine what the platform's standard certification levels mean
+- Bypass Neurigraph for memory and communication functions
+- Ship a device that claims platform compatibility without completing the certification process
+- Knowingly allow software to run on their device at a higher capability level than the developer is certified for
+
+---
+
+## 4. Robot Classes
+
+The platform defines a standard taxonomy of robot classes. Classes matter because the same certification level means something meaningfully different across different hardware types. A Level 2 certification on a humanoid robot involves different capabilities and different risks than a Level 2 certification on a drone.
+
+Every compatible device is assigned exactly one primary class by the manufacturer at the time of platform certification. This class is permanently associated with the device in the marketplace.
+
+### 4.1 Class H — Humanoid
+
+Bipedal or human-form robots designed to operate in human environments. Characterized by articulated limbs, upright posture, and the expectation of close proximity to people. Examples include household companion robots, service robots, and general-purpose humanoid platforms.
+
+Class H devices carry the highest interpersonal safety considerations because they are designed to operate in spaces where humans live and work.
+
+### 4.2 Class I — Industrial / Manufacturing
+
+Fixed, semi-fixed, or mobile machines designed for factory, warehouse, or precision manufacturing environments. This includes multi-axis robotic arms, CNC-adjacent automation systems, and industrial-grade manipulation platforms. These devices may operate at high speed and force, but typically in controlled environments with defined safety perimeters.
+
+### 4.3 Class A — Aerial
+
+Flying platforms including consumer drones, commercial UAVs, and autonomous aerial delivery systems. Class A devices carry unique regulatory implications (airspace law, FAA/equivalent authority compliance) that differ substantially from ground-based platforms. Spatial movement for an aerial device means three-dimensional navigation rather than ground traversal.
+
+### 4.4 Class M — Mobile Platform
+
+Wheeled, tracked, or otherwise ground-mobile robots that do not have a humanoid form factor. Includes delivery robots, security patrol bots, agricultural rovers, and logistics platforms. These devices move through shared spaces but are not designed for close physical interaction with people the way Class H devices are.
+
+### 4.5 Class C — Companion / Stationary
+
+Robots that do not move through space in a meaningful way but interact with people at a fixed location. Includes desktop companion robots, reception and service kiosks with robotic interfaces, and stationary assistive devices. These devices present the lowest physical risk profile of any class.
+
+### 4.6 Class X — Specialized / Medical / Research
+
+A catch-all class for devices that do not fit cleanly into any of the above categories. This includes surgical assistants, laboratory automation systems, prosthetics and assistive wearables, and experimental research platforms. Class X devices are subject to additional regulatory scrutiny and typically require manufacturer-specific onboarding for any developer wishing to build for them.
+
+---
+
+## 5. The Certification Level System
+
+This is the most critical section of this document for developers to understand thoroughly.
+
+The certification level system solves a fundamental problem: how do you allow a vibrant developer ecosystem to build powerful capabilities for robots without compromising the safety of the people who interact with them?
+
+The answer is a tiered certification framework where the levels are **defined by the platform** (not by individual manufacturers), represent **specific categories of physical capability**, and must be **earned by developers before they can access those capabilities** — regardless of which manufacturer's hardware they are building for.
+
+### 5.1 The Core Principle
+
+The levels are universal. A Level 2 certification means the same thing whether you earned it to build for a Manufacturer A humanoid or a Manufacturer B humanoid. The certification travels with the developer, not with the device.
+
+The manufacturer's role is to declare which levels their device exposes — not to redefine what those levels mean. This eliminates the chaos of a system where "Level 2" means something different across manufacturers.
+
+### 5.2 Level 0 — Baseline (No Certification Required)
+
+Level 0 encompasses all software that interacts only with the robot's cognitive and communicative capabilities. No physical hardware is involved. There is no meaningful safety risk at this level.
+
+**What Level 0 software can do:**
+- Conversational interactions, personality configuration, communication style adjustments
+- Information retrieval, question answering, ambient awareness responses
+- Scheduling, reminders, notifications
+- Integration with external information sources (weather, calendars, news, etc.)
+- Aesthetic and personality customization
+- Any purely cognitive or conversational function
+
+**What Level 0 software cannot do:**
+- Issue any commands that affect the robot's physical behavior
+- Access motor controllers, actuators, or movement systems
+- Interact with physical sensors beyond basic ambient awareness
+
+**Certification requirement:** None. Any developer with a platform account can publish Level 0 software after passing standard platform review for content and security.
+
+### 5.3 Level 1 — Spatial Movement
+
+Level 1 covers any software that causes the robot to move through space or move its physical components in a meaningful way.
+
+**What Level 1 encompasses (regardless of class):**
+- Walking, rolling, or flying through an environment
+- Raising or extending limbs or appendages
+- Lifting, holding, or carrying objects
+- Navigating from one location to another
+- Physical repositioning of any kind
+
+**Why this requires certification:** A robot that moves creates risk — to itself, to people nearby, and to the environment. A developer working at Level 1 must demonstrate understanding of spatial safety standards, collision avoidance requirements, and the platform's movement safety protocols.
+
+**Certification requirement:** Standardized Level 1 Spatial Safety Certification — a formal assessment covering spatial awareness standards, movement safety protocols, and the platform's physical interaction guidelines. This certification is class-specific (Level 1, Class H is a different certification than Level 1, Class A) because the safety considerations differ meaningfully across hardware types.
+
+### 5.4 Level 2 — Task Execution
+
+Level 2 covers software that directs the robot to perform physical tasks in the real world — not just to move, but to interact with objects, materials, or environments in purposeful ways.
+
+**What Level 2 encompasses:**
+- Manipulating objects for a purpose (cooking, cleaning, assembling, sorting)
+- Handling tools or instruments
+- Interacting with household or industrial appliances and systems
+- Performing sequences of physical actions toward a goal
+- Any activity where the robot's physical actions have real-world consequences on objects or materials
+
+**Why this requires elevated certification:** Task execution introduces a qualitatively higher risk profile than movement alone. A robot that is walking is predictable in its risk surface. A robot that is cooking, handling cutting tools, managing gas or heat, operating machinery, or performing precision manipulation has a dramatically broader failure mode space. A developer building at Level 2 must demonstrate deep understanding of task-specific safety standards for the relevant domain.
+
+**Certification requirement:** Level 2 Task Execution Certification, which is both class-specific and task-domain-specific. A developer certified for Level 2 cooking automation is not automatically certified for Level 2 industrial assembly. Domain endorsements are added to the base Level 2 certification.
+
+### 5.5 Level 3 — Elevated Risk Operations
+
+Level 3 is reserved for software that operates in environments or performs tasks where the consequences of failure are severe. This includes anything that could cause significant injury, property damage, or harm to vulnerable populations.
+
+**What Level 3 encompasses:**
+- Medical or surgical assistance
+- Operations in proximity to vulnerable people (elderly, children, patients)
+- High-force industrial operations
+- Hazardous material handling
+- Autonomous operations with minimal human oversight in high-consequence environments
+- Any scenario where a software failure could result in serious physical harm
+
+**Certification requirement:** Level 3 certification involves the most rigorous review process on the platform. In addition to platform-defined certification, Level 3 software may be subject to third-party safety audits, regulatory compliance verification specific to the deployment jurisdiction, and in some cases manufacturer-specific approval before the software can be deployed on their device.
+
+### 5.6 Level X — Manufacturer-Specific Advanced Capabilities
+
+Level X is not a platform-defined level. It is a designation for capabilities that are unique to a specific manufacturer's hardware and exceed anything covered by the standard Level 0-3 framework.
+
+A manufacturer may have proprietary hardware capabilities — specialized end effectors, unique locomotion systems, custom sensor arrays, or novel interaction modalities — that have no equivalent on other hardware platforms and therefore cannot be meaningfully standardized into a universal level definition.
+
+**How Level X works:**
+- The manufacturer defines their own Level X certification requirements
+- Developers must complete the manufacturer's Level X certification specifically for that hardware
+- Level X certification is earned one manufacturer at a time — it does not transfer to other manufacturers' Level X programs
+- Level X software is only listed in the marketplace as compatible with that specific manufacturer's device
+
+This allows manufacturers to protect and monetize their most advanced hardware features while still operating within the broader platform ecosystem.
+
+### 5.7 Certification Summary Table
+
+| Level | Name | Physical Risk | Certification Required | Class-Specific |
+|-------|------|--------------|----------------------|----------------|
+| 0 | Baseline | None | No | No |
+| 1 | Spatial Movement | Low-Medium | Yes | Yes |
+| 2 | Task Execution | Medium-High | Yes | Yes + Domain |
+| 3 | Elevated Risk Operations | High | Yes + Third-Party Audit | Yes |
+| X | Manufacturer-Specific | Variable | Manufacturer-Defined | Yes (per manufacturer) |
+
+---
+
+## 6. The Neurigraph Memory Layer
+
+### 6.1 What Neurigraph Is
+
+Neurigraph is the platform's persistent memory architecture. It is the system that gives an aiConnected-powered robot continuity — the ability to remember past interactions, accumulate knowledge over time, build relational context with the people it works with, and develop an evolving understanding of its environment and role.
+
+Neurigraph integrates three distinct memory types into a unified architecture:
+
+- **Episodic Memory** — records of specific events, interactions, and experiences over time ("last Tuesday, the user asked me to reorganize the kitchen pantry")
+- **Semantic Memory** — accumulated knowledge and facts about the world, the user, and the environment ("the user prefers the pantry organized by food category, not by size")
+- **Somatic Memory** — physical and environmental memory specific to embodied systems ("the third drawer sticks and requires extra force; the kitchen floor has a slope near the sink")
+
+The somatic memory layer is particularly significant for robotics. No current robotic platform implements somatic memory in any sophisticated sense. This is a genuine architectural advantage of the aiConnected platform — a robot running Neurigraph develops a physical understanding of its environment the way a human worker does after months on the job.
+
+### 6.2 Neurigraph as Non-Negotiable Infrastructure
+
+This is one of the most important rules on the platform:
+
+**All software installed on an aiConnected-powered device must route its memory and communication functions through Neurigraph. No exceptions.**
+
+Third-party developers cannot bring their own memory systems. Manufacturer extensions cannot bypass Neurigraph for communication. Every layer of the stack reads from and writes to Neurigraph as the single source of memory truth for the device.
+
+This rule exists for several reasons:
+
+- **Coherence:** A robot that has multiple disconnected memory systems will behave inconsistently and unpredictably. Neurigraph ensures that everything the robot knows and has experienced is available to everything the robot does.
+- **Safety:** The safety enforcement layer relies on Neurigraph to understand context before permitting actions. Bypassing it would create a vector for unsafe behavior.
+- **Platform integrity:** Neurigraph is the moat. It is what makes the platform intelligent rather than just extensible. Allowing it to be bypassed would devalue the platform for everyone.
+
+Think of Neurigraph the way Windows treats the kernel — all software must go through it. Neurigraph is the memory and communication kernel for every aiConnected device.
+
+### 6.3 What This Means for Developers
+
+When you build software for the platform, you do not implement your own memory system. You read from and write to Neurigraph using the platform's Memory API. Your software can:
+
+- Query contextual memory relevant to the current task
+- Write new episodic entries when your software completes meaningful interactions
+- Read semantic knowledge the robot has accumulated about the user and environment
+- Contribute to somatic memory when your software involves physical interaction (at Level 1 and above)
+
+You do not control what Neurigraph retains or forgets. Memory management is the platform's responsibility, not the developer's.
+
+---
+
+## 7. The Developer Marketplace
+
+### 7.1 How the Marketplace Works
+
+The aiConnected Robotics Marketplace is the single distribution channel for all third-party software built on the platform. It is the CarPlay App Store equivalent — a centralized, curated, certified place where developers publish capabilities and end users or robot operators discover and install them.
+
+A capability in the marketplace is always tagged with:
+
+- Its **certification level** (0, 1, 2, 3, or X)
+- Its **compatible classes** (which robot classes it supports)
+- Its **compatible manufacturers/models** (if it is hardware-specific)
+- Its **capability domain** (what the software actually does)
+
+### 7.2 The Promise to Developers
+
+The marketplace's core value proposition to developers is write-once-deploy-everywhere within compatible classes. If you build a Level 1, Class H capability and there are 20 compatible humanoid robot models on the platform, your software is potentially deployable on all 20 without rebuilding it for each manufacturer.
+
+This is the problem the platform is explicitly solving. The current state of robotics development requires rebuilding the same capability from scratch for every hardware platform. The marketplace eliminates this.
+
+### 7.3 Revenue Model
+
+Developers retain 80% of revenue from paid capabilities. The platform takes a 20% cut in exchange for infrastructure, distribution, safety review, and marketplace presence. This is consistent with standard software marketplace economics.
+
+Free capabilities are permitted and encouraged, particularly for community tools, open-source extensions, and capabilities that serve as adoption drivers for paid premium tiers.
+
+### 7.4 Review and Approval
+
+All software must pass platform review before listing. The review process varies by certification level:
+
+- **Level 0:** Automated security scan plus human review for content compliance. Typical turnaround: 3-5 business days.
+- **Level 1:** All of Level 0 review plus verification that the developer holds valid Level 1 certification for the relevant class. Review includes functional safety assessment. Typical turnaround: 1-2 weeks.
+- **Level 2:** All of Level 1 review plus domain-specific safety assessment. May require documentation of testing on physical hardware. Typical turnaround: 2-4 weeks.
+- **Level 3:** All of Level 2 review plus potential third-party safety audit. Timeline varies based on audit requirements.
+- **Level X:** Review process defined by the manufacturer. Platform review is still required in addition to manufacturer review.
+
+---
+
+## 8. The First-Party Software Suite
+
+### 8.1 Why First-Party Software Exists
+
+The platform ships with approximately 30 built-in capabilities developed and maintained by aiConnected. These are installed on every compatible device by default and require no marketplace download.
+
+This solves the classic platform chicken-and-egg problem: a manufacturer will not adopt the platform if there are no developer capabilities for it, and developers will not build capabilities if there are no devices running the platform. The first-party suite gives the platform immediate, tangible value on day one — before the third-party ecosystem exists.
+
+### 8.2 What the First-Party Suite Covers
+
+The suite is designed to cover the most universal and expected capabilities across all classes and use cases. Representative categories include:
+
+- Natural language interaction and conversation
+- User recognition and relationship memory
+- Environment mapping and spatial orientation
+- Basic task scheduling and reminders
+- System status and self-diagnostics
+- Standard alert and notification behaviors
+- Multi-language communication
+- Privacy and data management controls
+- Platform update management
+
+The full capability list is maintained in the platform's official documentation and is updated with each major platform release.
+
+### 8.3 First-Party Suite as a Quality Baseline
+
+The first-party suite also serves as a quality and safety reference implementation. Third-party developers can study how aiConnected builds capabilities — particularly how Neurigraph is used, how safety enforcement is respected, and how the conversational interaction model is implemented — as a model for their own development work.
+
+---
+
+## 9. Platform Governance and Accreditation
+
+### 9.1 Who Sets the Standards
+
+aiConnected sets and maintains all platform-level standards. This includes:
+
+- The definitions of Levels 0-3
+- The class taxonomy
+- The content and requirements of each certification
+- The marketplace review criteria
+- The manufacturer integration requirements
+
+These standards are published publicly. The platform is committed to transparency in its standard definitions so that no participant in the ecosystem is operating without full knowledge of the rules.
+
+### 9.2 The Accreditation Model
+
+aiConnected does not perform every individual developer certification itself. Instead, the platform operates an **accreditation model** modeled on how medical device and aviation certification bodies work in practice.
+
+The process works as follows:
+
+1. **aiConnected publishes the certification standards** — the precise knowledge, skills, and assessments required to achieve each level for each class
+2. **Educational institutions and training organizations apply to become Accredited Certification Bodies (ACBs)** — schools, training programs, and professional development organizations that want to offer and grant aiConnected certifications
+3. **aiConnected evaluates and accredits ACBs** — ensuring their curriculum, assessment quality, and instructional standards meet the platform's requirements
+4. **ACBs grant certifications to developers** — developers who complete an ACB program receive platform-recognized certifications that are valid for marketplace participation
+5. **aiConnected audits ACBs periodically** — to ensure ongoing standards compliance and revoke accreditation from bodies that fall below the required quality threshold
+
+This model scales. aiConnected cannot certify every developer in the world individually — but it can maintain a rigorous standard that any qualifying institution can implement, and audit those institutions to ensure the standard holds.
+
+### 9.3 Certification Versioning
+
+The platform uses semantic versioning for its certification standards. When a standard is updated:
+
+- Developers certified under the previous version receive a defined grace period (typically 12-24 months) to upgrade their certification
+- Software already deployed and in active use continues to operate under the version it was certified against until it is updated
+- Manufacturers commit to a minimum platform version when they ship hardware, ensuring a stable certification baseline for the devices they sell
+
+---
+
+## 10. Liability Framework
+
+### 10.1 The Primary Liability Principle
+
+aiConnected follows the same liability model used by the automotive industry, the medical device industry, and every major software platform:
+
+**The manufacturer of the device is the primary liable party for anything the device does.**
+
+aiConnected is a platform provider — a supplier of standards and infrastructure to manufacturers. The manufacturer integrates the platform into their hardware, declares what it can do, and ships it to customers. The manufacturer owns the relationship with the end user and bears primary responsibility for the device's behavior.
+
+This is not unique to aiConnected. Microsoft is not liable when a Dell computer running Windows causes harm. Google is not liable when a Samsung phone running Android causes harm. The device manufacturer is the accountable party.
+
+### 10.2 Developer Liability
+
+Third-party developers are liable for the behavior of their own software. The developer agreement that all marketplace participants must sign establishes this clearly. When a developer's software causes harm:
+
+- The developer is liable for defects in their code
+- The manufacturer may share liability if they approved access beyond what the platform's standard levels would permit
+- aiConnected's liability is limited to the platform review process — and even that is explicitly not a guarantee of safety, but a reasonable effort standard
+
+### 10.3 The Developer Agreement
+
+All developers must agree to the platform's developer terms before publishing any software. Key provisions include:
+
+- The developer is responsible for the safety and correctness of their software
+- The developer warrants that their software does not attempt to access capabilities beyond the developer's certified level
+- The developer agrees that aiConnected may remove their software from the marketplace at any time for safety or compliance reasons
+- The developer indemnifies aiConnected against claims arising from the behavior of their software
+
+### 10.4 What Happens When Something Goes Wrong
+
+The platform's response to a harmful incident follows this sequence:
+
+1. **Immediate:** The software in question is suspended from the marketplace pending investigation
+2. **Investigation:** The platform reviews the software's behavior, the developer's certification status, and whether the incident involved a failure of platform-level safety enforcement or a failure of the developer's software
+3. **Resolution:** Depending on findings — the software may be permanently removed, the developer's certification may be revoked, and the matter may be referred to relevant legal or regulatory authorities
+4. **Transparency:** The platform publishes a summary of significant safety incidents and their resolutions to the developer community, without identifying personal information, to improve ecosystem-wide safety awareness
+
+---
+
+## 11. Security Architecture
+
+Safety (preventing physical harm) and security (preventing malicious exploitation) are distinct problems that both require solutions. This section addresses security.
+
+### 11.1 The Threat Model
+
+The security risks unique to a robotics platform include:
+
+- A malicious developer publishing software that contains hidden functionality designed to cause harm
+- A legitimate developer's credentials being stolen and used to publish or update software maliciously
+- Over-the-air software updates being intercepted and replaced with malicious payloads
+- A compromised device being used as a vector to attack other devices or systems on the same network
+
+### 11.2 Platform-Level Security Measures
+
+- All software published to the marketplace is scanned for known malicious patterns as part of the review process
+- Developer accounts require two-factor authentication and are monitored for unusual activity
+- All over-the-air updates are signed with the publisher's cryptographic key and verified by the device before installation
+- Devices report anomalous behavior to the platform's security monitoring system
+
+### 11.3 Developer Responsibilities
+
+Developers are expected to:
+
+- Keep their platform credentials secure and report any suspected compromise immediately
+- Not submit software that requests capabilities beyond what the stated functionality requires
+- Disclose any known security vulnerabilities in their software to the platform before those vulnerabilities are publicly known
+- Maintain their software and issue patches for discovered vulnerabilities within a reasonable timeframe
+
+A detailed security implementation guide is available in the platform's technical documentation.
+
+---
+
+## 12. Getting Started as a Developer
+
+### Step 1: Create a Platform Account
+
+Register at the aiConnected developer portal. Your account is the identity associated with all software you publish and all certifications you hold.
+
+### Step 2: Understand the Class and Level System
+
+Before writing a single line of code, determine what your software needs to do and therefore what class and level it targets. This determines what certification you need and what APIs will be available to you.
+
+If your software only involves conversation, information, and cognition — you are building at Level 0 and need no certification before publishing.
+
+If your software involves any physical capability, identify the class of device you are targeting and the level of capability you need, then pursue the appropriate certification before building (so you do not build something you cannot publish).
+
+### Step 3: Choose Your Target Class(es) and Manufacturer(s)
+
+Review the manufacturer directory in the developer portal to understand which hardware platforms are available, what classes they belong to, what capabilities they expose, and what certification levels they require.
+
+If you are building a cross-manufacturer capability, confirm that all target manufacturers expose the capability level your software requires.
+
+### Step 4: Pursue Certification (If Required)
+
+Find an Accredited Certification Body that offers the certification level and class you need. Complete their program. Your certification will be recorded on your platform account automatically upon successful completion.
+
+### Step 5: Access the SDK and APIs
+
+Once your certification is in place, the developer portal will unlock the SDK documentation and API access for your certified level and class. You cannot access APIs above your certification level.
+
+### Step 6: Build and Test
+
+Use the SDK to build your capability. The platform provides a software emulator for each supported class so you can test at Level 0 and Level 1 without physical hardware. For Level 2 and above, testing on physical hardware is strongly recommended and may be required as part of the review process.
+
+### Step 7: Submit for Review
+
+Submit your software through the developer portal. Provide complete documentation of what your software does, what capabilities it accesses, and how it has been tested. Incomplete submissions will be returned without review.
+
+### Step 8: Publish and Maintain
+
+Once approved, your software is listed in the marketplace. You are responsible for ongoing maintenance, responding to user-reported issues, and keeping your software compatible with platform updates within the defined deprecation windows.
+
+---
+
+## 13. Getting Started as a Manufacturer
+
+### Step 1: Contact the Manufacturer Partnership Team
+
+Manufacturing partnerships begin with a direct conversation. Contact aiConnected through the manufacturer portal to initiate the licensing and integration process.
+
+### Step 2: Complete the Licensing Agreement
+
+The manufacturer agreement defines the terms of platform usage, liability boundaries, SDK rights, marketplace participation, and the manufacturer's obligations to the platform and its developer community.
+
+### Step 3: Technical Integration
+
+Your engineering team will work with aiConnected's integration team to embed Layer 1 into your device's software stack. This process involves mapping your hardware's physical capabilities to the platform's standardized interfaces and ensuring Neurigraph is correctly integrated as the memory and communication backbone.
+
+### Step 4: Declare Your Capability Registry
+
+Define what your device can physically do and which capabilities you are exposing at which certification levels. This declaration is reviewed by aiConnected and becomes the official record of your device's platform capabilities.
+
+### Step 5: Define Level X Requirements (If Applicable)
+
+If your device has proprietary capabilities that exceed the standard levels, define your Level X certification program. This program must meet minimum standards set by aiConnected and is subject to platform review before it is activated.
+
+### Step 6: Platform Certification
+
+aiConnected conducts a final review of your integration before approving your device as a certified platform-compatible product. Approval allows your device to be listed in the device directory and enables the developer community to build for your hardware.
+
+---
+
+## 14. Glossary
+
+**Accredited Certification Body (ACB):** An educational institution or training organization that has been accredited by aiConnected to offer and grant developer certifications.
+
+**Capability Exposure Map:** The manufacturer's declaration of which hardware capabilities are accessible to developers at which certification levels.
+
+**Cipher:** The platform's hidden master orchestration layer. Cipher coordinates all cognitive activity across the platform. It is never visible to end users or third-party developers.
+
+**Class:** A category of robotic hardware defined by the platform. Every compatible device belongs to exactly one class (H, I, A, M, C, or X).
+
+**Developer Extension:** Any third-party software built on Layer 3 of the platform architecture.
+
+**Hardware Capability Registry:** A standardized declaration by the manufacturer of what their device can physically do.
+
+**Level:** A platform-defined tier of physical capability. Levels 0-3 are universally defined by aiConnected. Level X is manufacturer-defined.
+
+**Level X:** A designation for manufacturer-specific advanced capabilities that exceed the platform's standard level definitions. Certification is earned per manufacturer.
+
+**Manufacturer SDK:** The Layer 2 interface that manufacturers build on top of the platform's Layer 1 foundation, exposing their hardware capabilities to developers.
+
+**Neurigraph:** The platform's persistent memory architecture, integrating episodic, semantic, and somatic memory into a unified system. All software on the platform must route memory and communication through Neurigraph.
+
+**Persona Engine:** The system that gives an aiConnected-powered device its identity, communication style, and relational depth.
+
+**Safety Enforcement Layer:** The platform-level mechanism within Layer 1 that enforces certification boundaries and prevents uncertified software from accessing restricted hardware capabilities.
+
+---
+
+*This document is an internal draft for aiConnected development purposes. Version 0.1. All specifications subject to change.*

@@ -1,0 +1,1145 @@
+---
+title: "How will developers use the aiConnected Platform"
+---
+# aiConnected Platform Architecture Specification
+
+**Version 2.0 — Structural Document**
+
+## Executive Summary
+
+aiConnected is a white-label SaaS operating system for agencies. It provides a stable, extensible platform core that agencies deploy as their own branded product, and that developers extend by building and selling modules through a governed marketplace.
+
+The platform works like GoHighLevel — every module shares the same data, events, and identity layer, so actions in one module ripple naturally through all others. It extends like WordPress — new capabilities are added by installing modules, never by modifying the core. And it does something neither platform does: every approved module becomes a permanent building block that all future developers can build upon, compounding the platform's capability over time.
+
+**For developers:** Build a module once. Deploy it to your own private container. Expose only the API surface you choose. Earn revenue from every tenant who installs it, and royalties from every downstream module that builds on your capabilities. Your code is never seen. Your IP is protected by architecture, not policy.
+
+**For agencies:** A platform that can do anything a developer can build. White-label it. Customize every visual detail. Choose which modules your clients can access. If a capability you need doesn't exist yet, a developer can build it — and once it's certified, it's available to you.
+
+**For investors:** A compounding marketplace with aligned developer incentives, community-governed quality control, and network effects operating at three simultaneous layers: developer growth, tenant growth, and capability accumulation.
+
+---
+
+## Table of Contents
+
+1. [Origin and Context](#1-origin-and-context)
+2. [Vision Statement](#2-vision-statement)
+3. [Core Design Principles](#3-core-design-principles)
+4. [The Mental Model — How to Think About This Platform](#4-the-mental-model)
+5. [What This Platform Is Not](#5-what-this-platform-is-not)
+6. [System Architecture Overview](#6-system-architecture-overview)
+7. [The Core Shell](#7-the-core-shell)
+8. [The Shared Data Layer](#8-the-shared-data-layer)
+9. [The Event System](#9-the-event-system)
+10. [The Module System](#10-the-module-system)
+11. [The Module Manifest Specification](#11-the-module-manifest-specification)
+12. [The Visual Builder](#12-the-visual-builder)
+13. [The Container Architecture](#13-the-container-architecture)
+14. [The API Gateway](#14-the-api-gateway)
+15. [The Capability Registry](#15-the-capability-registry)
+16. [The Developer Trust Pipeline](#16-the-developer-trust-pipeline)
+17. [IP Protection and Code Privacy](#17-ip-protection-and-code-privacy)
+18. [The Community Governance Model](#18-the-community-governance-model)
+19. [The White-Label Tenant Model](#19-the-white-label-tenant-model)
+20. [The Design System](#20-the-design-system)
+21. [The Revenue and Developer Economy](#21-the-revenue-and-developer-economy)
+22. [The Compounding Development Model](#22-the-compounding-development-model)
+23. [Technical Stack Reference](#23-technical-stack-reference)
+24. [Build Sequence and Priorities](#24-build-sequence-and-priorities)
+25. [The Founding Promise](#25-the-founding-promise)
+
+---
+
+## 1. Origin and Context
+
+This specification was not written from theory. It was developed through direct experience building the platform's first version — three months of real construction by a non-engineer founder who learned the stack by building in it. That experience produced something more valuable than any upfront design document could have: a precise, earned understanding of what went wrong and exactly why.
+
+### What the first version revealed
+
+**The design problem.** Building a platform without a unified design system means every interface becomes a separate fight. Components rendered inconsistently. Layout decisions made in isolation produced visual fragmentation across the platform. Significant development time was consumed by design problems that had nothing to do with functionality.
+
+**The builder problem.** Creating new application interfaces required navigating external tools, converting mockups into code manually, and fighting integration issues at every step. There was no native way to build inside the platform itself. Every new module required starting a new external process.
+
+**The foundation problem.** The first version was not built with extensibility as a first-class concern. Adding new capabilities required touching the core. There was no clean plugin boundary. The platform resisted growth rather than enabling it.
+
+**The integration problem.** Modules were not truly interconnected. Each capability operated in relative isolation. The voice system did not naturally feed the chat system. The knowledge base did not automatically inform the automation layer. The interconnection that makes a platform valuable was absent.
+
+### What this version is
+
+This specification defines a platform rebuilt from the ground up with every lesson from the first version incorporated as a structural constraint — not a preference, not a goal, but a hard requirement baked into the architecture from day one.
+
+The person who built the first version knew WordPress. Knew Elementor. Knew GoHighLevel. Knew Crocoblock. Knew what it felt like to work inside a system where everything was interconnected, where adding a plugin extended everything without breaking anything, where design was handled so that functionality could be the focus. This specification translates that intuition into a technical architecture that delivers that same experience for a modern SaaS platform.
+
+---
+
+## 2. Vision Statement
+
+aiConnected is a **federated, extensible, white-label SaaS operating system** for agencies and the businesses they serve.
+
+It operates like GoHighLevel in its deep module interconnection and white-label capability. It extends like WordPress in its plugin-based architecture where new capabilities are added without modifying the core. It compounds like no existing platform — because every module added by any developer becomes a building block that all future developers can build upon, creating a capability ecosystem that grows more powerful with every contribution.
+
+The platform is not a collection of features assembled into a product. It is an operating system — a stable, extensible foundation on which an unlimited number of capabilities can be built, sold, and interconnected. The foundation does not change when capabilities are added. The capabilities do not interfere with each other. And every new capability makes the entire system more valuable than it was before.
+
+---
+
+## 3. Core Design Principles
+
+These principles are not aspirational. They are structural. The architecture is designed to make violating them difficult, and in most cases, impossible.
+
+### 3.1 Interconnection Is the Product
+
+Every module shares the same data layer, the same event system, and the same identity infrastructure. A completed voice call is visible to the chat module, the automation engine, the knowledge base, and any reporting tool. A knowledge base update propagates to voice, chat, and any module that declared interest in that event. No module is isolated. Interconnection is not a feature — it is what the platform fundamentally is.
+
+### 3.2 Extension Without Fragmentation
+
+New capabilities are added by building modules that plug into the platform. The core shell is never modified to accommodate a new module. A module registers itself, declares what it needs, declares what it offers, and the platform wires it in automatically. Adding a module does not require touching anything that already works.
+
+### 3.3 Compounding Capability
+
+Every approved module adds to a shared registry of capabilities. Those capabilities are available to every developer who comes after. Development progress on this platform is cumulative, not isolated. A developer who joins in year four has years of accumulated capabilities to build on top of. The platform's value to developers increases permanently with every approved module.
+
+### 3.4 IP Protection by Default
+
+Developers never expose their source code to the platform or to other developers. A module's implementation is private by default and private by architecture. What gets published to the community and to the capability registry is exclusively what the developer chooses to expose — their API surface. Inputs, outputs, events. Nothing else crosses that boundary without the developer's explicit declaration.
+
+### 3.5 Resilience Through Isolation
+
+Every module runs in its own container. A failure in one module cannot affect any other module. A resource spike in one module cannot starve another. A security breach in one module cannot reach into another container or into the core. Each module is sovereign within its own boundaries and cooperative only at its declared interfaces.
+
+### 3.6 Design Handled, Functionality Focused
+
+The platform manages design at the system level. shadcn/ui provides the component foundation. TweakCN provides per-tenant theming. Module developers inherit a complete, consistent, production-quality design system without writing a single line of CSS. They build functionality. Design is not their problem.
+
+### 3.7 Community-Driven Quality, Institutionally-Certified Safety
+
+The developer community governs module quality. aiConnected governs module safety. These are distinct responsibilities handled by distinct systems. The community is better positioned to evaluate whether a module does what it claims. aiConnected is better positioned to evaluate whether a module is safe, secure, and platform-compliant. Neither does the other's job.
+
+---
+
+## 4. The Mental Model
+
+Before describing any technical system, it is worth establishing the mental model that should guide every decision made on this platform. Three reference points define the vision.
+
+### WordPress \+ Crocoblock
+
+WordPress provides a stable core that never needs to be touched to extend it. Plugins add functionality. The right plugins — particularly Crocoblock — are deeply interconnected with each other. JetEngine, JetElements, JetSmartFilters, JetBooking — these tools share data, share styling, share logic. Installing one makes the others more powerful. That interconnection is the fundamental quality this platform must replicate.
+
+The lesson from WordPress: a stable core and a plugin system that allows deep interconnection between plugins is more powerful than any monolithic application. It can grow without limit because the core does not need to grow with it.
+
+### GoHighLevel
+
+GoHighLevel is the closest existing product to what this platform is at the application layer. Everything inside GHL orbits around a shared data model. The CRM feeds the automation engine. The automation engine triggers conversations. Conversations update contact records. Pipeline stages move. One action ripples across the entire system naturally.
+
+GHL also demonstrates the white-label agency model at scale. An agency deploys GHL as their own product. Their clients never know GHL exists. The agency controls what their clients see, what they can access, and how the platform looks. That model is exactly what aiConnected replicates.
+
+The lesson from GoHighLevel: deep data interconnection and white-label capability are what make a platform genuinely useful to agencies. Build around those two qualities from the beginning.
+
+### The Critical Difference From Both
+
+WordPress can be extended at the code level, but plugins can cannibalize each other. GoHighLevel is deeply interconnected, but it is a closed system — no developer can add a capability that GoHighLevel has not built. aiConnected is the synthesis: open to developer extension at the code level, with the interconnection and white-label capability of GoHighLevel, and a governance model that prevents the plugin cannibalization problem WordPress has never solved.
+
+That synthesis is what makes this platform novel. It does not exist yet. This specification is how it gets built.
+
+---
+
+## 5. What This Platform Is Not
+
+Clarity about scope prevents drift. These boundaries are explicit and intentional.
+
+**It is not a no-code tool for end users.** End users interact with what tenants deploy on top of aiConnected. They do not build on the platform directly. The platform serves agencies and developers, not the general public.
+
+**It is not a closed ecosystem.** Any developer can build for aiConnected. No capability is reserved for first-party development. The platform is explicitly designed to be extended by people who have never spoken to anyone at aiConnected.
+
+**It is not a horizontal productivity tool.** It is a vertical operating system for agencies building AI-powered service businesses. It is not competing with Notion, Asana, or Slack. It is competing with GoHighLevel and the idea that you have to accept whatever capabilities a platform provider decides to build.
+
+**It is not GoHighLevel.** GoHighLevel is a closed platform. When a capability doesn't exist in GoHighLevel, the agency waits for GoHighLevel to build it or works around it. When a capability doesn't exist in aiConnected, a developer builds it, it goes through the trust pipeline, and it becomes available to every agency on the platform. The ceiling is removed.
+
+**It is not a marketplace bolted onto a product.** The marketplace and the development ecosystem are structural, not additive. They are built into the platform's architecture from the first line of code. They are not a phase two feature.
+
+---
+
+## 6. System Architecture Overview
+
+The platform is composed of seven interconnected systems. Each system has a single defined responsibility. No system does another system's job.
+
+```text
+┌─────────────────────────────────────────────────────────────────┐
+│                         CORE SHELL                              │
+│         Auth · Navigation · Billing · Module Registry           │
+└─────────────────────┬───────────────────────────────────────────┘
+                      │
+┌─────────────────────▼───────────────────────────────────────────┐
+│                      API GATEWAY                                │
+│        Routing · Auth Enforcement · Rate Limiting · Logging     │
+└──────┬──────────────┬──────────────┬──────────────┬────────────┘
+       │              │              │              │
+┌──────▼──────┐ ┌─────▼──────┐ ┌────▼──────┐ ┌────▼──────┐
+│  MODULE A   │ │  MODULE B  │ │  MODULE C │ │  MODULE N │
+│  Container  │ │  Container │ │  Container│ │  Container│
+│             │ │            │ │           │ │           │
+│  Private    │ │  Private   │ │  Private  │ │  Private  │
+│  Logic      │ │  Logic     │ │  Logic    │ │  Logic    │
+│             │ │            │ │           │ │           │
+│  Exposed    │ │  Exposed   │ │  Exposed  │ │  Exposed  │
+│  API Only   │ │  API Only  │ │  API Only │ │  API Only │
+└──────┬──────┘ └─────┬──────┘ └────┬──────┘ └────┬──────┘
+       │              │              │              │
+┌──────▼──────────────▼──────────────▼──────────────▼────────────┐
+│                     SHARED DATA LAYER                           │
+│               Supabase · Shared Entities · Event Log            │
+└─────────────────────────────────────────────────────────────────┘
+                      │
+┌─────────────────────▼───────────────────────────────────────────┐
+│                    EVENT BUS                                    │
+│          System-wide event propagation and subscription         │
+└─────────────────────────────────────────────────────────────────┘
+                      │
+┌─────────────────────▼───────────────────────────────────────────┐
+│                 CAPABILITY REGISTRY                             │
+│        Living directory of all approved module capabilities     │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+Each layer is described in full detail in the sections that follow.
+
+---
+
+## 7. The Core Shell
+
+The shell is the platform's permanent foundation. It exists from day one and it does not change to accommodate new modules. Modules accommodate themselves to it.
+
+### 7.1 Responsibilities
+
+**Authentication and Session Management** Every user on every tenant authenticates through the shell. The shell issues session tokens, enforces session expiration, manages multi-factor authentication, and handles password reset flows. No module handles its own authentication. Modules receive an authenticated user context from the shell and trust it.
+
+**Tenant Provisioning and Isolation** When an agency creates a new sub-account, the shell provisions the tenant environment — database row-level security policies, subdomain or custom domain routing, default module configuration, and initial theming. Each tenant is isolated at the data layer by RLS from day one. The shell enforces that isolation.
+
+**Navigation and Routing Infrastructure** The shell owns the application's top-level navigation structure. When a module is installed, it registers its routes and sidebar entries with the shell. The shell renders them in the navigation automatically. When a module is uninstalled, its routes and navigation entries are removed. Module developers do not build navigation systems. They declare what entries they need and the shell handles the rest.
+
+**Billing and Subscription Management** All billing flows through the shell. Module-level billing — usage fees, subscription tiers for individual modules — is tracked at the shell level and reported to the billing system. Module developers do not integrate with payment processors. They declare their pricing model in their manifest and the shell handles collection and disbursement.
+
+**Module Registry** The shell maintains the live registry of all installed modules for each tenant. When a tenant installs a module, the shell records it, provisions the module's declared data schemas, grants the module's declared permissions, and registers its capabilities in the tenant's active capability set. The registry is the source of truth for what is installed, what version is active, and what capabilities are available.
+
+**Theme Engine** The shell reads each tenant's TweakCN configuration and applies it globally. All shadcn/ui components rendered anywhere in the platform — in the shell or in any module — inherit the tenant's theme automatically. Module developers do not write tenant-specific styling.
+
+### 7.2 What the Shell Does Not Do
+
+The shell contains zero business logic. There is no CRM logic in the shell. No voice logic. No automation logic. No chat logic. No knowledge base logic. All business functionality lives in modules. The shell is infrastructure, not application.
+
+---
+
+## 8. The Shared Data Layer
+
+### 8.1 Foundation
+
+A single Supabase instance serves as the platform's unified data foundation. Every module on every tenant reads from and writes to this instance, governed by Row Level Security policies that enforce tenant isolation at the database level.
+
+### 8.2 Core Shared Entities
+
+These tables are owned by the shell and are available to all modules with appropriate permissions:
+
+**`workspaces`** — The top-level tenant record. Every piece of data in the system is ultimately scoped to a workspace. This is the entity that enforces tenant isolation.
+
+**`contacts`** — The universal entity that all modules interact with. A contact record accumulates data from every module that touches it. The voice module logs calls against a contact. The chat module stores conversation history against a contact. The automation module tracks workflow states against a contact. No module owns the contact record. All modules contribute to it.
+
+**`users`** — Platform users with their roles, permissions, and workspace memberships.
+
+**`module_registry`** — The live record of what modules are installed for each workspace, their versions, their configurations, and their active status.
+
+**`events`** — The shared event log. Every event emitted by any module is written here with a timestamp, source module, event type, payload, and workspace scope. This is the backbone of module interconnection.
+
+**`capability_registry`** — The published API contracts of all approved modules. This is what developers browse when looking for capabilities to build upon.
+
+### 8.3 Module-Owned Data
+
+Each module owns its own tables, namespaced by module identifier:
+
+```text
+voice_calls
+voice_profiles  
+voice_transcripts
+chat_conversations
+chat_messages
+knowledge_base_documents
+knowledge_base_chunks
+automation_workflows
+automation_runs
+```
+
+Module tables are provisioned when the module is installed into a workspace and deprovisioned (with appropriate data retention) when it is uninstalled. Modules may read from shared entities with declared permissions. Modules write to their own tables and emit events. Modules never write directly to another module's tables. Cross-module data sharing happens exclusively through the event system and declared API contracts.
+
+### 8.4 Row Level Security
+
+Every table — shared and module-owned — enforces workspace-level RLS. A query from Tenant A's voice module cannot return data belonging to Tenant B's workspace regardless of how the query is constructed. This is not application-layer enforcement. It is enforced at the database level. No developer error can circumvent it.
+
+---
+
+## 9. The Event System
+
+The event system is how modules communicate with each other without knowing anything about each other. It is the mechanism that makes interconnection possible without creating dependencies.
+
+### 9.1 How It Works
+
+When a module completes an action that other modules might care about, it emits an event. It does not know which modules are listening. It does not call those modules directly. It emits the event and moves on.
+
+```text
+Voice module completes a call
+  → emits voice.call.completed
+    → Automation engine receives it, evaluates triggers
+    → Chat module receives it, creates follow-up context
+    → Reporting module receives it, updates call metrics
+    → Knowledge base receives it, indexes the transcript
+```
+
+None of these receiving modules know about each other. None of them needed the voice module to do anything special. The voice module emitted one event. Every interested module received it independently.
+
+### 9.2 Event Structure
+
+Every event in the system follows this structure:
+
+```json
+{
+  "id": "evt_01hx9k2m...",
+  "workspace_id": "ws_tenant_abc",
+  "source_module": "voice-hub",
+  "event_type": "voice.call.completed",
+  "timestamp": "2026-03-26T14:32:00Z",
+  "payload": {
+    "call_id": "call_789",
+    "contact_id": "contact_456",
+    "duration_seconds": 183,
+    "outcome": "completed",
+    "transcript_id": "transcript_321"
+  },
+  "schema_version": "1.0"
+}
+```
+
+### 9.3 Event Subscriptions
+
+Modules declare which events they consume in their manifest. The platform subscribes them automatically. When an event fires, only modules that declared subscription to that event type receive it. Modules are not spammed with events they don't care about.
+
+### 9.4 Event Reliability
+
+Events are written to the `events` table before they are dispatched. If a receiving module's container is unavailable when an event fires, the event is queued and delivered when the container returns. Events are never lost. Delivery is guaranteed with configurable retry logic.
+
+---
+
+## 10. The Module System
+
+A module is a self-contained application that extends platform functionality. Modules are the unit of extension on this platform. Everything that is not the core shell is a module — including all first-party aiConnected applications.
+
+### 10.1 What a Module Is
+
+A module is a containerized application that:
+
+- Has its own compute environment
+- Manages its own internal logic and data
+- Declares what it needs from the platform (permissions, data schemas)
+- Declares what it offers to the platform (API endpoints, events, capabilities)
+- Communicates with the rest of the platform exclusively through declared interfaces
+- Can be installed, updated, or removed without affecting any other module
+
+### 10.2 First-Party and Third-Party Modules Are Identical
+
+aiConnected's own modules — Voice AI Hub, Chat, Knowledge Base, Automations — are built to exactly the same specification as any third-party developer module. There is no privileged first-party API. There is no back channel to the core. If a developer can build it, aiConnected can build it, and vice versa. This is not just a philosophical position. It is a structural constraint that prevents the platform from drifting toward a two-tier system.
+
+### 10.3 Module Lifecycle
+
+```text
+Development (private)
+  → Submission to Trust Pipeline
+    → Automated validation (Stage 0)
+      → Community sandbox testing (Stage 1)
+        → aiConnected certification review (Stage 2)
+          → Registry publication
+            → Tenant installation
+              → Active in tenant workspace
+                → Update cycle or deprecation
+```
+
+Each stage is described in full in Section 16.
+
+### 10.4 Module Versioning
+
+Modules are versioned using semantic versioning (MAJOR.MINOR.PATCH). Breaking changes to the declared API contract require a MAJOR version increment. Tenants are never auto-updated to a new MAJOR version. Minor and patch updates may be auto-applied based on tenant configuration. A module's capabilities remain available at their declared version until the tenant explicitly upgrades.
+
+---
+
+## 11. The Module Manifest Specification
+
+Every module declares itself through a manifest file. The manifest is the contract between the module and the platform. The platform trusts the manifest. The trust pipeline verifies that the module honors it.
+
+### 11.1 Full Manifest Structure
+
+```json
+{
+  "id": "voice-hub",
+  "name": "Voice AI Hub",
+  "version": "1.2.0",
+  "developer": {
+    "id": "dev_aiconnected",
+    "name": "aiConnected",
+    "verified": true
+  },
+  "description": "AI-powered voice call management, transcription, and analysis",
+  "category": "communication",
+  "tags": ["voice", "calls", "transcription", "ai", "outbound", "inbound"],
+
+  "routes": [
+    "/voice",
+    "/voice/calls",
+    "/voice/calls/:id",
+    "/voice/profiles",
+    "/voice/settings"
+  ],
+
+  "sidebar": {
+    "label": "Voice",
+    "icon": "phone",
+    "section": "communication",
+    "position": 1
+  },
+
+  "permissions": [
+    "contacts.read",
+    "contacts.write",
+    "events.emit",
+    "events.subscribe",
+    "workspace.read"
+  ],
+
+  "data_schemas": [
+    "voice_calls",
+    "voice_profiles",
+    "voice_transcripts"
+  ],
+
+  "capabilities": {
+    "inputs": [
+      {
+        "name": "contact_id",
+        "type": "string",
+        "required": true,
+        "description": "The contact record to associate with this call"
+      },
+      {
+        "name": "script",
+        "type": "string",
+        "required": false,
+        "description": "Optional call script for AI-guided calls"
+      },
+      {
+        "name": "voice_profile_id",
+        "type": "string",
+        "required": false,
+        "description": "The voice profile to use for AI voice synthesis"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "call_record",
+        "type": "VoiceCall",
+        "description": "Full call record including metadata"
+      },
+      {
+        "name": "transcript",
+        "type": "Transcript",
+        "description": "Full text transcript of the call"
+      },
+      {
+        "name": "call_status",
+        "type": "enum",
+        "values": ["completed", "no_answer", "voicemail", "failed"],
+        "description": "Outcome status of the call"
+      }
+    ],
+    "events_emitted": [
+      "voice.call.initiated",
+      "voice.call.started",
+      "voice.call.completed",
+      "voice.call.failed",
+      "voice.transcript.ready"
+    ],
+    "events_consumed": [
+      "contact.updated",
+      "automation.voice.trigger",
+      "knowledge_base.updated"
+    ]
+  },
+
+  "pricing": {
+    "model": "subscription",
+    "tiers": [
+      { "name": "Starter", "price_monthly": 89, "limits": { "calls_per_month": 500 } },
+      { "name": "Pro", "price_monthly": 199, "limits": { "calls_per_month": 2000 } },
+      { "name": "Unlimited", "price_monthly": 349, "limits": {} }
+    ]
+  },
+
+  "dependencies": [],
+
+  "compatibility": {
+    "min_platform_version": "1.0.0",
+    "tested_with": ["chat-hub@2.1.0", "knowledge-base@1.0.0", "automation-engine@3.2.0"]
+  }
+}
+```
+
+### 11.2 Manifest Enforcement
+
+The manifest is not documentation. It is a contract that the trust pipeline actively verifies. If a module emits an event not declared in `events_emitted`, the certification fails. If a module attempts to access a permission not declared in `permissions`, the API gateway blocks the request. The manifest defines the module's allowed behavior. Everything outside the manifest is blocked by default.
+
+---
+
+## 12. The Visual Builder
+
+The visual builder is one of the platform's most strategically important systems. It solves a problem that has historically forced a choice between two bad options: hire developers for every UI change, or use a separate no-code tool that doesn't integrate with the platform. The aiConnected visual builder eliminates that choice.
+
+### 12.1 What It Is
+
+The visual builder is a native, embedded drag-and-drop interface for composing React component layouts. It is Elementor, but for React, built directly into the platform itself. It is not a third-party tool that the platform integrates with. It is not a separate application. It is a first-class feature of the core shell.
+
+### 12.2 The Core Insight
+
+Elementor works because it treats a library of pre-built widgets as drag-and-drop primitives. The user doesn't write HTML. They drag a widget, configure its properties through a visual panel, and the output is real page markup.
+
+The aiConnected visual builder applies this exact model to React components. The shadcn/ui library and any other registered component library become the widget library. A developer drags a component onto a canvas, configures its props through a visual panel, and the output is real React component code.
+
+The user never writes code. The output is code. The distinction matters because the output can be maintained, version-controlled, and deployed like any other code in the system.
+
+### 12.3 Foundation Technology
+
+**Craft.js** — an open-source React drag-and-drop page builder framework specifically designed for this use case. It is not a third-party SaaS. It is an open-source library that gets embedded directly into the platform. It does not have a vendor relationship. It does not have a pricing tier. It does not have API limits. The platform owns its implementation completely.
+
+### 12.4 Component Registration
+
+Any component can be registered with the visual builder. Registration makes the component available as a drag-and-drop primitive in the builder's component panel.
+
+```typescript
+// Registering a shadcn Button component with the builder
+registerBuilderComponent({
+  id: 'shadcn-button',
+  name: 'Button',
+  category: 'Actions',
+  component: Button,
+  defaultProps: {
+    variant: 'default',
+    size: 'default',
+    children: 'Button Text'
+  },
+  propSchema: {
+    variant: {
+      type: 'enum',
+      options: ['default', 'destructive', 'outline', 'secondary', 'ghost', 'link'],
+      label: 'Variant'
+    },
+    size: {
+      type: 'enum',
+      options: ['default', 'sm', 'lg', 'icon'],
+      label: 'Size'
+    },
+    children: {
+      type: 'string',
+      label: 'Label'
+    }
+  }
+})
+```
+
+The entire shadcn/ui library is registered at platform initialization. When a module developer imports an external component library, they can register those components as well. The builder's component panel grows with every registered library.
+
+### 12.5 Scope and Limitations
+
+The visual builder handles UI composition — what components are on a page, how they are arranged, what their visual properties are. It does not handle business logic. Event handlers, API calls, data fetching, state management — these are written in code by module developers, not configured in the visual builder. The builder is for layout. Code is for behavior.
+
+This is the correct division. Attempting to make business logic visual produces systems that are harder to maintain than code, not easier. The builder does one thing and does it well.
+
+### 12.6 Who Uses It
+
+**Module developers** use it to compose the UI of their module without writing layout code from scratch.
+
+**Agency admins** use it to customize the layout and presentation of their white-label environment within the permissions their plan allows.
+
+**Power users** (with appropriate permissions) may use it to customize their workspace interface within the constraints the agency has set.
+
+Each tier can only customize within the boundaries set by the tier above it. An agency admin cannot change core shell layout. A power user cannot change module layout that the agency has locked.
+
+---
+
+## 13. The Container Architecture
+
+Container isolation is the architectural decision that makes everything else sustainable. It is not optional. Every module — first-party and third-party — runs in its own container. No exceptions.
+
+### 13.1 What a Container Provides
+
+Each module container is an isolated compute environment with:
+
+- Its own CPU and memory allocation
+- Its own filesystem
+- Its own process space
+- Its own network namespace
+- Outbound network access only through the API gateway
+- No direct access to any other container's filesystem, memory, or processes
+
+### 13.2 The Isolation Guarantee
+
+**Failure isolation:** If a module's container crashes, throws an unhandled exception, or runs out of memory, the container stops. The platform detects the failure, marks the module as temporarily unavailable, queues any events directed at it, and attempts restart. No other module is affected. The core shell continues operating. Other modules continue operating.
+
+**Security isolation:** A security vulnerability in one module cannot be exploited to access another module's container or the core shell's environment. The attack surface of a compromised module is bounded by its container. An attacker who compromises a video avatar module cannot use that foothold to access the voice module's data or the CRM.
+
+**Resource isolation:** A module that has a memory leak, enters an infinite loop, or suddenly receives 10x its normal traffic load consumes resources from its own allocation. It cannot starve other modules. Resource quotas are enforced per container by the container orchestration layer.
+
+**Deployment isolation:** Updating, rolling back, or restarting one module requires no coordination with any other module. A new version of the chat module can be deployed without touching the voice module, the automation engine, or the core shell.
+
+### 13.3 Container Communication
+
+Containers do not communicate with each other directly. All cross-container communication routes through the API gateway. A module that needs data from another module makes an authenticated API request through the gateway. The gateway verifies that the requesting module has permission to access the requested capability, routes the request, and returns the response. The modules never establish a direct connection.
+
+This means that if Module A needs something from Module B, Module B must have declared that capability in its manifest, and Module A must have permission to call it. Undeclared cross-module access is structurally impossible.
+
+### 13.4 Container Orchestration
+
+**Dokploy** manages container deployment, health monitoring, and restart logic. Each module is a Dokploy service. New versions are deployed as new containers. Traffic is cut over when the new container passes health checks. Old containers are terminated only after successful cutover. Zero-downtime deployments are the default.
+
+---
+
+## 14. The API Gateway
+
+The API gateway is the traffic controller for the entire platform. Nothing moves between containers, between modules, or between the platform and the outside world without passing through it.
+
+### 14.1 Responsibilities
+
+**Request routing** — Incoming requests are routed to the appropriate module container based on the route registry maintained by the shell.
+
+**Authentication enforcement** — Every request carries an authentication context. The gateway verifies it before the request reaches any module. Unauthenticated requests are rejected at the gateway. Modules receive only authenticated requests and trust the auth context they receive.
+
+**Permission enforcement** — Cross-module requests are checked against the requesting module's declared permissions and the target module's declared capability contracts. If Module A requests a capability from Module B that Module A has not declared permission for, the gateway rejects the request before it reaches Module B.
+
+**Rate limiting** — Each module has configurable rate limits. A module experiencing high traffic cannot consume gateway capacity that would affect other modules. Limits are enforced per module, per tenant, and per endpoint.
+
+**Activity logging** — Every request that passes through the gateway is logged with timestamp, source, destination, latency, status code, and workspace scope. This log is the platform's audit trail. Security reviews, performance investigations, and billing reconciliation all draw from it.
+
+**Failure handling** — When a request targets a module whose container is unavailable, the gateway returns a structured failure response immediately rather than hanging. Calling modules receive a clear signal that the capability is temporarily unavailable and can handle it gracefully.
+
+---
+
+## 15. The Capability Registry
+
+The capability registry is the living directory of every capability that every approved module has declared and published. It is the foundation of the compounding development model.
+
+### 15.1 What the Registry Contains
+
+For every approved and published module, the registry stores:
+
+- **Module identity** — id, name, version, developer, certification date
+- **Full capability contract** — all declared inputs, outputs, and events as specified in the manifest
+- **Integration documentation** — auto-generated from the manifest, supplemented by developer-provided examples
+- **Usage statistics** — how many tenants have installed this module, how many API calls it receives
+- **Dependency map** — which other modules depend on this module's capabilities
+- **Developer reputation score** — the developer's standing on the platform based on module quality, review participation, and community contribution
+- **Compatibility matrix** — which platform versions and other module versions this module has been tested with
+
+### 15.2 How Developers Use It
+
+A developer building a new module browses the registry before writing a line of code. The registry tells them everything that already exists. If a video avatar module is in the registry, its full API contract is documented. The developer sees exactly what inputs it accepts, what outputs it produces, and what events it emits. They can design their module to consume those outputs without knowing anything about the video avatar module's implementation.
+
+The registry is the developer's starting point, not the documentation. They are not starting from zero. They are starting from everything that has already been built.
+
+### 15.3 The Compounding Effect
+
+Each module added to the registry makes the platform more valuable to every future developer. This is not a gradual effect. It is exponential.
+
+**Year one:** Voice, Chat, Knowledge Base, Automations, CRM, Reporting. A developer building a new module has these primitives available.
+
+**Year two:** Video Avatars, Advanced Analytics, Email Marketing, Booking, Forms, Surveys are added by third-party developers. Now a developer building an outreach tool has voice, video, email, booking, and forms as primitives. They are not building an outreach tool. They are composing one from existing capabilities.
+
+**Year three:** A developer builds a campaign orchestration module that connects voice, video, email, booking, and analytics into a single workflow. This becomes a primitive. A developer building an AI coaching module now has an entire campaign infrastructure to build on.
+
+Each module makes the next module easier to build and more capable upon arrival. The registry compounds.
+
+---
+
+## 16. The Developer Trust Pipeline
+
+The trust pipeline is the system by which third-party modules earn the right to be published to the registry, installed by tenants, and built upon by other developers. It has three stages. Each stage has a specific responsibility. No stage does another stage's job.
+
+### 16.1 Stage 0 — Automated Contract Validation
+
+**Who runs it:** Automated systems. No human involvement.
+
+**When it runs:** Immediately upon submission.
+
+**What it does:**
+
+- Parses and validates the manifest for syntactic correctness and completeness
+- Deploys the module to a throwaway sandbox environment
+- Sends test requests matching the declared input schema and verifies the outputs match the declared output schema
+- Fires conditions that should trigger the declared events and verifies the events fire with the declared payload structure
+- Checks that no undeclared events are emitted
+- Verifies that the container builds and runs cleanly
+- Runs a baseline security scan for known vulnerability patterns
+- Checks that the module does not attempt to access resources outside its declared permissions
+
+**Time to complete:** Minutes.
+
+**Outcome:**
+
+- **Pass** — advances to Stage 1
+- **Fail** — returned to developer with specific, actionable failure report. No human time was spent.
+
+The purpose of Stage 0 is to filter out every submission that is technically broken before any human being looks at it. A developer who submits a module with a manifest that doesn't match its actual behavior receives automated feedback within minutes and can fix and resubmit without waiting for a queue.
+
+---
+
+### 16.2 Stage 1 — Community Sandbox
+
+**Who runs it:** The existing approved developer community.
+
+**When it runs:** After Stage 0 pass. The module enters a public queue visible to all platform developers.
+
+**Duration:** 14 days minimum, 30 days for modules that declare complex capabilities or dependencies on multiple other modules.
+
+**What is visible:**
+
+- Module name, description, category, tags
+- Developer identity and platform reputation
+- Declared capability contract (inputs, outputs, events) — the API surface
+- Developer's history on the platform (previously approved modules, review participation record)
+
+**What is never visible:**
+
+- Source code
+- Internal implementation
+- Container configuration
+- Any data the module has processed
+
+**What community developers can do:**
+
+_Integration testing:_ Pull the module into a sandbox environment alongside their own modules. Test whether it behaves as declared when called from their module. Verify that events it emits can be consumed correctly. Test edge cases and failure conditions.
+
+_Compatibility verification:_ Specifically test whether the module works correctly with modules they have already built and that other developers depend on. A developer whose module is downstream of the submitted module has a direct incentive to test this thoroughly.
+
+_Behavioral review:_ Assess whether the module does what its description claims, whether its capability contract is accurate, and whether its documentation is sufficient for another developer to build upon it.
+
+**Voting:**
+
+Community developers cast weighted votes. Votes are not binary approve/reject. They are structured assessments:
+
+```text
+Contract Accuracy: Does it do what the manifest says? (1–5)
+Integration Quality: Does it work correctly with other modules? (1–5)
+Documentation Quality: Is the API surface documented well enough to build on? (1–5)
+Recommendation: Approve / Return for Revision / Reject
+Written rationale: Required for any vote
+```
+
+**Vote weighting:**
+
+Votes carry different weight based on the voter's standing:
+
+- Base weight: 1.0 for any approved developer
+- \+0.5 for each approved module the developer has published (up to \+2.0)
+- \+1.0 if the voter's module directly interfaces with the submitted module (declares it as a dependency or consumes its events)
+- \+0.5 for demonstrated community review participation (has reviewed at least 5 previous submissions)
+
+A developer who has 4 approved modules and whose work depends on the submitted module casts a vote worth 3.5x the base weight. This is appropriate. They have the most skin in the game.
+
+**Sandbox outcomes:**
+
+- **Community Approved** — weighted average score meets or exceeds threshold AND a supermajority of weighted votes recommend approval. Advances to Stage 2.
+- **Returned for Revision** — specific documented issues prevent approval. Developer receives consolidated feedback and may resubmit after addressing. Previous Stage 0 pass carries over if no manifest changes are required.
+- **Rejected** — reserved for fundamental problems that cannot be resolved through revision: persistent misrepresentation of capabilities, hostile behavior in the community review process, or a module that is fundamentally incompatible with the platform's architecture.
+
+---
+
+### 16.3 Stage 2 — aiConnected Certification Review
+
+**Who runs it:** aiConnected's platform team.
+
+**When it runs:** After Stage 1 community approval.
+
+**Why Stage 1 makes this sustainable:** The community filters for quality and behavioral correctness. aiConnected's team reviews only modules that already have social proof and community-validated functionality. The volume reaching Stage 2 is a fraction of total submissions. The team's time is spent on high-confidence candidates, not raw unvetted submissions.
+
+**What Stage 2 covers:**
+
+_Security audit:_
+
+- Deep analysis of the module's behavior in isolation and in combination with other modules
+- Verification that the module does not leak data across tenant boundaries
+- Testing for common attack vectors: injection, unauthorized data access, event spoofing
+- Review of any external API calls the module makes (endpoints, data sent, authentication handling)
+
+_Stress testing:_
+
+- Performance under load — does the module maintain its declared behavior at 10x normal traffic?
+- Behavior at failure thresholds — does the module fail gracefully or in ways that could affect dependent modules?
+- Recovery testing — does the module return to correct behavior after restart?
+
+_Compliance review:_
+
+- Data handling review — does the module handle contact data, payment data, or other sensitive categories appropriately?
+- Privacy requirements — is data retained only as long as declared?
+- Logging review — does the module log appropriately without logging sensitive data?
+
+_Final contract verification:_
+
+- Confirms that the manifest accurately represents behavior at production scale
+- Verifies that version compatibility declarations are accurate
+- Reviews the dependency map for any unstated dependencies
+
+**Certification outcomes:**
+
+- **Certified — Full Registry Publication** — all checks pass. The module's capabilities are published to the capability registry. Tenants can install it. Other developers can build on it.
+- **Certified — Limited Publication** — module is functional and safe for tenant installation, but specific minor issues prevent registry publication. Available in the marketplace but capabilities not listed in the registry until issues are resolved.
+- **Returned** — specific issues identified that were not caught in Stage 1. Community approval does not carry over. Module must return to Stage 1 after developer addresses the issues. aiConnected provides a detailed remediation guide.
+- **Rejected** — security failure, compliance failure, or fundamental misrepresentation. Module is barred from resubmission until developer submits a remediation plan that aiConnected approves.
+
+---
+
+### 16.4 Post-Certification: Registry Publication
+
+Upon full certification:
+
+1. The module's capability contract is written to the capability registry
+2. The module appears in the platform marketplace
+3. The developer's revenue share is activated
+4. Other developers can declare dependencies on this module's capabilities
+5. The module enters the ongoing monitoring program — performance, security signals, and community feedback continue to be tracked post-publication
+
+---
+
+## 17. IP Protection and Code Privacy
+
+IP protection is not a policy. It is architectural. The platform is designed so that a developer's source code is inaccessible to anyone — other developers, tenants, aiConnected staff — by default and by structure.
+
+### 17.1 The Deployment Model
+
+Developers do not submit source code to aiConnected. They deploy a built container image to the platform's infrastructure. The container image contains compiled, bundled, or otherwise processed code — not raw source files. Even if container filesystem access were possible (it is not), the code would not be in a human-readable form that could be copied and understood.
+
+The platform's infrastructure hosts the container. The developer owns the source code. aiConnected never receives it, never stores it, and has no mechanism to request it.
+
+### 17.2 What the Community Sees
+
+During Stage 1 review, community developers see:
+
+- The declared capability contract from the manifest
+- The module's behavior through its API surface
+- Events it emits under test conditions
+- Its documentation
+
+They interact with the module as a black box. They evaluate its behavior, not its implementation. This is the same relationship any developer has with Stripe, Twilio, or any other API they consume. They know what it does. They do not know how it does it.
+
+### 17.3 The Cannibalisation Prevention
+
+The IP protection architecture directly solves the cannibalisation problem. A developer who builds a video avatar module and publishes it to the platform exposes only their API surface. Another developer cannot see their implementation, copy their proprietary approach, or replicate their competitive advantage from the platform's review process. They can build _with_ the module. They cannot build _from_ the module's implementation.
+
+Developers compete on quality, reliability, performance, and innovation. Not on who can copy whose code fastest.
+
+### 17.4 aiConnected's Access
+
+aiConnected's Stage 2 certification review requires access to evaluate security properties that cannot be assessed from the outside. This access is:
+
+- Scoped specifically to the certification review process
+- Conducted in an isolated review environment
+- Not retained after certification is complete
+- Subject to a developer agreement that governs its use
+
+The developer agreement makes explicit what aiConnected may and may not do with access during the review process. This agreement is a standard term of the developer program, not a negotiable condition.
+
+---
+
+## 18. The Community Governance Model
+
+The developer community is not a support forum or a feedback channel. It is a governing body with real authority over the module ecosystem. This authority is earned, weighted, and bounded.
+
+### 18.1 Why Community Governance Works Here
+
+Community governance models frequently fail because participants have no skin in the game. A random internet user voting on whether a Chrome extension should be approved has no meaningful stake in the outcome.
+
+The aiConnected developer community has maximum stake in the outcome. Their own modules depend on the quality of the registry. A bad module that gets approved and corrupts shared data, emits malformed events, or behaves inconsistently breaks their modules. They have a direct financial and reputational incentive to keep the registry clean.
+
+This alignment is what makes community governance sustainable here where it fails elsewhere.
+
+### 18.2 The Contribution Economy
+
+Governance participation is rewarded. Developers who contribute to the review process earn:
+
+**Platform credits** — redeemable against usage fees, infrastructure costs, and marketplace fees. A developer who completes 10 substantive reviews in a quarter earns credits that reduce their operating costs.
+
+**Reputation score increases** — reputation affects module visibility in the marketplace. Developers with higher reputation scores have their modules surfaced more prominently in searches and recommendations. Contributing to the community builds the reputation that makes your own work more successful.
+
+**Governance influence** — developers who consistently contribute high-quality reviews, whose assessments prove accurate over time, and who demonstrate deep platform knowledge earn increased vote weight. The community surfaces its own most qualified voices through demonstrated quality.
+
+### 18.3 The Technical Council
+
+The contribution economy naturally produces a cohort of highly active, highly knowledgeable developers. Over time this cohort becomes the platform's technical council — the people who understand the system most deeply, have the most credibility, and have demonstrated the most commitment to its quality.
+
+aiConnected does not appoint this council. The platform surfaces it. The developers who consistently produce the best reviews, whose approved modules become the most widely built-upon, and who contribute most substantively to the community earn their place in it through demonstrated quality.
+
+This council advises aiConnected on platform direction, API specification changes, and developer program policy. Their input is structured and weighted. The platform belongs to everyone who builds it together.
+
+### 18.4 The Boundary of Community Authority
+
+The community governs module quality and behavioral correctness. aiConnected governs security, compliance, and platform integrity. These are distinct domains and neither overrides the other.
+
+A module that the community loves but that fails aiConnected's security review does not get certified. A module that passes all security checks but that the community identifies as behaving inconsistently with its declared contract does not advance to Stage 2. Both checks are required. Neither is optional.
+
+---
+
+## 19. The White-Label Tenant Model
+
+### 19.1 The Agency Model
+
+aiConnected is sold to agencies. Agencies are the direct customer. The agency deploys aiConnected as their own branded product and sells access to their clients as sub-accounts. The agency's clients never interact with aiConnected directly. They interact with the agency's platform, which happens to be built on aiConnected.
+
+This is the GoHighLevel model applied to a platform that can be extended at the code level.
+
+### 19.2 Tenant Hierarchy
+
+```text
+aiConnected (platform)
+  └── Agency (white-label deployment)
+        └── Sub-account (agency's client)
+              └── End users (client's customers)
+```
+
+Each layer has its own branding, its own domain, its own permission scope, and its own configuration — but all of it runs on the same underlying infrastructure, governed by the same RLS policies, and benefiting from the same module ecosystem.
+
+### 19.3 What Agencies Control
+
+- Full white-label branding via TweakCN
+- Custom domain
+- Which modules are available to their sub-accounts
+- What sub-account admins can customize within their environment
+- Pricing and billing structure for their sub-accounts (separate from the aiConnected-to-agency billing)
+- Which features are available at each of their own pricing tiers
+
+### 19.4 What Agencies Cannot Control
+
+- Core security policies
+- RLS enforcement
+- Trust pipeline standards
+- Module certification requirements
+- The capability registry
+
+These are platform-level concerns that no tenant customization can override.
+
+---
+
+## 20. The Design System
+
+### 20.1 shadcn/ui as Foundation
+
+shadcn/ui is the platform's component system. Every interface element — in the shell, in every first-party module, and as the default in every third-party module — is built from shadcn/ui components. This produces a visually consistent platform regardless of how many modules are installed or how many different developers built them.
+
+shadcn/ui was chosen specifically because it is not a component library in the traditional sense. It is a collection of component source code that becomes part of the project. There is no dependency on an external package that can break on an update. The components are owned. They are customizable at the code level. They integrate with the visual builder natively.
+
+### 20.2 TweakCN for Tenant Theming
+
+TweakCN is the theming layer on top of shadcn/ui. Every visual property exposed by TweakCN — colors, typography, border radius, shadow intensity, spacing scale, animation easing — is configurable per tenant.
+
+A tenant's TweakCN configuration is loaded at the session level and applied globally via CSS variables. Every shadcn/ui component inherits the tenant's theme automatically. A module developer does not write tenant-specific styles. They write components. The theme engine handles the rest.
+
+### 20.3 What Module Developers Do and Don't Handle
+
+**Do handle:**
+
+- Component selection for their module's interfaces
+- Layout composition (ideally through the visual builder)
+- Module-specific interaction patterns
+
+**Do not handle:**
+
+- Colors
+- Typography
+- Border radius
+- Shadows
+- Spacing scale
+- Dark/light mode switching
+- Responsive breakpoints
+
+All of these are handled by the design system and the theme engine. The developer focuses on functionality.
+
+---
+
+## 21. The Revenue and Developer Economy
+
+### 21.1 Platform Revenue Streams
+
+**Agency subscriptions** — recurring monthly or annual fees for platform access, sub-account capacity, and baseline module access.
+
+**Module marketplace** — per-module subscription fees or usage-based fees set by module developers. The platform takes a percentage. The developer earns the remainder.
+
+**Usage-based components** — high-compute operations (AI inference, video rendering, large-scale automation) billed by consumption against a prepaid credits system.
+
+**Developer program** — certification fees for Stage 2 review (waived for initial launch period), infrastructure fees for container hosting.
+
+### 21.2 Developer Revenue
+
+Third-party developers earn from:
+
+**Direct module subscriptions** — tenants pay to install the module. Developers receive their share automatically through the platform's billing system. They do not build billing infrastructure. They declare their pricing in their manifest.
+
+**Usage fees** — if a module is priced by usage (per call, per render, per document processed), usage is tracked by the platform and disbursed on the developer's configured schedule.
+
+**Compounding royalties** — when another developer builds a module that declares a dependency on your module, and that downstream module generates revenue, the upstream developer earns a royalty on that downstream usage. Development compounds financially, not just technically.
+
+### 21.3 The Compounding Royalty in Practice
+
+Developer A builds a video avatar module. It earns \$5,000/month from tenant subscriptions.
+
+Developer B builds a sales outreach module that depends on Developer A's video avatar module. It earns \$12,000/month.
+
+Developer A earns a royalty on Developer B's usage of their capability. Developer B's module being successful makes Developer A's module more valuable. Their incentives are aligned. The platform benefits from both.
+
+This royalty model does not exist at this depth in any current platform. It is one of aiConnected's structural differentiators.
+
+### 21.4 Community Review Compensation
+
+Developers who participate in Stage 1 reviews earn:
+
+- Platform credits proportional to review quality (assessed post-certification by comparing review recommendations to final outcomes)
+- Reputation score increases for consistently accurate reviews
+- Increased vote weight for demonstrated accuracy over time
+
+Review quality is measured, not just participation. A developer who rubber-stamps everything earns nothing. A developer whose reviews consistently identify real issues that Stage 2 confirms earns significantly.
+
+---
+
+## 22. The Compounding Development Model
+
+This section deserves its own treatment because it is the core of the platform's long-term value proposition. Everything else — containers, manifests, the trust pipeline, the registry — exists in service of this model.
+
+### 22.1 The Problem with Current Platforms
+
+Every developer on every existing platform starts from approximately the same place. They have the platform's APIs. They have their own code. Everything else they need, they build from scratch.
+
+A developer building a video outreach tool on Twilio's platform in 2024 builds essentially the same voice infrastructure that a developer built in 2019. There is no accumulation. There is no compounding. Every team rediscovers the same solutions.
+
+### 22.2 The Compounding Model
+
+On aiConnected, every approved module is a primitive available to every future developer. The platform accumulates capability over time. Developers do not rediscover. They build forward.
+
+```text
+Month 1:  Voice, Chat, Knowledge Base, Automations
+Month 6:  + Video Avatars, Forms, Surveys, Booking, Email Marketing
+Month 12: + Campaign Orchestration, AI Coaching, Advanced Analytics, Reputation Management
+Month 24: + [Capabilities that nobody has imagined yet, built on top of everything above]
+```
+
+A developer who joins in Month 24 has 24 months of accumulated capability as their starting point. They build something in a week that would have taken a team months to build in Month 1 because all the primitives exist. The platform's value to each new developer increases with every module that was ever approved.
+
+### 22.3 The Network Effects
+
+Three distinct network effects operate simultaneously:
+
+**Developer network effect** — more developers → more modules → more capabilities → platform is more attractive to more developers.
+
+**Tenant network effect** — more capabilities → platform is more valuable to agencies → more agencies deploy it → more revenue → more investment in platform quality → more attractive to developers.
+
+**Compounding capability effect** — more modules → each new module can build on more → new modules are higher-value upon arrival → platform quality increases with scale.
+
+These three effects reinforce each other. The platform gets better faster as it grows, not slower.
+
+### 22.4 The Governance That Keeps Compounding Healthy
+
+The compounding model breaks if low-quality modules corrupt the registry. A module that emits malformed events poisons every module downstream that depends on those events. A module that handles shared entity data incorrectly corrupts the contact records that every other module relies on.
+
+The trust pipeline exists specifically to protect the compounding. Stage 0 filters out technical failures. Stage 1 filters for behavioral correctness and real-world integration quality. Stage 2 filters for security and compliance. Only modules that pass all three stages get added to the compounding stack.
+
+This is not bureaucracy. It is the maintenance of the platform's core asset.
+
+---
+
+## 23. Technical Stack Reference
+
+| System | Technology | Rationale |
+| --- | --- | --- |
+| Frontend framework | Next.js 14 | App Router, server components, edge functions |
+| Monorepo management | Turborepo | Parallel builds, shared packages, cache |
+| UI component system | shadcn/ui | Owned source, visual builder native integration |
+| Tenant theming | TweakCN | Per-tenant CSS variable configuration |
+| Visual builder engine | Craft.js | Open-source, embeddable, React-native |
+| Database | Supabase (PostgreSQL) | RLS, realtime, auth, edge functions |
+| Container orchestration | Dokploy | Self-hosted, DigitalOcean native |
+| Automation / workflow | n8n (self-hosted) | 2000\+ existing workflows, full ownership |
+| Event bus | Supabase Realtime \+ events table | Persistent log \+ real-time dispatch |
+| API gateway | Next.js middleware \+ edge functions | Custom, no vendor dependency |
+| Authentication | Supabase Auth | Integrated with data layer |
+| Infrastructure | DigitalOcean | Existing relationship, Dokploy optimized |
+| Developer package management | npm (private registry) | Shared packages across monorepo |
+
+---
+
+## 24. Build Sequence and Priorities
+
+The platform is built in layers. Each layer must be stable before the next layer is started. The sequence is not negotiable. Skipping layers produces the fragmentation that made the first version unmaintainable.
+
+### Phase 1 — The Foundation
+
+_Nothing else is built until this is complete and stable._
+
+1. Core shell with shadcn/ui and TweakCN
+2. Supabase data layer with RLS and shared entity schemas
+3. Authentication and tenant provisioning
+4. Module registry (data model and shell integration)
+5. Event system (events table, dispatch, subscription)
+6. API gateway (routing, auth enforcement, logging)
+7. Container orchestration configuration (Dokploy)
+8. Basic navigation shell that reads from module registry
+
+**Completion criteria:** One first-party module can be installed into the shell, have its routes registered, emit an event, and have that event received by a second module. If this works cleanly and repeatably, the foundation is complete.
+
+### Phase 2 — First Module Port
+
+_Validate the plugin pattern with a real module._
+
+Port one existing module — Voice or Chat — to the new module manifest specification. Deploy it as a container. Install it into the shell through the registry. Verify that the full module lifecycle works correctly.
+
+**Completion criteria:** The ported module functions identically to its previous version, installs and uninstalls cleanly, and communicates correctly through the event system.
+
+### Phase 3 — Visual Builder
+
+_Build the native interface composition tool._
+
+Embed Craft.js. Register all shadcn/ui components with the builder. Build the component panel, canvas, and props editor. Verify that the builder outputs usable React components.
+
+**Completion criteria:** A non-developer can compose a functional page layout using only the visual builder.
+
+### Phase 4 — Developer Program Infrastructure
+
+_Build the trust pipeline and registry._
+
+Stage 0 automated validation. Sandbox environment for Stage 1. Community review interface. Capability registry database and API. Stage 2 review workflow. Marketplace listing interface.
+
+**Completion criteria:** A test third-party module can be submitted, pass all three stages, and appear in the registry with its capabilities correctly published.
+
+### Phase 5 — Full Module Migration
+
+_Port all existing first-party modules._
+
+With the foundation, visual builder, and trust pipeline all verified, migrate all existing aiConnected modules to the new specification.
+
+### Phase 6 — Developer Launch
+
+_Open the platform to third-party developers._
+
+Publish the module specification. Launch the developer program. Open Stage 0 submissions.
+
+---
+
+## 25. The Founding Promise
+
+Every decision made in building this platform — every architectural choice, every policy decision, every developer agreement, every hiring decision, every infrastructure investment — should serve one outcome:
+
+**The platform gets more powerful with every module added. More valuable to every developer who joins. More capable for every tenant who deploys it. And structurally impossible to hollow out, corrupt, or turn against the people who build it.**
+
+No single point of failure. No single gatekeeper who can block progress. No ceiling on what can be built. No floor on who is allowed to build it.
+
+The compounding development model is the platform's soul. The container architecture is its immune system. The trust pipeline is its conscience. The capability registry is its memory. And the developer community is its governing body.
+
+This document is the specification of that system. When there is doubt, return here.
+
+---
+
+_aiConnected Platform Architecture Specification v2.0_ _Drafted: March 2026_ _Classification: Founding Document — Active_ _Author: Bob Hunter, Founder — aiConnected_

@@ -1,0 +1,121 @@
+---
+title: "Paper"
+description: "The canonical HTTP API for aiConnected Paper, including auth, client management, document generation, scheduling, agency settings, and admin routes."
+---
+## Contract status
+
+`Canonical route contract`
+
+The Paper developer PRD contains an extensive concrete API specification. This is the most route-complete module contract in the repository.
+
+## Source document
+
+- [paper developer PRD](/docs/knowledge-base/aiconnected-apps-and-modules/modules/aiConnected-paper/paper-developer-prd)
+
+## Base URLs
+
+The PRD defines these deployment patterns:
+
+| Environment | Base URL |
+|---|---|
+| Production | `https://api.contentstrategist.com/api/v1` |
+| Agency subdomain | `https://{agency-slug}.contentstrategist.com/api/v1` |
+| Custom domain | `https://{custom-domain}/api/v1` |
+
+## Authentication routes
+
+| Method | Route |
+|---|---|
+| `POST` | `/api/v1/auth/login` |
+| `POST` | `/api/v1/auth/refresh` |
+| `POST` | `/api/v1/auth/logout` |
+| `GET` | `/api/v1/auth/me` |
+| `POST` | `/api/v1/auth/password/forgot` |
+| `POST` | `/api/v1/auth/password/reset` |
+
+The PRD also documents refresh-token cookie behavior for login, refresh, and logout flows.
+
+## Client management routes
+
+| Method | Route |
+|---|---|
+| `GET` | `/api/v1/clients` |
+| `POST` | `/api/v1/clients` |
+| `GET` | `/api/v1/clients/{client_id}` |
+| `PUT` | `/api/v1/clients/{client_id}` |
+| `PUT` | `/api/v1/clients/{client_id}/branding` |
+| `POST` | `/api/v1/clients/{client_id}/branding/logo` |
+| `DELETE` | `/api/v1/clients/{client_id}` |
+
+## Document generation routes
+
+| Method | Route |
+|---|---|
+| `POST` | `/api/v1/clients/{client_id}/documents/generate` |
+| `GET` | `/api/v1/documents/{document_id}/status` |
+| `GET` | `/api/v1/documents/{document_id}` |
+| `GET` | `/api/v1/documents/{document_id}/content` |
+| `GET` | `/api/v1/documents/{document_id}/pdf` |
+| `POST` | `/api/v1/documents/{document_id}/distribute` |
+| `GET` | `/api/v1/clients/{client_id}/documents` |
+
+The PRD also documents real-time generation updates through a WebSocket URL associated with document generation jobs.
+
+## Scheduling routes
+
+| Method | Route |
+|---|---|
+| `GET` | `/api/v1/clients/{client_id}/schedule` |
+| `POST` | `/api/v1/clients/{client_id}/schedule` |
+| `POST` | `/api/v1/clients/{client_id}/schedule/import` |
+| `PUT` | `/api/v1/clients/{client_id}/schedule/{schedule_id}` |
+| `DELETE` | `/api/v1/clients/{client_id}/schedule/{schedule_id}` |
+| `DELETE` | `/api/v1/clients/{client_id}/schedule/batch/{batch_id}` |
+
+## Template routes
+
+| Method | Route |
+|---|---|
+| `GET` | `/api/v1/templates` |
+| `GET` | `/api/v1/templates/{template_code}` |
+
+## Agency routes
+
+| Method | Route |
+|---|---|
+| `GET` | `/api/v1/agency` |
+| `PUT` | `/api/v1/agency` |
+| `PUT` | `/api/v1/agency/branding` |
+| `POST` | `/api/v1/agency/branding/logo` |
+| `PUT` | `/api/v1/agency/api-keys` |
+| `POST` | `/api/v1/agency/api-keys/test` |
+| `GET` | `/api/v1/agency/api-keys/list` |
+| `POST` | `/api/v1/agency/api-keys` |
+| `DELETE` | `/api/v1/agency/api-keys/{key_id}` |
+| `POST` | `/api/v1/agency/custom-domain` |
+| `POST` | `/api/v1/agency/custom-domain/verify` |
+| `GET` | `/api/v1/agency/team` |
+| `POST` | `/api/v1/agency/team` |
+| `PUT` | `/api/v1/agency/team/{user_id}` |
+| `DELETE` | `/api/v1/agency/team/{user_id}` |
+
+## Admin routes
+
+| Method | Route |
+|---|---|
+| `GET` | `/api/v1/admin/agencies` |
+| `POST` | `/api/v1/admin/agencies` |
+| `GET` | `/api/v1/admin/agencies/{agency_id}` |
+| `PUT` | `/api/v1/admin/agencies/{agency_id}` |
+| `POST` | `/api/v1/admin/agencies/{agency_id}/templates` |
+| `GET` | `/api/v1/admin/templates` |
+| `POST` | `/api/v1/admin/templates` |
+| `PUT` | `/api/v1/admin/templates/{template_id}` |
+| `GET` | `/api/v1/admin/system/stats` |
+
+## Module-specific notes
+
+- Generation can return both polling and WebSocket endpoints.
+- Webhook configuration is part of agency or client settings.
+- Document generation and distribution are asynchronous job flows.
+- The PRD includes detailed request and response examples for the routes above and should be treated as the implementation source of truth.

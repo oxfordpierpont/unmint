@@ -1,0 +1,879 @@
+---
+title: "Clean Room Specification: Artifact Panel Starter Template"
+description: "Purpose of This Document This document specifies the architecture for an artifact panel system that displays AI generated content alongside a chat interface...."
+---
+<Info>
+Normalized for Mintlify from `knowledge-base/neurigraph-memory-architecture/neurigraph-tool-references/09-Artifact-Panel-Starter-Template.mdx`.
+</Info>
+# Clean-Room Specification: Artifact Panel Starter Template
+
+## Purpose of This Document
+
+This document specifies the architecture for an **artifact panel system** that displays AI-generated content alongside a chat interface. When an AI assistant produces code, HTML, documents, diagrams, or other structured output, that content appears in a dedicated resizable side panel with live preview, code editing, and version navigation. The artifact system integrates with the chat primitives (Spec 07) and app shell (Spec 08) through tool calls. This specification enables independent implementation from scratch.
+
+---
+
+## 1. Architecture Overview
+
+### 1.1 Panel Layout
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│                        Application Shell                          │
+├────────────────────────┬─────────┬───────────────────────────────┤
+│                        │ Resize  │                               │
+│     Chat Thread        │ Handle  │     Artifact Panel            │
+│                        │  ║      │                               │
+│  ┌──────────────────┐  │  ║      │  ┌─────────────────────────┐ │
+│  │ User Message      │  │  ║      │  │  Artifact Header        │ │
+│  └──────────────────┘  │  ║      │  │  [Title] [Code|Preview] │ │
+│  ┌──────────────────┐  │  ║      │  │  [Version ●●●○○] [✕]   │ │
+│  │ Assistant Message │  │  ║      │  ├─────────────────────────┤ │
+│  │ "I've created..." │  │  ║      │  │                         │ │
+│  │ [📄 artifact ref] │←─┼──╫──────┤  │  Editor / Preview Area  │ │
+│  └──────────────────┘  │  ║      │  │                         │ │
+│  ┌──────────────────┐  │  ║      │  │  (Monaco / Sandpack /   │ │
+│  │ Composer          │  │  ║      │  │   Markdown / Image /    │ │
+│  │ [Type message...] │  │  ║      │  │   Spreadsheet)          │ │
+│  └──────────────────┘  │  ║      │  │                         │ │
+│                        │  ║      │  ├─────────────────────────┤ │
+│                        │  ║      │  │  Artifact Footer        │ │
+│                        │  ║      │  │  [Suggestions] [Export] │ │
+│                        │  ║      │  └─────────────────────────┘ │
+├────────────────────────┴─────────┴───────────────────────────────┤
+```
+
+### 1.2 Component Architecture
+
+```
+<ArtifactProvider>
+  ├── <ChatPanel>
+  │     ├── ThreadPrimitive.Messages
+  │     │     └── ArtifactReference (clickable inline card)
+  │     └── ComposerPrimitive.Root
+  │
+  ├── <ResizeHandle />
+  │
+  └── <ArtifactPanel>
+        ├── ArtifactHeader
+        │     ├── Title
+        │     ├── TabSwitcher (Code | Preview)
+        │     ├── VersionTimeline
+        │     └── CloseButton
+        ├── ArtifactContent
+        │     ├── CodeEditor (Monaco)
+        │     ├── HTMLPreview (Sandpack iframe)
+        │     ├── MarkdownPreview (remark/rehype)
+        │     ├── ImageViewer
+        │     ├── SpreadsheetEditor
+        │     └── SVGRenderer
+        └── ArtifactFooter
+              ├── SuggestionsList
+              └── ExportButton
+```
+
+---
+
+## 2. Artifact Data Model
+
+### 2.1 Core Types
+
+```typescript
+interface Artifact {
+  id: string;                          // UUID
+  title: string;                       // Display name
+  kind: ArtifactKind;                  // Content type
+  content: string;                     // Current version content
+  language?: string;                   // For code artifacts (e.g., "javascript", "python")
+  versions: ArtifactVersion[];         // Chronological version history
+  sourceMessageId: string;             // Message that created this artifact
+  sourceToolCallId: string;            // Tool call that produced it
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+type ArtifactKind = "text" | "code" | "html" | "react" | "markdown" | "svg" | "mermaid" | "image" | "sheet";
+
+interface ArtifactVersion {
+  id: string;                          // Version UUID
+  content: string;                     // Content snapshot
+  createdAt: Date;
+  description?: string;                // What changed (from AI or user edit)
+}
+```
+
+### 2.2 Artifact Reference (In-Chat Display)
+
+When the AI creates or updates an artifact, a reference card appears inline in the chat message:
+
+```typescript
+interface ArtifactReference {
+  artifactId: string;
+  title: string;
+  kind: ArtifactKind;
+  action: "created" | "updated";       // What the AI did
+  versionIndex: number;                 // Which version this references
+}
+
+// Rendered as a clickable card in the message:
+// ┌─────────────────────────────────┐
+// │ 📄 Landing Page Design          │
+// │ HTML · Created just now          │
+// │ Click to open in artifact panel  │
+// └─────────────────────────────────┘
+```
+
+---
+
+## 3. State Management
+
+### 3.1 Artifact Context
+
+```typescript
+interface ArtifactContextValue {
+  // Active state
+  activeArtifactId: string | null;
+  activeTab: "code" | "preview";
+  activeVersionIndex: number;
+
+  // Artifact registry
+  artifacts: Map<string, Artifact>;
+
+  // Actions
+  openArtifact(artifactId: string): void;
+  closeArtifact(): void;
+  setTab(tab: "code" | "preview"): void;
+  navigateVersion(index: number): void;
+  updateContent(artifactId: string, content: string): void;
+  addArtifact(artifact: Artifact): void;
+  addVersion(artifactId: string, version: ArtifactVersion): void;
+}
+
+// Provider wraps the entire layout
+function ArtifactProvider({ children }: { children: ReactNode }) {
+  const [state, dispatch] = useReducer(artifactReducer, initialState);
+
+  return (
+    <ArtifactContext.Provider value={{ ...state, ...boundActions(dispatch) }}>
+      {children}
+    </ArtifactContext.Provider>
+  );
+}
+```
+
+### 3.2 Reducer Actions
+
+```typescript
+type ArtifactAction =
+  | { type: "OPEN_ARTIFACT"; artifactId: string }
+  | { type: "CLOSE_ARTIFACT" }
+  | { type: "SET_TAB"; tab: "code" | "preview" }
+  | { type: "NAVIGATE_VERSION"; index: number }
+  | { type: "ADD_ARTIFACT"; artifact: Artifact }
+  | { type: "ADD_VERSION"; artifactId: string; version: ArtifactVersion }
+  | { type: "UPDATE_CONTENT"; artifactId: string; content: string }
+  | { type: "SET_ACTIVE_VERSION"; artifactId: string; index: number };
+
+function artifactReducer(state: ArtifactState, action: ArtifactAction): ArtifactState {
+  switch (action.type) {
+    case "OPEN_ARTIFACT":
+      return {
+        ...state,
+        activeArtifactId: action.artifactId,
+        activeTab: "preview",                    // default to preview
+        activeVersionIndex: state.artifacts.get(action.artifactId)!.versions.length - 1,
+      };
+
+    case "ADD_VERSION": {
+      const artifact = state.artifacts.get(action.artifactId)!;
+      const updatedArtifact = {
+        ...artifact,
+        content: action.version.content,
+        versions: [...artifact.versions, action.version],
+        updatedAt: action.version.createdAt,
+      };
+      const newArtifacts = new Map(state.artifacts);
+      newArtifacts.set(action.artifactId, updatedArtifact);
+      return {
+        ...state,
+        artifacts: newArtifacts,
+        activeVersionIndex: updatedArtifact.versions.length - 1,
+      };
+    }
+
+    // ... etc
+  }
+}
+```
+
+---
+
+## 4. Tool Integration
+
+### 4.1 Artifact-Creating Tools
+
+Artifacts are created and updated through AI tool calls. Define tools that the model can invoke:
+
+```typescript
+// Tool: Create a new artifact
+const createArtifactTool = {
+  name: "create_artifact",
+  description: "Create a new document, code snippet, or visual artifact that will be displayed in the artifact panel",
+  parameters: {
+    type: "object",
+    properties: {
+      title: { type: "string", description: "Artifact title" },
+      kind: {
+        type: "string",
+        enum: ["text", "code", "html", "react", "markdown", "svg", "mermaid", "image", "sheet"],
+        description: "Type of artifact to create",
+      },
+      language: {
+        type: "string",
+        description: "Programming language (for code artifacts)",
+      },
+      content: {
+        type: "string",
+        description: "The full content of the artifact",
+      },
+    },
+    required: ["title", "kind", "content"],
+  },
+};
+
+// Tool: Update an existing artifact
+const updateArtifactTool = {
+  name: "update_artifact",
+  description: "Update the content of an existing artifact, creating a new version",
+  parameters: {
+    type: "object",
+    properties: {
+      artifactId: { type: "string", description: "ID of the artifact to update" },
+      content: { type: "string", description: "The complete new content" },
+      description: { type: "string", description: "Brief description of what changed" },
+    },
+    required: ["artifactId", "content"],
+  },
+};
+```
+
+### 4.2 Tool Call → Artifact Flow
+
+```typescript
+// In the chat route handler, when AI generates a tool call:
+function handleToolCall(toolCall: ToolCall): ToolResult {
+  switch (toolCall.toolName) {
+    case "create_artifact": {
+      const { title, kind, language, content } = toolCall.args;
+      const artifact: Artifact = {
+        id: generateUUID(),
+        title,
+        kind,
+        content,
+        language,
+        versions: [{
+          id: generateUUID(),
+          content,
+          createdAt: new Date(),
+          description: "Initial version",
+        }],
+        sourceMessageId: currentMessageId,
+        sourceToolCallId: toolCall.toolCallId,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      // Save to database (see Spec 08 Document table)
+      await saveArtifact(artifact);
+
+      return {
+        artifactId: artifact.id,
+        title: artifact.title,
+        kind: artifact.kind,
+        action: "created",
+      };
+    }
+
+    case "update_artifact": {
+      const { artifactId, content, description } = toolCall.args;
+      const version: ArtifactVersion = {
+        id: generateUUID(),
+        content,
+        createdAt: new Date(),
+        description,
+      };
+
+      await addArtifactVersion(artifactId, version);
+
+      return {
+        artifactId,
+        action: "updated",
+        versionCount: (await getArtifact(artifactId)).versions.length,
+      };
+    }
+  }
+}
+```
+
+### 4.3 Client-Side Tool Result Processing
+
+When the tool result streams back to the client, the artifact context is updated:
+
+```typescript
+function useArtifactToolHandler() {
+  const { addArtifact, addVersion, openArtifact } = useArtifactContext();
+
+  // Register tool renderers with the chat system
+  const toolComponents = {
+    create_artifact: ({ result }: ToolCallContentPartProps) => {
+      useEffect(() => {
+        if (result?.artifactId) {
+          // Fetch full artifact data
+          const artifact = await fetchArtifact(result.artifactId);
+          addArtifact(artifact);
+          openArtifact(artifact.id);
+        }
+      }, [result]);
+
+      return (
+        <ArtifactReferenceCard
+          title={result?.title}
+          kind={result?.kind}
+          action="created"
+          onClick={() => openArtifact(result.artifactId)}
+        />
+      );
+    },
+
+    update_artifact: ({ result }: ToolCallContentPartProps) => {
+      useEffect(() => {
+        if (result?.artifactId) {
+          // Fetch latest version
+          const artifact = await fetchArtifact(result.artifactId);
+          addVersion(result.artifactId, artifact.versions.at(-1)!);
+          openArtifact(result.artifactId);
+        }
+      }, [result]);
+
+      return (
+        <ArtifactReferenceCard
+          title={result?.title}
+          kind={result?.kind}
+          action="updated"
+          onClick={() => openArtifact(result.artifactId)}
+        />
+      );
+    },
+  };
+
+  return toolComponents;
+}
+```
+
+---
+
+## 5. Content Renderers
+
+### 5.1 Renderer Selection
+
+```typescript
+function ArtifactContent({ artifact, tab }: { artifact: Artifact; tab: "code" | "preview" }) {
+  if (tab === "code") {
+    return <CodeEditor artifact={artifact} />;
+  }
+
+  // Preview mode — select renderer by kind
+  switch (artifact.kind) {
+    case "html":
+      return <HTMLPreview code={artifact.content} />;
+    case "react":
+      return <ReactPreview code={artifact.content} />;
+    case "markdown":
+    case "text":
+      return <MarkdownPreview content={artifact.content} />;
+    case "code":
+      return <CodePreview code={artifact.content} language={artifact.language} />;
+    case "svg":
+      return <SVGPreview svg={artifact.content} />;
+    case "mermaid":
+      return <MermaidPreview diagram={artifact.content} />;
+    case "image":
+      return <ImageViewer src={artifact.content} />;
+    case "sheet":
+      return <SpreadsheetPreview data={artifact.content} />;
+    default:
+      return <pre className="whitespace-pre-wrap p-4">{artifact.content}</pre>;
+  }
+}
+```
+
+### 5.2 HTML Preview (Sandboxed iframe)
+
+```typescript
+function HTMLPreview({ code }: { code: string }) {
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+
+  useEffect(() => {
+    if (!iframeRef.current) return;
+    const doc = iframeRef.current.contentDocument;
+    if (!doc) return;
+
+    doc.open();
+    doc.write(code);
+    doc.close();
+  }, [code]);
+
+  return (
+    <iframe
+      ref={iframeRef}
+      sandbox="allow-scripts allow-same-origin"
+      className="w-full h-full border-0"
+      title="Artifact Preview"
+    />
+  );
+}
+```
+
+**Alternative: Sandpack for richer HTML/JS/CSS previews:**
+
+```typescript
+import { SandpackProvider, SandpackPreview } from "@codesandbox/sandpack-react";
+
+function SandpackPreviewRenderer({ code }: { code: string }) {
+  // Parse code to extract HTML, CSS, JS sections
+  const files = parseHTMLDocument(code);
+
+  return (
+    <SandpackProvider
+      template="static"
+      files={{
+        "/index.html": { code: files.html },
+        "/styles.css": { code: files.css },
+        "/script.js": { code: files.js },
+      }}
+      options={{ autorun: true }}
+    >
+      <SandpackPreview showNavigator={false} showRefreshButton />
+    </SandpackProvider>
+  );
+}
+```
+
+### 5.3 React Preview (Live Component Rendering)
+
+```typescript
+function ReactPreview({ code }: { code: string }) {
+  const [Component, setComponent] = useState<ComponentType | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    try {
+      // Transpile JSX → JavaScript using Babel standalone or SWC
+      const transpiledCode = transpileJSX(code);
+
+      // Create a module from the transpiled code
+      const module = evaluateModule(transpiledCode, {
+        React,
+        useState: React.useState,
+        useEffect: React.useEffect,
+        useRef: React.useRef,
+        // ... provide available imports
+      });
+
+      setComponent(() => module.default || module);
+      setError(null);
+    } catch (err) {
+      setError(String(err));
+    }
+  }, [code]);
+
+  if (error) return <div className="text-red-500 p-4">{error}</div>;
+  if (!Component) return <div className="p-4">Loading...</div>;
+
+  return (
+    <ErrorBoundary fallback={<div className="text-red-500">Render error</div>}>
+      <Component />
+    </ErrorBoundary>
+  );
+}
+```
+
+### 5.4 Code Editor (Monaco)
+
+```typescript
+import MonacoEditor from "@monaco-editor/react";
+
+function CodeEditor({ artifact }: { artifact: Artifact }) {
+  const { updateContent } = useArtifactContext();
+  const [localContent, setLocalContent] = useState(artifact.content);
+
+  // Debounce saves
+  const debouncedSave = useMemo(
+    () => debounce((content: string) => {
+      updateContent(artifact.id, content);
+    }, 500),
+    [artifact.id],
+  );
+
+  const handleChange = (value: string | undefined) => {
+    if (value === undefined) return;
+    setLocalContent(value);
+    debouncedSave(value);
+  };
+
+  const language = artifact.language
+    ?? inferLanguageFromKind(artifact.kind)
+    ?? "plaintext";
+
+  return (
+    <MonacoEditor
+      height="100%"
+      language={language}
+      value={localContent}
+      onChange={handleChange}
+      theme="vs-dark"
+      options={{
+        minimap: { enabled: false },
+        fontSize: 14,
+        wordWrap: "on",
+        lineNumbers: "on",
+        scrollBeyondLastLine: false,
+        automaticLayout: true,
+        tabSize: 2,
+      }}
+    />
+  );
+}
+```
+
+### 5.5 Mermaid Preview
+
+```typescript
+import mermaid from "mermaid";
+
+function MermaidPreview({ diagram }: { diagram: string }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    mermaid.initialize({ startOnLoad: false, theme: "default" });
+
+    const render = async () => {
+      try {
+        const { svg } = await mermaid.render("mermaid-preview", diagram);
+        if (containerRef.current) {
+          containerRef.current.innerHTML = svg;
+        }
+      } catch (err) {
+        if (containerRef.current) {
+          containerRef.current.innerHTML = `<pre class="text-red-500">${err}</pre>`;
+        }
+      }
+    };
+
+    render();
+  }, [diagram]);
+
+  return <div ref={containerRef} className="flex items-center justify-center p-4" />;
+}
+```
+
+---
+
+## 6. Version Navigation
+
+### 6.1 Version Timeline Component
+
+```typescript
+function VersionTimeline({ artifact }: { artifact: Artifact }) {
+  const { activeVersionIndex, navigateVersion } = useArtifactContext();
+
+  return (
+    <div className="flex items-center gap-1">
+      <button
+        onClick={() => navigateVersion(Math.max(0, activeVersionIndex - 1))}
+        disabled={activeVersionIndex === 0}
+        className="p-1 disabled:opacity-30"
+      >
+        ←
+      </button>
+
+      <div className="flex gap-0.5">
+        {artifact.versions.map((version, idx) => (
+          <button
+            key={version.id}
+            onClick={() => navigateVersion(idx)}
+            className={cn(
+              "w-2 h-2 rounded-full transition-colors",
+              idx === activeVersionIndex ? "bg-blue-500" : "bg-gray-300 hover:bg-gray-400"
+            )}
+            title={`Version ${idx + 1}: ${version.description ?? format(version.createdAt, "PPp")}`}
+          />
+        ))}
+      </div>
+
+      <button
+        onClick={() => navigateVersion(Math.min(artifact.versions.length - 1, activeVersionIndex + 1))}
+        disabled={activeVersionIndex === artifact.versions.length - 1}
+        className="p-1 disabled:opacity-30"
+      >
+        →
+      </button>
+
+      <span className="text-xs text-gray-500 ml-1">
+        {activeVersionIndex + 1} / {artifact.versions.length}
+      </span>
+    </div>
+  );
+}
+```
+
+### 6.2 Version Content Display
+
+When viewing a non-latest version, the editor shows that version's content in read-only mode:
+
+```typescript
+function VersionAwareContent({ artifact }: { artifact: Artifact }) {
+  const { activeVersionIndex, activeTab } = useArtifactContext();
+  const isLatest = activeVersionIndex === artifact.versions.length - 1;
+  const displayContent = artifact.versions[activeVersionIndex].content;
+
+  // Temporarily override artifact content with version content
+  const displayArtifact = { ...artifact, content: displayContent };
+
+  return (
+    <div className="relative h-full">
+      {!isLatest && (
+        <div className="absolute top-0 left-0 right-0 z-10 bg-yellow-50 border-b border-yellow-200 px-3 py-1 text-xs text-yellow-700">
+          Viewing version {activeVersionIndex + 1} of {artifact.versions.length} (read-only)
+        </div>
+      )}
+      <ArtifactContent
+        artifact={displayArtifact}
+        tab={activeTab}
+        readOnly={!isLatest}
+      />
+    </div>
+  );
+}
+```
+
+---
+
+## 7. Resizable Panel
+
+### 7.1 Resize Handle Implementation
+
+```typescript
+function ResizeHandle({ onResize }: { onResize: (deltaX: number) => void }) {
+  const [isDragging, setIsDragging] = useState(false);
+  const startXRef = useRef(0);
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+    startXRef.current = e.clientX;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const deltaX = e.clientX - startXRef.current;
+      startXRef.current = e.clientX;
+      onResize(deltaX);
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+    };
+
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp);
+  };
+
+  return (
+    <div
+      onMouseDown={handleMouseDown}
+      className={cn(
+        "w-1 cursor-col-resize hover:bg-blue-300 transition-colors flex-shrink-0",
+        isDragging ? "bg-blue-400" : "bg-gray-200"
+      )}
+    />
+  );
+}
+```
+
+### 7.2 Panel Width Management
+
+```typescript
+function ArtifactLayout({ children }: { children: ReactNode }) {
+  const { activeArtifactId } = useArtifactContext();
+  const [panelWidth, setPanelWidth] = useState(480); // default 480px
+  const MIN_WIDTH = 320;
+  const MAX_WIDTH = 800;
+
+  const handleResize = (deltaX: number) => {
+    setPanelWidth(prev => Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, prev - deltaX)));
+  };
+
+  return (
+    <div className="flex h-full">
+      
+      <div className="flex-1 min-w-[300px]">
+        {children}
+      </div>
+
+      
+      {activeArtifactId && (
+        <>
+          <ResizeHandle onResize={handleResize} />
+          <div style={{ width: panelWidth }} className="flex-shrink-0">
+            <ArtifactPanel />
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+```
+
+---
+
+## 8. Export Functionality
+
+```typescript
+function ExportButton({ artifact }: { artifact: Artifact }) {
+  const handleExport = () => {
+    const extension = getExtensionForKind(artifact.kind, artifact.language);
+    const filename = `${sanitizeFilename(artifact.title)}.${extension}`;
+    const mimeType = getMimeType(artifact.kind);
+
+    const blob = new Blob([artifact.content], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  return (
+    <button onClick={handleExport} className="text-sm text-gray-600 hover:text-gray-900">
+      Export
+    </button>
+  );
+}
+
+function getExtensionForKind(kind: ArtifactKind, language?: string): string {
+  switch (kind) {
+    case "html": return "html";
+    case "react": return "jsx";
+    case "markdown": return "md";
+    case "text": return "txt";
+    case "svg": return "svg";
+    case "mermaid": return "mmd";
+    case "sheet": return "csv";
+    case "code": return languageToExtension(language ?? "txt");
+    default: return "txt";
+  }
+}
+```
+
+---
+
+## 9. Streaming Artifact Content
+
+When the AI generates long artifacts, content streams in progressively:
+
+```typescript
+// During streaming, the tool call's argsText grows incrementally.
+// The artifact panel can show a live preview of the partial content.
+
+function StreamingArtifactView({ toolCall }: { toolCall: ToolCallContentPart }) {
+  const isStreaming = toolCall.result === undefined;
+  const partialContent = isStreaming
+    ? extractPartialContent(toolCall.argsText)  // Parse partial JSON to get content field
+    : toolCall.result?.content;
+
+  return (
+    <div className="relative h-full">
+      {isStreaming && (
+        <div className="absolute top-2 right-2 z-10">
+          <div className="animate-pulse flex items-center gap-1 text-xs text-blue-500">
+            <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" />
+            Generating...
+          </div>
+        </div>
+      )}
+      <ArtifactContent
+        artifact={{ content: partialContent ?? "", kind: toolCall.args.kind }}
+        tab="preview"
+        readOnly
+      />
+    </div>
+  );
+}
+
+function extractPartialContent(argsText: string): string | null {
+  // Try to extract the "content" field from partial JSON
+  // Handles incomplete JSON by finding the last complete string value
+  const match = argsText.match(/"content"\s*:\s*"((?:[^"\\]|\\.)*)(?:"|$)/);
+  if (match) {
+    return match[1].replace(/\\n/g, "\n").replace(/\\"/g, '"').replace(/\\\\/g, "\\");
+  }
+  return null;
+}
+```
+
+---
+
+## 10. Behavioral Test Cases
+
+### Panel Visibility
+1. **Hidden by default**: Artifact panel is not rendered when no artifact is active.
+2. **Opens on creation**: When AI creates an artifact via tool call, panel opens automatically.
+3. **Opens on click**: Clicking an artifact reference card in chat opens the panel.
+4. **Closes on X**: Clicking close button sets activeArtifactId to null, hiding panel.
+5. **Persists across messages**: Panel stays open while user sends new messages.
+
+### Content Rendering
+6. **HTML preview**: HTML artifacts render in sandboxed iframe with scripts executing.
+7. **React preview**: JSX artifacts are transpiled and rendered as live React components.
+8. **Markdown preview**: Markdown renders with GFM tables, code blocks, and LaTeX.
+9. **SVG preview**: SVG content renders inline with correct dimensions.
+10. **Mermaid preview**: Mermaid diagrams render as SVG via mermaid.js.
+11. **Code preview**: Code artifacts show syntax-highlighted read-only view.
+12. **Fallback**: Unknown kinds render as plain preformatted text.
+
+### Code Editor
+13. **Syntax highlighting**: Monaco editor applies language-appropriate highlighting.
+14. **Auto-language detection**: Editor language inferred from artifact kind/language.
+15. **Live editing**: Changes in the editor update artifact content (debounced 500ms).
+16. **Read-only for old versions**: Non-latest versions show editor in read-only mode.
+
+### Version Navigation
+17. **Version dots**: Each version shows as a dot; active version is highlighted.
+18. **Forward/back arrows**: Navigate between versions sequentially.
+19. **Version content**: Navigating to version N shows that version's content.
+20. **Latest auto-select**: New versions auto-select as active (scroll to latest).
+21. **Version description**: Tooltip on each dot shows version description and timestamp.
+
+### Tab Switching
+22. **Code tab**: Shows Monaco editor with raw source code.
+23. **Preview tab**: Shows rendered output for the artifact kind.
+24. **Tab persistence**: Switching artifacts preserves tab preference.
+25. **Default to preview**: Opening an artifact defaults to preview tab.
+
+### Resize
+26. **Drag resize**: Dragging the handle adjusts panel width in real-time.
+27. **Min/max bounds**: Panel width clamps between 320px and 800px.
+28. **Chat panel flex**: Chat panel fills remaining space as artifact panel resizes.
+
+### Tool Integration
+29. **create_artifact tool**: Produces new artifact, adds to registry, opens panel.
+30. **update_artifact tool**: Adds new version to existing artifact, opens panel.
+31. **Inline reference**: Tool results render as clickable artifact cards in messages.
+32. **Streaming preview**: During content generation, partial content is displayed live.
+
+### Export
+33. **Download file**: Export produces a file download with correct name and extension.
+34. **MIME types**: Exported files have correct content types.
+35. **Current version**: Export always uses the currently displayed version's content.

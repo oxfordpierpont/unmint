@@ -1,0 +1,1434 @@
+---
+title: "Clean Room Specification: Full Stack AI Memory Platform with Hybrid Search"
+description: "Purpose of This Document This document specifies the architecture for a full stack AI memory platform that ingests, chunks, embeds, and retrieves content fro..."
+---
+<Info>
+Normalized for Mintlify from `knowledge-base/neurigraph-memory-architecture/neurigraph-tool-references/11-Full-Stack-AI-Memory-Platform-Hybrid-Search.mdx`.
+</Info>
+# Clean-Room Specification: Full-Stack AI Memory Platform with Hybrid Search
+
+## Purpose of This Document
+
+This document specifies the architecture for a **full-stack AI memory platform** that ingests, chunks, embeds, and retrieves content from multiple sources using **hybrid search** (combining vector similarity with full-text keyword matching and recency scoring). The platform includes a web application for managing memories and spaces, a browser extension for capturing content from web pages, and an MCP (Model Context Protocol) server for integration with AI assistants. The system handles diverse content types (text, markdown, HTML, PDFs, images, video, code), organizes memories into hierarchical spaces, supports memory versioning and auto-forgetting, and provides a REST API for programmatic access. This specification enables independent implementation from scratch.
+
+---
+
+## 1. System Overview
+
+### 1.1 Core Concept
+
+This platform acts as a **second brain** — users save content from anywhere (browser, API, integrations), the system processes and indexes it, and AI assistants can later recall relevant memories through natural language queries. The key differentiator is **hybrid search**: combining semantic vector similarity with traditional full-text search and time-based recency scoring for more accurate retrieval than vector-only approaches.
+
+### 1.2 High-Level Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                       Client Layer                              │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────┐  │
+│  │ Web App      │  │ Browser      │  │ MCP Server           │  │
+│  │ (Next.js)    │  │ Extension    │  │ (Claude/ChatGPT)     │  │
+│  └──────┬───────┘  └──────┬───────┘  └──────────┬───────────┘  │
+├─────────┼──────────────────┼────────────────────┼───────────────┤
+│         │                  │                    │               │
+│         └──────────────────┼────────────────────┘               │
+│                            ▼                                    │
+│  ┌─────────────────────────────────────────────────────────┐    │
+│  │                    REST API (v3)                         │    │
+│  │  POST /memory  |  POST /recall  |  GET /spaces          │    │
+│  └─────────────────────────┬───────────────────────────────┘    │
+│                            │                                    │
+├────────────────────────────┼────────────────────────────────────┤
+│                    Ingestion Pipeline                           │
+│  ┌────────┐  ┌─────────┐  ┌──────────┐  ┌───────────────┐     │
+│  │Content │→│Chunking │→│Embedding │→│ Metadata      │     │
+│  │Extract │  │(~512 tk)│  │(OpenAI)  │  │ Extraction    │     │
+│  └────────┘  └─────────┘  └──────────┘  └───────┬───────┘     │
+│                                                  │              │
+├──────────────────────────────────────────────────┼──────────────┤
+│                    Storage Layer                  │              │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────▼──────────┐  │
+│  │ PostgreSQL  │  │ Qdrant      │  │ Edge Cache (KV)        │  │
+│  │ (metadata)  │  │ (vectors)   │  │ (hot results)          │  │
+│  └─────────────┘  └─────────────┘  └────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### 1.3 Technology Stack
+
+| Layer | Technology | Purpose |
+|-------|-----------|---------|
+| Web App | Next.js (App Router) | User-facing dashboard |
+| Browser Extension | WXT (cross-browser framework) | Content capture from web pages |
+| MCP Server | Node.js / Cloudflare Workers | AI assistant integration |
+| API | REST over HTTPS | Programmatic access |
+| Relational DB | PostgreSQL | Users, documents, spaces, metadata |
+| Vector DB | Qdrant | Embeddings and similarity search |
+| Edge Cache | Key-Value store (Redis/KV) | Frequently accessed results |
+| Embeddings | OpenAI `text-embedding-3-small` | Vector generation |
+| LLM | OpenAI GPT-4o-mini | Summarization, metadata extraction |
+
+---
+
+## 2. Data Model
+
+### 2.1 Core Entities
+
+#### Organization
+
+```typescript
+interface Organization {
+  id: string;            // UUID
+  name: string;
+  slug: string;          // URL-friendly identifier
+  created_at: string;
+  updated_at: string;
+}
+```
+
+#### Project (formerly Space)
+
+Projects organize memories into logical groups. Users can have multiple projects.
+
+```typescript
+interface Project {
+  id: string;            // UUID
+  organization_id: string;
+  name: string;
+  slug: string;
+  description?: string;
+  is_default: boolean;   // One default project per org
+  created_at: string;
+  updated_at: string;
+}
+```
+
+#### Document
+
+The top-level content unit. A document represents a single piece of saved content (a web page, a note, an uploaded file).
+
+```typescript
+interface Document {
+  id: string;            // UUID
+  project_id: string;
+  user_id: string;
+
+  // Content
+  title: string;
+  content: string;       // Raw content (full text)
+  summary?: string;      // LLM-generated summary
+  content_type: ContentType;
+  source_url?: string;   // Original URL if from web
+
+  // Metadata
+  metadata: Record<string, any>;  // Extracted metadata (author, date, tags, etc.)
+  content_hash: string;  // SHA-256 of content for deduplication
+
+  // Memory features
+  updates_memory_id?: string;  // If this document updates a previous version
+  forget_after?: string;       // ISO 8601 timestamp for auto-deletion
+
+  // Timestamps
+  created_at: string;
+  updated_at: string;
+  last_accessed_at?: string;
+}
+```
+
+**ContentType enum**:
+```typescript
+type ContentType =
+  | "text"       // Plain text
+  | "markdown"   // Markdown formatted
+  | "html"       // HTML content (cleaned)
+  | "pdf"        // Extracted PDF text
+  | "image"      // OCR-extracted text
+  | "video"      // Transcription
+  | "code"       // Source code (with language metadata)
+  | "json"       // Structured data
+  | "tweet"      // Twitter/X content
+  | "email"      // Email content
+  | "note";      // User-created note
+```
+
+#### Memory
+
+A processed, searchable representation of a document or document section. Multiple memories can come from a single document (one per chunk).
+
+```typescript
+interface Memory {
+  id: string;            // UUID
+  document_id: string;   // Parent document
+  project_id: string;
+  user_id: string;
+
+  // Content
+  content: string;       // Chunk text
+  summary?: string;      // Chunk-level summary
+
+  // Chunking metadata
+  chunk_index: number;   // Position within document (0-based)
+  chunk_count: number;   // Total chunks in document
+  start_offset: number;  // Character offset in original document
+  end_offset: number;
+
+  // Embedding reference
+  vector_id: string;     // ID in Qdrant
+
+  created_at: string;
+  updated_at: string;
+}
+```
+
+#### Chunk (Vector Store Record)
+
+Stored in Qdrant with the embedding vector:
+
+```typescript
+interface ChunkPayload {
+  memory_id: string;
+  document_id: string;
+  project_id: string;
+  user_id: string;
+  content: string;
+  title: string;
+  source_url?: string;
+  content_type: string;
+  created_at: string;    // For recency scoring
+}
+```
+
+### 2.2 PostgreSQL Schema
+
+```sql
+CREATE TABLE organizations (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name TEXT NOT NULL,
+    slug TEXT UNIQUE NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE projects (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organization_id UUID REFERENCES organizations(id) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    slug TEXT NOT NULL,
+    description TEXT,
+    is_default BOOLEAN DEFAULT false,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(organization_id, slug)
+);
+
+CREATE TABLE documents (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    project_id UUID REFERENCES projects(id) ON DELETE CASCADE,
+    user_id TEXT NOT NULL,
+    title TEXT NOT NULL,
+    content TEXT NOT NULL,
+    summary TEXT,
+    content_type TEXT NOT NULL DEFAULT 'text',
+    source_url TEXT,
+    metadata JSONB DEFAULT '{}',
+    content_hash TEXT NOT NULL,
+    updates_memory_id UUID REFERENCES documents(id),
+    forget_after TIMESTAMPTZ,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    last_accessed_at TIMESTAMPTZ
+);
+
+CREATE TABLE memories (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    document_id UUID REFERENCES documents(id) ON DELETE CASCADE,
+    project_id UUID REFERENCES projects(id) ON DELETE CASCADE,
+    user_id TEXT NOT NULL,
+    content TEXT NOT NULL,
+    summary TEXT,
+    chunk_index INTEGER NOT NULL DEFAULT 0,
+    chunk_count INTEGER NOT NULL DEFAULT 1,
+    start_offset INTEGER NOT NULL DEFAULT 0,
+    end_offset INTEGER NOT NULL DEFAULT 0,
+    vector_id TEXT NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE connections (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organization_id UUID REFERENCES organizations(id) ON DELETE CASCADE,
+    provider TEXT NOT NULL,        -- 'google_drive', 'notion', 'github', etc.
+    access_token TEXT,
+    refresh_token TEXT,
+    token_expires_at TIMESTAMPTZ,
+    metadata JSONB DEFAULT '{}',
+    last_synced_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Indexes for common queries
+CREATE INDEX idx_documents_project ON documents(project_id);
+CREATE INDEX idx_documents_hash ON documents(content_hash);
+CREATE INDEX idx_documents_forget ON documents(forget_after) WHERE forget_after IS NOT NULL;
+CREATE INDEX idx_memories_document ON memories(document_id);
+CREATE INDEX idx_memories_project ON memories(project_id);
+CREATE INDEX idx_memories_vector ON memories(vector_id);
+```
+
+---
+
+## 3. Ingestion Pipeline
+
+### 3.1 Overview
+
+When content enters the system (via API, browser extension, or integration sync), it flows through a multi-stage pipeline:
+
+```
+Raw Content → Content Extraction → Deduplication Check → Chunking →
+Embedding → Summarization → Metadata Extraction → Storage
+```
+
+### 3.2 Content Extraction
+
+Different content types require different extraction strategies:
+
+| Content Type | Extraction Method |
+|-------------|------------------|
+| text/markdown | Pass through (strip excessive whitespace) |
+| HTML | Parse with DOM parser, extract main content (strip nav, footer, scripts), convert to markdown |
+| PDF | Extract text via PDF parser (pdfjs-dist or similar), preserve page boundaries |
+| Image | OCR via vision model (send image to GPT-4o with "Extract all text from this image") |
+| Video | Transcription via Whisper API or similar speech-to-text |
+| Code | Preserve as-is with language detection, optionally parse AST for structure |
+| JSON | Pretty-print and extract human-readable fields |
+| Tweet/Social | Extract text, author, date, engagement metrics from structured data |
+
+**HTML cleaning algorithm**:
+1. Parse HTML into DOM
+2. Remove `<script>`, `<style>`, `<nav>`, `<footer>`, `<header>` elements
+3. Attempt to find `<article>` or `<main>` element — if found, use its content
+4. If no article/main, use `<body>` content
+5. Convert remaining HTML to markdown (preserve links, headings, lists, bold/italic)
+6. Collapse multiple blank lines into single blank line
+7. Trim to reasonable length (configurable max, default 100,000 characters)
+
+### 3.3 Deduplication
+
+Before processing, check if content already exists:
+
+1. Compute SHA-256 hash of the cleaned content
+2. Query PostgreSQL: `SELECT id FROM documents WHERE content_hash = $1 AND project_id = $2`
+3. If match found:
+   - If `updates_memory_id` is set, treat as a version update (link to previous)
+   - Otherwise, skip ingestion and return the existing document ID
+4. If no match, proceed with ingestion
+
+### 3.4 Chunking
+
+Split content into chunks suitable for embedding (target ~512 tokens per chunk).
+
+**Chunking algorithm**:
+
+```
+function chunkContent(text: string, maxTokens: number = 512, overlap: number = 50): Chunk[] {
+  // 1. Split by natural boundaries first
+  const sections = splitBySections(text);  // Split on ## headings, <h2> tags, double newlines
+
+  const chunks: Chunk[] = [];
+  let currentChunk = "";
+  let currentTokens = 0;
+  let startOffset = 0;
+
+  for (const section of sections) {
+    const sectionTokens = estimateTokens(section);  // ~4 chars per token
+
+    if (currentTokens + sectionTokens > maxTokens && currentChunk.length > 0) {
+      // Save current chunk
+      chunks.push({
+        content: currentChunk.trim(),
+        startOffset: startOffset,
+        endOffset: startOffset + currentChunk.length
+      });
+
+      // Start new chunk with overlap
+      const overlapText = getLastNTokens(currentChunk, overlap);
+      startOffset = startOffset + currentChunk.length - overlapText.length;
+      currentChunk = overlapText;
+      currentTokens = overlap;
+    }
+
+    currentChunk += section;
+    currentTokens += sectionTokens;
+  }
+
+  // Don't forget the last chunk
+  if (currentChunk.trim().length > 0) {
+    chunks.push({
+      content: currentChunk.trim(),
+      startOffset: startOffset,
+      endOffset: startOffset + currentChunk.length
+    });
+  }
+
+  return chunks;
+}
+
+function estimateTokens(text: string): number {
+  return Math.ceil(text.length / 4);  // Rough approximation
+}
+```
+
+**Special chunking for code**: Split by function/class boundaries rather than arbitrary token counts. Use regex patterns for common language constructs (`function`, `class`, `def`, `fn`, etc.).
+
+### 3.5 Embedding Generation
+
+For each chunk, generate an embedding vector:
+
+```
+POST https://api.openai.com/v1/embeddings
+{
+  "model": "text-embedding-3-small",
+  "input": chunk.content,
+  "dimensions": 1536
+}
+```
+
+**Batch optimization**: Batch up to 100 chunks per API call to reduce latency:
+```
+{
+  "model": "text-embedding-3-small",
+  "input": [chunk1.content, chunk2.content, ...],
+  "dimensions": 1536
+}
+```
+
+### 3.6 Summarization
+
+Generate a summary for the entire document:
+
+```
+LLM call:
+  system: "Summarize the following content in 2-3 sentences. Focus on the key
+           information and main topic."
+  user: {document.content (truncated to 4000 tokens if necessary)}
+  model: gpt-4o-mini
+  temperature: 0
+  max_tokens: 200
+```
+
+Optionally generate per-chunk summaries for large documents (&gt;5 chunks).
+
+### 3.7 Metadata Extraction
+
+Use LLM to extract structured metadata:
+
+```
+LLM call:
+  system: "Extract metadata from the following content. Return a JSON object with
+           these fields (include only fields that are clearly present):
+           - author: string (author name if mentioned)
+           - date: string (publication/creation date if mentioned, ISO 8601)
+           - tags: string[] (3-5 relevant topic tags)
+           - language: string (programming language if code, or content language)
+           - sentiment: 'positive' | 'negative' | 'neutral'
+           - category: string (e.g., 'article', 'documentation', 'tutorial',
+                       'opinion', 'research', 'reference')"
+  user: {document.title}\n\n{document.content (truncated)}
+  model: gpt-4o-mini
+  temperature: 0
+  response_format: json
+```
+
+### 3.8 Storage
+
+After processing, store in all three data stores:
+
+1. **PostgreSQL**: Insert `document` and `memory` (one per chunk) records
+2. **Qdrant**: Upsert vectors with payload (one point per chunk)
+3. **Edge Cache**: Invalidate any cached results for the affected project
+
+**Qdrant upsert**:
+```
+PUT /collections/{collection_name}/points
+{
+  "points": [
+    {
+      "id": "{memory.vector_id}",   // Use UUID as Qdrant point ID
+      "vector": [0.123, -0.456, ...],
+      "payload": {
+        "memory_id": "...",
+        "document_id": "...",
+        "project_id": "...",
+        "user_id": "...",
+        "content": "chunk text...",
+        "title": "Document Title",
+        "source_url": "https://...",
+        "content_type": "html",
+        "created_at": "2024-03-15T10:30:00Z"
+      }
+    }
+  ]
+}
+```
+
+---
+
+## 4. Hybrid Search Algorithm
+
+### 4.1 Overview
+
+The search system combines three signals:
+
+```
+final_score = (vector_score × 0.6) + (text_score × 0.4) + recency_bonus
+```
+
+Where:
+- **vector_score**: Cosine similarity from Qdrant (0 to 1)
+- **text_score**: Full-text keyword match score (0 to 1, normalized)
+- **recency_bonus**: Time-decay bonus for newer content (0 to 0.1)
+
+### 4.2 Vector Search
+
+Query Qdrant with the embedding of the search query:
+
+```
+POST /collections/{collection}/points/search
+{
+  "vector": [query_embedding],
+  "limit": 50,
+  "with_payload": true,
+  "filter": {
+    "must": [
+      { "key": "project_id", "match": { "value": "{project_id}" } },
+      { "key": "user_id", "match": { "value": "{user_id}" } }
+    ]
+  }
+}
+```
+
+Returns results with cosine similarity scores (0 to 1).
+
+### 4.3 Full-Text Search
+
+Query Qdrant's built-in full-text search (or a separate text index) with the raw query string:
+
+```
+POST /collections/{collection}/points/search
+{
+  "query": "search keywords",   // Qdrant text search
+  "limit": 50,
+  "filter": { ... same project/user filter ... }
+}
+```
+
+**If Qdrant text search is not available**, fall back to PostgreSQL full-text search:
+
+```sql
+SELECT m.id, m.content, m.document_id,
+       ts_rank(to_tsvector('english', m.content), plainto_tsquery('english', $1)) as text_score
+FROM memories m
+WHERE m.project_id = $2
+  AND m.user_id = $3
+  AND to_tsvector('english', m.content) @@ plainto_tsquery('english', $1)
+ORDER BY text_score DESC
+LIMIT 50;
+```
+
+**Normalize text scores** to 0-1 range: `normalized = score / max_score_in_batch`.
+
+### 4.4 Recency Bonus
+
+Calculate a time-decay bonus that gives a slight edge to more recent content:
+
+```
+function recencyBonus(createdAt: Date): number {
+  const ageInDays = (Date.now() - createdAt.getTime()) / (1000 * 60 * 60 * 24);
+
+  // Exponential decay: max 0.1 bonus, halves every 30 days
+  return 0.1 * Math.exp(-ageInDays / 30);
+}
+```
+
+This means:
+- Created today: +0.1 bonus
+- Created 30 days ago: +0.037 bonus
+- Created 90 days ago: +0.005 bonus
+- Created 1 year ago: ~0 bonus
+
+### 4.5 Score Fusion
+
+Merge results from vector and text search:
+
+```
+function hybridSearch(query: string, projectId: string, userId: string, limit: number = 20): SearchResult[] {
+  // 1. Generate query embedding
+  const queryEmbedding = await embedder.embed(query);
+
+  // 2. Run vector search and text search in parallel
+  const [vectorResults, textResults] = await Promise.all([
+    qdrant.search(queryEmbedding, { projectId, userId, limit: 50 }),
+    textSearch(query, { projectId, userId, limit: 50 })
+  ]);
+
+  // 3. Build score map (key: memory_id)
+  const scores = new Map<string, { vector: number; text: number; createdAt: Date }>();
+
+  for (const r of vectorResults) {
+    scores.set(r.id, {
+      vector: r.score,
+      text: 0,
+      createdAt: new Date(r.payload.created_at)
+    });
+  }
+
+  for (const r of textResults) {
+    const existing = scores.get(r.id);
+    if (existing) {
+      existing.text = r.text_score;
+    } else {
+      scores.set(r.id, {
+        vector: 0,
+        text: r.text_score,
+        createdAt: new Date(r.created_at)
+      });
+    }
+  }
+
+  // 4. Compute final scores
+  const results: SearchResult[] = [];
+  for (const [id, s] of scores) {
+    const final = (s.vector * 0.6) + (s.text * 0.4) + recencyBonus(s.createdAt);
+    results.push({ memory_id: id, score: final, ...payloadData });
+  }
+
+  // 5. Sort by final score descending, return top N
+  results.sort((a, b) => b.score - a.score);
+  return results.slice(0, limit);
+}
+```
+
+### 4.6 Result Grouping
+
+After scoring, group results by document to avoid returning multiple chunks from the same document:
+
+```
+function groupByDocument(results: SearchResult[]): GroupedResult[] {
+  const groups = new Map<string, { bestScore: number; chunks: SearchResult[] }>();
+
+  for (const r of results) {
+    const existing = groups.get(r.document_id);
+    if (existing) {
+      existing.chunks.push(r);
+      existing.bestScore = Math.max(existing.bestScore, r.score);
+    } else {
+      groups.set(r.document_id, { bestScore: r.score, chunks: [r] });
+    }
+  }
+
+  // Sort groups by best chunk score
+  return [...groups.entries()]
+    .sort(([, a], [, b]) => b.bestScore - a.bestScore)
+    .map(([docId, group]) => ({
+      document_id: docId,
+      score: group.bestScore,
+      chunks: group.chunks.sort((a, b) => a.chunk_index - b.chunk_index)
+    }));
+}
+```
+
+### 4.7 Edge Caching
+
+Cache frequently queried results:
+
+```
+Cache key: `recall:${projectId}:${hash(query)}:${limit}`
+Cache TTL: 300 seconds (5 minutes)
+
+function cachedSearch(query, projectId, userId, limit):
+  const key = `recall:${projectId}:${sha256(query)}:${limit}`;
+  const cached = await kv.get(key);
+  if (cached) return JSON.parse(cached);
+
+  const results = await hybridSearch(query, projectId, userId, limit);
+  await kv.set(key, JSON.stringify(results), { ex: 300 });
+  return results;
+```
+
+```text
+**Cache invalidation**: When new content is added to a project, delete all cache keys matching `recall:${projectId}:*`.
+
+```
+---
+
+## 5. REST API (v3)
+
+### 5.1 Authentication
+
+All API requests require a Bearer token:
+
+```
+Authorization: Bearer <api_key>
+```
+
+API keys are scoped to organizations and stored hashed in PostgreSQL. Rate limiting: 100 requests per minute per key.
+
+### 5.2 Endpoints
+
+#### POST /v3/memory — Save Content
+
+Save new content to the memory store.
+
+**Request**:
+```json
+{
+  "content": "The full text content to remember",
+  "title": "Optional title",
+  "source_url": "https://example.com/page",
+  "content_type": "html",
+  "project_id": "uuid-of-project",
+  "metadata": { "tags": ["ai", "research"] },
+  "updates_memory_id": "uuid-if-updating-previous",
+  "forget_after": "2025-06-01T00:00:00Z"
+}
+```
+
+**Response** (201 Created):
+```json
+{
+  "id": "document-uuid",
+  "title": "Extracted or provided title",
+  "summary": "LLM-generated summary...",
+  "chunk_count": 3,
+  "metadata": { "tags": ["ai", "research"], "category": "article" },
+  "created_at": "2024-03-15T10:30:00Z"
+}
+```
+
+**Validation** (use Zod or similar schema validation):
+- `content`: required, string, min length 1, max length 500000
+- `content_type`: optional, must be one of ContentType enum values
+- `project_id`: required if user has multiple projects, otherwise uses default
+- `forget_after`: optional, must be ISO 8601 future date
+
+**Retry logic**: If embedding API fails, retry up to 3 times with exponential backoff (1s, 2s, 4s).
+
+#### POST /v3/recall — Search Memories
+
+Retrieve relevant memories using hybrid search.
+
+**Request**:
+```json
+{
+  "query": "What did I save about machine learning?",
+  "project_id": "uuid-of-project",
+  "limit": 10,
+  "filters": {
+    "content_type": ["html", "markdown"],
+    "created_after": "2024-01-01",
+    "tags": ["ml"]
+  }
+}
+```
+
+**Response**:
+```json
+{
+  "results": [
+    {
+      "document_id": "uuid",
+      "title": "Introduction to Transformers",
+      "summary": "Overview of transformer architecture...",
+      "score": 0.87,
+      "source_url": "https://example.com/transformers",
+      "content_type": "html",
+      "created_at": "2024-03-10T08:00:00Z",
+      "chunks": [
+        {
+          "memory_id": "chunk-uuid",
+          "content": "Transformers are a type of neural network...",
+          "chunk_index": 0,
+          "score": 0.87
+        }
+      ]
+    }
+  ],
+  "total": 1,
+  "query_time_ms": 142
+}
+```
+
+#### GET /v3/projects — List Projects
+
+```json
+{
+  "projects": [
+    {
+      "id": "uuid",
+      "name": "Research",
+      "slug": "research",
+      "document_count": 47,
+      "is_default": false,
+      "created_at": "2024-01-15T00:00:00Z"
+    }
+  ]
+}
+```
+
+#### POST /v3/projects — Create Project
+
+```json
+{ "name": "Work Notes", "description": "Notes from work meetings" }
+```
+
+#### GET /v3/documents/:id — Get Document
+
+Returns full document with all chunks.
+
+#### DELETE /v3/documents/:id — Delete Document
+
+Removes document, all associated memories, and all Qdrant vectors.
+
+#### GET /v3/memory-graph — Knowledge Graph View
+
+Returns entity-relationship data for visualization:
+
+```json
+{
+  "nodes": [
+    { "id": "node-1", "label": "Machine Learning", "type": "concept", "document_count": 12 },
+    { "id": "node-2", "label": "TensorFlow", "type": "technology", "document_count": 5 }
+  ],
+  "edges": [
+    { "source": "node-1", "target": "node-2", "relation": "uses", "weight": 3 }
+  ]
+}
+```
+
+Built by aggregating extracted metadata tags and co-occurrence in documents.
+
+#### GET /v3/whoami — Get Current User
+
+```json
+{
+  "user_id": "user-uuid",
+  "email": "user@example.com",
+  "organization_id": "org-uuid",
+  "organization_name": "My Org"
+}
+```
+
+---
+
+## 6. MCP Server
+
+### 6.1 Overview
+
+The MCP server allows AI assistants (Claude, ChatGPT) to read and write memories through the Model Context Protocol. It runs as a separate process communicating via JSON-RPC over stdin/stdout.
+
+### 6.2 Tool Definitions
+
+#### memory — Save Content
+
+```json
+{
+  "name": "memory",
+  "description": "Save content to long-term memory for later recall. Use this when the user asks you to remember something, save a piece of information, or store content for later.",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "content": {
+        "type": "string",
+        "description": "The content to save to memory"
+      },
+      "title": {
+        "type": "string",
+        "description": "A short descriptive title for this memory"
+      },
+      "project": {
+        "type": "string",
+        "description": "Project/space name to save to (uses default if not specified)"
+      },
+      "tags": {
+        "type": "array",
+        "items": { "type": "string" },
+        "description": "Tags to categorize this memory"
+      }
+    },
+    "required": ["content"]
+  }
+}
+```
+
+#### recall — Search Memories
+
+```json
+{
+  "name": "recall",
+  "description": "Search through saved memories to find relevant information. Use this when the user asks about something they previously saved, or when you need context from past interactions.",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "query": {
+        "type": "string",
+        "description": "Natural language search query"
+      },
+      "project": {
+        "type": "string",
+        "description": "Project/space to search in (searches all if not specified)"
+      },
+      "limit": {
+        "type": "number",
+        "description": "Maximum number of results (default: 5)"
+      }
+    },
+    "required": ["query"]
+  }
+}
+```
+
+#### listProjects — List Available Projects
+
+```json
+{
+  "name": "listProjects",
+  "description": "List all available memory projects/spaces",
+  "inputSchema": {
+    "type": "object",
+    "properties": {}
+  }
+}
+```
+
+#### memory-graph — Get Knowledge Graph
+
+```json
+{
+  "name": "memory-graph",
+  "description": "Get a knowledge graph view of stored memories showing connections between topics",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "project": { "type": "string" }
+    }
+  }
+}
+```
+
+#### whoAmI — Get User Info
+
+```json
+{
+  "name": "whoAmI",
+  "description": "Get information about the current authenticated user",
+  "inputSchema": { "type": "object", "properties": {} }
+}
+```
+
+### 6.3 MCP Server Implementation
+
+```typescript
+class MemoryMCPServer {
+  private apiBaseUrl: string;
+  private apiKey: string;
+
+  constructor(config: { apiBaseUrl: string; apiKey: string }) {
+    this.apiBaseUrl = config.apiBaseUrl;
+    this.apiKey = config.apiKey;
+  }
+
+  // JSON-RPC handler
+  async handleRequest(request: JsonRpcRequest): Promise<JsonRpcResponse> {
+    switch (request.method) {
+      case "tools/list":
+        return { result: { tools: [memoryTool, recallTool, listProjectsTool, ...] } };
+
+      case "tools/call":
+        const { name, arguments: args } = request.params;
+        switch (name) {
+          case "memory":
+            return await this.saveMemory(args);
+          case "recall":
+            return await this.recallMemories(args);
+          case "listProjects":
+            return await this.listProjects();
+          case "memory-graph":
+            return await this.getMemoryGraph(args);
+          case "whoAmI":
+            return await this.whoAmI();
+        }
+    }
+  }
+
+  private async saveMemory(args: { content: string; title?: string; project?: string; tags?: string[] }) {
+    const response = await fetch(`${this.apiBaseUrl}/v3/memory`, {
+      method: "POST",
+      headers: { "Authorization": `Bearer ${this.apiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        content: args.content,
+        title: args.title,
+        metadata: { tags: args.tags },
+        // Resolve project name to ID if provided
+      })
+    });
+    const data = await response.json();
+    return { result: { content: [{ type: "text", text: `Saved: "${data.title}" (${data.chunk_count} chunks)` }] } };
+  }
+
+  private async recallMemories(args: { query: string; project?: string; limit?: number }) {
+    const response = await fetch(`${this.apiBaseUrl}/v3/recall`, {
+      method: "POST",
+      headers: { "Authorization": `Bearer ${this.apiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ query: args.query, limit: args.limit || 5 })
+    });
+    const data = await response.json();
+
+    // Format results for the AI assistant
+    const formatted = data.results.map((r, i) =>
+      `[${i + 1}] ${r.title} (score: ${r.score.toFixed(2)})\n${r.chunks[0].content}\nSource: ${r.source_url || "saved note"}`
+    ).join("\n\n---\n\n");
+
+    return { result: { content: [{ type: "text", text: formatted || "No memories found." }] } };
+  }
+}
+```
+
+### 6.4 MCP Configuration
+
+Users configure the MCP server in their AI assistant's settings:
+
+```json
+{
+  "mcpServers": {
+    "memory": {
+      "command": "npx",
+      "args": ["@memory/mcp-server"],
+      "env": {
+        "MEMORY_API_KEY": "sk-...",
+        "MEMORY_API_URL": "https://api.memory.example.com"
+      }
+    }
+  }
+}
+```
+
+---
+
+## 7. Browser Extension
+
+### 7.1 Overview
+
+The browser extension lets users save web content to memory with one click. Built with WXT (cross-browser extension framework) targeting Chrome, Firefox, and Safari.
+
+### 7.2 Architecture
+
+```
+┌─────────────────────────────────────────────────┐
+│                Browser Extension                │
+│  ┌──────────────┐  ┌────────────────────────┐   │
+│  │ Popup UI     │  │ Content Scripts        │   │
+│  │ (Save/Search)│  │ (Page content extract) │   │
+│  └──────┬───────┘  └──────────┬─────────────┘   │
+│         │                     │                  │
+│  ┌──────▼─────────────────────▼─────────────┐   │
+│  │         Background Service Worker         │   │
+│  │  - API communication                     │   │
+│  │  - Auth token management                 │   │
+│  │  - Content processing                    │   │
+│  └──────────────────────┬───────────────────┘   │
+└─────────────────────────┼───────────────────────┘
+                          │
+                          ▼
+                    REST API (v3)
+```
+
+### 7.3 Content Scripts
+
+Platform-specific content scripts for enhanced extraction:
+
+| Platform | Script | Extraction Strategy |
+|----------|--------|-------------------|
+| Twitter/X | `twitter.content.ts` | Extract tweet text, author, media, thread context |
+| GitHub | `github.content.ts` | Extract README, issue/PR body, code files |
+| YouTube | `youtube.content.ts` | Extract title, description, transcript (if available) |
+| Google Docs | `gdocs.content.ts` | Extract document content via DOM |
+| Default | `generic.content.ts` | Readability-based article extraction |
+
+**Generic content extraction**:
+```typescript
+// content-script.ts (runs on every page)
+function extractPageContent(): { title: string; content: string; url: string } {
+  // 1. Try to find article content using Readability-like heuristics
+  const article = findArticleContent(document);
+
+  // 2. If no article found, use selected text (if user selected before saving)
+  const selection = window.getSelection()?.toString();
+
+  // 3. Fallback to full body text
+  const content = article || selection || document.body.innerText;
+
+  return {
+    title: document.title,
+    content: content.substring(0, 100000),  // Limit content size
+    url: window.location.href
+  };
+}
+```
+
+### 7.4 Popup UI
+
+A small popup when the user clicks the extension icon:
+
+```
+┌──────────────────────────────┐
+│ 🧠 Memory                    │
+│                              │
+│ Save this page?              │
+│ [Title: Page Title         ] │
+│ [Project: ▼ Research       ] │
+│ [Tags:    ai, ml           ] │
+│                              │
+│ [ ] Auto-forget after 30 days│
+│                              │
+│ [Save to Memory]  [Cancel]   │
+│                              │
+│ ─────────────────────────── │
+│ Quick Search:               │
+│ [Search memories...        ] │
+│ Results appear here...       │
+└──────────────────────────────┘
+```
+
+### 7.5 Context Menu Integration
+
+Add a right-click context menu item:
+
+```typescript
+chrome.contextMenus.create({
+  id: "save-to-memory",
+  title: "Save to Memory",
+  contexts: ["selection", "page", "link"]
+});
+
+chrome.contextMenus.onClicked.addListener((info, tab) => {
+  if (info.menuItemId === "save-to-memory") {
+    const content = info.selectionText || /* extract full page */;
+    saveToMemory({ content, url: info.pageUrl, title: tab.title });
+  }
+});
+```
+
+---
+
+## 8. Web Application
+
+### 8.1 Overview
+
+The web app provides a dashboard for managing memories, browsing projects, searching, and configuring integrations.
+
+### 8.2 Route Structure (Next.js App Router)
+
+```
+/                          — Landing page / Dashboard
+/login                     — Authentication
+/dashboard                 — Memory overview (recent, stats)
+/projects                  — List all projects
+/projects/[slug]           — View project memories
+/projects/[slug]/settings  — Project settings
+/search                    — Global search across all projects
+/memory/[id]               — View single document detail
+/settings                  — Account, API keys, integrations
+/settings/connections      — Manage external integrations
+/api/v3/*                  — API routes
+```
+
+### 8.3 Dashboard Features
+
+- **Recent memories**: Last 20 saved items with titles, summaries, and timestamps
+- **Project list**: All projects with document counts
+- **Search bar**: Global hybrid search
+- **Memory graph**: Interactive visualization of topic connections (using D3.js or react-force-graph)
+- **Stats**: Total memories, memories this week, storage used
+
+### 8.4 Memory Detail View
+
+When viewing a single document:
+- Full content with syntax highlighting for code
+- Metadata sidebar (tags, source URL, content type, dates)
+- Version history (if `updates_memory_id` chain exists)
+- Related memories (semantic neighbors)
+- Edit/delete controls
+
+---
+
+## 9. Memory Versioning
+
+### 9.1 Version Chain
+
+When content at the same URL or with the same title is saved again, the system can create a version chain:
+
+```typescript
+function saveWithVersioning(newDoc: DocumentInput): Document {
+  // Check for existing document with same URL or hash
+  const existing = await findExistingDocument(newDoc.source_url, newDoc.project_id);
+
+  if (existing && contentChanged(existing, newDoc)) {
+    // Create new document linked to previous version
+    newDoc.updates_memory_id = existing.id;
+    const saved = await createDocument(newDoc);
+
+    // Re-index with new embeddings
+    await reindexDocument(saved);
+
+    return saved;
+  }
+
+  // No existing version — create fresh
+  return await createDocument(newDoc);
+}
+```
+
+### 9.2 Version Navigation
+
+The API returns the version chain when querying a document:
+
+```
+GET /v3/documents/:id?include_versions=true
+```
+
+```text
+Returns the document plus `versions: [{ id, title, created_at, summary }]` showing the full history.
+
+```
+---
+
+## 10. Auto-Forgetting
+
+### 10.1 Mechanism
+
+Documents with a `forget_after` timestamp are automatically deleted by a background job:
+
+```typescript
+// Runs every hour via cron
+async function cleanupExpiredMemories() {
+  const expired = await db.query(`
+    SELECT id FROM documents
+    WHERE forget_after IS NOT NULL
+      AND forget_after < NOW()
+  `);
+
+  for (const doc of expired) {
+    await deleteDocumentAndChunks(doc.id);
+  }
+
+  console.log(`Cleaned up ${expired.length} expired memories`);
+}
+```
+
+### 10.2 User Controls
+
+Users can set forget_after via:
+- API: `"forget_after": "2025-06-01T00:00:00Z"` in POST /v3/memory
+- Browser extension: "Auto-forget after 30 days" checkbox
+- Web UI: Edit document settings
+
+---
+
+## 11. Platform Integrations
+
+### 11.1 Connection Model
+
+External platform integrations sync content into the memory store. Each integration uses OAuth2 for authentication and periodic syncing.
+
+### 11.2 Supported Platforms
+
+| Platform | Sync Strategy | Content Extracted |
+|----------|--------------|-------------------|
+| Google Drive | Incremental (changes API) | Document text, spreadsheet data |
+| Notion | Incremental (search API) | Page content, database entries |
+| GitHub | Webhook + periodic | README, issues, PRs, code files |
+| Twitter/X | Bookmarks API | Bookmarked tweet text and threads |
+| Slack | Saved messages API | Saved/bookmarked messages |
+
+### 11.3 Sync Architecture
+
+```typescript
+interface IntegrationSync {
+  provider: string;
+  organizationId: string;
+
+  // Called on schedule (every 15 min for active connections)
+  sync(): Promise<SyncResult>;
+
+  // OAuth flow
+  getAuthUrl(): string;
+  handleCallback(code: string): Promise<Connection>;
+}
+
+interface SyncResult {
+  added: number;
+  updated: number;
+  deleted: number;
+  errors: string[];
+}
+```
+
+Each sync:
+1. Fetch new/changed items since `connection.last_synced_at`
+2. For each item, run through the ingestion pipeline
+3. Update `connection.last_synced_at`
+
+---
+
+## 12. Error Handling and Reliability
+
+### 12.1 API Validation
+
+All API inputs are validated with Zod schemas:
+
+```typescript
+const MemoryInputSchema = z.object({
+  content: z.string().min(1).max(500000),
+  title: z.string().max(500).optional(),
+  source_url: z.string().url().optional(),
+  content_type: z.enum(["text", "markdown", "html", ...]).optional(),
+  project_id: z.string().uuid().optional(),
+  metadata: z.record(z.any()).optional(),
+  updates_memory_id: z.string().uuid().optional(),
+  forget_after: z.string().datetime().optional()
+});
+```
+
+### 12.2 Retry Strategy
+
+External API calls (embedding, LLM, Qdrant) use retry with exponential backoff:
+
+```
+Attempt 1: immediate
+Attempt 2: 1 second delay
+Attempt 3: 2 second delay
+Max attempts: 3
+```
+
+### 12.3 Ingestion Queue
+
+For high-volume ingestion, use a job queue (Bull/BullMQ with Redis, or a simple database-backed queue):
+
+```typescript
+interface IngestionJob {
+  id: string;
+  document_id: string;
+  status: "pending" | "processing" | "completed" | "failed";
+  attempts: number;
+  error?: string;
+  created_at: string;
+}
+```
+
+This allows the API to return immediately (202 Accepted) and process content asynchronously.
+
+---
+
+## 13. Behavioral Test Cases
+
+### Ingestion
+
+1. **Save plain text** — POST /v3/memory with text content → returns document with summary and chunks
+2. **Save HTML** — HTML content is cleaned, scripts/nav removed, converted to searchable text
+3. **Save PDF** — PDF content is extracted to text, chunked, and embedded
+4. **Save code** — Code is preserved with language metadata, chunked by function boundaries
+5. **Deduplication** — Saving identical content twice (same hash) → second call returns existing document
+6. **Version chain** — Saving updated content for same URL → creates linked version
+7. **Chunking respects boundaries** — Long document is split at section/paragraph breaks, not mid-sentence
+8. **Chunk overlap** — Adjacent chunks share ~50 tokens of overlap for context continuity
+9. **Metadata extraction** — LLM extracts tags, category, language from content automatically
+10. **Summary generation** — Every saved document gets an LLM-generated 2-3 sentence summary
+
+### Hybrid Search
+
+11. **Vector-only match** — Query semantically similar but no keyword overlap → returns results (vector score carries it)
+12. **Keyword-only match** — Query with exact keyword match but different semantic meaning → returns results (text score)
+13. **Hybrid boost** — Result with both vector AND text match scores higher than either alone
+14. **Recency bonus** — Between two equally relevant results, the newer one scores slightly higher
+15. **Score formula** — `final_score = (vector × 0.6) + (text × 0.4) + recency_bonus` is correctly computed
+16. **Result grouping** — Multiple chunks from same document are grouped, best chunk score used for ranking
+17. **Project scoping** — Search in project A does not return results from project B
+18. **Cross-project search** — Searching without project_id returns results from all user projects
+19. **Empty query** — Returns most recent memories (ordered by created_at desc)
+20. **Filter by content type** — Can filter search to only HTML, only code, etc.
+
+### Edge Caching
+
+21. **Cache hit** — Identical query within 5 minutes returns cached results (faster response)
+22. **Cache invalidation** — After adding new content to a project, cache is cleared for that project
+23. **Cache miss** — New query goes to vector + text search (slower response)
+
+### MCP Server
+
+24. **memory tool** — Saves content and returns confirmation with title and chunk count
+25. **recall tool** — Returns formatted search results with titles, scores, and content previews
+26. **listProjects tool** — Returns all user projects with names and document counts
+27. **memory-graph tool** — Returns nodes and edges for knowledge visualization
+28. **whoAmI tool** — Returns user info and organization
+
+### Browser Extension
+
+29. **Save full page** — Clicking extension icon saves entire page content
+30. **Save selection** — Right-click selected text → saves only selected text
+31. **Twitter extraction** — On Twitter, extracts tweet text, author, and thread context
+32. **GitHub extraction** — On GitHub, extracts README or issue body with formatting preserved
+33. **Project selection** — User can choose target project from popup dropdown
+
+### Memory Management
+
+34. **Auto-forget** — Document with `forget_after` in the past is automatically deleted by cleanup job
+35. **Manual delete** — DELETE /v3/documents/:id removes document, chunks, and vectors
+36. **Version history** — Document with updates_memory_id chain shows full version list
+37. **Last accessed tracking** — Search results update `last_accessed_at` on returned documents
+
+### API Validation
+
+38. **Missing content** — POST /v3/memory with empty content → 400 error with description
+39. **Invalid project ID** — Non-existent project_id → 404 error
+40. **Rate limiting** — More than 100 requests per minute → 429 Too Many Requests
+41. **Auth required** — Request without Bearer token → 401 Unauthorized
+
+### Error Recovery
+
+42. **Embedding API failure** — If OpenAI embedding fails, retry 3 times then queue for later
+43. **Qdrant unavailable** — If vector DB is down, save to PostgreSQL and queue for indexing when available
+44. **Partial ingestion** — If 3 of 5 chunks embed successfully, save those 3 and retry the other 2
+
+---
+
+## 14. Implementation Priorities
+
+### Phase 1: Core Platform (MVP)
+1. PostgreSQL schema + Qdrant collection setup
+2. Ingestion pipeline (extract → chunk → embed → store)
+3. Hybrid search with score fusion
+4. REST API (memory + recall + projects endpoints)
+5. Basic web app (dashboard, search, project list)
+
+### Phase 2: AI Integration
+6. MCP server (memory + recall tools)
+7. Summary and metadata extraction
+8. Knowledge graph view
+
+### Phase 3: Browser Extension
+9. WXT extension with popup UI
+10. Generic content extraction
+11. Platform-specific scripts (Twitter, GitHub)
+12. Context menu integration
+
+### Phase 4: Advanced Features
+13. Memory versioning chain
+14. Auto-forgetting cleanup job
+15. Edge caching layer
+16. Platform integrations (Google Drive, Notion, GitHub sync)
+
+### Phase 5: Scale & Polish
+17. Ingestion job queue for async processing
+18. Connection pooling and query optimization
+19. Full-text search index optimization
+20. Export/import functionality

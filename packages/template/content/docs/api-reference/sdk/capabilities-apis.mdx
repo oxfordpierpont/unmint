@@ -1,0 +1,265 @@
+---
+title: "Capabilities APIs"
+description: "Capability library and import APIs from the original v1 platform build, including list, detail, import, install, uninstall, examples, and failure handling."
+---
+## Contract status
+
+`Canonical route contract`
+
+This page is based on the route handlers in the original v1 platform repo:
+
+- `apps/platform/src/app/api/capabilities/route.js`
+- `apps/platform/src/app/api/capabilities/import/route.js`
+- `apps/platform/src/app/api/capabilities/[id]/route.js`
+- `apps/platform/src/app/api/capabilities/[id]/install/route.js`
+- `apps/platform/src/app/api/capabilities/categories/route.js`
+
+## Use this page when
+
+- you are browsing the capability library
+- you are compiling capabilities from n8n workflows
+- you need to install a capability for a business
+- you need to understand dependency-check behavior before install
+
+## Golden path
+
+### 1. Browse categories
+
+```http
+GET /api/capabilities/categories
+```
+
+### 2. Browse or search capabilities
+
+```http
+GET /api/capabilities?category=productivity&featured=true
+```
+
+### 3. Import a capability from a workflow in dry-run mode
+
+```http
+POST /api/capabilities/import
+Content-Type: application/json
+
+{
+  "workflow_json": {},
+  "category_slug": "productivity",
+  "dry_run": true
+}
+```
+
+### 4. Inspect one capability
+
+```http
+GET /api/capabilities/my-capability-slug
+```
+
+### 5. Install it for a business
+
+```http
+POST /api/capabilities/my-capability-slug/install
+```
+
+## `GET /api/capabilities`
+
+Purpose:
+
+- return capability library records
+
+Supported query params from the source:
+
+- `category`
+- `search`
+- `featured=true`
+- `installed=true`
+- `admin=true`
+
+Behavior:
+
+- non-admin views only return active capabilities
+- admin view requires super-admin auth
+- installed view filters by current business installs
+- authenticated business requests may get `is_installed` annotations
+
+## `POST /api/capabilities/import`
+
+Purpose:
+
+- convert an n8n workflow JSON payload into a capability and publish it
+
+Auth:
+
+- super admin only
+
+Request body fields from the source:
+
+- `workflow_json`
+- `category_slug`
+- `name`
+- `description`
+- `emoji`
+- `dry_run`
+
+Pipeline behavior:
+
+1. parse workflow into IR using `parseWorkflow()`
+2. compile into a capability using `compileCapability()`
+3. block on parse or compile errors
+4. optionally return a dry-run preview
+5. upsert into `capabilities`
+
+### Dry-run success shape
+
+```json
+{
+  "success": true,
+  "data": {
+    "capability": {},
+    "warnings": [],
+    "errors": [],
+    "dry_run": true
+  }
+}
+```
+
+### Import failure modes
+
+- invalid JSON body
+- `workflow_json` missing or not an object
+- workflow parse failure
+- critical parse errors
+- compilation errors
+- database upsert failure
+
+## `GET /api/capabilities/categories`
+
+Purpose:
+
+- return active capability categories for the capability library sidebar
+
+Behavior:
+
+- selects active records
+- orders by `display_order`
+
+## `GET /api/capabilities/{id}`
+
+Purpose:
+
+- return full details for one capability
+
+Path parameter:
+
+- supports UUID or slug
+
+Behavior:
+
+- returns active capability only
+- includes joined `capability_categories`
+- annotates `is_installed` for the current business when available
+
+## `PATCH /api/capabilities/{id}`
+
+Purpose:
+
+- update capability metadata
+
+Auth:
+
+- super admin only
+
+Accepted fields from the source:
+
+- `name`
+- `description`
+- `icon_emoji`
+- `category_slug`
+- `is_featured`
+- `is_active`
+
+## `DELETE /api/capabilities/{id}`
+
+Purpose:
+
+- delete or deactivate a capability
+
+Auth:
+
+- super admin only
+
+Delete policy from the source:
+
+- hard delete if install count is zero
+- soft delete by setting `is_active=false` if installs exist
+
+## `POST /api/capabilities/{id}/install`
+
+Purpose:
+
+- install a capability for the authenticated business
+
+Behavior:
+
+- resolve tenant and business context
+- fetch active capability by UUID or slug
+- detect already-installed or previously-deactivated installs
+- run requirement checks through `checkRequirements()`
+- create or reactivate `business_capabilities`
+
+Important status responses from the source:
+
+- `installed`
+- `already_installed`
+- `requirements_missing`
+
+### Requirements-missing example
+
+```json
+{
+  "success": false,
+  "status": "requirements_missing",
+  "requirements": {
+    "connected": [],
+    "missing": ["gmail", "slack"],
+    "can_install": false
+  }
+}
+```
+
+## `DELETE /api/capabilities/{id}/install`
+
+Purpose:
+
+- uninstall a capability for the authenticated business
+
+Behavior:
+
+- soft delete only
+- sets `is_active=false` on the install row
+
+## Operational checks after install
+
+1. Verify install status is `installed` or `already_installed`.
+2. If install fails, inspect `requirements_missing`.
+3. Re-fetch capability details and confirm `is_installed=true`.
+4. Confirm the business can access the expected runtime surface.
+
+## v1 reality vs v2 target
+
+### Implemented in v1
+
+- capability library endpoints
+- workflow-to-capability import
+- install and uninstall lifecycle
+- requirements-aware install blocking
+
+### Carry forward to v2
+
+- dry-run preview before persistence
+- install requirement checks
+- slug-or-UUID resource lookup
+
+### Known mismatch or migration risk
+
+- the capabilities system is adjacent to, but not identical with, the platform app manifest system
+- v2 should clarify when a reusable unit is a capability, an app, or both

@@ -1,0 +1,243 @@
+---
+title: "Part XX — Import & Migration"
+description: "XX.1 Overview aiConnectedOS is designed to be a long term home for a user's AI relationships — a place where personas grow, conversations accumulate meaning,..."
+---
+<Info>
+Normalized for Mintlify from `knowledge-base/aiconnected-os/aiConnectedOS-import-migration-prd-addon.mdx`.
+</Info>
+# Part XX — Import & Migration
+
+---
+
+## XX.1 Overview
+
+aiConnectedOS is designed to be a long-term home for a user's AI relationships — a place where personas grow, conversations accumulate meaning, and memory deepens over time. But most users arriving on the platform are not starting from zero. They have months or years of prior AI conversations stored in ChatGPT, Claude.ai, Gemini, and other tools. They have context, preferences, and work history that already exists — it just lives somewhere else.
+
+The Import & Migration system allows users to bring that history into aiConnectedOS, either as browseable conversation records or as seed material for CogniGraph memory. This closes a critical adoption gap: users no longer have to choose between starting fresh or abandoning prior AI-assisted work.
+
+Import is intentionally non-destructive and non-mandatory. It is an opt-in enrichment pathway, not a required onboarding step.
+
+---
+
+## XX.2 Design Philosophy
+
+**History is a first-class asset.** Conversations from other platforms carry real informational value — prior decisions, preferences, writing style, domain expertise, and context. The system should treat imported data with the same respect as natively generated data.
+
+**Import does not equal training.** Importing a conversation does not automatically alter persona behavior. Memory ingestion is a deliberate, user-controlled action, separate from simply archiving the conversation.
+
+**Imports are sandboxed by default.** Imported conversations land in a designated Import Archive and do not mix with live chats unless the user explicitly promotes content. This prevents noise and preserves the integrity of active Instances.
+
+**Transparency over automation.** The system shows users exactly what it found, what it understood, and what it plans to do before executing. No silent imports, no surprise memory writes.
+
+---
+
+## XX.3 Supported Import Sources
+
+### Phase 1 (Launch)
+
+| Source | Format | Notes |
+|---|---|---|
+| ChatGPT | `conversations.json` (inside OpenAI export ZIP) | Standard export from chat.openai.com → Settings → Export |
+| Claude.ai | `conversations.json` (Anthropic export format) | Standard export from claude.ai → Settings → Export |
+| aiConnectedOS | `.aicos` export package | Full-fidelity round-trip restore, including memory snapshots |
+| Plain text / Markdown | `.txt`, `.md` | Manual paste or file upload; treated as unstructured conversation transcript |
+
+### Phase 2 (Post-Launch)
+
+| Source | Format | Notes |
+|---|---|---|
+| Gemini / Google AI Studio | JSON export | Subject to Google export format stability |
+| Notion AI | Page export | Extracts AI-assisted content blocks |
+| Microsoft Copilot | Word/OneNote exports | Detected via document metadata |
+| Custom / Generic | CSV, JSONL | For power users importing from custom tools or pipelines |
+
+---
+
+## XX.4 Import Entry Points
+
+Users can trigger an import from two places:
+
+**Onboarding Flow:** During account setup, after the user creates their first persona, a non-intrusive card appears: *"Already have AI history from another platform? Bring it with you."* This is skippable with a single click and does not block progress.
+
+**Settings → Import & Migration:** Available at any time post-onboarding. Located under Settings in the left nav rail, as a dedicated sub-section. Users can perform multiple imports over time — the system handles deduplication.
+
+---
+
+## XX.5 Import Flow (UX)
+
+### Step 1: Source Selection
+
+The user selects their source platform from a list of supported options, or chooses "Generic / Other" for unstructured files. Each option shows a brief note on how to obtain the export file from the originating service, with a link to that platform's export instructions.
+
+### Step 2: File Upload
+
+A drag-and-drop upload target accepts the export file or ZIP archive. The system extracts and validates the file client-side before upload, surfacing any format errors immediately (e.g., "This doesn't look like a ChatGPT export — expected `conversations.json` inside a ZIP").
+
+File size limits: 500MB per import package. Larger archives can be split and imported in batches.
+
+### Step 3: Preview & Summary
+
+Before any data is written, the system presents a summary of what was found:
+
+```
+Found 847 conversations spanning March 2022 – February 2026
+Estimated 124,000 messages
+Detected topics: software development, business strategy, writing, travel
+
+[Preview sample conversations →]
+```
+
+The user can browse a sample of the detected conversations in a read-only preview pane before proceeding.
+
+### Step 4: Import Configuration
+
+The user makes three decisions:
+
+**Archive destination:** Which Instance should receive the imported conversations? Default is a system-generated "Import Archive" Instance, isolated from active workspaces. Advanced users can route to a specific existing Instance.
+
+**Persona attribution:** Who should be shown as the AI sender in imported messages? The user selects from their existing personas or creates a generic "Archived AI" placeholder persona. This is cosmetic — it does not affect how the persona actually behaves.
+
+**Memory ingestion (optional):** Should the system analyze imported conversations and extract memories into CogniGraph? This is off by default. When enabled, the user can further choose which personas receive the extracted memories and set a confidence threshold (low / medium / high — controlling how aggressively the system infers memories from ambiguous content).
+
+### Step 5: Processing
+
+Import processing runs as a background job. The user is not blocked from using the platform during processing. A progress indicator appears in the notification tray. For large imports, an email notification is sent on completion.
+
+Processing stages:
+1. Parse and normalize conversation format
+2. Deduplicate against existing imported content (by content hash)
+3. Write conversations to the Import Archive
+4. If memory ingestion is enabled: run semantic analysis, extract candidate memories, queue for user review
+
+### Step 6: Review & Confirmation
+
+On completion, the user receives an import summary:
+
+```
+Import complete
+
+847 conversations imported
+0 duplicates skipped
+3 conversations could not be parsed (view errors →)
+
+Memory candidates: 214 items ready for review
+[Review memories →]  [Skip for now]
+```
+
+Memory candidates are surfaced in a review queue (see Section XX.7), not written automatically.
+
+---
+
+## XX.6 Import Archive
+
+The Import Archive is a read-only Instance automatically created on first import. It behaves like a standard Instance in the following ways: conversations are browseable, searchable, and can be referenced in active chats. It differs in the following ways:
+
+- Conversations cannot be replied to. They are historical records, not live chats.
+- The archive is labeled distinctly in the UI with an "Archived" badge to prevent confusion with live workspaces.
+- Imported conversations display a banner: *"Imported from ChatGPT · March 2022"*
+- Users can promote specific conversations to a live Instance by selecting them and choosing "Move to Instance." This creates a copy in the destination Instance, leaving the original in the archive.
+
+Users can have multiple Import Archives if they import from multiple sources over time. Each archive is labeled by source and import date.
+
+---
+
+## XX.7 Memory Ingestion Review Queue
+
+When memory ingestion is enabled, the system extracts candidate memories from imported conversations and surfaces them for user review before writing them to CogniGraph. This is intentional — automated memory extraction from a stranger's raw conversation history is noisy, and trust should be earned through review.
+
+The review queue is accessed from Settings → Import & Migration → Review Memories, or from the notification shown at import completion.
+
+Each candidate memory is shown as a card:
+
+```
+┌─────────────────────────────────────────────────────────┐
+│ Extracted from: ChatGPT import · June 2023              │
+│                                                         │
+│ "User prefers TypeScript over JavaScript for all        │
+│ production code and finds JavaScript 'sloppy'."         │
+│                                                         │
+│ Confidence: High    Type: Preference                    │
+│ Assign to persona: [Sally ▾]                            │
+│                                                         │
+│ [✓ Accept]  [✗ Reject]  [Edit before accepting]        │
+└─────────────────────────────────────────────────────────┘
+```
+
+Users can process candidates one at a time, or use bulk actions ("Accept all high-confidence," "Reject all," etc.).
+
+Accepted memories are written to the selected persona's CogniGraph layer at the `episodic` level with an `imported` source tag. This tag allows them to be filtered or weighted differently from organically grown memories if the system logic requires it.
+
+Rejected memories are discarded. Edited memories are written with the user's amended content.
+
+---
+
+## XX.8 Deduplication
+
+The system prevents double-importing the same content across multiple import attempts. Deduplication is handled by content hash at the conversation level. If a conversation's hash matches an already-imported record, it is silently skipped and counted in the "duplicates skipped" summary.
+
+For memory candidates, deduplication is semantic rather than exact. If a candidate memory is substantially similar to an existing CogniGraph memory for the same persona, the system flags it as a potential duplicate and asks the user to confirm before writing.
+
+---
+
+## XX.9 aiConnectedOS Native Export & Restore
+
+The platform's own export format (`.aicos`) supports full-fidelity round-trip migration. This is the only format that preserves:
+
+- CogniGraph memory graphs, including edge relationships and confidence scores
+- Persona configuration, boundaries, and skill assignments
+- Chat metadata (pins, tags, Instance assignments)
+- Memory checkpoints
+
+This format is intended for: platform migrations (e.g., moving from cloud to self-hosted), disaster recovery, and power-user backups. It is not human-readable — it is a structured binary archive optimized for restore fidelity, not portability.
+
+The `.aicos` export is initiated from Settings → Export & Backup (a separate section from Import). Restore from `.aicos` is a privileged action that prompts a confirmation dialog warning the user that restoring will merge data and that the operation cannot be automatically undone.
+
+---
+
+## XX.10 Privacy & Data Handling
+
+Imported conversation data is:
+
+- Stored in the user's own Supabase database partition, subject to the same RLS policies as all other user data
+- Never used to train Anthropic or aiConnectedOS models
+- Never shared across users or instances
+- Deletable at any time via Settings → Import & Migration → Manage Archives → Delete
+
+Imported data from third-party platforms (ChatGPT, Claude.ai, etc.) is the user's own export of their own data. The user is responsible for ensuring they have the right to import and store that data in accordance with the originating platform's terms of service.
+
+---
+
+## XX.11 Error Handling
+
+| Error condition | System behavior |
+|---|---|
+| Unrecognized file format | Immediate client-side validation error before upload |
+| Partially malformed export | Import continues; malformed conversations are skipped and listed in an error report |
+| File too large (&gt;500MB) | User is prompted to split the archive and import in batches |
+| Duplicate import detected | Duplicates silently skipped; count reported in summary |
+| Memory ingestion failure | Import completes without memory candidates; user is notified and can retry ingestion separately |
+| Import job timeout (&gt;2 hours) | Job is marked as failed; partial results are preserved; user is notified with option to retry |
+
+---
+
+## XX.12 Settings Panel: Import & Migration
+
+Located at Settings → Import & Migration. Contains:
+
+**Import History:** A chronological list of all past imports, showing source, date, conversation count, and status. Each entry links to its Import Archive Instance.
+
+**Pending Memory Review:** Badge showing count of unreviewed memory candidates. Links to the review queue.
+
+**Manage Archives:** List of all Import Archive Instances with options to rename, view, or permanently delete.
+
+**Start New Import:** Entry point to the import flow described in Section XX.5.
+
+---
+
+## XX.13 Build Phase Placement
+
+This feature is scoped to **Phase 6 (Polish & Analytics)** of the 18-week build roadmap. It is not on the critical path for launch and should not block earlier phases. However, the database schema for Import Archives (a variant of the standard `instances` table with an `is_import_archive` flag) should be included in the Phase 1 migration to avoid schema changes later.
+
+The memory ingestion pipeline reuses the `generate-embedding` Edge Function and the `persona_memories` table already built in Phase 4, requiring no new backend infrastructure for that component.
+
+Estimated engineering effort: 3–4 weeks for a complete Phase 1 implementation (ChatGPT + Claude.ai + aiConnectedOS native formats, full UX flow, review queue).

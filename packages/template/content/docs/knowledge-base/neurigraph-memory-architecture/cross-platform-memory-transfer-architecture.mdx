@@ -1,0 +1,559 @@
+---
+title: "ChatGPT → Brain Ingestion Pipeline"
+description: "Cross Platform Memory Transfer Architecture Executive Summary This document defines how Brain by aiConnected can ingest ChatGPT conversation exports and tran..."
+---
+<Info>
+Normalized for Mintlify from `knowledge-base/neurigraph-memory-architecture/cross-platform-memory-transfer-architecture.mdx`.
+</Info>
+# ChatGPT → Brain Ingestion Pipeline
+## Cross-Platform Memory Transfer Architecture
+
+---
+
+## Executive Summary
+
+This document defines how Brain by aiConnected can ingest ChatGPT conversation exports and transform raw conversation logs into structured, three-dimensional cognitive memory that can persist across AI platforms.
+
+**The Core Insight:** ChatGPT exports are flat conversation trees. Brain's Cognigraph is a structured knowledge hierarchy. The pipeline transforms one into the other, extracting *knowledge* from *conversations*.
+
+---
+
+## Part 1: Understanding ChatGPT Export Structure
+
+### 1.1 Export File Contents
+
+When a user exports their ChatGPT data, they receive a ZIP file containing:
+
+```
+chatgpt-export/
+├── chat.html           # Human-readable conversation viewer
+├── conversations.json  # Machine-readable conversation data
+├── message_feedback.json
+├── model_comparisons.json
+├── shared_conversations.json
+└── user.json
+```
+
+**Our target: `conversations.json`**
+
+### 1.2 conversations.json Structure
+
+Each conversation is a **tree structure** (not linear) due to ChatGPT's edit/regenerate features:
+
+```json
+{
+  "id": "35a1fa05-e928-4c39-8ffa-ca74f75b509f",
+  "title": "AI Turing Test.",
+  "create_time": 1678015311.655875,
+  "mapping": {
+    "node-uuid-1": {
+      "id": "node-uuid-1",
+      "message": {
+        "id": "node-uuid-1",
+        "author": {
+          "role": "user" | "assistant" | "system",
+          "metadata": {}
+        },
+        "create_time": 1678015311.656259,
+        "content": {
+          "content_type": "text",
+          "parts": ["The actual message content here"]
+        },
+        "metadata": {
+          "model_slug": "gpt-4",
+          "finish_details": { "type": "stop" }
+        }
+      },
+      "parent": "parent-node-uuid",
+      "children": ["child-node-uuid-1", "child-node-uuid-2"]
+    }
+  },
+  "current_node": "final-node-uuid"
+}
+```
+
+### 1.3 Key Challenges
+
+| Challenge | Description |
+|-----------|-------------|
+| **Tree, not list** | Conversations branch when users edit or regenerate |
+| **No structure** | Raw text with no semantic organization |
+| **Noise ratio** | Most conversation is context/pleasantries, not knowledge |
+| **No categorization** | Topics blend together within single conversations |
+| **Temporal only** | Ordered by time, not by meaning |
+
+---
+
+## Part 2: The Transformation Pipeline
+
+### 2.1 Pipeline Overview
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                     CHATGPT EXPORT (ZIP)                            │
+└─────────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│  STAGE 1: PARSE & LINEARIZE                                         │
+│                                                                     │
+│  • Extract conversations.json from ZIP                              │
+│  • Traverse tree structure following current_node path              │
+│  • Convert branching tree to linear conversation                    │
+│  • Extract metadata (timestamps, model, title)                      │
+│                                                                     │
+│  Output: Array of linear conversations with metadata                │
+└─────────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│  STAGE 2: KNOWLEDGE EXTRACTION                                      │
+│                                                                     │
+│  For each conversation, LLM identifies:                             │
+│                                                                     │
+│  ┌────────────────────────────────────────────────────────────────┐ │
+│  │ FACTS                                                          │ │
+│  │ "User stated X about themselves"                               │ │
+│  │ "User's preference is Y"                                       │ │
+│  │ "User works at Z"                                              │ │
+│  └────────────────────────────────────────────────────────────────┘ │
+│  ┌────────────────────────────────────────────────────────────────┐ │
+│  │ DECISIONS                                                      │ │
+│  │ "User decided to do X"                                         │ │
+│  │ "User chose approach Y over Z"                                 │ │
+│  └────────────────────────────────────────────────────────────────┘ │
+│  ┌────────────────────────────────────────────────────────────────┐ │
+│  │ LEARNINGS                                                      │ │
+│  │ "User learned that X"                                          │ │
+│  │ "User was corrected about Y"                                   │ │
+│  └────────────────────────────────────────────────────────────────┘ │
+│  ┌────────────────────────────────────────────────────────────────┐ │
+│  │ CONTEXT                                                        │ │
+│  │ "User was working on project X"                                │ │
+│  │ "This relates to user's goal of Y"                             │ │
+│  └────────────────────────────────────────────────────────────────┘ │
+│                                                                     │
+│  Output: Array of extracted knowledge units                         │
+└─────────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│  STAGE 3: CLASSIFICATION & HIERARCHY MAPPING                        │
+│                                                                     │
+│  For each knowledge unit, determine:                                │
+│                                                                     │
+│  • CATEGORY (X-axis): Broadest domain                               │
+│    → Personal, Professional, Technical, Creative, etc.              │
+│                                                                     │
+│  • CONCEPT (Y-axis): General area within category                   │
+│    → Under "Professional": Career, Skills, Projects, etc.           │
+│                                                                     │
+│  • TOPIC (Z-axis depth): Specific subject                           │
+│    → Under "Projects": "Q1 Marketing Campaign", etc.                │
+│                                                                     │
+│  • RETRIEVAL INTENT: Exact vs. Broad match suitability              │
+│    → Facts = exact match priority                                   │
+│    → Learnings = broad match priority                               │
+│                                                                     │
+│  Output: Classified knowledge units with hierarchy assignments      │
+└─────────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│  STAGE 4: DEDUPLICATION & CONFLICT RESOLUTION                       │
+│                                                                     │
+│  • Detect duplicate/overlapping knowledge                           │
+│  • Identify contradictions (user changed jobs, moved, etc.)         │
+│  • Apply temporal logic (newer overrides older for state)           │
+│  • Merge complementary facts                                        │
+│  • Flag conflicts for user review                                   │
+│                                                                     │
+│  Output: Deduplicated, conflict-resolved knowledge set              │
+└─────────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│  STAGE 5: COGNIGRAPH STORAGE                                        │
+│                                                                     │
+│  For each knowledge unit:                                           │
+│                                                                     │
+│  1. Create/find Category node                                       │
+│  2. Create/find Concept node under Category                         │
+│  3. Create/find Topic node under Concept                            │
+│  4. Store memory in memories table                                  │
+│  5. Generate reflection via embedded LLM                            │
+│  6. Vectorize reflection for semantic search                        │
+│  7. Run CTL validation                                              │
+│  8. Create relationship links to related topics                     │
+│                                                                     │
+│  Output: Populated Cognigraph with searchable, structured memory    │
+└─────────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│  STAGE 6: INDEX FILE GENERATION                                     │
+│                                                                     │
+│  Generate Index Files for precision targeting:                      │
+│                                                                     │
+│  • Category index (what broad domains exist)                        │
+│  • Concept index per category                                       │
+│  • Topic index per concept                                          │
+│  • Keyword → Topic mapping                                          │
+│  • Entity → Topic mapping (people, places, projects)                │
+│                                                                     │
+│  Output: Index files for 90%+ cost reduction on retrieval           │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Part 3: Stage Implementation Details
+
+### 3.1 Stage 1: Parse & Linearize
+
+```python
+def linearize_conversation(conversation: dict) -> list[dict]:
+    """
+    Convert ChatGPT's tree structure to linear conversation.
+    Follows the path from root to current_node.
+    """
+    mapping = conversation["mapping"]
+    current_id = conversation["current_node"]
+    
+    # Build path from current node back to root
+    path = []
+    while current_id:
+        node = mapping.get(current_id)
+        if node and node.get("message"):
+            path.append({
+                "role": node["message"]["author"]["role"],
+                "content": "".join(node["message"]["content"]["parts"]),
+                "timestamp": node["message"].get("create_time"),
+                "model": node["message"].get("metadata", {}).get("model_slug")
+            })
+        current_id = node.get("parent") if node else None
+    
+    # Reverse to get chronological order
+    path.reverse()
+    
+    return {
+        "id": conversation["id"],
+        "title": conversation["title"],
+        "created": conversation["create_time"],
+        "messages": path
+    }
+```
+
+### 3.2 Stage 2: Knowledge Extraction Prompt
+
+```markdown
+# Knowledge Extraction Prompt
+
+You are analyzing a conversation between a user and an AI assistant.
+Extract ONLY knowledge about the USER - their facts, preferences, 
+decisions, and learnings. Ignore generic information.
+
+## Conversation
+{conversation_text}
+
+## Extract the following (JSON format):
+
+{
+  "facts": [
+    // Definitive statements about the user
+    // Examples: "User's name is Bob", "User lives in Atlanta"
+  ],
+  "preferences": [
+    // User's stated likes, dislikes, styles
+    // Examples: "User prefers Python over JavaScript"
+  ],
+  "decisions": [
+    // Choices the user made
+    // Examples: "User decided to use PostgreSQL for the project"
+  ],
+  "learnings": [
+    // Things the user learned or was corrected on
+    // Examples: "User learned that async/await is preferred"
+  ],
+  "context": [
+    // Background context about what user is working on
+    // Examples: "User is building a memory system called Brain"
+  ],
+  "entities": {
+    // Named entities mentioned
+    "people": [],
+    "companies": [],
+    "projects": [],
+    "technologies": [],
+    "locations": []
+  }
+}
+
+IMPORTANT:
+- Only extract knowledge about THIS user, not general facts
+- Include timestamps/dates if mentioned
+- Note confidence level (stated vs. implied)
+- Preserve specificity - don't generalize
+```
+
+### 3.3 Stage 3: Classification Prompt
+
+```markdown
+# Classification Prompt
+
+Given this knowledge unit, classify it into Brain's hierarchy:
+
+## Knowledge Unit
+{knowledge_unit}
+
+## Available Categories (create new if needed)
+- Personal (family, health, hobbies, lifestyle)
+- Professional (career, work, business)
+- Technical (coding, engineering, systems)
+- Creative (writing, art, music, design)
+- Financial (money, investments, budgets)
+- Educational (learning, courses, skills)
+- Social (relationships, networking, communication)
+
+## Classify:
+
+{
+  "category": "Category name",
+  "concept": "Concept within category",
+  "topic": "Specific topic within concept",
+  "retrieval_intent": "exact" | "broad",
+  "confidence": 0.0-1.0,
+  "related_topics": ["potential", "connections"]
+}
+```
+
+### 3.4 Stage 4: Deduplication Logic
+
+```python
+def deduplicate_knowledge(knowledge_units: list) -> list:
+    """
+    Remove duplicates and resolve conflicts.
+    """
+    # Group by topic
+    by_topic = defaultdict(list)
+    for unit in knowledge_units:
+        key = (unit["category"], unit["concept"], unit["topic"])
+        by_topic[key].append(unit)
+    
+    deduplicated = []
+    conflicts = []
+    
+    for key, units in by_topic.items():
+        if len(units) == 1:
+            deduplicated.append(units[0])
+        else:
+            # Check for semantic similarity
+            # Check for contradictions
+            # Apply temporal logic (newer wins for state-based facts)
+            # Merge complementary information
+            result, conflict = resolve_units(units)
+            deduplicated.append(result)
+            if conflict:
+                conflicts.append(conflict)
+    
+    return deduplicated, conflicts
+```
+
+### 3.5 Stage 5: Cognigraph Storage
+
+Following your existing schema:
+
+```sql
+-- 1. Ensure category exists
+INSERT INTO categories (id, name, description)
+VALUES (uuid, 'Professional', 'Work and career related')
+ON CONFLICT (name) DO UPDATE SET updated_at = NOW()
+RETURNING id;
+
+-- 2. Ensure concept exists
+INSERT INTO concepts (id, category_id, name, description, original_intent)
+VALUES (uuid, category_id, 'Projects', 'Active work projects', 'Track project context')
+ON CONFLICT (category_id, name) DO UPDATE SET updated_at = NOW()
+RETURNING id;
+
+-- 3. Ensure topic exists
+INSERT INTO topics (id, concept_id, name, description)
+VALUES (uuid, concept_id, 'Brain by aiConnected', 'Memory system development')
+ON CONFLICT (concept_id, name) DO UPDATE SET updated_at = NOW()
+RETURNING id;
+
+-- 4. Store memory
+INSERT INTO memories (id, topic_id, content, source_type, source_meta, approved)
+VALUES (
+    uuid,
+    topic_id,
+    'User is developing Brain as MCP server implementation',
+    'chatgpt_import',
+    '{"original_conversation": "conv_id", "extracted_at": "2025-01-24"}',
+    false  -- Pending CTL review
+);
+
+-- 5. Generate and store reflection (via LLM)
+-- 6. Vectorize reflection
+-- 7. Run CTL validation
+-- 8. Create relationship links
+```
+
+---
+
+## Part 4: Export Format (Brain → Other Platforms)
+
+### 4.1 Universal Memory Format
+
+For exporting Brain memories to other platforms:
+
+```json
+{
+  "brain_export_version": "1.0",
+  "exported_at": "2025-01-24T12:00:00Z",
+  "user_id": "user_uuid",
+  
+  "categories": [
+    {
+      "name": "Professional",
+      "concepts": [
+        {
+          "name": "Projects",
+          "topics": [
+            {
+              "name": "Brain by aiConnected",
+              "memories": [
+                {
+                  "content": "User is developing Brain as MCP server",
+                  "reflection": "Key architectural decision for the memory system",
+                  "confidence": 0.95,
+                  "source": "chatgpt_import",
+                  "created": "2025-01-24",
+                  "retrieval_intent": "exact"
+                }
+              ],
+              "related_topics": ["aiConnected Company", "MCP Protocol"]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  
+  "flat_facts": [
+    // For platforms that need simple key-value
+    "User is CEO of aiConnected",
+    "User is building a memory system called Brain",
+    "User prefers PostgreSQL over knowledge graphs for primary storage"
+  ]
+}
+```
+
+### 4.2 Platform-Specific Adapters
+
+**For Claude Projects:**
+```json
+{
+  "type": "claude_project_knowledge",
+  "memories": [
+    "Bob is CEO of aiConnected, a Georgia-based AI infrastructure company",
+    "Bob is developing Brain by aiConnected - a 3D Cognigraph memory architecture"
+  ]
+}
+```
+
+**For ChatGPT Custom Instructions:**
+```text
+About me:
+- CEO of aiConnected (AI infrastructure company, Georgia)
+- Building Brain - a persistent memory system for AI
+- Technical background but not a developer
+- Works 20 hours daily, highly focused on execution
+```
+
+**For Gemini/Other:**
+```json
+{
+  "user_context": {
+    "identity": {...},
+    "preferences": {...},
+    "current_projects": {...}
+  }
+}
+```
+
+---
+
+## Part 5: Implementation Phases
+
+### Phase 1: MVP (Week 1-2)
+- [ ] ZIP extraction and JSON parsing
+- [ ] Tree linearization
+- [ ] Basic knowledge extraction (facts only)
+- [ ] Manual category/concept/topic assignment
+- [ ] Storage in Cognigraph tables
+
+### Phase 2: Automation (Week 3-4)
+- [ ] LLM-powered knowledge extraction (full prompt)
+- [ ] Automatic classification
+- [ ] Basic deduplication
+- [ ] Reflection generation
+- [ ] Vector embedding
+
+### Phase 3: Intelligence (Week 5-6)
+- [ ] Conflict detection and resolution
+- [ ] Cross-conversation linking
+- [ ] Relationship mapping
+- [ ] CTL rule application
+- [ ] Index file generation
+
+### Phase 4: Export (Week 7-8)
+- [ ] Universal export format
+- [ ] Claude adapter
+- [ ] ChatGPT adapter
+- [ ] Gemini adapter
+- [ ] API endpoints for programmatic access
+
+---
+
+## Part 6: Cost & Performance Estimates
+
+### Per Import (1000 conversations)
+
+| Stage | API Calls | Tokens | Cost (Claude Sonnet) |
+|-------|-----------|--------|---------------------|
+| Knowledge Extraction | 1000 | ~2M | ~$6.00 |
+| Classification | ~5000 units | ~500K | ~$1.50 |
+| Reflection Generation | ~5000 | ~1M | ~$3.00 |
+| Embedding | 5000 | N/A | ~$0.05 (local) |
+| **Total** | | | **~$10.50** |
+
+### With Index Files (retrieval)
+
+| Without Index | With Index | Savings |
+|---------------|------------|---------|
+| Full vector search | Targeted topic search | 90%+ cost |
+| 500ms latency | 50ms latency | 90% faster |
+
+---
+
+## Part 7: The Competitive Moat
+
+This pipeline creates something no one else has:
+
+1. **ChatGPT → Brain → Claude** = seamless migration
+2. **Brain as cognitive escrow** = you own your knowledge
+3. **Structure, not dumps** = actually useful memory
+4. **Continuous Memory Protocol** = future open standard
+
+This positions Brain as the **Switzerland of AI memory** - neutral, portable, user-owned.
+
+---
+
+## Next Steps
+
+1. Review and approve this architecture
+2. Set up development environment
+3. Build Stage 1 parser (no AI required)
+4. Test with sample ChatGPT export
+5. Iterate on extraction prompts with real data

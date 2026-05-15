@@ -1,0 +1,119 @@
+---
+title: "TTS Emotion Modifiers"
+---
+
+# TTS Emotion Modifiers
+
+**User:** Anonymous  
+**Created:** 5/25/2025 0:13:23  
+**Updated:** 6/18/2025 3:32:11  
+**Exported:** 3/21/2026 10:19:11  
+**Link:** [https://chatgpt.com/g/g-p-675dbf4267d4819194d2c4c930a21644-oxpi-aiconnected/c/683298e2-ecb4-8004-a5fc-e07f15cc9908](https://chatgpt.com/g/g-p-675dbf4267d4819194d2c4c930a21644-oxpi-aiconnected/c/683298e2-ecb4-8004-a5fc-e07f15cc9908)  
+
+## Prompt:
+Please make a list of TTS emotion modifiers
+
+## Response:
+Here’s a categorized list of **Text-to-Speech (TTS) emotion modifiers**, often used across various platforms (like Microsoft Azure, ElevenLabs, Amazon Polly, Google Cloud TTS, and open-source systems like Coqui or Bark). While implementations vary by engine, these modifiers typically guide how the voice sounds when reading text aloud.
+
+* * *
+
+### 🔹 **Common Emotion Modifiers**
+
+These represent basic emotional tones and are widely supported in premium or AI-based TTS platforms:
+
+*   `cheerful` or `joy` – sounds happy, upbeat
+*   `sad` – sounds somber or emotionally subdued
+*   `angry` – forceful, tense vocal delivery
+*   `calm` – relaxed, even-paced tone
+*   `excited` – high energy, expressive tone
+*   `empathetic` – gentle, emotionally supportive
+*   `serious` – firm, businesslike
+*   `fearful` – anxious or worried delivery
+*   `hopeful` – optimistic tone
+*   `disappointed` – defeated or let down
+*   `neutral` – default tone without emotion
+
+* * *
+
+### 🔹 **Speaking Style Modifiers (affects delivery tone)**
+
+These can change the **presentation style**, often tied to context like news, customer service, or storytelling:
+
+*   `narration-professional` – clear and articulate, great for audiobooks
+*   `narration-relaxed` – more casual and soft-spoken
+*   `customer-service` – warm and helpful
+*   `chat` – informal and conversational
+*   `newscaster` – authoritative and paced for broadcast
+*   `assistant` – friendly and responsive
+*   `advertisement` – persuasive and energetic
+*   `documentary` – informative and calm
+
+* * *
+
+### 🔹 **Pitch & Prosody Modifiers**
+
+Used to simulate subtle emotion through voice dynamics:
+
+*   `pitch` – controls voice pitch (e.g., high for excited, low for calm)
+*   `rate` – controls speech speed (slow for sadness, fast for urgency)
+*   `volume` – can imply emotion via loudness (quiet for sadness, loud for anger)
+*   `emphasis` – highlights key words for emotional punch
+
+Example (SSML-like syntax):
+
+```
+<prosody pitch="+10%" rate="fast" volume="loud">I can't believe this is happening!</prosody>
+```
+
+* * *
+
+### 🔹 **Platform-Specific Tags**
+
+Some platforms use custom tags for emotions:
+
+*   **Microsoft Azure (Neural TTS)**:
+    ```
+    <mstts:express-as style="cheerful">Hello there!</mstts:express-as>
+    ```
+    Styles include:
+    *   `cheerful`
+    *   `angry`
+    *   `sad`
+    *   `excited`
+    *   `hopeful`
+    *   `shouting`
+    *   `whispering`
+    *   `embarrassed`
+*   **Amazon Polly (via SSML)**:  
+    Polly doesn’t support direct emotional tags but uses voice variants that imply tone (e.g., "Matthew-Neural" sounds more conversational).
+*   **ElevenLabs**:  
+    Supports dynamic fine-tuning using:
+    *   `stability`
+    *   `similarity_boost`
+    *   Community-trained models with emotional tones like `friendly`, `dramatic`, `angry`, `empathetic`, etc.
+
+* * *
+
+### 🔹 **Open-Source/Community Tags (Coqui, Bark, XTTS)**
+
+These vary widely and often use fine-tuning tokens like:
+
+*   `[happy]`, `[sad]`, `[angry]`, `[surprised]`
+*   `[whisper]`, `[loud]`, `[breathy]`, `[robotic]`
+*   In Coqui, you can train or condition models using emotion embeddings or tags.
+
+* * *
+
+Would you like a ready-made prompt template for adding emotion modifiers in SSML or ElevenLabs API?
+
+## Prompt:
+I just need one straight list of every modifier. No headings. And for things like pitch and rate, I need the specific modifiers listed (high, low,slow, fast,quiet, loud, etc.)
+
+## Response:
+cheerful, sad, angry, calm, excited, empathetic, serious, fearful, hopeful, disappointed, neutral, narration-professional, narration-relaxed, customer-service, chat, newscaster, assistant, advertisement, documentary, shouting, whispering, embarrassed, dramatic, friendly, surprised, whisper, loud, breathy, robotic, happy, pitch-high, pitch-low, pitch-medium, rate-fast, rate-slow, rate-medium, volume-loud, volume-quiet, volume-medium, emphasis-strong, emphasis-moderate, emphasis-reduced, stability-high, stability-low, similarity-boost-high, similarity-boost-low
+
+
+
+---
+Powered by [ChatGPT Exporter](https://www.chatgptexporter.com)

@@ -1,0 +1,14 @@
+{
+  "title": "Hyperthyme Memory Framework",
+  "pages": [
+    "index",
+    "data-flow-reference",
+    "hyperthyme-investor-overview",
+    "hyperthyme-junior-dev-guide",
+    "hyperthyme-master-project-checklist",
+    "hyperthyme-technical-architecture",
+    "hyperthyme-technical-overview",
+    "legacy-memory-recall-overview"
+  ],
+  "defaultOpen": false
+}

@@ -1,0 +1,1209 @@
+---
+title: "Clean Room Specification: Markdown Based Local Knowledge Graph with Hybrid Search"
+description: "Purpose of This Document This document specifies the complete architecture, data model, storage format, synchronization system, search implementation, and MC..."
+---
+<Info>
+Normalized for Mintlify from `knowledge-base/neurigraph-memory-architecture/neurigraph-tool-references/04-Markdown-Based-Local-Knowledge-Graph.mdx`.
+</Info>
+# Clean-Room Specification: Markdown-Based Local Knowledge Graph with Hybrid Search
+
+## Purpose of This Document
+
+This document specifies the complete architecture, data model, storage format, synchronization system, search implementation, and MCP API surface of a **local-first knowledge graph** that stores all knowledge as structured Markdown files on the user's filesystem. Files are parsed to extract entities, observations, and relations, which are indexed into a relational database (SQLite or PostgreSQL) with optional vector embeddings for semantic search. The system watches the filesystem for changes and automatically syncs. It is exposed to AI assistants via MCP (Model Context Protocol) tools.
+
+This specification is detailed enough that a professional AI coding model can produce a functionally identical working system without reference to any existing codebase.
+
+---
+
+## 1. System Overview
+
+### 1.1 Core Concept
+
+Users write Markdown notes in a project directory. Each note can contain:
+
+- **Frontmatter** (YAML metadata: title, type, tags, custom fields)
+- **Observations** (atomic facts in bracket-category notation)
+- **Relations** (explicit directed links using `[[wiki-link]]` syntax)
+- **Free-form content** (standard Markdown)
+
+A background service watches the directory, parses files, extracts structured data, and indexes everything into a database. An MCP server exposes tools for AI assistants to read, write, search, and traverse the knowledge graph.
+
+### 1.2 Architecture Layers
+
+```
+┌──────────────────────────────────────────────────────┐
+│                   MCP Server (FastMCP)                │
+│  Tools: write_note, read_note, search_notes, etc.    │
+├──────────────────────────────────────────────────────┤
+│                   Service Layer                       │
+│  EntityService, SearchService, SyncService,           │
+│  FileService, ContextService                          │
+├──────────────────────────────────────────────────────┤
+│                  Repository Layer                      │
+│  EntityRepo, ObservationRepo, RelationRepo,           │
+│  ProjectRepo, SearchRepository (Protocol)             │
+├──────────────────────────────────────────────────────┤
+│               Database (SQLAlchemy Async)              │
+│  SQLite (default) or PostgreSQL                       │
+│  + FTS5/tsvector + Optional Vector Storage            │
+├──────────────────────────────────────────────────────┤
+│             Filesystem (Markdown Files)                │
+│  Watched by watchfiles, parsed by markdown-it-py      │
+└──────────────────────────────────────────────────────┘
+```
+
+### 1.3 Key Design Principles
+
+1. **Markdown-first**: The filesystem is the source of truth. The database is a derived index.
+2. **Async throughout**: All I/O (database, files, HTTP) uses async/await.
+3. **Protocol-based repositories**: Search backend is swappable (SQLite FTS5 vs PostgreSQL tsvector).
+4. **Graceful degradation**: If vector search is unavailable, fall back to FTS. If FTS returns nothing, retry with relaxed query.
+5. **Multi-project**: Multiple independent knowledge bases, each with its own directory and database.
+
+---
+
+## 2. Data Model
+
+### 2.1 Database Schema
+
+#### 2.1.1 Project Table
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| id | INTEGER | PRIMARY KEY, AUTOINCREMENT | Internal ID |
+| external_id | TEXT (UUID) | UNIQUE, NOT NULL | Stable API reference |
+| name | TEXT | NOT NULL | Project display name |
+| path | TEXT | NOT NULL | Filesystem root directory |
+| permalink | TEXT | UNIQUE | Auto-generated URL-safe slug |
+| is_active | BOOLEAN | DEFAULT TRUE | Whether project is active |
+| is_default | BOOLEAN | DEFAULT FALSE | Whether this is the default project |
+| created_at | DATETIME | NOT NULL | Creation timestamp |
+| updated_at | DATETIME | NOT NULL | Last update timestamp |
+
+**Permalink auto-generation**: When a project is created, its `permalink` is generated from `name` by lowercasing and replacing non-alphanumeric characters with hyphens. Example: "My Research" → "my-research".
+
+#### 2.1.2 Entity Table
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| id | INTEGER | PRIMARY KEY, AUTOINCREMENT | Internal ID |
+| external_id | TEXT (UUID) | UNIQUE, NOT NULL | Stable API reference |
+| title | TEXT | NOT NULL | Note title (from frontmatter or filename) |
+| note_type | TEXT | INDEXED | User-defined type (e.g., "note", "person", "concept") |
+| content_type | TEXT | DEFAULT "text/markdown" | MIME type |
+| file_path | TEXT | NOT NULL | Relative path within project directory |
+| permalink | TEXT | INDEXED | URL-safe slug derived from title |
+| entity_metadata | TEXT (JSON) | | Serialized frontmatter key-value pairs |
+| content | TEXT | | Raw markdown body (after frontmatter) |
+| mtime | REAL | | File modification time (Unix epoch) |
+| size | INTEGER | | File size in bytes |
+| checksum | TEXT | | SHA-256 hex digest of file content |
+| project_id | INTEGER | FK → project.id, NOT NULL | Owning project |
+| created_at | DATETIME | NOT NULL | First indexed timestamp |
+| updated_at | DATETIME | NOT NULL | Last re-indexed timestamp |
+| created_by | TEXT | | Cloud user ID (optional) |
+| last_updated_by | TEXT | | Cloud user ID (optional) |
+
+**Unique constraints**:
+- `(permalink, project_id)` — No two entities share a permalink within a project
+- `(file_path, project_id)` — No two entities share a file path within a project
+
+**Permalink generation**: Title → lowercase → replace spaces/special chars with hyphens → strip leading/trailing hyphens. Example: "Machine Learning Basics" → "machine-learning-basics".
+
+#### 2.1.3 Observation Table
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| id | INTEGER | PRIMARY KEY, AUTOINCREMENT | Internal ID |
+| external_id | TEXT (UUID) | UNIQUE, NOT NULL | Stable API reference |
+| content | TEXT | NOT NULL | The observation text |
+| category | TEXT | INDEXED | Category from bracket notation |
+| context | TEXT | | Optional context string |
+| tags | TEXT (JSON) | | Array of tag strings |
+| permalink | TEXT | | Synthetic: `entity_permalink/observations/category/content[:200]` |
+| entity_id | INTEGER | FK → entity.id, CASCADE DELETE | Parent entity |
+| project_id | INTEGER | FK → project.id | Owning project |
+| created_at | DATETIME | NOT NULL | |
+| updated_at | DATETIME | NOT NULL | |
+
+**Cascade**: When an entity is deleted, all its observations are automatically deleted.
+
+#### 2.1.4 Relation Table
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| id | INTEGER | PRIMARY KEY, AUTOINCREMENT | Internal ID |
+| external_id | TEXT (UUID) | UNIQUE, NOT NULL | Stable API reference |
+| from_id | INTEGER | FK → entity.id, CASCADE DELETE, NOT NULL | Source entity |
+| to_id | INTEGER | FK → entity.id, nullable | Target entity (NULL if unresolved) |
+| to_name | TEXT | NOT NULL | Target name (for display and resolution) |
+| relation_type | TEXT | NOT NULL | e.g., "relates_to", "implements", "links_to" |
+| context | TEXT | | Optional context |
+| permalink | TEXT | | Synthetic: `source_permalink/relation_type/target_name` |
+| project_id | INTEGER | FK → project.id | Owning project |
+| created_at | DATETIME | NOT NULL | |
+| updated_at | DATETIME | NOT NULL | |
+
+**Unique constraints**:
+- `(from_id, to_id, relation_type)` when to_id is not NULL
+- `(from_id, to_name, relation_type)` for unresolved relations
+
+**Link resolution**: Relations start with `to_id=NULL` and `to_name` set. A LinkResolver service periodically attempts to match `to_name` against entity titles/permalinks. When matched, `to_id` is set.
+
+#### 2.1.5 Search Index Tables
+
+**FTS5 Virtual Table (SQLite)**:
+```sql
+CREATE VIRTUAL TABLE search_index USING fts5(
+    entity_id,
+    project_id,
+    title,
+    content,
+    note_type,
+    entity_type,
+    created_at,
+    updated_at,
+    tags,
+    content_stems
+);
+```
+
+**Vector Storage Tables** (when semantic search is enabled):
+
+```sql
+-- Chunk storage
+CREATE TABLE search_vector_chunks (
+    id INTEGER PRIMARY KEY,
+    entity_id INTEGER NOT NULL REFERENCES entity(id),
+    chunk_text TEXT NOT NULL,
+    chunk_index INTEGER NOT NULL,
+    project_id INTEGER,
+    created_at DATETIME,
+    updated_at DATETIME
+);
+
+-- Embedding storage (BLOB = raw float32 array)
+CREATE TABLE search_vector_embeddings (
+    id INTEGER PRIMARY KEY,
+    chunk_id INTEGER NOT NULL REFERENCES search_vector_chunks(id),
+    embedding BLOB NOT NULL,
+    dimensions INTEGER NOT NULL,
+    model TEXT NOT NULL,
+    created_at DATETIME
+);
+```
+
+---
+
+## 3. Markdown File Format
+
+### 3.1 File Structure
+
+Each Markdown file in the project directory represents one entity. The file format:
+
+```markdown
+---
+title: Machine Learning Basics
+type: concept
+tags:
+  - ai
+  - fundamentals
+created: 2025-01-15T10:30:00
+custom_field: any_value
+---
+
+# Machine Learning Basics
+
+Free-form markdown content goes here. You can include [[wiki-links]]
+to reference other entities.
+
+## Observations
+
+- [definition] Machine learning is a subset of AI that learns from data
+- [technique] Supervised learning uses labeled training data #ml #supervised
+- [limitation] Requires large datasets for good performance (especially deep learning)
+
+## Relations
+
+- implements [[Artificial Intelligence]]
+- requires [[Training Data]] (for model fitting)
+- related_to [[Statistics]] (shared mathematical foundations)
+```
+
+### 3.2 Frontmatter Parsing
+
+The YAML frontmatter between `---` delimiters is parsed using `python-frontmatter`. All values are normalized to strings:
+
+- **Dates** → ISO 8601 strings
+- **Numbers** → string representation
+- **Booleans** → `"True"` or `"False"`
+- **Lists** → preserved as lists of strings
+- **None/null** → excluded from metadata
+
+Required fields (`title`, `type`) are coerced to strings even if they parse as other types. If `title` is missing from frontmatter, the filename (without extension) is used.
+
+### 3.3 Observation Extraction
+
+Observations are extracted from list items matching this pattern:
+
+```
+- [category] Content text #tag1 #tag2 (optional context)
+```
+
+**Regex pattern**: `^\[([^\[\]()]+)\]\s+(.+)`
+
+This matches:
+- `[definition] ML is...` ✓
+- `[technique] Supervised learning #ml` ✓
+- `[x] Completed task` ✗ (excluded — checkbox)
+- `[ ] Incomplete task` ✗ (excluded — checkbox)
+- `[link text](url)` ✗ (excluded — markdown link)
+- `[[wiki-link]]` ✗ (excluded — wiki link)
+
+**Tag extraction**: From the content text, extract all `#word` patterns. Tags are stored as a JSON array.
+
+**Context extraction**: If the content ends with `(text in parens)`, extract that as the context field.
+
+**Processing order**: Extract tags first, then context, leaving the remaining text as the observation content.
+
+### 3.4 Relation Extraction
+
+Two types of relations are extracted:
+
+**Explicit relations** (from list items):
+```
+- relation_type [[Target Entity]] (optional context)
+```
+
+Pattern: A list item starting with a word/phrase followed by a `[[wiki-link]]`. The word before the wiki-link becomes `relation_type`, the wiki-link content becomes `to_name`.
+
+**Implicit relations** (from inline wiki-links):
+Any `[[Target Entity]]` found in the body text (not already captured as an explicit relation) creates an implicit relation with `relation_type = "links_to"`.
+
+**Wiki-link parsing**: Handle nested brackets correctly. Track bracket depth: increment on `[`, decrement on `]`. Content between matched `[[` and `]]` is the target name. Normalize target names: "Entity Name" → "entity-name" (lowercase, spaces to hyphens).
+
+### 3.5 Entity Output Schema
+
+After parsing, each file yields:
+
+```python
+@dataclass
+class ParsedEntity:
+    title: str                    # From frontmatter or filename
+    note_type: str                # From frontmatter "type" field
+    frontmatter: dict             # All frontmatter key-value pairs
+    content: str                  # Raw markdown body
+    observations: List[Observation]  # Extracted observations
+    relations: List[Relation]     # Extracted relations (explicit + implicit)
+    created: Optional[datetime]   # From frontmatter or file stat
+    modified: Optional[datetime]  # From frontmatter or file stat
+```
+
+---
+
+## 4. Filesystem Synchronization
+
+### 4.1 File Watcher
+
+Use the `watchfiles` library for cross-platform filesystem monitoring.
+
+**Configuration**:
+- Debounce delay: configurable, default 1000ms
+- Filter patterns: respect `.gitignore` and `.bmignore` files (custom ignore patterns)
+- Watch only `.md` files
+
+**Event types**: Created, Modified, Deleted
+
+**State tracking** (per watcher instance):
+- `running: bool`
+- `start_time: datetime`
+- `error_count: int`
+- `synced_files: int`
+- `recent_events: deque(maxlen=100)` — last 100 file events
+
+### 4.2 Sync Algorithm
+
+The sync process runs in three phases:
+
+**Phase 1 — Directory Scan**:
+1. Walk the project directory using a thread pool executor (to avoid blocking async loop)
+2. For each `.md` file found:
+   - Compute SHA-256 checksum of file content
+   - Record mtime and file size
+   - Store as `{file_path, checksum, mtime, size}`
+
+**Phase 2 — Change Detection**:
+Compare filesystem state against database state:
+
+```python
+@dataclass
+class SyncReport:
+    new_files: List[str]       # In filesystem but not in DB
+    modified_files: List[str]  # In both, but checksum differs
+    deleted_files: List[str]   # In DB but not in filesystem
+    moved_files: List[Tuple[str, str]]  # Same checksum, different path
+```
+
+**Move detection algorithm**:
+1. Collect all checksums from DB entities and from filesystem scan
+2. For each file in DB that's NOT in filesystem:
+   - Check if its checksum appears in a NEW filesystem file
+   - If yes: classify as moved (old_path → new_path)
+   - If no: classify as deleted
+
+**Phase 3 — Apply Changes**:
+- **New files**: Parse markdown → create entity + observations + relations → update search index
+- **Modified files**: Parse markdown → update entity + diff observations/relations → update search index
+- **Deleted files**: Delete entity (cascades to observations/relations) → remove from search index
+- **Moved files**: Update entity.file_path, preserve entity.id and all relations
+
+### 4.3 Circuit Breaker
+
+To prevent infinite retry loops on consistently failing files:
+
+- Track consecutive failure count per file path
+- After 3 consecutive failures, skip the file in future sync cycles
+- Reset failure count when the file's checksum changes (indicating the user modified it)
+- Log skipped files at warning level
+
+### 4.4 Sync Coordinator
+
+A top-level coordinator manages the sync lifecycle:
+
+1. **Initialization**: Run database migrations (Alembic), perform initial full sync
+2. **Watch loop**: Start file watcher, process events through SyncService
+3. **Background tasks**: Embedding backfill (process entities lacking vector embeddings)
+4. **Shutdown**: Cancel all watchers, cancel backfill tasks, close database connections
+
+---
+
+## 5. Search System
+
+### 5.1 Search Modes
+
+Three search modes, selected via `search_type` parameter:
+
+| Mode | Description | Requirements |
+|------|-------------|--------------|
+| `fts` | Full-text search using FTS5 (SQLite) or tsvector (PostgreSQL) | Always available |
+| `vector` | Semantic similarity search using embeddings | Requires embedding provider + vector storage |
+| `hybrid` | Weighted combination of FTS + vector scores | Requires both FTS and vector |
+
+### 5.2 FTS Implementation (SQLite)
+
+**Query preparation**:
+1. Split query into tokens
+2. For tokens containing special characters (hyphens, dots, colons): wrap in double quotes
+   - `"machine-learning"` → `"\"machine-learning\""`
+3. Preserve boolean operators: AND, OR, NOT (case-sensitive)
+4. Append `*` for prefix matching on the last token
+5. Join with spaces (implicit AND in FTS5)
+
+**Relaxed fallback**:
+If FTS returns zero results for a multi-term query:
+1. Remove stopwords ("the", "a", "an", "is", "are", "was", "were", "in", "on", "at", "to", "for", "of", "with", "by")
+2. Join remaining terms with OR instead of implicit AND
+3. Retry query
+
+**Ranking**: FTS5 built-in `rank` function (BM25-based). Results ordered by rank descending.
+
+### 5.3 Vector Search Implementation
+
+**Embedding providers** (configurable):
+
+| Provider | Model | Dimensions | Notes |
+|----------|-------|------------|-------|
+| FastEmbed (local) | bge-small-en-v1.5 | 384 | Default, no API key needed |
+| OpenAI (remote) | text-embedding-3-small | 1536 | Requires OPENAI_API_KEY |
+
+**Provider protocol interface**:
+```python
+class EmbeddingProvider(Protocol):
+    async def embed_query(self, text: str) -> List[float]: ...
+    async def embed_documents(self, texts: List[str]) -> List[List[float]]: ...
+```
+
+**Chunking strategy**:
+- Split entity content into chunks for embedding
+- Store each chunk with its index: `(entity_id, chunk_text, chunk_index)`
+- Embed each chunk independently
+
+**Similarity computation**:
+- Store embeddings as raw float32 BLOBs
+- Compute L2 distance, convert to cosine similarity: `similarity = 1 - (L2_distance² / 2)`
+- Filter results by minimum similarity threshold (default: 0.55)
+- Return top-k results (default k=100)
+
+### 5.4 Hybrid Search
+
+Combine FTS and vector results:
+
+```python
+hybrid_score = 0.5 * normalized_fts_score + 0.5 * vector_similarity
+```
+
+**Score normalization**: FTS scores are normalized to [0, 1] range using min-max scaling within the result set.
+
+**Merging**: Union results from both searches, keyed by entity_id. If an entity appears in both, use the hybrid score. If only in one, use 0.5 × that score.
+
+### 5.5 Search Filters
+
+All search modes support these filters:
+
+| Filter | Type | Description |
+|--------|------|-------------|
+| `permalink` | str | Exact permalink match |
+| `permalink_match` | str | Permalink prefix/pattern match |
+| `title` | str | Title substring match |
+| `note_types` | List[str] | Filter by note type |
+| `after_date` | datetime | Only results modified after this date |
+| `search_item_types` | List[str] | Filter by item type (entity, observation, relation) |
+| `metadata_filters` | dict | Key-value filters against entity_metadata JSON |
+| `min_similarity` | float | Minimum similarity threshold (vector/hybrid only) |
+| `limit` | int | Max results (default 50) |
+| `offset` | int | Pagination offset |
+
+---
+
+## 6. MCP Server
+
+### 6.1 Server Setup
+
+Use FastMCP framework. Server name: configurable (default "Basic Memory").
+
+**Lifespan handler** (runs on server startup):
+1. Initialize dependency container (services, repositories, database connection)
+2. Run database migrations (Alembic)
+3. Log embedding provider status
+4. Start sync coordinator (initial sync + file watching)
+
+**Shutdown**: Stop sync coordinator, close all database connections.
+
+### 6.2 MCP Tools
+
+#### 6.2.1 `write_note`
+
+Create or overwrite a Markdown file in the project directory.
+
+**Parameters**:
+| Name | Type | Required | Default | Description |
+|------|------|----------|---------|-------------|
+| title | string | yes | | Note title (becomes filename) |
+| content | string | yes | | Markdown body content |
+| directory | string | no | "" | Subdirectory within project root |
+| project | string | no | (default project) | Project name |
+| tags | list[string] | no | [] | Frontmatter tags |
+| note_type | string | no | "note" | Frontmatter type field |
+| metadata | dict | no | &#123;&#125; | Additional frontmatter fields |
+| overwrite | boolean | no | false | Whether to overwrite existing file |
+
+**Behavior**:
+1. Generate filename from title: `title.lower().replace(" ", "-") + ".md"`
+2. Construct full path: `project_root / directory / filename`
+3. If file exists and `overwrite` is false: return error
+4. Build frontmatter YAML from title, type, tags, metadata
+```text
+5. Write file: `---\n{frontmatter}\n---\n\n{content}`
+```
+6. The file watcher will detect the change and sync to database
+
+**Returns**: Entity data including permalink and file_path.
+
+#### 6.2.2 `read_note`
+
+Read a note by permalink or file path.
+
+**Parameters**:
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| path | string | yes | Permalink or relative file path |
+| project | string | no | Project name |
+
+**Returns**: Full entity data including frontmatter, content, observations, relations, and related entities.
+
+#### 6.2.3 `edit_note`
+
+Apply targeted edits to an existing note.
+
+**Parameters**:
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| path | string | yes | Permalink or file path |
+| content_updates | string | yes | Instructions or replacement content |
+| project | string | no | Project name |
+
+**Behavior**: Read existing file, apply updates (append, replace section, etc.), write back. The sync service detects the change.
+
+#### 6.2.4 `delete_note`
+
+Delete a note file and its database records.
+
+**Parameters**:
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| path | string | yes | Permalink or file path |
+| project | string | no | Project name |
+
+**Behavior**: Delete the physical file. The sync service detects the deletion and removes the entity (cascading to observations and relations).
+
+#### 6.2.5 `search_notes`
+
+Search across all indexed content.
+
+**Parameters**:
+| Name | Type | Required | Default | Description |
+|------|------|----------|---------|-------------|
+| query | string | yes | | Search query text |
+| project | string | no | (default) | Project name |
+| page | integer | no | 1 | Page number for pagination |
+| search_type | string | no | "hybrid" | One of: "fts", "vector", "hybrid" |
+| output_format | string | no | "text" | "text" or "json" |
+| note_types | list[string] | no | | Filter by note type |
+| after_date | string | no | | ISO date, only results after this |
+| tags | list[string] | no | | Filter by tags |
+
+**Returns**: List of matching entities with relevance scores, snippets, and metadata.
+
+#### 6.2.6 `build_context`
+
+Resolve a `memory://` URI and build rich context.
+
+**Parameters**:
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| path | string | yes | A `memory://` URI or plain permalink |
+| project | string | no | Project name |
+
+**Behavior**:
+1. Strip `memory://` prefix if present
+2. Resolve to entity by permalink or file path
+3. Return entity metadata, content, observations, relations, and related entity summaries
+
+**Returns**: Formatted context string suitable for AI consumption.
+
+#### 6.2.7 `list_directory`
+
+List files and subdirectories in the project.
+
+**Parameters**:
+| Name | Type | Required | Default | Description |
+|------|------|----------|---------|-------------|
+| project | string | no | (default) | Project name |
+| path | string | no | "" | Subdirectory path |
+
+**Returns**: List of files and folders with metadata.
+
+#### 6.2.8 `recent_activity`
+
+Get recently modified entities.
+
+**Parameters**:
+| Name | Type | Required | Default | Description |
+|------|------|----------|---------|-------------|
+| timeframe | string | no | "1 day" | Natural language timeframe (parsed by dateparser) |
+| project | string | no | (default) | Project name |
+
+**Returns**: Entities modified within the timeframe, sorted by modification date descending.
+
+#### 6.2.9 `list_memory_projects`
+
+List all configured projects.
+
+**Parameters**: None.
+
+**Returns**: Array of project objects with name, path, is_active, is_default, entity count.
+
+#### 6.2.10 `create_memory_project`
+
+Create a new project.
+
+**Parameters**:
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| name | string | yes | Project display name |
+| path | string | yes | Filesystem directory path |
+
+**Behavior**: Create project record, create directory if not exists, start watching.
+
+### 6.3 MCP Resources
+
+**`project_info`**: Returns current project metadata, entity/observation/relation counts, and sync status.
+
+### 6.4 MCP Prompts
+
+| Prompt Name | Description |
+|-------------|-------------|
+| `continue_conversation` | Template for resuming a conversation with memory context |
+| `recent_activity` | Template for summarizing recent changes |
+| `search` | Template for performing a knowledge search |
+| `ai_assistant_guide` | Instructions for how an AI should use memory tools |
+
+---
+
+## 7. URI Scheme
+
+### 7.1 Format
+
+```
+memory://<permalink-path>
+```
+
+Examples:
+- `memory://machine-learning-basics`
+- `memory://specs/search-implementation`
+- `memory://id/123` (by internal ID)
+
+### 7.2 Validation Rules
+
+A valid memory URI path must NOT contain:
+- Empty string
+- `://` (double protocol)
+- `//` (double slash within path)
+- `<`, `>`, `"`, `|`, `?` characters
+
+### 7.3 Resolution
+
+1. Strip `memory://` prefix
+2. If path starts with `id/`: look up entity by numeric ID
+3. Otherwise: look up entity by permalink match
+4. If not found by permalink: try as file_path
+5. Return entity with full context (observations, relations, neighbors)
+
+---
+
+## 8. Service Layer Architecture
+
+### 8.1 Base Service Pattern
+
+```python
+class BaseService(Generic[T]):
+    def __init__(self, repository: BaseRepository[T]):
+        self.repository = repository
+```
+
+All services inherit from this base, receiving their repository via constructor injection.
+
+### 8.2 Dependency Container
+
+A container class holds all services and repositories, constructed during server lifespan:
+
+```python
+class McpContainer:
+    # Database
+    engine: AsyncEngine
+    session_factory: async_sessionmaker
+
+    # Repositories
+    entity_repo: EntityRepository
+    observation_repo: ObservationRepository
+    relation_repo: RelationRepository
+    project_repo: ProjectRepository
+    search_repo: SearchRepository  # SQLite or Postgres implementation
+
+    # Services
+    entity_service: EntityService
+    search_service: SearchService
+    sync_service: SyncService
+    file_service: FileService
+    context_service: ContextService
+    link_resolver: LinkResolver
+
+    # Sync
+    sync_coordinator: SyncCoordinator
+```
+
+### 8.3 EntityService
+
+Core operations:
+- `create_entity(parsed: ParsedEntity, project_id: int) → Entity`
+- `update_entity(entity_id: int, parsed: ParsedEntity) → Entity`
+- `delete_entity(entity_id: int) → None`
+- `get_by_permalink(permalink: str, project_id: int) → Entity`
+- `get_by_file_path(file_path: str, project_id: int) → Entity`
+- `resolve_path(path: str, project_id: int) → Entity` — tries permalink first, then file_path
+
+### 8.4 SearchService
+
+- `search(query, project_id, search_type, filters, limit, offset) → SearchResults`
+- `index_entity(entity: Entity) → None` — update FTS + vector indexes
+- `remove_from_index(entity_id: int) → None`
+- `reindex_all(project_id: int) → None`
+
+### 8.5 SyncService
+
+- `full_sync(project_id: int) → SyncReport`
+- `sync_file(file_path: str, project_id: int) → Entity`
+- `remove_file(file_path: str, project_id: int) → None`
+- `detect_moves(db_state, fs_state) → List[Move]`
+
+### 8.6 ContextService
+
+- `build_context(path: str, project_id: int) → ContextResult`
+  - Returns: entity metadata, content, observations, relations, related entities (1-hop neighbors)
+
+### 8.7 LinkResolver
+
+- `resolve_pending(project_id: int) → int` — returns count of newly resolved links
+- Runs after each sync cycle
+- Matches `relation.to_name` against entity titles and permalinks (case-insensitive)
+- When matched: sets `relation.to_id`
+
+---
+
+## 9. Configuration
+
+### 9.1 Configuration Schema
+
+```python
+@dataclass
+class ProjectEntry:
+    path: str                    # Filesystem directory
+    mode: str = "local"          # "local" or "cloud"
+    workspace_id: str = None     # Cloud workspace ID (if applicable)
+
+@dataclass
+class Config:
+    projects: Dict[str, ProjectEntry]   # name → project config
+    default_project: Optional[str]       # Default project name
+    database_backend: str = "sqlite"     # "sqlite" or "postgres"
+
+    # Semantic search
+    semantic_search_enabled: bool = False  # Auto-detected
+    semantic_embedding_provider: str = "fastembed"  # "fastembed" or "openai"
+    semantic_embedding_model: str = "bge-small-en-v1.5"
+    semantic_vector_k: int = 100          # Top-k results for vector search
+    semantic_min_similarity: float = 0.55 # Minimum similarity threshold
+
+    # Sync
+    sync_delay: int = 1000               # Debounce delay in milliseconds
+    watch_project_reload_interval: int = 300  # Seconds between project config reloads
+```
+
+### 9.2 Configuration Sources (Priority Order)
+
+1. **Environment variables**: Prefixed with `BASIC_MEMORY_` (e.g., `BASIC_MEMORY_DATABASE_BACKEND=postgres`)
+2. **Config file**: `~/.basic-memory/config.json`
+3. **Defaults**: Values in the Config dataclass
+
+### 9.3 Auto-Detection
+
+Semantic search is automatically enabled if:
+- The configured embedding provider library is importable (`fastembed` or `openai`)
+- AND the vector storage extension is available (`sqlite-vec` for SQLite)
+
+---
+
+## 10. Database Migrations
+
+Use Alembic for schema migrations.
+
+**Migration strategy**:
+- Migrations run automatically on server startup (as part of lifespan handler)
+- Migration directory stored alongside application code
+```text
+- Database file location: `~/.basic-memory/{project_name}/memory.db` (SQLite) or configured connection string (PostgreSQL)
+
+```
+**Key migrations**:
+1. Initial schema: Create entity, observation, relation, project tables
+2. Add FTS5 virtual table
+3. Add vector storage tables (search_vector_chunks, search_vector_embeddings)
+4. Add permalink columns and indexes
+5. Add file sync tracking columns (mtime, size, checksum)
+
+---
+
+## 11. Project Resolution
+
+When an MCP tool receives a `project` parameter:
+
+1. If `project` is provided: look up by name
+2. If not provided: use the configured default project
+3. If no default configured: use the first active project found
+4. If no projects exist: return error
+
+**Single-project mode**: When only one project is configured, all tools implicitly use it without requiring the `project` parameter.
+
+---
+
+## 12. Error Handling
+
+### 12.1 File Parsing Errors
+
+- If frontmatter is invalid YAML: skip file, log warning, continue sync
+- If file is empty: create entity with title from filename, no observations/relations
+- If file encoding is not UTF-8: attempt detection, fall back to latin-1
+
+### 12.2 Sync Errors
+
+- File read permission denied: log error, skip file, increment circuit breaker
+- File deleted during sync: handle gracefully (already gone)
+- Database write conflict: retry with exponential backoff (up to 3 attempts)
+
+### 12.3 Search Errors
+
+- FTS query syntax error: fall back to relaxed query (OR terms, no special operators)
+- Vector provider unavailable: fall back to FTS-only
+- No results: return empty list with suggestion to broaden query
+
+---
+
+## 13. Complete Behavioral Test Specifications
+
+### 13.1 Markdown Parsing Tests
+
+```
+TEST: Parse frontmatter with all field types
+  INPUT: File with title (string), tags (list), created (date), count (number), draft (boolean)
+  EXPECT: title → "My Title", tags → ["a","b"], created → ISO string,
+          count → "42", draft → "True"
+
+TEST: Missing title uses filename
+  INPUT: File "my-note.md" with frontmatter lacking "title"
+  EXPECT: entity.title = "my-note"
+
+TEST: Extract observations with categories
+  INPUT: "- [definition] AI is intelligence exhibited by machines"
+  EXPECT: observation.category = "definition", observation.content = "AI is intelligence exhibited by machines"
+
+TEST: Extract observation tags
+  INPUT: "- [technique] Gradient descent #ml #optimization"
+  EXPECT: tags = ["ml", "optimization"]
+
+TEST: Extract observation context
+  INPUT: "- [fact] Water boils at 100°C (at sea level)"
+  EXPECT: context = "at sea level"
+
+TEST: Exclude checkboxes from observations
+  INPUT: "- [x] Completed task\n- [ ] Pending task"
+  EXPECT: No observations extracted
+
+TEST: Exclude markdown links from observations
+  INPUT: "- [click here](https://example.com)"
+  EXPECT: No observations extracted
+
+TEST: Extract explicit relation
+  INPUT: "- implements [[Machine Learning]]"
+  EXPECT: relation_type = "implements", to_name = "machine-learning"
+
+TEST: Extract implicit link relation
+  INPUT: "This relates to [[Statistics]] in many ways"
+  EXPECT: relation_type = "links_to", to_name = "statistics"
+
+TEST: Handle nested wiki-links
+  INPUT: "- uses [[React [[Hooks]]]]"
+  EXPECT: Correct bracket depth tracking, proper target extraction
+```
+
+### 13.2 Sync Tests
+
+```
+TEST: New file detected and indexed
+  Create file "test.md" in project directory
+  Wait for sync debounce
+  EXPECT: Entity created in DB with matching title, content, checksum
+
+TEST: Modified file re-indexed
+  Modify existing file content
+  Wait for sync
+  EXPECT: Entity updated, checksum changed, observations refreshed
+
+TEST: Deleted file removed
+  Delete file from directory
+  Wait for sync
+  EXPECT: Entity removed from DB, observations and relations cascade-deleted
+
+TEST: File move detected
+  Rename "old.md" to "new.md" (same content)
+  Wait for sync
+  EXPECT: Entity file_path updated, entity.id preserved, no duplicate
+
+TEST: Circuit breaker activates
+  Create file that causes parse error 3 times
+  EXPECT: File skipped on 4th sync, warning logged
+
+TEST: Circuit breaker resets on modification
+  After circuit breaker activates, modify the problematic file
+  EXPECT: File processed again on next sync
+```
+
+### 13.3 Search Tests
+
+```
+TEST: FTS basic search
+  Index entity with title "Machine Learning Basics"
+  Search "machine learning"
+  EXPECT: Entity returned with positive relevance score
+
+TEST: FTS special character handling
+  Index entity with title "node-js-tutorial"
+  Search "node-js"
+  EXPECT: Query wraps hyphenated term in quotes, entity found
+
+TEST: FTS relaxed fallback
+  Index entity with content "project management tips"
+  Search "project planning ideas" (no exact match)
+  EXPECT: First attempt returns 0, retry with OR finds "project" match
+
+TEST: Vector semantic search
+  Index entity about "canine behavior"
+  Search "dog training" with search_type="vector"
+  EXPECT: Entity returned based on semantic similarity > 0.55
+
+TEST: Hybrid search scoring
+  Index two entities: one matching FTS well, one matching vector well
+  Search with search_type="hybrid"
+  EXPECT: Both appear, hybrid scores = 0.5 * fts + 0.5 * vector
+
+TEST: Search with filters
+  Index entities with different note_types
+  Search with note_types=["concept"]
+  EXPECT: Only concept-type entities returned
+
+TEST: Pagination
+  Index 100 entities
+  Search with limit=10, page=2
+  EXPECT: Results 11-20 returned
+```
+
+### 13.4 MCP Tool Tests
+
+```
+TEST: write_note creates file
+  Call write_note(title="Test", content="Hello", tags=["a"])
+  EXPECT: File exists at project_root/test.md with proper frontmatter
+
+TEST: write_note respects directory
+  Call write_note(title="Deep", content="...", directory="research/ai")
+  EXPECT: File at project_root/research/ai/deep.md
+
+TEST: write_note refuses overwrite
+  Create file, then call write_note with same title, overwrite=false
+  EXPECT: Error returned, file unchanged
+
+TEST: read_note by permalink
+  Write and sync a note titled "My Research"
+  Call read_note(path="my-research")
+  EXPECT: Full entity data returned with observations and relations
+
+TEST: search_notes with output formats
+  Call search_notes(query="test", output_format="json")
+  EXPECT: JSON-formatted results
+  Call search_notes(query="test", output_format="text")
+  EXPECT: Human-readable text results
+
+TEST: build_context resolves memory URI
+  Call build_context(path="memory://my-research")
+  EXPECT: Entity context with related entities
+
+TEST: recent_activity timeframe
+  Create note, wait, create another
+  Call recent_activity(timeframe="1 hour")
+  EXPECT: Both notes returned, sorted by modification date
+
+TEST: list_memory_projects
+  Configure two projects
+  Call list_memory_projects()
+  EXPECT: Both projects listed with metadata
+
+TEST: delete_note cascades
+  Write note with observations and relations, sync
+  Call delete_note(path="test-note")
+  EXPECT: File deleted, entity removed, observations removed, relations removed
+```
+
+### 13.5 Link Resolution Tests
+
+```
+TEST: Resolve pending link
+  Create entity A with relation to_name="entity-b" (to_id=NULL)
+  Create entity B with permalink="entity-b"
+  Run link resolver
+  EXPECT: relation.to_id now points to entity B
+
+TEST: Case-insensitive resolution
+  Relation to_name="Machine Learning"
+  Entity with permalink="machine-learning"
+  EXPECT: Resolves successfully
+
+TEST: Unresolvable link stays pending
+  Relation to_name="nonexistent-entity"
+  No matching entity
+  EXPECT: relation.to_id remains NULL
+```
+
+---
+
+## 14. Key Implementation Algorithms
+
+### 14.1 Permalink Generation
+
+```
+Input: "Machine Learning Basics!"
+Step 1: Lowercase → "machine learning basics!"
+Step 2: Replace non-alphanumeric with hyphens → "machine-learning-basics-"
+Step 3: Collapse multiple hyphens → "machine-learning-basics-"
+Step 4: Strip leading/trailing hyphens → "machine-learning-basics"
+Output: "machine-learning-basics"
+```
+
+### 14.2 Observation Permalink Generation
+
+```
+Input: entity_permalink="ml-basics", category="definition", content="Machine learning is a subset of AI that enables systems to learn from data without explicit programming"
+Step 1: Truncate content to 200 chars
+Step 2: Slugify truncated content
+Step 3: Combine: "ml-basics/observations/definition/machine-learning-is-a-subset-of-ai..."
+Output: synthetic permalink
+```
+
+### 14.3 FTS Query Preparation (SQLite)
+
+```
+Input: "machine-learning basics"
+Step 1: Tokenize → ["machine-learning", "basics"]
+Step 2: Check each token for special chars:
+  - "machine-learning" contains hyphen → wrap in quotes: '"machine-learning"'
+  - "basics" is clean → keep as-is
+Step 3: Add prefix wildcard to last token: "basics*"
+Step 4: Join: '"machine-learning" basics*'
+Output: FTS5 query string
+```
+
+### 14.4 L2 to Cosine Similarity Conversion
+
+```
+Input: L2_distance (from vector comparison of normalized embeddings)
+Formula: cosine_similarity = 1 - (L2_distance² / 2)
+Note: This works because for unit vectors, L2² = 2 - 2·cos(θ), so cos(θ) = 1 - L2²/2
+Output: similarity score in [0, 1]
+```
+
+### 14.5 Hybrid Score Computation
+
+```
+Input: fts_results (list of (entity_id, fts_score)), vector_results (list of (entity_id, similarity))
+Step 1: Normalize FTS scores to [0,1] using min-max scaling:
+        norm_fts = (score - min_score) / (max_score - min_score)
+Step 2: Create union of all entity_ids from both result sets
+Step 3: For each entity_id:
+  - If in both: hybrid = 0.5 * norm_fts + 0.5 * similarity
+  - If FTS only: hybrid = 0.5 * norm_fts
+  - If vector only: hybrid = 0.5 * similarity
+Step 4: Sort by hybrid score descending
+Output: merged results with hybrid scores
+```
+
+---
+
+## 15. Dependencies
+
+### 15.1 Required
+
+| Package | Purpose |
+|---------|---------|
+| fastmcp | MCP server framework |
+| sqlalchemy[asyncio] | Async ORM |
+| alembic | Database migrations |
+| aiosqlite | SQLite async driver |
+| aiofiles | Async file I/O |
+| watchfiles | Filesystem monitoring |
+| markdown-it-py | Markdown parsing |
+| python-frontmatter | YAML frontmatter extraction |
+| pydantic | Data validation |
+| pydantic-settings | Configuration management |
+| loguru | Structured logging |
+| dateparser | Natural language date parsing |
+
+### 15.2 Optional
+
+| Package | Purpose |
+|---------|---------|
+| asyncpg | PostgreSQL async driver |
+| fastembed | Local embedding generation |
+| sqlite-vec | SQLite vector extension |
+| openai | Remote embedding API |
+
+---
+
+## 16. Directory Structure
+
+```
+project_root/
+├── src/
+│   ├── __init__.py
+│   ├── config.py                 # Configuration schema & loading
+│   ├── models.py                 # SQLAlchemy ORM models
+│   ├── container.py              # Dependency injection container
+│   ├── markdown/
+│   │   ├── __init__.py
+│   │   ├── entity_parser.py      # Frontmatter + content parser
+│   │   ├── observation_plugin.py # markdown-it plugin for observations
+│   │   └── relation_plugin.py    # markdown-it plugin for relations/wiki-links
+│   ├── repositories/
+│   │   ├── __init__.py
+│   │   ├── base.py               # BaseRepository generic
+│   │   ├── entity.py
+│   │   ├── observation.py
+│   │   ├── relation.py
+│   │   ├── project.py
+│   │   ├── search_sqlite.py      # FTS5 implementation
+│   │   └── search_postgres.py    # tsvector implementation
+│   ├── services/
+│   │   ├── __init__.py
+│   │   ├── base.py               # BaseService generic
+│   │   ├── entity.py
+│   │   ├── search.py
+│   │   ├── context.py
+│   │   ├── file.py
+│   │   └── link_resolver.py
+│   ├── sync/
+│   │   ├── __init__.py
+│   │   ├── sync_service.py       # Change detection & application
+│   │   ├── watch_service.py      # File watcher
+│   │   └── coordinator.py        # Lifecycle management
+│   ├── embeddings/
+│   │   ├── __init__.py
+│   │   ├── provider.py           # EmbeddingProvider protocol
+│   │   ├── fastembed.py          # Local provider
+│   │   └── openai.py             # Remote provider
+│   └── mcp/
+│       ├── __init__.py
+│       ├── server.py             # FastMCP server + tool registration
+│       └── prompts.py            # MCP prompt templates
+├── migrations/                   # Alembic migrations
+├── tests/
+└── pyproject.toml
+```
+
+---
+
+## 17. Startup Sequence
+
+1. Load configuration (env vars → config file → defaults)
+2. Initialize database engine (SQLite or PostgreSQL async)
+3. Run Alembic migrations
+4. Create dependency container (repositories, services)
+5. Check for semantic search availability (auto-detect)
+6. For each active project:
+   a. Run full sync (Phase 1-3)
+   b. Resolve pending links
+   c. Start file watcher
+   d. Start background embedding backfill (if semantic search enabled)
+7. Register MCP tools, resources, and prompts
+8. Begin accepting MCP connections
+
+---
+
+## 18. Shutdown Sequence
+
+1. Stop accepting new MCP requests
+2. Cancel all file watchers
+3. Cancel background embedding tasks
+4. Flush pending sync operations
+5. Close database connections
+6. Exit cleanly
+
+---
+
+*This specification provides complete architectural and behavioral detail for independent implementation of a markdown-based local knowledge graph with hybrid search, filesystem synchronization, and MCP integration.*

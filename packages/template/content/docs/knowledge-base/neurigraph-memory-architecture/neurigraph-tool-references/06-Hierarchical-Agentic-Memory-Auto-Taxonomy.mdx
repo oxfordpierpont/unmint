@@ -1,0 +1,1066 @@
+---
+title: "Clean Room Specification: Hierarchical Agentic Memory with LLM Driven Auto Taxonomy"
+description: "Purpose of This Document This document specifies the complete architecture of a hierarchical memory system that uses LLM agents to automatically organize, ch..."
+---
+<Info>
+Normalized for Mintlify from `knowledge-base/neurigraph-memory-architecture/neurigraph-tool-references/06-Hierarchical-Agentic-Memory-Auto-Taxonomy.mdx`.
+</Info>
+# Clean-Room Specification: Hierarchical Agentic Memory with LLM-Driven Auto-Taxonomy
+
+## Purpose of This Document
+
+This document specifies the complete architecture of a **hierarchical memory system that uses LLM agents to automatically organize, chunk, and retrieve information**. Instead of fixed schemas or vector databases, the system uses LLM reasoning to: (1) chunk documents intelligently, (2) generate structured memory summaries, (3) create and maintain a hierarchical taxonomy as a directory tree, and (4) navigate that tree at query time using tool-based exploration. All memories are stored as Markdown files in a filesystem hierarchy, with README files at each level describing the contents.
+
+This specification is detailed enough that a professional AI coding model can produce a functionally identical working system without reference to any existing codebase.
+
+---
+
+## 1. System Overview
+
+### 1.1 Core Concept
+
+Traditional memory systems use embedding-based retrieval. This system instead leverages LLM reasoning for both storage and retrieval:
+
+- **Storage**: An LLM reads input text, generates structured memory summaries, and decides where to place them in a directory hierarchy
+- **Retrieval**: An LLM agent navigates the directory tree using filesystem tools (ls, cat, grep), reading README files to decide which paths to explore
+
+The filesystem IS the memory structure. No database. No vector store. The hierarchy itself provides the organizational semantics.
+
+### 1.2 Architecture
+
+```
+┌────────────────────────────────────────────┐
+│            Public API (Workflow)            │
+│     add(files, text)    request(query)     │
+├────────────────────────────────────────────┤
+│         GAM Agent          Chat Agent      │
+│     (Memory Building)     (Q&A Retrieval)  │
+├────────────────────────────────────────────┤
+│           LLM Generator Layer              │
+│  OpenAI-compatible API with JSON schemas   │
+├────────────────────────────────────────────┤
+│           Workspace Layer                  │
+│  Local filesystem or Docker container      │
+├────────────────────────────────────────────┤
+│         GAM Tree (Read-Only View)          │
+│   In-memory FSNode tree from disk scan     │
+├────────────────────────────────────────────┤
+│            Filesystem Storage              │
+│  .gam_meta.json + README.md + chunks (.md) │
+└────────────────────────────────────────────┘
+```
+
+### 1.3 Key Design Principles
+
+1. **LLM-native organization**: The LLM decides the taxonomy structure, not hard-coded rules
+2. **Filesystem as database**: Directory tree = taxonomy, files = memories, READMEs = indexes
+3. **Agentic retrieval**: A reasoning agent navigates the tree at query time, not a similarity search
+4. **Separation of concerns**: Tree (read-only view), Workspace (write operations), Generator (LLM calls)
+5. **Incremental updates**: New content can be added without rebuilding the entire taxonomy
+
+---
+
+## 2. Data Model
+
+### 2.1 FSNode (In-Memory Tree Node)
+
+```python
+class NodeType(Enum):
+    FILE = "file"
+    DIRECTORY = "directory"
+
+class FSNode(BaseModel):  # Pydantic model
+    name: str                          # Node identifier (filename or dirname)
+    node_type: NodeType                # FILE or DIRECTORY
+    content: Optional[str] = None      # Text content (files only)
+    children: Dict[str, FSNode] = {}   # Child nodes (directories only)
+    meta: Dict[str, Any] = {}          # Arbitrary metadata
+    created_at: datetime               # Creation timestamp
+    updated_at: datetime               # Last modification timestamp
+```
+
+### 2.2 MemorizedChunk (Memory Unit)
+
+```python
+class MemorizedChunk(BaseModel):
+    index: int                         # Sequence number in batch
+    title: str                         # Snake_case descriptive title
+    memory: str                        # LLM-generated summary preserving key information
+    tldr: str                          # One-line summary
+    metadata: Dict[str, Any] = {}      # Source info, token count, etc.
+```
+
+**Markdown serialization** (each chunk becomes a .md file):
+```markdown
+---
+title: neural_network_fundamentals
+index: 3
+tldr: Core concepts of neural network architecture and training
+---
+
+Neural networks are computational models inspired by biological neural systems.
+Key components include layers (input, hidden, output), activation functions
+(ReLU, sigmoid, tanh), and training via backpropagation with gradient descent.
+
+The loss function measures prediction error, and optimizers (SGD, Adam) update
+weights to minimize this loss. Regularization techniques (dropout, L2) prevent
+overfitting on training data.
+```
+
+### 2.3 DirectoryNode (Taxonomy Planning)
+
+```python
+class DirectoryNode(BaseModel):
+    path: str                              # Full directory path (e.g., "/foundations/math")
+    name: str                              # Directory name
+    description: str                       # What this directory contains
+    children: List[DirectoryNode] = []     # Subdirectories
+    chunk_indices: List[int] = []          # Chunks assigned to this directory
+```
+
+**Constraint**: Every chunk index must appear in exactly ONE leaf directory. Parent directories have empty `chunk_indices` — they only contain subdirectories.
+
+### 2.4 GAM Metadata File
+
+Stored at `<gam_dir>/.gam_meta.json`:
+```json
+{
+    "version": "1.0",
+    "created_at": "2026-01-15T10:30:00Z",
+    "updated_at": "2026-03-08T14:00:00Z",
+    "total_chunks": 42,
+    "total_directories": 8,
+    "source_files": ["doc1.pdf", "doc2.txt"],
+    "model_used": "gpt-4o-mini",
+    "chunk_config": {
+        "min_tokens": 100,
+        "max_tokens": 1000
+    }
+}
+```
+
+### 2.5 ChatResult (Query Response)
+
+```python
+class ChatResult(BaseModel):
+    question: str                      # Original query
+    answer: str                        # Synthesized response
+    sources: List[str]                 # File paths referenced in answer
+    confidence: float                  # 0.0-1.0 reliability score
+    files_read: List[str]              # All files accessed during exploration
+    dirs_explored: List[str]           # All directories explored
+    trajectory: str                    # Complete exploration path log
+    notes: Optional[str] = None        # Additional context
+```
+
+---
+
+## 3. Filesystem Storage Structure
+
+### 3.1 Directory Layout
+
+```
+gam_directory/
+├── .gam_meta.json                    # Root metadata
+├── README.md                          # Root-level summary of all contents
+├── foundations/
+│   ├── README.md                      # Describes this section
+│   ├── core_concepts/
+│   │   ├── README.md
+│   │   ├── neural_network_fundamentals.md
+│   │   └── activation_functions.md
+│   └── mathematics/
+│       ├── README.md
+│       ├── linear_algebra_basics.md
+│       └── calculus_for_ml.md
+├── advanced_topics/
+│   ├── README.md
+│   ├── transformer_architecture.md
+│   └── attention_mechanisms.md
+└── applications/
+    ├── README.md
+    ├── natural_language_processing.md
+    └── computer_vision.md
+```
+
+### 3.2 README Format
+
+Each directory contains a README.md describing its contents:
+
+```markdown
+# Foundations
+
+This section contains fundamental concepts that form the basis
+of the knowledge domain.
+
+## Contents
+
+- **core_concepts/**: Core definitions, principles, and building blocks
+  including neural network architecture and activation functions
+- **mathematics/**: Mathematical prerequisites including linear algebra
+  and calculus foundations needed for understanding the domain
+```
+
+The README serves as a navigation index for the exploration agent — it reads the README to decide which subdirectories to explore.
+
+---
+
+## 4. LLM Generator
+
+### 4.1 Interface
+
+```python
+class BaseGenerator(ABC):
+    @abstractmethod
+    def generate_single(
+        self,
+        prompt: Optional[str] = None,
+        messages: Optional[List[Dict]] = None,
+        schema: Optional[Dict] = None,
+        **kwargs
+    ) -> Dict:
+        """
+        Returns: {
+            "text": str,       # Raw response text
+            "parsed": dict,    # JSON-parsed if schema provided
+            "response": object # Raw API response
+        }
+        """
+        pass
+
+    def generate_batch(
+        self,
+        prompts: List[str],
+        schema: Optional[Dict] = None
+    ) -> List[Dict]:
+        """Parallel batch processing via thread pool."""
+        pass
+```
+
+### 4.2 OpenAI-Compatible Implementation
+
+```python
+class OpenAIGenerator(BaseGenerator):
+    def __init__(
+        self,
+        model: str = "gpt-4o-mini",
+        api_key: str = None,        # Falls back to OPENAI_API_KEY env
+        base_url: str = None,       # Falls back to OPENAI_BASE_URL env
+        temperature: float = 0.7,
+        max_tokens: int = 4096,
+        num_workers: int = None     # Default: os.cpu_count()
+    ):
+        self.client = OpenAI(api_key=api_key, base_url=base_url)
+```
+
+**Retry logic**: 20 attempts with 20-second exponential backoff on API errors.
+
+**Batch processing**: Uses `concurrent.futures.ThreadPoolExecutor` with configurable worker count.
+
+**Structured output**: When a `schema` parameter is provided, the generator uses OpenAI's JSON schema response format to ensure valid structured output. On parse failure, uses a JSON repair library to fix common issues.
+
+### 4.3 LLM Prompt Templates
+
+#### Memory Generation Prompt
+
+```
+You are a memory generation agent. Given a text chunk, create a structured
+memory that preserves the key information, concepts, numbers, and relationships.
+
+The memory should be a concise but complete summary that someone could use to
+understand the original content without seeing it.
+
+Rules:
+- Title must be snake_case and descriptive (3-5 words)
+- Memory should preserve key facts, numbers, names, and relationships
+- TLDR should be one sentence
+
+Output JSON schema:
+{
+    "title": "string (snake_case)",
+    "memory": "string (detailed summary)",
+    "tldr": "string (one sentence)"
+}
+```
+
+#### Batch Organization Prompt
+
+```
+You are a taxonomy organizer. Given a list of memorized chunks (each with
+index, title, and TLDR), organize them into a hierarchical directory structure.
+
+Rules:
+- Every chunk index must appear in exactly ONE leaf directory
+- Parent directories should NOT have chunk_indices (they only contain subdirectories)
+- Use descriptive, lowercase, underscore-separated directory names
+- Aim for 3-7 chunks per leaf directory
+- Maximum depth: 3 levels
+- Group by semantic similarity and topic
+
+Input: List of chunks with index, title, tldr
+Output: DirectoryNode tree structure
+```
+
+#### Chunk Assignment Prompt (Incremental)
+
+```
+Given an existing taxonomy structure and a new memorized chunk,
+determine which leaf directory is the best fit.
+
+If no existing directory is appropriate, suggest creating a new one.
+
+Prefer leaf directories over parent directories.
+Consider the directory descriptions in the README files.
+```
+
+#### README Generation Prompt
+
+```
+Generate a README.md for a directory containing the following files/subdirectories.
+Include:
+1. A brief title (1 line)
+2. A description of what this section contains (2-3 sentences)
+3. A "## Contents" section listing each item with a brief description
+
+Use the file names and their content summaries to write accurate descriptions.
+```
+
+---
+
+## 5. Memory Building Pipeline (GAM Agent)
+
+### 5.1 Full Build (Empty GAM)
+
+When adding content to an empty GAM directory:
+
+**Step 1 — Input Resolution**:
+- Accept file paths (PDF, TXT, MD) or raw text strings
+- Extract text from PDFs using a PDF parser
+- Concatenate all input into a single text corpus
+
+**Step 2 — Chunking**:
+- Count total tokens using a tokenizer (tiktoken)
+- If total tokens &gt; max_chunk_tokens: split into chunks
+- Chunking algorithm (see Section 5.2)
+
+**Step 3 — Memory Generation** (Parallel):
+- For each chunk, call LLM with memory generation prompt
+- Use ThreadPoolExecutor for parallel processing
+- Collect `MemorizedChunk` objects with index, title, memory, tldr
+
+**Step 4 — Taxonomy Organization**:
+- Send all chunk summaries (index, title, tldr) to LLM
+- LLM returns a DirectoryNode tree
+- Validate: every chunk index appears in exactly one leaf
+
+**Step 5 — Filesystem Write**:
+- Create directory structure
+- Write each chunk as `{title}.md` in its assigned directory
+- Generate README.md at each directory level via LLM
+
+**Step 6 — Metadata**:
+- Write `.gam_meta.json` with creation info
+
+### 5.2 Chunking Algorithm
+
+```
+Input: text (string), config {min_tokens, max_tokens}
+
+Step 1: Identify section boundaries
+  - Look for markdown headers (# ## ###)
+  - Look for double newlines separating paragraphs
+  - Create initial sections at these boundaries
+
+Step 2: For each section:
+  - Count tokens
+  - If tokens > max_tokens:
+      Ask LLM to find optimal split point that:
+      - Maintains semantic completeness
+      - Respects topic boundaries
+      - Avoids splitting mid-sentence
+      Split at recommended index
+      Recurse on both halves
+  - If tokens < min_tokens:
+      Merge with adjacent section
+
+Step 3: Assign sequential indices to final chunks
+Output: List of text chunks with indices
+```
+
+### 5.3 Incremental Add (Existing GAM)
+
+When adding new content to an existing taxonomy:
+
+**Step 1-3**: Same as full build (resolve input, chunk, generate memories)
+
+**Step 4 — Placement Decision**:
+For each new chunk:
+1. Load current taxonomy structure (directory tree + READMEs)
+2. Ask LLM: "Which existing directory best fits this chunk?"
+3. If good fit found: place chunk in that directory
+4. If no good fit: create new directory
+
+**Step 5 — Reorganization Check**:
+If any directory exceeds a threshold (e.g., 10+ chunks):
+1. Ask LLM to re-plan the taxonomy for that subtree
+2. Compute file movements needed
+3. Execute movements (rename/move files)
+4. Update affected README files
+
+**Step 6**: Update metadata
+
+### 5.4 ReorganizeOperation
+
+```python
+class ReorganizeOperation(BaseModel):
+    moved_files: List[Tuple[str, str]]    # (old_path, new_path)
+    deleted_files: List[str]               # Files to remove
+    new_directories: List[str]             # Directories to create
+```
+
+---
+
+## 6. Retrieval Pipeline (Chat Agent)
+
+### 6.1 Agent Loop
+
+The chat agent is an LLM with access to filesystem tools. It explores the GAM tree to answer queries.
+
+```
+Input: user_query, system_prompt, max_iterations
+
+Initialize:
+  - visited_files = set()
+  - exploration_log = []
+  - gathered_information = []
+
+For iteration in range(max_iterations):
+    1. Construct message context:
+       - System prompt (exploration guidelines)
+       - User query
+       - Exploration history so far
+       - Available tools
+
+    2. LLM decides next action (function calling):
+       - ls(path) → list directory contents
+       - cat(file) → read file content
+       - grep(pattern) → search file contents
+       - bm25_search(query) → full-text search (optional)
+       - answer(text) → provide final answer
+
+    3. If action is "answer":
+       Return ChatResult with answer and sources
+
+    4. Execute tool, append result to exploration_log
+
+If max_iterations reached:
+    Synthesize best answer from gathered information
+    Return ChatResult with lower confidence
+```
+
+### 6.2 Exploration Guidelines (System Prompt)
+
+```
+You are a research agent exploring a hierarchical knowledge base.
+
+Strategy:
+1. Start by reading the root README.md to understand the overall structure
+2. Use ls() to see available directories and files
+3. Read README.md at each level before diving deeper
+4. Navigate toward directories most likely to contain relevant information
+5. Read specific chunk files when they seem relevant to the query
+6. Use grep() to search for specific terms across files
+7. When you have enough information, use answer() to respond
+
+Important:
+- Don't read every file — be strategic
+- The README files describe what each section contains
+- Prefer depth-first exploration of promising paths
+- Track which files you've already read to avoid re-reading
+```
+
+### 6.3 Tool Definitions
+
+#### `ls` — List Directory
+
+```json
+{
+    "name": "ls",
+    "description": "List contents of a directory",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "path": {
+                "type": "string",
+                "description": "Directory path relative to GAM root"
+            }
+        },
+        "required": ["path"]
+    }
+}
+```
+
+**Returns**: List of files and subdirectories with types and sizes.
+
+#### `cat` — Read File
+
+```json
+{
+    "name": "cat",
+    "description": "Read the contents of a file",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "file": {
+                "type": "string",
+                "description": "File path relative to GAM root"
+            }
+        },
+        "required": ["file"]
+    }
+}
+```
+
+**Returns**: Full file content as string.
+
+#### `grep` — Search Files
+
+```json
+{
+    "name": "grep",
+    "description": "Search for a pattern in files",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "pattern": {
+                "type": "string",
+                "description": "Search pattern (case-insensitive substring)"
+            },
+            "path": {
+                "type": "string",
+                "description": "Directory to search in (default: root)",
+                "default": "/"
+            }
+        },
+        "required": ["pattern"]
+    }
+}
+```
+
+**Returns**: List of matching files with line numbers and matched content.
+
+#### `bm25_search` — Full-Text Search (Optional)
+
+```json
+{
+    "name": "bm25_search",
+    "description": "Search all memory files using BM25 full-text search",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "query": {
+                "type": "string",
+                "description": "Search query"
+            },
+            "top_k": {
+                "type": "integer",
+                "description": "Number of results to return",
+                "default": 5
+            }
+        },
+        "required": ["query"]
+    }
+}
+```
+
+**Implementation**: Uses a BM25 index (Pyserini/Lucene-based) built over all .md files in the GAM directory. The index is lazily built on first search and cached.
+
+**Returns**: Ranked list of file paths with relevance scores and content snippets.
+
+#### `answer` — Provide Final Answer
+
+```json
+{
+    "name": "answer",
+    "description": "Provide the final answer to the user's question",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "text": {
+                "type": "string",
+                "description": "The answer"
+            },
+            "confidence": {
+                "type": "number",
+                "description": "Confidence in the answer (0.0-1.0)"
+            },
+            "sources": {
+                "type": "array",
+                "items": {"type": "string"},
+                "description": "File paths that informed the answer"
+            }
+        },
+        "required": ["text"]
+    }
+}
+```
+
+---
+
+## 7. Workspace Layer
+
+### 7.1 Local Workspace
+
+```python
+class LocalWorkspace:
+    def __init__(self, root_path: Path):
+        self.root_path = root_path
+        self.root_path.mkdir(parents=True, exist_ok=True)
+
+    def run(self, cmd: str) -> Tuple[str, int]:
+        """Execute a shell command in the workspace directory."""
+        result = subprocess.run(cmd, shell=True, cwd=self.root_path, capture_output=True)
+        return result.stdout.decode(), result.returncode
+
+    def read_file(self, path: str) -> str:
+        """Read file content."""
+        return (self.root_path / path).read_text()
+
+    def write_file(self, path: str, content: str) -> None:
+        """Write file, creating parent directories as needed."""
+        full_path = self.root_path / path
+        full_path.parent.mkdir(parents=True, exist_ok=True)
+        full_path.write_text(content)
+
+    def list_dir(self, path: str = "") -> List[Dict]:
+        """List directory contents with types and sizes."""
+        target = self.root_path / path
+        return [
+            {"name": f.name, "type": "dir" if f.is_dir() else "file", "size": f.stat().st_size}
+            for f in sorted(target.iterdir())
+            if not f.name.startswith(".")
+        ]
+
+    def copy_to_workspace(self, src: Path, dst: str) -> None:
+        """Copy external file into workspace."""
+        shutil.copy2(src, self.root_path / dst)
+```
+
+### 7.2 Docker Workspace (Optional)
+
+For sandboxed execution:
+```python
+class DockerWorkspace:
+    def __init__(self, image: str, root_path: str = "/workspace"):
+        self.container = docker.from_env().containers.run(
+            image, detach=True, tty=True
+        )
+        self.root_path = root_path
+
+    def run(self, cmd: str, timeout: int = 30) -> Tuple[str, int]:
+        """Execute command inside container with timeout."""
+        wrapped = f"timeout {timeout} bash -c '{cmd}'"
+        exit_code, output = self.container.exec_run(wrapped)
+        return output.decode(), exit_code
+```
+
+---
+
+## 8. GAM Tree (Read-Only View)
+
+### 8.1 Tree Construction
+
+```python
+class GAMTree:
+    def __init__(self, root: FSNode):
+        self.root = root
+
+    @classmethod
+    def from_disk(cls, path: Path) -> "GAMTree":
+        """Recursively load directory structure into FSNode tree."""
+        root = cls._scan_directory(path)
+        return cls(root)
+
+    @staticmethod
+    def _scan_directory(path: Path) -> FSNode:
+        node = FSNode(
+            name=path.name,
+            node_type=NodeType.DIRECTORY,
+            children={},
+            created_at=datetime.fromtimestamp(path.stat().st_ctime),
+            updated_at=datetime.fromtimestamp(path.stat().st_mtime)
+        )
+        for child in sorted(path.iterdir()):
+            if child.name.startswith("."):
+                continue
+            if child.is_dir():
+                node.children[child.name] = GAMTree._scan_directory(child)
+            elif child.is_file() and child.suffix == ".md":
+                node.children[child.name] = FSNode(
+                    name=child.name,
+                    node_type=NodeType.FILE,
+                    content=child.read_text(),
+                    created_at=datetime.fromtimestamp(child.stat().st_ctime),
+                    updated_at=datetime.fromtimestamp(child.stat().st_mtime)
+                )
+        return node
+```
+
+### 8.2 Tree Operations
+
+```python
+def get_node(self, path_str: str) -> Optional[FSNode]:
+    """Navigate to a node by path string."""
+    parts = [p for p in path_str.split("/") if p]
+    current = self.root
+    for part in parts:
+        if part not in current.children:
+            return None
+        current = current.children[part]
+    return current
+
+def tree_view(self, depth: int = 2) -> str:
+    """Render ASCII tree visualization."""
+    lines = []
+    self._render_tree(self.root, "", depth, 0, lines)
+    return "\n".join(lines)
+
+def get_structure_summary(self) -> str:
+    """Generate text summary for LLM context."""
+    summary = []
+    for name, child in self.root.children.items():
+        if child.node_type == NodeType.DIRECTORY:
+            readme = child.children.get("README.md")
+            desc = readme.content[:200] if readme else "No description"
+            chunk_count = sum(1 for c in child.children.values()
+                            if c.node_type == NodeType.FILE and c.name != "README.md")
+            summary.append(f"- {name}/ ({chunk_count} files): {desc}")
+    return "\n".join(summary)
+```
+
+---
+
+## 9. Workflow API
+
+### 9.1 Public Interface
+
+```python
+class Workflow:
+    def __init__(
+        self,
+        workflow_type: str,           # "text" or "video"
+        gam_dir: str,                 # Path to GAM directory
+        model: str = "gpt-4o-mini",   # LLM model name
+        llm_config: Dict = None       # API key, temperature, etc.
+    ):
+        self._gam_dir = Path(gam_dir)
+        self._model = model
+        self._llm_config = llm_config or {}
+        # Components are lazy-loaded on first use
+        self._generator = None
+        self._workspace = None
+        self._tree = None
+
+    def add(
+        self,
+        files: List[str] = None,       # File paths to ingest
+        text: str = None,               # Raw text to ingest
+        use_chunking: bool = True,      # Whether to chunk input
+        chunk_config: Dict = None       # min_tokens, max_tokens
+    ) -> None:
+        """Add content to the GAM memory."""
+        agent = self._get_gam_agent()
+        if self._is_empty():
+            agent.create(files=files, text=text,
+                        use_chunking=use_chunking, chunk_config=chunk_config)
+        else:
+            agent.add_incrementally(files=files, text=text,
+                                   use_chunking=use_chunking, chunk_config=chunk_config)
+
+    def request(
+        self,
+        user_prompt: str,               # Question to answer
+        system_prompt: str = None,      # Custom system instructions
+        max_iterations: int = 10        # Max exploration rounds
+    ) -> ChatResult:
+        """Query the GAM memory."""
+        agent = self._get_chat_agent()
+        return agent.request(
+            query=user_prompt,
+            system_prompt=system_prompt,
+            max_iterations=max_iterations
+        )
+```
+
+### 9.2 CLI Entry Points
+
+```bash
+# Add documents to memory
+gam-add --gam-dir ./my_memory --files doc1.pdf doc2.txt --model gpt-4o-mini
+
+# Query the memory
+gam-request --gam-dir ./my_memory --query "What are the main findings?" --max-iterations 10
+```
+
+---
+
+## 10. Configuration
+
+### 10.1 Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `OPENAI_API_KEY` | (required) | API key for LLM provider |
+| `OPENAI_BASE_URL` | https://api.openai.com/v1 | API base URL (for compatible providers) |
+| `OPENAI_MODEL` | gpt-4o-mini | Default model name |
+| `OPENAI_TEMPERATURE` | 0.7 | Default temperature |
+| `GAM_AGENT_MODEL` | (falls back to OPENAI_MODEL) | Model for memory building |
+| `GAM_AGENT_TEMPERATURE` | 0.3 | Temperature for memory building (lower = more consistent) |
+| `CHAT_AGENT_MODEL` | (falls back to OPENAI_MODEL) | Model for Q&A |
+| `CHAT_AGENT_TEMPERATURE` | 0.7 | Temperature for Q&A |
+
+### 10.2 Chunk Configuration
+
+```python
+class ChunkConfig(BaseModel):
+    min_tokens: int = 100       # Minimum chunk size
+    max_tokens: int = 1000      # Maximum chunk size
+    tokenizer: str = "tiktoken" # Tokenizer to use
+    model: str = "gpt-4o-mini"  # For tiktoken encoding selection
+```
+
+---
+
+## 11. Behavioral Test Specifications
+
+### 11.1 Memory Building Tests
+
+```
+TEST: Full build from single document
+  Input: 5000-word document about machine learning
+  EXPECT: Directory structure created with multiple subdirectories
+  EXPECT: Each chunk saved as .md file with frontmatter
+  EXPECT: README.md at each directory level
+  EXPECT: .gam_meta.json at root with correct counts
+  EXPECT: Every chunk appears in exactly one leaf directory
+
+TEST: Chunking respects boundaries
+  Input: Document with clear section headers
+  EXPECT: Chunks align with section boundaries where possible
+  EXPECT: No chunk exceeds max_tokens
+  EXPECT: No chunk below min_tokens (except final chunk)
+
+TEST: Memory generation quality
+  Input: Paragraph about "Python's GIL prevents true multi-threading"
+  EXPECT: Memory preserves key fact about GIL
+  EXPECT: Title is snake_case (e.g., "python_gil_threading_limitation")
+  EXPECT: TLDR is one sentence
+
+TEST: Taxonomy organization
+  Input: 20 chunks about varied programming topics
+  EXPECT: Logical grouping (languages, paradigms, tools, etc.)
+  EXPECT: 3-7 chunks per leaf directory
+  EXPECT: Maximum 3 levels of nesting
+  EXPECT: No chunk assigned to multiple directories
+
+TEST: Incremental addition
+  Build GAM with 10 chunks about Python
+  Add 5 more chunks about JavaScript
+  EXPECT: New directory created for JavaScript topics
+  EXPECT: Existing Python structure unchanged
+  EXPECT: Updated README at root level
+
+TEST: Reorganization on threshold
+  Build GAM, incrementally add chunks until one directory has 12+ files
+  EXPECT: Reorganization triggered
+  EXPECT: Overfull directory split into subdirectories
+  EXPECT: All files accounted for (no lost chunks)
+  EXPECT: Affected READMEs regenerated
+```
+
+### 11.2 Retrieval Tests
+
+```
+TEST: Basic query answering
+  Build GAM with known content about "React hooks"
+  Query: "How do React hooks work?"
+  EXPECT: Answer contains accurate information from stored memories
+  EXPECT: Sources list includes relevant .md files
+  EXPECT: Confidence > 0.5
+
+TEST: Hierarchical exploration
+  Build GAM with multi-level taxonomy
+  Query: "Explain transformer attention"
+  EXPECT: Agent reads root README first
+  EXPECT: Agent navigates to most relevant subdirectory
+  EXPECT: Agent reads specific chunk files
+  EXPECT: trajectory log shows logical exploration path
+
+TEST: Information not found
+  Build GAM about Python
+  Query: "How does Rust's borrow checker work?"
+  EXPECT: Answer indicates information not found in memory
+  EXPECT: Confidence < 0.3
+
+TEST: Multi-source synthesis
+  Build GAM with chunks about "neural networks" in different directories
+  Query: "Compare CNNs and RNNs"
+  EXPECT: Agent explores multiple directories
+  EXPECT: Answer synthesizes information from multiple files
+  EXPECT: Sources include files from different directories
+
+TEST: Grep-based search
+  Build GAM with technical content containing "BERT" in specific files
+  Query: "What is BERT?"
+  EXPECT: Agent uses grep("BERT") to locate relevant files
+  EXPECT: More efficient than exhaustive browsing
+```
+
+### 11.3 Tool Execution Tests
+
+```
+TEST: ls returns correct structure
+  Create directory with 3 files and 2 subdirectories
+  Call ls("/")
+  EXPECT: All 5 items listed with correct types and sizes
+
+TEST: cat returns file content
+  Create file with known content
+  Call cat("path/to/file.md")
+  EXPECT: Exact file content returned
+
+TEST: grep finds matches
+  Create files with varied content
+  Call grep("specific_term")
+  EXPECT: Only files containing the term returned
+  EXPECT: Matched lines shown with line numbers
+
+TEST: BM25 search index
+  Build GAM with 50 chunks
+  First search call triggers index build
+  EXPECT: Index created successfully
+  EXPECT: Subsequent searches use cached index
+  EXPECT: Results ranked by relevance
+```
+
+### 11.4 Edge Case Tests
+
+```
+TEST: Empty input
+  Call add(text="")
+  EXPECT: No chunks created, no error thrown
+
+TEST: Very large document
+  Input: 100,000-word document
+  EXPECT: Properly chunked (no OOM)
+  EXPECT: Taxonomy handles large number of chunks
+
+TEST: Non-English content
+  Input: Document in Japanese
+  EXPECT: Chunks created (may be less optimal)
+  EXPECT: Taxonomy reflects content structure
+
+TEST: PDF with images
+  Input: PDF containing images and text
+  EXPECT: Text extracted, images ignored
+  EXPECT: No crash on image-heavy pages
+
+TEST: Concurrent add operations
+  Call add() twice simultaneously
+  EXPECT: No file corruption
+  EXPECT: Both additions reflected in final state
+```
+
+---
+
+## 12. Dependencies
+
+### 12.1 Required
+
+| Package | Purpose |
+|---------|---------|
+| pydantic &gt;= 2.0 | Data validation and schemas |
+| openai &gt;= 1.0 | LLM API client |
+| tiktoken &gt;= 0.5 | Token counting |
+| tqdm &gt;= 4.60 | Progress bars |
+| python-dotenv &gt;= 1.0 | Environment variable loading |
+| json-repair &gt;= 0.58 | Fix malformed LLM JSON output |
+
+### 12.2 Optional
+
+| Package | Purpose |
+|---------|---------|
+| docker &gt;= 7.0 | Docker workspace support |
+| PyPDF2 | PDF text extraction |
+| pyserini | BM25 search index |
+| flask | Web API (if serving over HTTP) |
+| fastapi + uvicorn | Alternative web API |
+
+---
+
+## 13. Project Structure
+
+```
+project_root/
+├── src/
+│   ├── __init__.py
+│   ├── workflows/
+│   │   ├── __init__.py
+│   │   ├── base.py              # BaseWorkflow (lazy loading)
+│   │   └── text.py              # TextWorkflow
+│   ├── agents/
+│   │   ├── __init__.py
+│   │   ├── base_gam_agent.py    # Base memory building agent
+│   │   ├── text_gam_agent.py    # Text-specific memory agent
+│   │   └── text_chat_agent.py   # Q&A retrieval agent
+│   ├── core/
+│   │   ├── __init__.py
+│   │   ├── tree.py              # GAMTree (read-only view)
+│   │   └── node.py              # FSNode model
+│   ├── schemas/
+│   │   ├── __init__.py
+│   │   ├── chunk_schemas.py     # MemorizedChunk, DirectoryNode, etc.
+│   │   └── json_schemas.py      # LLM JSON output schemas
+│   ├── generators/
+│   │   ├── __init__.py
+│   │   ├── base.py              # BaseGenerator ABC
+│   │   └── openai_gen.py        # OpenAI-compatible implementation
+│   ├── workspaces/
+│   │   ├── __init__.py
+│   │   ├── base.py              # BaseWorkspace ABC
+│   │   ├── local.py             # LocalWorkspace
+│   │   └── docker.py            # DockerWorkspace
+│   ├── tools/
+│   │   ├── __init__.py
+│   │   ├── fs_tools.py          # ls, cat, grep implementations
+│   │   └── bm25_tool.py         # BM25 search tool
+│   ├── prompts/
+│   │   ├── __init__.py
+│   │   ├── memorize.py          # Memory generation prompts
+│   │   ├── organize.py          # Taxonomy planning prompts
+│   │   └── explore.py           # Retrieval agent prompts
+│   └── cli.py                   # CLI entry points
+├── tests/
+└── pyproject.toml
+```
+
+---
+
+## 14. Key Algorithm: Taxonomy Validation
+
+```
+Input: DirectoryNode tree, total_chunk_count
+
+Step 1: Collect all chunk_indices from leaf nodes
+Step 2: Verify count matches total_chunk_count
+Step 3: Verify no duplicates (each index appears exactly once)
+Step 4: Verify no parent directory has chunk_indices AND children
+Step 5: Verify all directory names are valid filesystem names
+
+If validation fails: Re-prompt LLM with specific error message
+Retry up to 3 times before falling back to flat structure
+```
+
+---
+
+*This specification provides complete architectural and behavioral detail for independent implementation of a hierarchical agentic memory system with LLM-driven auto-taxonomy, filesystem storage, and multi-strategy retrieval.*

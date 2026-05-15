@@ -1,0 +1,1096 @@
+---
+title: "ORIGINAL PROMPT INSTRUCTIONS"
+description: "From the start, the Secure Chat system will be a white label product, intended to be sold to agencies, and resold to business owners. First for the settings..."
+---
+<Info>
+Normalized for Mintlify from `knowledge-base/aiconnected-business-platform/legacy-business-platform-specification.mdx`.
+</Info>
+# ORIGINAL PROMPT INSTRUCTIONS
+
+From the start, the Secure Chat system will be a white label product, intended to be sold to agencies, and resold to business owners.
+
+First for the settings page, you will need to add seven types of user account pairs:
+
+1. Super Admin (me/Oxford Pierpont)  
+2. Super Admin Staff  
+3. Agency Admin (white label client)  
+4. Agency Staff  
+5. Business Admin (end user clients) white-label-domain.com/secure-login  
+6. Business Admin Staff  
+7. Business Customers (end users)
+
+In the Admin interface, you will also need to create a sidebar for the admin tabs so that it can be uncluttered. Different user types will see different tabs.
+
+Super Admin tabs might include Dashboard, Agencies (with feature access toggles & settings access), Sub-Accounts, Business Information, Integrations (webhooks, API keys, tokens, licenses, etc.), Branding & Styling, Email Settings, Embed Snippets, Billing, Reporting, Switch Services (Grayed Out), Sign Out
+
+Agency Admin tabs might include Dashboard, Clients (with feature access toggles & Settings Access), Business Information, Integrations (webhooks, API keys, tokens, licenses, etc.), Branding & Styling, Email Settings, Embed Snippets, Billing, Reporting, Switch Services (grayed out), Sign Out
+
+Business Admin tabs might include Dashboard, Live Sessions, Session History, Leads, Business Information, Integrations (webhooks, API keys, tokens, licenses, etc.), Branding & Styling, Chat Settings, Prompts & Training, Knowledge Base, Email Settings, Embed Snippets, Billing, Reporting, Switch Services (Grayed Out)
+
+For each of these tabs, obviously there will be a variety of fields and components, for example, Billing would have things like usage, invoices, payment methods, etc.
+
+I think you can handle that part without me, and my main concern is the granular control of the chat interface. Users can choose simple edits where they only need to choose primary and secondary colors, or advanced edits where nearly every component can be changed individually. No layout structural layout changes.
+
+Customizations should be broken down by section (Sidebar, Header, Chat Window, Chat Input), and then into components, like backgrounds, buttons, fonts, and finally granular changes like component color, stroke, corner radius, thickness, weight. Last, users should be able to upload logos, custom CSS. All of these settings should be separately customizable for light mode and dark mode. Users can only modify surface level aesthetics, not structural layout changes. They should also be an option to enable/disable emoji icons. Google Fonts also need to be integrated. If a color picker can be integrated, let's do that. Otherwise, HEX and RGB fields will be fine.
+
+Widgets and icons should also be customizable, as well as all headings and labels.
+
+Agency admins should be able to access these theming settings for their clients, as many clients may choose to skip this process. The default setting for all interfaces should be black/white/grayscale. It would also be nice to have premade themes for the major colors, like red, green, blue, yellow, etc.
+
+Moving on, I want all users to have an Account ID, and this can be used to access the live chat without embedding. So the link would be "domain/chat/Account-ID".
+
+Agencies should also have the option to set agency-level branding, custom domains, add/remove clients, customize billing options, provide API keys to clients
+
+Knowledge base content should be editable with red warnings that modifying the prompts can degrade performance. There should also be an option to periodically crawl the business's website for new pages or content.
+
+No user should ever see another user's chat history on the front end. The Account ID and Session ID should prevent this.
+
+**User Hierarchy**
+
+* 7 user levels from Super Admin → Customer  
+* 2 separate login routes  
+* Staff roles inherit parent permissions
+
+**Database**
+
+* Full schema with RLS policies  
+* Agencies → Businesses → Sessions → Messages chain  
+* Knowledge bases stored per business  
+* Encrypted API keys
+
+**Styling System** (Section 6\)
+
+* Simple mode: Just 2 colors \+ logo  
+* Advanced mode: 100+ customizable properties  
+* Organized by section: Sidebar, Header, Chat Window, Chat Input  
+* Separate light/dark mode configs  
+* Google Fonts integration  
+* Custom CSS upload  
+* 8 premade color themes (grayscale default)  
+* All labels/headings editable
+
+**Admin Sidebar**
+
+* Role-based tab visibility  
+* All tabs you specified are mapped  
+* "Switch Services" grayed out for future
+
+**Route Structure**
+
+* `/chat/[account_id]` for public access  
+* `/admin/*` for all admin functions  
+* Session-based chat (no customer login)
+
+**Implementation Phases**
+
+* 7 phases from core platform → billing
+
+# securechat Platform Specification
+
+## Product Requirements Document v1.0
+
+**Platform Name:** securechat **Staging URL:** staging.authAPI.net **Production URL:** securechat.sec-admn.com **Product Type:** White-label AI Chat Platform for Agencies
+
+---
+
+# 1\. PLATFORM OVERVIEW
+
+## 1.1 Business Model
+
+securechat is a B2B2B white-label platform:
+
+- **Oxford Pierpont** (Super Admin) operates the platform  
+- **Agencies** purchase white-label access and resell to their clients  
+- **Businesses** are the end clients who use the AI chat for their customers  
+- **Customers** interact with the chat interface (no account required)
+
+## 1.2 Core Value Proposition
+
+Agencies can offer branded AI chat solutions to their clients without building the technology. Each business gets a customized chat interface powered by their own knowledge base.
+
+---
+
+# 2\. USER HIERARCHY & AUTHENTICATION
+
+## 2.1 User Types (7 Levels)
+
+| Level | Role | Description | Login Route |
+| :---- | :---- | :---- | :---- |
+| 1 | Super Admin | Platform owner (Oxford Pierpont) | `/auth-login` |
+| 2 | Super Admin Staff | Platform team members | `/auth-login` |
+| 3 | Agency Admin | White-label client (reseller) | `/agency-login` |
+| 4 | Agency Staff | Agency team members | `/agency-login` |
+| 5 | Business Admin | End client (business owner) | `/business-login` or custom domain |
+| 6 | Business Staff | Business team members | `/business-login` or custom domain |
+| 7 | Customer | Chat end-user | No login (session-based) |
+
+## 2.2 Authentication Routes
+
+```
+securechat.sec-admn.com/auth-login        → Super Admin + Staff
+securechat.sec-admn.com/agency-login      → Agency Admin + Staff
+securechat.sec-admn.com/business-login    → Business Admin + Staff
+[agency-custom-domain]/business-login → Business Admin + Staff (white-label)
+```
+
+## 2.3 Account Identification
+
+- Every account (Agency, Business) has a unique `account_id`  
+- Chat access via: `[domain]/chat/[account_id]`  
+- Session tracking via `session_id` (UUID, no login required)  
+- No user can access another user's chat history
+
+---
+
+# 3\. DATABASE SCHEMA
+
+## 3.1 Core Tables
+
+```sql
+-- Platform users (all admin types)
+CREATE TABLE users (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  email TEXT UNIQUE NOT NULL,
+  password_hash TEXT NOT NULL,
+  role TEXT NOT NULL CHECK (role IN (
+    'super_admin', 'super_admin_staff',
+    'agency_admin', 'agency_staff',
+    'business_admin', 'business_staff'
+  )),
+  parent_id UUID REFERENCES users(id), -- Staff → Admin relationship
+  agency_id UUID REFERENCES agencies(id),
+  business_id UUID REFERENCES businesses(id),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  last_login TIMESTAMPTZ,
+  is_active BOOLEAN DEFAULT true
+);
+
+-- Agencies (white-label clients)
+CREATE TABLE agencies (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  account_id TEXT UNIQUE NOT NULL, -- Public identifier
+  name TEXT NOT NULL,
+  email TEXT NOT NULL,
+  phone TEXT,
+  
+  -- Custom domain
+  custom_domain TEXT UNIQUE,
+  domain_verified BOOLEAN DEFAULT false,
+  
+  -- Branding (agency-level defaults)
+  branding JSONB DEFAULT '{}',
+  
+  -- Feature access (what they can offer clients)
+  features JSONB DEFAULT '{}',
+  
+  -- Billing
+  stripe_customer_id TEXT,
+  subscription_tier TEXT,
+  subscription_status TEXT,
+  
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  is_active BOOLEAN DEFAULT true
+);
+
+-- Businesses (end clients)
+CREATE TABLE businesses (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  account_id TEXT UNIQUE NOT NULL, -- Public identifier for chat URL
+  agency_id UUID REFERENCES agencies(id), -- Which agency owns this client
+  
+  -- Business info
+  name TEXT NOT NULL,
+  email TEXT,
+  phone TEXT,
+  address TEXT,
+  city TEXT,
+  state TEXT,
+  zip TEXT,
+  website TEXT,
+  booking_url TEXT,
+  
+  -- Branding & styling (full customization)
+  branding JSONB DEFAULT '{}',
+  styling JSONB DEFAULT '{}',
+  
+  -- Chat settings
+  chat_settings JSONB DEFAULT '{}',
+  
+  -- Feature access (inherited from agency + overrides)
+  features JSONB DEFAULT '{}',
+  
+  -- Billing (if direct billing enabled)
+  stripe_customer_id TEXT,
+  
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  is_active BOOLEAN DEFAULT true
+);
+
+-- Knowledge bases
+CREATE TABLE knowledge_bases (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  business_id UUID REFERENCES businesses(id) ON DELETE CASCADE,
+  
+  -- Source
+  source_url TEXT,
+  last_crawl TIMESTAMPTZ,
+  crawl_frequency TEXT, -- 'manual', 'daily', 'weekly', 'monthly'
+  
+  -- Generated content
+  raw_scrape JSONB,
+  extracted_data JSONB,
+  enhanced_services JSONB,
+  concern_map JSONB,
+  conversation_starters JSONB,
+  system_prompt TEXT,
+  quiz JSONB,
+  service_guide TEXT,
+  compiled_sc JSONB,
+  
+  -- Status
+  status TEXT DEFAULT 'pending', -- pending, generating, complete, error
+  generation_log JSONB,
+  
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Chat sessions
+CREATE TABLE chat_sessions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  session_id TEXT UNIQUE NOT NULL, -- Public session identifier
+  business_id UUID REFERENCES businesses(id) ON DELETE CASCADE,
+  
+  -- Session data
+  started_at TIMESTAMPTZ DEFAULT NOW(),
+  last_activity TIMESTAMPTZ DEFAULT NOW(),
+  is_active BOOLEAN DEFAULT true,
+  
+  -- Lead capture (if collected)
+  lead_id UUID REFERENCES leads(id),
+  
+  -- Metadata
+  user_agent TEXT,
+  ip_address INET,
+  referrer TEXT
+);
+
+-- Chat messages
+CREATE TABLE chat_messages (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  session_id UUID REFERENCES chat_sessions(id) ON DELETE CASCADE,
+  
+  role TEXT NOT NULL CHECK (role IN ('user', 'assistant', 'system')),
+  content TEXT NOT NULL,
+  
+  -- Metadata
+  tokens_used INTEGER,
+  model TEXT,
+  
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Leads
+CREATE TABLE leads (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  business_id UUID REFERENCES businesses(id) ON DELETE CASCADE,
+  session_id UUID REFERENCES chat_sessions(id),
+  
+  -- Contact info
+  name TEXT,
+  email TEXT,
+  phone TEXT,
+  sms_opt_in BOOLEAN DEFAULT false,
+  
+  -- Assessment results
+  assessment JSONB,
+  
+  -- Status
+  webhook_sent BOOLEAN DEFAULT false,
+  email_sent BOOLEAN DEFAULT false,
+  
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Integrations (per business)
+CREATE TABLE integrations (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  business_id UUID REFERENCES businesses(id) ON DELETE CASCADE,
+  
+  -- AI Provider
+  ai_provider TEXT, -- 'anthropic', 'openrouter', 'gemini'
+  ai_api_key_encrypted TEXT,
+  ai_model TEXT,
+  
+  -- Webhooks
+  webhook_enabled BOOLEAN DEFAULT false,
+  webhook_url TEXT,
+  webhook_preset TEXT,
+  
+  -- Email (SMTP)
+  email_enabled BOOLEAN DEFAULT false,
+  smtp_host TEXT,
+  smtp_port INTEGER,
+  smtp_user TEXT,
+  smtp_pass_encrypted TEXT,
+  smtp_from_name TEXT,
+  smtp_from_email TEXT,
+  notification_email TEXT,
+  
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Audit log
+CREATE TABLE audit_log (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES users(id),
+  action TEXT NOT NULL,
+  entity_type TEXT,
+  entity_id UUID,
+  details JSONB,
+  ip_address INET,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+## 3.2 Row Level Security
+
+```sql
+-- Users can only see their own data and data they manage
+-- Super Admin: All data
+-- Agency Admin: Own agency + their businesses
+-- Business Admin: Own business only
+-- Staff: Same as their parent admin
+
+-- Example RLS policy for businesses table
+ALTER TABLE businesses ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY businesses_access ON businesses
+  USING (
+    -- Super admins see all
+    (SELECT role FROM users WHERE id = auth.uid()) IN ('super_admin', 'super_admin_staff')
+    OR
+    -- Agency admins see their clients
+    agency_id = (SELECT agency_id FROM users WHERE id = auth.uid())
+    OR
+    -- Business admins see their own business
+    id = (SELECT business_id FROM users WHERE id = auth.uid())
+  );
+```
+
+---
+
+# 4\. ROUTE STRUCTURE
+
+## 4.1 Authentication Routes
+
+```
+/auth-login              Super Admin login
+/agency-login            Agency Admin login
+/business-login          Business Admin login
+/forgot-password         Password reset
+/reset-password          Password reset confirmation
+/logout                  Sign out
+```
+
+## 4.2 Admin Routes (Role-Based Access)
+
+```
+/admin                   Dashboard (redirect based on role)
+/admin/dashboard         Main dashboard
+
+-- Super Admin Only
+/admin/agencies          Agency management
+/admin/agencies/[id]     Agency details
+/admin/sub-accounts      All business accounts
+
+-- Agency Admin Only
+/admin/clients           Client (business) management
+/admin/clients/[id]      Client details
+
+-- Business Admin Only
+/admin/live-sessions     Active chat sessions
+/admin/session-history   Past sessions
+/admin/leads             Lead management
+/admin/chat-settings     Chat configuration
+/admin/prompts           Prompts & Training
+/admin/knowledge-base    sc management
+
+-- Shared (with role-appropriate data)
+/admin/business-info     Business information
+/admin/integrations      Webhooks, API keys, etc.
+/admin/branding          Branding & styling
+/admin/email-settings    Email/SMTP config
+/admin/embed             Embed snippets
+/admin/billing           Usage, invoices, payments
+/admin/reporting         Analytics & reports
+/admin/account           Account settings
+```
+
+## 4.3 Public Routes
+
+```
+/                        Landing page (if any)
+/chat/[account_id]       Public chat interface
+```
+
+---
+
+# 5\. ADMIN SIDEBAR NAVIGATION
+
+## 5.1 Super Admin Tabs
+
+```
+Dashboard
+Agencies                 → Feature toggles, settings access
+Sub-Accounts             → All businesses across all agencies
+Business Information
+Integrations             → Webhooks, API keys, tokens, licenses
+Branding & Styling
+Email Settings
+Embed Snippets
+Billing
+Reporting
+---
+Switch Services          → [Grayed out - future feature]
+Sign Out
+```
+
+## 5.2 Agency Admin Tabs
+
+```
+Dashboard
+Clients                  → Feature toggles, settings access
+Business Information
+Integrations             → Webhooks, API keys, tokens, licenses
+Branding & Styling       → Agency-level defaults for clients
+Email Settings
+Embed Snippets
+Billing
+Reporting
+---
+Switch Services          → [Grayed out - future feature]
+Sign Out
+```
+
+## 5.3 Business Admin Tabs
+
+```
+Dashboard
+Live Sessions            → Real-time active chats
+Session History          → Past conversations
+Leads                    → Captured lead data
+Business Information
+Integrations             → Webhooks, API keys, tokens, licenses
+Branding & Styling       → Full chat customization
+Chat Settings            → Behavior settings
+Prompts & Training       → System prompt, starters
+Knowledge Base           → sc content, crawl settings
+Email Settings
+Embed Snippets
+Billing
+Reporting
+---
+Switch Services          → [Grayed out - future feature]
+Sign Out
+```
+
+---
+
+# 6\. BRANDING & STYLING SYSTEM
+
+## 6.1 Customization Modes
+
+### Simple Mode
+
+- Primary color  
+- Secondary color  
+- Logo upload  
+- (Auto-generates compatible theme)
+
+### Advanced Mode
+
+Full granular control over every component.
+
+## 6.2 Styling Structure
+
+```json
+{
+  "mode": "simple" | "advanced",
+  "simple": {
+    "primaryColor": "#000000",
+    "secondaryColor": "#666666",
+    "logo": "url"
+  },
+  "advanced": {
+    "light": { /* Light mode styles */ },
+    "dark": { /* Dark mode styles */ }
+  }
+}
+```
+
+## 6.3 Advanced Styling Schema
+
+```json
+{
+  "light": {
+    "sidebar": {
+      "background": {
+        "color": "#FFFFFF",
+        "gradient": null
+      },
+      "logo": {
+        "url": "",
+        "maxHeight": "40px"
+      },
+      "navigation": {
+        "fontFamily": "Inter",
+        "fontSize": "14px",
+        "fontWeight": "500",
+        "color": "#333333",
+        "hoverColor": "#000000",
+        "activeColor": "#000000",
+        "activeBackground": "#F0F0F0"
+      },
+      "divider": {
+        "color": "#E0E0E0",
+        "thickness": "1px"
+      },
+      "width": "280px"
+    },
+    
+    "header": {
+      "background": {
+        "color": "#FFFFFF"
+      },
+      "title": {
+        "fontFamily": "Inter",
+        "fontSize": "18px",
+        "fontWeight": "600",
+        "color": "#000000"
+      },
+      "subtitle": {
+        "fontFamily": "Inter",
+        "fontSize": "14px",
+        "fontWeight": "400",
+        "color": "#666666"
+      },
+      "border": {
+        "color": "#E0E0E0",
+        "thickness": "1px"
+      },
+      "height": "64px"
+    },
+    
+    "chatWindow": {
+      "background": {
+        "color": "#FAFAFA"
+      },
+      "userMessage": {
+        "background": "#000000",
+        "color": "#FFFFFF",
+        "fontFamily": "Inter",
+        "fontSize": "14px",
+        "fontWeight": "400",
+        "borderRadius": "16px",
+        "padding": "12px 16px"
+      },
+      "assistantMessage": {
+        "background": "#FFFFFF",
+        "color": "#000000",
+        "fontFamily": "Inter",
+        "fontSize": "14px",
+        "fontWeight": "400",
+        "borderRadius": "16px",
+        "padding": "12px 16px",
+        "border": {
+          "color": "#E0E0E0",
+          "thickness": "1px"
+        }
+      },
+      "timestamp": {
+        "fontFamily": "Inter",
+        "fontSize": "11px",
+        "color": "#999999"
+      },
+      "scrollbar": {
+        "trackColor": "#F0F0F0",
+        "thumbColor": "#CCCCCC",
+        "width": "6px"
+      }
+    },
+    
+    "chatInput": {
+      "container": {
+        "background": "#FFFFFF",
+        "padding": "16px",
+        "border": {
+          "color": "#E0E0E0",
+          "thickness": "1px"
+        }
+      },
+      "field": {
+        "background": "#F5F5F5",
+        "color": "#000000",
+        "placeholderColor": "#999999",
+        "fontFamily": "Inter",
+        "fontSize": "14px",
+        "borderRadius": "24px",
+        "padding": "12px 16px",
+        "border": {
+          "color": "#E0E0E0",
+          "thickness": "1px"
+        },
+        "focusBorder": {
+          "color": "#000000",
+          "thickness": "2px"
+        }
+      },
+      "sendButton": {
+        "background": "#000000",
+        "color": "#FFFFFF",
+        "hoverBackground": "#333333",
+        "borderRadius": "50%",
+        "size": "40px",
+        "icon": "arrow" | "send" | "custom"
+      }
+    },
+    
+    "buttons": {
+      "primary": {
+        "background": "#000000",
+        "color": "#FFFFFF",
+        "hoverBackground": "#333333",
+        "fontFamily": "Inter",
+        "fontSize": "14px",
+        "fontWeight": "500",
+        "borderRadius": "8px",
+        "padding": "10px 20px"
+      },
+      "secondary": {
+        "background": "transparent",
+        "color": "#000000",
+        "hoverBackground": "#F0F0F0",
+        "border": {
+          "color": "#000000",
+          "thickness": "1px"
+        },
+        "fontFamily": "Inter",
+        "fontSize": "14px",
+        "fontWeight": "500",
+        "borderRadius": "8px",
+        "padding": "10px 20px"
+      },
+      "conversationStarter": {
+        "background": "#FFFFFF",
+        "color": "#000000",
+        "hoverBackground": "#F5F5F5",
+        "border": {
+          "color": "#E0E0E0",
+          "thickness": "1px"
+        },
+        "fontFamily": "Inter",
+        "fontSize": "13px",
+        "fontWeight": "400",
+        "borderRadius": "12px",
+        "padding": "12px 16px"
+      }
+    },
+    
+    "widgets": {
+      "quizProgress": {
+        "trackColor": "#E0E0E0",
+        "fillColor": "#000000",
+        "height": "4px",
+        "borderRadius": "2px"
+      },
+      "loadingIndicator": {
+        "color": "#000000",
+        "style": "dots" | "spinner" | "pulse"
+      },
+      "avatar": {
+        "assistantBackground": "#000000",
+        "assistantIcon": "bot" | "custom",
+        "size": "32px",
+        "borderRadius": "50%"
+      }
+    },
+    
+    "icons": {
+      "style": "outlined" | "filled" | "rounded",
+      "color": "#000000",
+      "size": "20px"
+    },
+    
+    "emojis": {
+      "enabled": true,
+      "style": "native" | "twemoji"
+    }
+  },
+  
+  "dark": {
+    /* Same structure, different values */
+  },
+  
+  "fonts": {
+    "google": ["Inter", "Roboto"],
+    "custom": []
+  },
+  
+  "customCSS": {
+    "light": "",
+    "dark": ""
+  },
+  
+  "labels": {
+    "welcomeHeading": "How can we help?",
+    "welcomeSubheading": "Ask us anything",
+    "inputPlaceholder": "Type your message...",
+    "sendButton": "Send",
+    "startQuizButton": "Take Assessment",
+    "skipQuizButton": "Skip to Chat",
+    "leadFormTitle": "Get Personalized Recommendations",
+    "leadFormSubmit": "Submit"
+  }
+}
+```
+
+## 6.4 Premade Themes
+
+```json
+{
+  "themes": {
+    "grayscale": { /* Default - black/white/gray */ },
+    "midnight": { /* Dark blue theme */ },
+    "forest": { /* Green theme */ },
+    "ocean": { /* Blue theme */ },
+    "sunset": { /* Orange/red theme */ },
+    "lavender": { /* Purple theme */ },
+    "coral": { /* Pink/coral theme */ },
+    "gold": { /* Yellow/gold theme */ }
+  }
+}
+```
+
+## 6.5 Styling Inheritance
+
+```
+Platform Defaults (grayscale)
+       ↓
+Agency Branding (if set)
+       ↓
+Business Branding (overrides)
+```
+
+---
+
+# 7\. KNOWLEDGE BASE MANAGEMENT
+
+## 7.1 Generation Flow
+
+```
+1. Business enters website URL
+2. System crawls website
+3. sc Generator runs (9-step pipeline)
+4. Generated files stored in database
+5. Business can preview/edit
+6. Business publishes to live chat
+```
+
+## 7.2 Editing Interface
+
+- **View mode:** Read-only display of generated content  
+- **Edit mode:** Editable with warnings
+
+### Warning System
+
+```
+⚠️ CAUTION: Modifying AI-generated content may degrade chat performance.
+Changes to the system prompt or concern mapping can affect how the AI 
+responds to customers. Proceed with care.
+
+[ ] I understand the risks
+[Save Changes] [Revert to Generated]
+```
+
+## 7.3 Crawl Settings
+
+```json
+{
+  "sourceUrl": "https://example.com",
+  "crawlFrequency": "manual" | "daily" | "weekly" | "monthly",
+  "lastCrawl": "2026-01-10T...",
+  "nextScheduledCrawl": "2026-01-17T...",
+  "crawlDepth": 3,
+  "excludePatterns": ["/blog/*", "/news/*"],
+  "notifyOnChanges": true
+}
+```
+
+---
+
+# 8\. CHAT SETTINGS
+
+## 8.1 Behavior Settings
+
+```json
+{
+  "quiz": {
+    "enabled": true,
+    "required": false,
+    "showSkipButton": true
+  },
+  "leadCapture": {
+    "enabled": true,
+    "timing": "after_quiz" | "after_messages" | "on_demand",
+    "requiredFields": ["email"],
+    "optionalFields": ["name", "phone"],
+    "smsOptIn": true
+  },
+  "conversationStarters": {
+    "enabled": true,
+    "count": 4,
+    "randomize": false
+  },
+  "typing": {
+    "showIndicator": true,
+    "simulateDelay": true,
+    "minDelay": 500,
+    "maxDelay": 1500
+  },
+  "session": {
+    "timeout": 30, // minutes
+    "persistHistory": true
+  }
+}
+```
+
+---
+
+# 9\. INTEGRATIONS
+
+## 9.1 AI Provider
+
+```json
+{
+  "provider": "anthropic" | "openrouter" | "gemini",
+  "apiKey": "encrypted",
+  "model": "claude-sonnet-4-20250514",
+  "temperature": 0.7,
+  "maxTokens": 4096
+}
+```
+
+## 9.2 Webhooks
+
+```json
+{
+  "enabled": true,
+  "url": "https://...",
+  "preset": "gohighlevel" | "n8n" | "zapier" | "custom",
+  "events": ["lead_captured", "session_started", "session_ended"],
+  "headers": {},
+  "retryAttempts": 3
+}
+```
+
+## 9.3 Email (SMTP)
+
+```json
+{
+  "enabled": true,
+  "host": "smtp.gmail.com",
+  "port": 587,
+  "secure": true,
+  "user": "...",
+  "pass": "encrypted",
+  "fromName": "Business Name",
+  "fromEmail": "noreply@...",
+  "notificationEmail": "leads@..."
+}
+```
+
+---
+
+# 10\. BILLING
+
+## 10.1 Metrics Tracked
+
+- Messages sent (AI API calls)  
+- Active sessions  
+- Leads captured  
+- sc generations  
+- Storage used
+
+## 10.2 Billing Levels
+
+- **Platform → Agency:** Usage-based or flat monthly  
+- **Agency → Business:** Agency controls pricing
+
+---
+
+# 11\. SECURITY
+
+## 11.1 Data Isolation
+
+- Row Level Security on all tables  
+- Account ID \+ Session ID prevents cross-user access  
+- API keys encrypted at rest  
+- Audit logging for admin actions
+
+## 11.2 Session Security
+
+- Chat sessions are anonymous (no PII required)  
+- Session ID is UUID, not guessable  
+- Sessions expire after inactivity  
+- No session can access another session's data
+
+---
+
+# 12\. IMPLEMENTATION PHASES
+
+## Phase 1: Core Platform
+
+- [ ] Database schema  
+- [ ] Authentication (all user types)  
+- [ ] Admin sidebar navigation  
+- [ ] Basic dashboard for each role  
+- [ ] Business management (CRUD)
+
+## Phase 2: Knowledge Base
+
+- [ ] sc generator integration  
+- [ ] sc storage and retrieval  
+- [ ] sc editing interface  
+- [ ] Crawl scheduling
+
+## Phase 3: Chat Interface
+
+- [ ] Public chat route  
+- [ ] Session management  
+- [ ] Message storage  
+- [ ] Lead capture
+
+## Phase 4: Styling System
+
+- [ ] Simple mode  
+- [ ] Advanced mode  
+- [ ] Premade themes  
+- [ ] Live preview
+
+## Phase 5: Agency Features
+
+- [ ] Agency management  
+- [ ] Client management  
+- [ ] Custom domains  
+- [ ] Agency-level branding
+
+## Phase 6: Integrations
+
+- [ ] Webhook system  
+- [ ] Email notifications  
+- [ ] Multi-provider AI
+
+## Phase 7: Billing & Reporting
+
+- [ ] Usage tracking  
+- [ ] Stripe integration  
+- [ ] Analytics dashboard
+
+---
+
+# 13\. FILE STRUCTURE
+
+```
+securechat/
+├── src/
+│   ├── app/
+│   │   ├── (auth)/
+│   │   │   ├── auth-login/
+│   │   │   ├── agency-login/
+│   │   │   ├── business-login/
+│   │   │   ├── forgot-password/
+│   │   │   └── reset-password/
+│   │   ├── (admin)/
+│   │   │   ├── admin/
+│   │   │   │   ├── dashboard/
+│   │   │   │   ├── agencies/
+│   │   │   │   ├── clients/
+│   │   │   │   ├── sub-accounts/
+│   │   │   │   ├── live-sessions/
+│   │   │   │   ├── session-history/
+│   │   │   │   ├── leads/
+│   │   │   │   ├── business-info/
+│   │   │   │   ├── integrations/
+│   │   │   │   ├── branding/
+│   │   │   │   ├── chat-settings/
+│   │   │   │   ├── prompts/
+│   │   │   │   ├── knowledge-base/
+│   │   │   │   ├── email-settings/
+│   │   │   │   ├── embed/
+│   │   │   │   ├── billing/
+│   │   │   │   ├── reporting/
+│   │   │   │   └── account/
+│   │   │   └── layout.jsx  (sidebar)
+│   │   ├── (public)/
+│   │   │   └── chat/
+│   │   │       └── [accountId]/
+│   │   └── api/
+│   │       ├── auth/
+│   │       ├── admin/
+│   │       ├── chat/
+│   │       ├── knowledge-base/
+│   │       ├── leads/
+│   │       ├── webhooks/
+│   │       └── billing/
+│   ├── components/
+│   │   ├── admin/
+│   │   │   ├── Sidebar.jsx
+│   │   │   ├── Header.jsx
+│   │   │   └── ...
+│   │   ├── chat/
+│   │   │   ├── ChatWindow.jsx
+│   │   │   ├── ChatInput.jsx
+│   │   │   ├── MessageBubble.jsx
+│   │   │   └── ...
+│   │   ├── forms/
+│   │   ├── ui/
+│   │   └── branding/
+│   │       ├── StyleEditor.jsx
+│   │       ├── ColorPicker.jsx
+│   │       ├── FontSelector.jsx
+│   │       └── ThemePreview.jsx
+│   ├── lib/
+│   │   ├── supabase/
+│   │   ├── auth/
+│   │   ├── ai/
+│   │   ├── styling/
+│   │   └── utils/
+│   ├── hooks/
+│   └── middleware.js
+├── tools/
+│   └── sc-generator/
+├── supabase/
+│   ├── schema.sql
+│   └── rls-policies.sql
+└── public/
+    └── widget.js
+```
+
+---
+
+# 14\. NEXT STEPS
+
+1. **Review this spec** \- Confirm structure and features  
+2. **Set up Supabase project** \- New project for securechat  
+3. **Implement database schema** \- Run migrations  
+4. **Build auth system** \- All login routes  
+5. **Create admin layout** \- Sidebar \+ role-based tabs  
+6. **Build first admin pages** \- Dashboard, Business Info  
+7. **Integrate styling system** \- Simple mode first  
+8. **Connect chat interface** \- Public route with styling
+
+---
+
+*Document Version: 1.0* *Created: January 10, 2026* *Author: Claude \+ Bob (Oxford Pierpont)*

@@ -1,0 +1,27 @@
+---
+title: "Batch Sending"
+description: "Send messages to multiple recipients in a single workflow execution."
+---
+Batch sending allows a Persona to dispatch messages to a list of recipients without triggering individual workflow runs per contact.
+
+## How it works
+
+Pass an array of recipient objects to the send endpoint. aiConnected queues each message and processes them in parallel, respecting rate limits per channel.
+
+```json
+{
+  "recipients": [
+    { "to": "user@example.com", "name": "Alice" },
+    { "to": "other@example.com", "name": "Bob" }
+  ],
+  "template": "onboarding-welcome"
+}
+```
+
+## Limits
+
+| Channel | Max recipients per batch |
+|---------|--------------------------|
+| Email   | 1,000                    |
+| SMS     | 500                      |
+| Voice   | 100                      |

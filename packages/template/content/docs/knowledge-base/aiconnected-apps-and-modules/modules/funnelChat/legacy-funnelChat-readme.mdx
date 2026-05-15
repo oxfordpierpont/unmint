@@ -1,0 +1,1221 @@
+---
+title: "funnelChat by aiConnected"
+description: "An AI powered chatbot platform for debt collection and accounts receivable management 📋 Table of Contents Overview Features Architecture Tech Stack Prer..."
+---
+<Info>
+Normalized for Mintlify from `knowledge-base/aiconnected-apps-and-modules/modules/funnelChat/legacy-funnelChat-readme.mdx`.
+</Info>
+# funnelChat by aiConnected
+
+&gt; An AI-powered chatbot platform for debt collection and accounts receivable management
+
+## 📋 Table of Contents
+
+- [Overview](#overview)
+- [Features](#features)
+- [Architecture](#architecture)
+- [Tech Stack](#tech-stack)
+- [Prerequisites](#prerequisites)
+- [Installation](#installation)
+- [Configuration](#configuration)
+- [Development](#development)
+- [Testing](#testing)
+- [Deployment](#deployment)
+- [API Documentation](#api-documentation)
+- [Contributing](#contributing)
+- [License](#license)
+
+## 🎯 Overview
+
+funnelChat is a comprehensive AI chatbot platform designed specifically for the debt collection and accounts receivable industry. It provides automated, compliant, and empathetic communication with debtors across multiple channels while giving businesses powerful tools to manage their collections process.
+
+### What Does This Platform Do?
+
+**For Debtors (Public-Facing):**
+- Receive payment reminders via SMS, WhatsApp, email, and web chat
+- Negotiate payment plans through conversational AI
+- Make payments securely
+- Request payment plan modifications
+- Access account information 24/7
+
+**For Businesses (Back-End):**
+- Manage debtor accounts and communication
+- Monitor AI chatbot conversations
+- Configure automated workflows
+- Track payment analytics and recovery rates
+- Ensure regulatory compliance (FDCPA, TCPA, CFPB)
+- Generate compliance reports
+
+## ✨ Features
+
+### Core Features
+
+#### 1. Multi-Channel Communication
+- **SMS Chatbot** - Text message conversations
+- **WhatsApp Integration** - Global messaging support
+- **Email Bot** - Automated email responses
+- **Web Widget** - Embedded chat on customer portals
+- **Voice Bot** - IVR integration for phone calls
+
+#### 2. AI-Powered Conversations
+- Natural language understanding
+- Sentiment analysis
+- Empathetic response generation
+- Multi-language support (English, Spanish)
+- Context-aware dialogue management
+
+#### 3. Payment Management
+- Secure payment processing via Stripe
+- Dynamic payment plan generation
+- Automated payment reminders
+- Failed payment retry logic
+- Settlement offer calculations
+
+#### 4. Compliance & Security
+- Real-time FDCPA compliance checking
+- Automated audit trails
+- Encrypted data storage
+- PCI DSS compliant payment handling
+- TCPA consent management
+
+#### 5. Analytics & Reporting
+- Real-time dashboards
+- Recovery rate tracking
+- Channel performance metrics
+- Debtor engagement analytics
+- Compliance reports
+
+## 🏗️ Architecture
+
+### High-Level Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    FRONT-END LAYER                          │
+├─────────────────────────────────────────────────────────────┤
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐     │
+│  │ Debtor Portal│  │ Business App │  │ Admin Panel  │     │
+│  │  (React.js)  │  │  (React.js)  │  │  (React.js)  │     │
+│  └──────────────┘  └──────────────┘  └──────────────┘     │
+└─────────────────────────────────────────────────────────────┘
+                            ↓
+┌─────────────────────────────────────────────────────────────┐
+│                     API GATEWAY LAYER                       │
+├─────────────────────────────────────────────────────────────┤
+│  ┌──────────────────────────────────────────────────────┐  │
+│  │         Node.js/Express API Gateway                   │  │
+│  │  - Authentication & Authorization                     │  │
+│  │  - Rate Limiting                                      │  │
+│  │  - Request Routing                                    │  │
+│  └──────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────┘
+                            ↓
+┌─────────────────────────────────────────────────────────────┐
+│                   APPLICATION LAYER                         │
+├─────────────────────────────────────────────────────────────┤
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐  │
+│  │Chatbot   │  │ Payment  │  │Analytics │  │Compliance│  │
+│  │Service   │  │ Service  │  │ Service  │  │ Service  │  │
+│  └──────────┘  └──────────┘  └──────────┘  └──────────┘  │
+└─────────────────────────────────────────────────────────────┘
+                            ↓
+┌─────────────────────────────────────────────────────────────┐
+│                   INTEGRATION LAYER                         │
+├─────────────────────────────────────────────────────────────┤
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐  │
+│  │ Twilio   │  │  Stripe  │  │ Anthropic│  │SendGrid  │  │
+│  │ (SMS/WA) │  │(Payments)│  │  (AI)    │  │ (Email)  │  │
+│  └──────────┘  └──────────┘  └──────────┘  └──────────┘  │
+└─────────────────────────────────────────────────────────────┘
+                            ↓
+┌─────────────────────────────────────────────────────────────┐
+│                      DATA LAYER                             │
+├─────────────────────────────────────────────────────────────┤
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐    │
+│  │  PostgreSQL  │  │    Redis     │  │      S3      │    │
+│  │ (Primary DB) │  │   (Cache)    │  │ (File Store) │    │
+│  └──────────────┘  └──────────────┘  └──────────────┘    │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### System Components
+
+#### Front-End Applications
+1. **Debtor Portal** - Public-facing chat interface for debtors
+2. **Business Dashboard** - Collection agent interface
+3. **Admin Panel** - System configuration and management
+
+#### Back-End Services
+1. **API Gateway** - Central request router and authenticator
+2. **Chatbot Service** - AI conversation orchestration
+3. **Payment Service** - Payment processing and plan management
+4. **Analytics Service** - Data aggregation and reporting
+5. **Compliance Service** - Regulatory monitoring and enforcement
+6. **Notification Service** - Multi-channel message delivery
+
+## 🛠️ Tech Stack
+
+### Front-End
+- **Framework**: React 18+ with TypeScript
+- **State Management**: Redux Toolkit
+- **UI Components**: Material-UI (MUI) v5
+- **Routing**: React Router v6
+- **Form Management**: React Hook Form
+- **Data Fetching**: React Query (TanStack Query)
+- **Charts**: Recharts
+- **Real-time**: Socket.io Client
+
+### Back-End
+- **Runtime**: Node.js 20 LTS
+- **Framework**: Express.js 4.18+
+- **Language**: TypeScript 5.0+
+- **API Documentation**: OpenAPI 3.0 (Swagger)
+- **WebSockets**: Socket.io 4.0+
+- **Job Queue**: Bull (Redis-based)
+- **Validation**: Joi / Zod
+
+### Database
+- **Primary Database**: PostgreSQL 15+
+- **ORM**: Prisma 5.0+
+- **Cache**: Redis 7.0+
+- **Search**: PostgreSQL Full-Text Search
+
+### AI & NLP
+- **LLM Provider**: Anthropic Claude API
+- **Model**: Claude Sonnet 4
+- **Prompt Management**: Custom prompt templates
+- **Sentiment Analysis**: Custom Claude prompts
+
+### Third-Party Integrations
+- **Payments**: Stripe API
+- **SMS/WhatsApp**: Twilio API
+- **Email**: SendGrid API
+- **File Storage**: AWS S3 or compatible
+- **Monitoring**: Datadog / New Relic (optional)
+
+### Infrastructure
+- **Containerization**: Docker
+- **Orchestration**: Docker Compose (dev), Kubernetes (prod)
+- **CI/CD**: GitHub Actions
+- **Hosting**: AWS / DigitalOcean / Render
+- **CDN**: CloudFlare
+
+### Development Tools
+- **Version Control**: Git
+- **Package Manager**: npm or pnpm
+- **Code Quality**: ESLint, Prettier
+- **Testing**: Jest, Supertest, React Testing Library
+- **API Testing**: Postman / Insomnia
+
+## 📦 Prerequisites
+
+Before you begin, ensure you have the following installed:
+
+### Required Software
+- **Node.js**: v20.0.0 or higher ([Download](https://nodejs.org/))
+- **PostgreSQL**: v15 or higher ([Download](https://www.postgresql.org/download/))
+- **Redis**: v7.0 or higher ([Download](https://redis.io/download))
+- **Git**: Latest version ([Download](https://git-scm.com/))
+- **Docker**: Latest version ([Download](https://www.docker.com/)) - Optional but recommended
+
+### Required API Keys
+You'll need to sign up and obtain API keys from:
+1. **Anthropic** - For Claude AI ([https://console.anthropic.com/](https://console.anthropic.com/))
+2. **Stripe** - For payment processing ([https://stripe.com/](https://stripe.com/))
+3. **Twilio** - For SMS/WhatsApp ([https://www.twilio.com/](https://www.twilio.com/))
+4. **SendGrid** - For email ([https://sendgrid.com/](https://sendgrid.com/))
+
+### Development Skills
+- JavaScript/TypeScript basics
+- Understanding of REST APIs
+- Basic SQL knowledge
+- Familiarity with Git commands
+
+## 🚀 Installation
+
+### Option 1: Docker Setup (Recommended for Beginners)
+
+1. **Clone the repository**
+```bash
+git clone https://github.com/your-org/funnelchat.git
+cd funnelchat
+```
+
+2. **Copy environment variables**
+```bash
+cp .env.example .env
+```
+
+3. **Edit the .env file** with your API keys
+```bash
+# Use your favorite text editor
+nano .env
+# or
+code .env
+```
+
+4. **Start all services with Docker**
+```bash
+docker-compose up -d
+```
+
+5. **Run database migrations**
+```bash
+docker-compose exec api npm run migrate
+```
+
+6. **Seed the database** (optional, for test data)
+```bash
+docker-compose exec api npm run seed
+```
+
+7. **Access the applications**
+- Debtor Portal: http://localhost:3000
+- Business Dashboard: http://localhost:3001
+- Admin Panel: http://localhost:3002
+- API: http://localhost:4000
+
+### Option 2: Manual Setup
+
+#### Step 1: Clone Repository
+```bash
+git clone https://github.com/your-org/funnelchat.git
+cd funnelchat
+```
+
+#### Step 2: Install Dependencies
+
+**Install backend dependencies:**
+```bash
+cd backend
+npm install
+```
+
+**Install frontend dependencies:**
+```bash
+# Debtor Portal
+cd ../frontend/debtor-portal
+npm install
+
+# Business Dashboard
+cd ../business-dashboard
+npm install
+
+# Admin Panel
+cd ../admin-panel
+npm install
+```
+
+#### Step 3: Setup Database
+
+**Create PostgreSQL database:**
+```bash
+# Connect to PostgreSQL
+psql -U postgres
+
+# Create database
+CREATE DATABASE funnelchat_dev;
+
+# Create user
+CREATE USER funnelchat_user WITH PASSWORD 'your_secure_password';
+
+# Grant privileges
+GRANT ALL PRIVILEGES ON DATABASE funnelchat_dev TO funnelchat_user;
+
+# Exit
+\q
+```
+
+**Create Redis database:**
+```bash
+# Redis typically doesn't require database creation
+# Just ensure Redis is running
+redis-cli ping
+# Should return: PONG
+```
+
+#### Step 4: Configure Environment Variables
+
+**Backend (.env):**
+```bash
+cd backend
+cp .env.example .env
+```
+
+Edit the `.env` file:
+```bash
+# Application
+NODE_ENV=development
+PORT=4000
+APP_URL=http://localhost:4000
+
+# Database
+DATABASE_URL=postgresql://funnelchat_user:your_secure_password@localhost:5432/funnelchat_dev
+
+# Redis
+REDIS_URL=redis://localhost:6379
+
+# JWT
+JWT_SECRET=your_very_long_random_secret_key_change_this
+JWT_EXPIRES_IN=7d
+
+# Anthropic Claude
+ANTHROPIC_API_KEY=your_anthropic_api_key_here
+
+# Stripe
+STRIPE_SECRET_KEY=your_stripe_secret_key_here
+STRIPE_WEBHOOK_SECRET=your_stripe_webhook_secret_here
+
+# Twilio
+TWILIO_ACCOUNT_SID=your_twilio_account_sid
+TWILIO_AUTH_TOKEN=your_twilio_auth_token
+TWILIO_PHONE_NUMBER=+1234567890
+TWILIO_WHATSAPP_NUMBER=+1234567890
+
+# SendGrid
+SENDGRID_API_KEY=your_sendgrid_api_key
+SENDGRID_FROM_EMAIL=noreply@funnelchat.com
+
+# AWS S3 (optional)
+AWS_ACCESS_KEY_ID=your_aws_key
+AWS_SECRET_ACCESS_KEY=your_aws_secret
+AWS_REGION=us-east-1
+AWS_S3_BUCKET=funnelchat-files
+
+# Compliance
+ENABLE_COMPLIANCE_MODE=true
+AUDIT_LOG_RETENTION_DAYS=2555
+```
+
+**Frontend applications (.env):**
+
+For each frontend app (debtor-portal, business-dashboard, admin-panel):
+```bash
+cd frontend/debtor-portal
+cp .env.example .env
+```
+
+Edit:
+```bash
+REACT_APP_API_URL=http://localhost:4000
+REACT_APP_WS_URL=ws://localhost:4000
+REACT_APP_STRIPE_PUBLIC_KEY=your_stripe_public_key
+```
+
+#### Step 5: Run Database Migrations
+
+```bash
+cd backend
+npm run migrate
+```
+
+This will create all necessary database tables.
+
+#### Step 6: Seed Database (Optional)
+
+```bash
+npm run seed
+```
+
+This creates test data including:
+- Admin user (admin@funnelchat.com / admin123)
+- Sample business accounts
+- Sample debtor accounts
+- Sample payment plans
+
+#### Step 7: Start Development Servers
+
+**Terminal 1 - Backend API:**
+```bash
+cd backend
+npm run dev
+```
+
+**Terminal 2 - Debtor Portal:**
+```bash
+cd frontend/debtor-portal
+npm start
+```
+
+**Terminal 3 - Business Dashboard:**
+```bash
+cd frontend/business-dashboard
+npm start
+```
+
+**Terminal 4 - Admin Panel:**
+```bash
+cd frontend/admin-panel
+npm start
+```
+
+**Terminal 5 - Background Jobs (optional):**
+```bash
+cd backend
+npm run worker
+```
+
+## ⚙️ Configuration
+
+### Environment Variables Explained
+
+#### Critical Security Settings
+- `JWT_SECRET` - Used to sign authentication tokens. **MUST be unique and random** (at least 32 characters)
+- `STRIPE_WEBHOOK_SECRET` - Validates Stripe webhook authenticity
+- Database passwords should be strong and unique
+
+#### API Keys
+Each service requires an API key:
+- **Anthropic**: Get from https://console.anthropic.com/
+- **Stripe**: Get from https://dashboard.stripe.com/apikeys
+- **Twilio**: Get from https://console.twilio.com/
+- **SendGrid**: Get from https://app.sendgrid.com/settings/api_keys
+
+#### Feature Flags
+Toggle features on/off:
+```bash
+ENABLE_COMPLIANCE_MODE=true          # Enable FDCPA compliance checking
+ENABLE_VOICE_BOT=false               # Enable voice integration
+ENABLE_WHATSAPP=true                 # Enable WhatsApp channel
+ENABLE_EMAIL_CHANNEL=true            # Enable email channel
+ENABLE_SMS_CHANNEL=true              # Enable SMS channel
+```
+
+### Database Configuration
+
+The system uses Prisma ORM. Schema is in `backend/prisma/schema.prisma`.
+
+**Common commands:**
+```bash
+# Generate Prisma client
+npm run prisma:generate
+
+# Create migration
+npm run prisma:migrate:create
+
+# Apply migrations
+npm run prisma:migrate:deploy
+
+# Open Prisma Studio (GUI for database)
+npm run prisma:studio
+
+# Reset database (WARNING: Deletes all data)
+npm run prisma:reset
+```
+
+### Stripe Configuration
+
+#### 1. Create Products in Stripe Dashboard
+
+Navigate to Products and create:
+- **Free Tier** - $0.00/month
+- **Basic Plan** - $99.97/month
+- **Premium Plan** - $149.97/month
+- **Overage Messaging** - $0.015 per message (usage-based)
+
+#### 2. Configure Webhooks
+
+Add webhook endpoint: `https://your-domain.com/api/webhooks/stripe`
+
+Select events:
+- `checkout.session.completed`
+- `customer.subscription.created`
+- `customer.subscription.updated`
+- `customer.subscription.deleted`
+- `invoice.payment_succeeded`
+- `invoice.payment_failed`
+
+#### 3. Test Mode
+
+During development, use Stripe test mode:
+- Test card: `4242 4242 4242 4242`
+- Any future expiry date
+- Any 3-digit CVC
+
+### Twilio Configuration
+
+#### 1. Purchase Phone Numbers
+- Buy a phone number with SMS capability
+- Buy a phone number with WhatsApp capability (optional)
+
+#### 2. Configure Webhooks
+Set SMS webhook to: `https://your-domain.com/api/webhooks/twilio/sms`
+Set WhatsApp webhook to: `https://your-domain.com/api/webhooks/twilio/whatsapp`
+
+#### 3. Messaging Service
+Create a Messaging Service in Twilio for better deliverability.
+
+## 💻 Development
+
+### Project Structure
+
+```
+funnelchat/
+├── backend/                      # Backend application
+│   ├── src/
+│   │   ├── api/                  # API routes
+│   │   │   ├── routes/           # Express routes
+│   │   │   ├── controllers/      # Request handlers
+│   │   │   ├── middlewares/      # Express middlewares
+│   │   │   └── validators/       # Request validators
+│   │   ├── services/             # Business logic
+│   │   │   ├── chatbot/          # AI chatbot service
+│   │   │   ├── payment/          # Payment processing
+│   │   │   ├── analytics/        # Analytics engine
+│   │   │   ├── compliance/       # Compliance checker
+│   │   │   └── notification/     # Multi-channel notifications
+│   │   ├── integrations/         # Third-party integrations
+│   │   │   ├── anthropic/        # Claude AI client
+│   │   │   ├── stripe/           # Stripe client
+│   │   │   ├── twilio/           # Twilio client
+│   │   │   └── sendgrid/         # SendGrid client
+│   │   ├── database/             # Database layer
+│   │   │   ├── repositories/     # Data access layer
+│   │   │   └── models/           # Data models
+│   │   ├── utils/                # Utility functions
+│   │   ├── config/               # Configuration files
+│   │   └── types/                # TypeScript types
+│   ├── prisma/
+│   │   ├── schema.prisma         # Database schema
+│   │   ├── migrations/           # Database migrations
+│   │   └── seed.ts               # Database seeder
+│   ├── tests/                    # Test files
+│   │   ├── unit/                 # Unit tests
+│   │   ├── integration/          # Integration tests
+│   │   └── e2e/                  # End-to-end tests
+│   └── package.json
+│
+├── frontend/
+│   ├── debtor-portal/            # Public debtor interface
+│   │   ├── src/
+│   │   │   ├── components/       # React components
+│   │   │   ├── pages/            # Page components
+│   │   │   ├── hooks/            # Custom React hooks
+│   │   │   ├── store/            # Redux store
+│   │   │   ├── services/         # API clients
+│   │   │   ├── utils/            # Utilities
+│   │   │   └── types/            # TypeScript types
+│   │   └── package.json
+│   │
+│   ├── business-dashboard/       # Business user interface
+│   │   └── [similar structure]
+│   │
+│   └── admin-panel/              # Admin interface
+│       └── [similar structure]
+│
+├── shared/                       # Shared code
+│   ├── types/                    # Shared TypeScript types
+│   └── constants/                # Shared constants
+│
+├── docker-compose.yml            # Docker orchestration
+├── .env.example                  # Environment template
+└── README.md                     # This file
+```
+
+### Coding Standards
+
+#### TypeScript
+- Use strict mode: `"strict": true` in tsconfig.json
+- Avoid `any` type; use proper typing
+- Use interfaces for object shapes
+- Use enums for fixed sets of values
+
+**Example:**
+```typescript
+// Good ✅
+interface User {
+  id: string;
+  email: string;
+  role: UserRole;
+}
+
+enum UserRole {
+  ADMIN = 'admin',
+  AGENT = 'agent',
+  DEBTOR = 'debtor'
+}
+
+// Bad ❌
+const user: any = {...}
+```
+
+#### Naming Conventions
+- **Files**: kebab-case (e.g., `payment-service.ts`)
+- **Classes**: PascalCase (e.g., `PaymentService`)
+- **Functions**: camelCase (e.g., `calculatePaymentPlan`)
+- **Constants**: UPPER_SNAKE_CASE (e.g., `MAX_RETRY_ATTEMPTS`)
+- **Components**: PascalCase (e.g., `ChatWidget.tsx`)
+
+#### Code Organization
+- One component per file
+- Keep functions small (&lt; 50 lines)
+- Extract reusable logic into hooks or utils
+- Comment complex logic
+
+#### Git Workflow
+```bash
+# Create feature branch
+git checkout -b feature/payment-plan-ui
+
+# Make changes and commit
+git add .
+git commit -m "feat: add payment plan negotiation UI"
+
+# Push and create pull request
+git push origin feature/payment-plan-ui
+```
+
+**Commit message format:**
+- `feat:` - New feature
+- `fix:` - Bug fix
+- `docs:` - Documentation
+- `style:` - Code style changes
+- `refactor:` - Code refactoring
+- `test:` - Adding tests
+- `chore:` - Maintenance tasks
+
+### Development Workflow
+
+#### 1. Start Development Environment
+```bash
+docker-compose up -d
+```
+
+#### 2. Watch for File Changes
+Backend and frontend will auto-reload on file changes when using `npm run dev` or `npm start`.
+
+#### 3. View Logs
+```bash
+# All services
+docker-compose logs -f
+
+# Specific service
+docker-compose logs -f api
+```
+
+#### 4. Access Database
+```bash
+# Prisma Studio (GUI)
+npm run prisma:studio
+
+# PostgreSQL CLI
+docker-compose exec postgres psql -U funnelchat_user funnelchat_dev
+```
+
+#### 5. Test API Endpoints
+Use Postman collection in `docs/postman/` or:
+```bash
+# Health check
+curl http://localhost:4000/health
+
+# Login
+curl -X POST http://localhost:4000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin@funnelchat.com","password":"admin123"}'
+```
+
+### Common Development Tasks
+
+#### Add a New API Endpoint
+
+1. **Create route** in `backend/src/api/routes/`:
+```typescript
+// backend/src/api/routes/accounts.ts
+import express from 'express';
+import { getAccount } from '../controllers/accounts';
+import { authenticate } from '../middlewares/auth';
+
+const router = express.Router();
+
+router.get('/:id', authenticate, getAccount);
+
+export default router;
+```
+
+2. **Create controller** in `backend/src/api/controllers/`:
+```typescript
+// backend/src/api/controllers/accounts.ts
+import { Request, Response } from 'express';
+import { AccountService } from '../../services/account-service';
+
+export async function getAccount(req: Request, res: Response) {
+  try {
+    const account = await AccountService.getById(req.params.id);
+    res.json(account);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+}
+```
+
+3. **Register route** in `backend/src/api/index.ts`:
+```typescript
+import accountsRouter from './routes/accounts';
+app.use('/api/accounts', accountsRouter);
+```
+
+#### Add a New React Component
+
+1. **Create component file**:
+```typescript
+// frontend/debtor-portal/src/components/PaymentButton.tsx
+import React from 'react';
+import { Button } from '@mui/material';
+
+interface PaymentButtonProps {
+  amount: number;
+  onPayment: () => void;
+}
+
+export const PaymentButton: React.FC<PaymentButtonProps> = ({ 
+  amount, 
+  onPayment 
+}) => {
+  return (
+    <Button 
+      variant="contained" 
+      color="primary"
+      onClick={onPayment}
+    >
+      Pay ${amount}
+    </Button>
+  );
+};
+```
+
+2. **Use in parent component**:
+```typescript
+import { PaymentButton } from '../components/PaymentButton';
+
+<PaymentButton 
+  amount={100} 
+  onPayment={() => console.log('Payment clicked')} 
+/>
+```
+
+#### Add a Database Table
+
+1. **Update Prisma schema**:
+```prisma
+// backend/prisma/schema.prisma
+model PaymentPlan {
+  id              String   @id @default(uuid())
+  debtorId        String
+  totalAmount     Decimal  @db.Decimal(10, 2)
+  installments    Int
+  status          String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  debtor          Debtor   @relation(fields: [debtorId], references: [id])
+}
+```
+
+2. **Create migration**:
+```bash
+npm run prisma:migrate:create --name add_payment_plans
+```
+
+3. **Apply migration**:
+```bash
+npm run prisma:migrate:deploy
+```
+
+## 🧪 Testing
+
+### Running Tests
+
+**Run all tests:**
+```bash
+npm test
+```
+
+**Run specific test suite:**
+```bash
+npm test -- payment-service
+```
+
+**Run with coverage:**
+```bash
+npm run test:coverage
+```
+
+**Watch mode (re-runs on file changes):**
+```bash
+npm run test:watch
+```
+
+### Test Structure
+
+```typescript
+// backend/tests/unit/services/payment-service.test.ts
+import { PaymentService } from '../../../src/services/payment-service';
+
+describe('PaymentService', () => {
+  describe('calculatePaymentPlan', () => {
+    it('should calculate monthly payments correctly', () => {
+      const plan = PaymentService.calculatePaymentPlan({
+        totalAmount: 1200,
+        months: 12
+      });
+      
+      expect(plan.monthlyPayment).toBe(100);
+      expect(plan.installments).toBe(12);
+    });
+    
+    it('should throw error for invalid amounts', () => {
+      expect(() => {
+        PaymentService.calculatePaymentPlan({
+          totalAmount: -100,
+          months: 12
+        });
+      }).toThrow('Amount must be positive');
+    });
+  });
+});
+```
+
+### E2E Testing
+
+E2E tests use Playwright or Cypress:
+
+```bash
+# Install Playwright
+npm install -D @playwright/test
+
+# Run E2E tests
+npm run test:e2e
+```
+
+**Example E2E test:**
+```typescript
+// tests/e2e/payment-flow.spec.ts
+import { test, expect } from '@playwright/test';
+
+test('complete payment flow', async ({ page }) => {
+  await page.goto('http://localhost:3000');
+  
+  // Login
+  await page.fill('[name="email"]', 'debtor@example.com');
+  await page.fill('[name="password"]', 'password123');
+  await page.click('button[type="submit"]');
+  
+  // Make payment
+  await page.click('text=Make Payment');
+  await page.fill('[name="amount"]', '100');
+  await page.click('button:has-text("Pay Now")');
+  
+  // Verify success
+  await expect(page.locator('text=Payment Successful')).toBeVisible();
+});
+```
+
+## 🚢 Deployment
+
+### Environment Setup
+
+Create separate environments:
+- **Development** - Local machine
+- **Staging** - Pre-production testing
+- **Production** - Live system
+
+### Deployment Checklist
+
+Before deploying to production:
+
+- [ ] All tests passing
+- [ ] Environment variables configured
+- [ ] Database migrations applied
+- [ ] API keys are production keys (not test)
+- [ ] SSL certificates configured
+- [ ] Monitoring/logging setup
+- [ ] Backup strategy in place
+- [ ] Security review completed
+- [ ] Compliance audit passed
+
+### Docker Deployment
+
+**Build production images:**
+```bash
+docker build -t funnelchat-api:latest -f backend/Dockerfile.prod .
+docker build -t funnelchat-debtor:latest -f frontend/debtor-portal/Dockerfile.prod .
+docker build -t funnelchat-business:latest -f frontend/business-dashboard/Dockerfile.prod .
+docker build -t funnelchat-admin:latest -f frontend/admin-panel/Dockerfile.prod .
+```
+
+**Push to registry:**
+```bash
+docker tag funnelchat-api:latest your-registry.com/funnelchat-api:latest
+docker push your-registry.com/funnelchat-api:latest
+```
+
+### Cloud Deployment Options
+
+#### AWS (Recommended)
+- **Compute**: ECS or EKS for containers
+- **Database**: RDS for PostgreSQL
+- **Cache**: ElastiCache for Redis
+- **Storage**: S3 for files
+- **CDN**: CloudFront
+
+#### DigitalOcean (Budget-Friendly)
+- **Compute**: App Platform or Droplets
+- **Database**: Managed PostgreSQL
+- **Cache**: Managed Redis
+- **Storage**: Spaces (S3-compatible)
+
+#### Render (Easiest for Beginners)
+- **Web Services**: Auto-deploy from Git
+- **Databases**: Managed PostgreSQL
+- **Redis**: Managed Redis
+- **Static Sites**: Auto-deploy frontends
+
+### Continuous Deployment
+
+**GitHub Actions example:**
+
+```yaml
+# .github/workflows/deploy.yml
+name: Deploy to Production
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Run Tests
+        run: |
+          npm install
+          npm test
+      
+      - name: Build Docker Images
+        run: docker-compose build
+      
+      - name: Push to Registry
+        run: |
+          docker push your-registry.com/funnelchat-api:latest
+      
+      - name: Deploy to Production
+        run: |
+          # Your deployment script
+```
+
+### Database Migrations in Production
+
+**Safe migration process:**
+
+1. **Backup database:**
+```bash
+pg_dump -U funnelchat_user funnelchat_prod > backup.sql
+```
+
+2. **Test migration on staging:**
+```bash
+npm run prisma:migrate:deploy
+```
+
+3. **Deploy to production:**
+```bash
+# SSH into production server
+npm run prisma:migrate:deploy
+```
+
+4. **Verify application:**
+```bash
+curl https://api.funnelchat.com/health
+```
+
+### Monitoring
+
+Set up monitoring for:
+- **Application health**: Uptime checks
+- **API performance**: Response times
+- **Error rates**: Exception tracking
+- **Database performance**: Query times
+- **Message delivery**: Channel success rates
+
+Tools:
+- Datadog
+- New Relic
+- Sentry (error tracking)
+- CloudWatch (AWS)
+
+## 📚 API Documentation
+
+### Authentication
+
+All API requests require authentication via JWT token.
+
+**Get token:**
+```bash
+POST /api/auth/login
+{
+  "email": "user@example.com",
+  "password": "password123"
+}
+
+Response:
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "user": { ... }
+}
+```
+
+**Use token:**
+```bash
+GET /api/accounts
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+```
+
+### Key Endpoints
+
+Full API documentation available at: `http://localhost:4000/api-docs` (Swagger UI)
+
+**Core endpoints:**
+- `POST /api/auth/login` - User login
+- `POST /api/auth/register` - User registration
+- `GET /api/accounts` - List accounts
+- `GET /api/accounts/:id` - Get account details
+- `POST /api/conversations` - Start conversation
+- `POST /api/payments` - Process payment
+- `GET /api/analytics/dashboard` - Get dashboard data
+
+### WebSocket Events
+
+Real-time communication uses Socket.io.
+
+**Client connection:**
+```javascript
+import io from 'socket.io-client';
+
+const socket = io('http://localhost:4000', {
+  auth: {
+    token: 'your-jwt-token'
+  }
+});
+
+// Listen for messages
+socket.on('message', (data) => {
+  console.log('New message:', data);
+});
+
+// Send message
+socket.emit('send_message', {
+  conversationId: '123',
+  content: 'Hello'
+});
+```
+
+**Events:**
+- `message` - New chat message
+- `typing` - User is typing
+- `payment_update` - Payment status change
+- `conversation_assigned` - Conversation assigned to agent
+
+## 🤝 Contributing
+
+We welcome contributions! Please follow these guidelines.
+
+### Getting Started
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Make your changes
+4. Write/update tests
+5. Commit your changes (`git commit -m 'feat: add amazing feature'`)
+6. Push to the branch (`git push origin feature/amazing-feature`)
+7. Open a Pull Request
+
+### Pull Request Process
+
+1. **Update documentation** if you changed APIs or behavior
+2. **Add tests** for new functionality
+3. **Ensure all tests pass**: `npm test`
+4. **Follow code style**: `npm run lint`
+5. **Update CHANGELOG.md** with your changes
+6. **Request review** from maintainers
+
+### Code Review Criteria
+
+- Code follows project conventions
+- Adequate test coverage (&gt;80%)
+- No security vulnerabilities
+- Performance considerations addressed
+- Documentation updated
+- Commit messages are clear
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🆘 Support
+
+### Getting Help
+
+- **Documentation**: Check this README and PRD
+- **Issues**: Create GitHub issue with bug/feature tag
+- **Discussions**: Use GitHub Discussions for questions
+- **Email**: support@funnelchat.com
+
+### Common Issues
+
+**Issue**: Cannot connect to database
+```
+Solution: 
+1. Check PostgreSQL is running: `docker-compose ps`
+2. Verify DATABASE_URL in .env
+3. Check credentials and database exists
+```
+
+**Issue**: API returns 401 Unauthorized
+```
+Solution:
+1. Check JWT token is included in Authorization header
+2. Verify token hasn't expired
+3. Check JWT_SECRET matches between frontend and backend
+```
+
+**Issue**: Chatbot not responding
+```
+Solution:
+1. Verify ANTHROPIC_API_KEY is set correctly
+2. Check API quota hasn't been exceeded
+3. Review logs: `docker-compose logs api`
+```
+
+### Troubleshooting Commands
+
+```bash
+# View all running containers
+docker-compose ps
+
+# View logs
+docker-compose logs -f api
+
+# Restart specific service
+docker-compose restart api
+
+# Rebuild containers
+docker-compose up -d --build
+
+# Reset everything (WARNING: deletes data)
+docker-compose down -v
+docker-compose up -d
+npm run prisma:reset
+```
+
+## 📞 Contact
+
+- **Project Lead**: Oxford Pierpont
+- **Organization**: aiConnected
+- **Website**: https://funnelchat.com
+- **GitHub**: https://github.com/your-org/funnelchat
+
+---
+
+**Happy Coding! 🚀**

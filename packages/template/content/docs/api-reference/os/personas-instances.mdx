@@ -1,0 +1,115 @@
+---
+title: "Personas and instances"
+description: "Persistent AI persona lifecycle, workspace scoping, and instance-level operating rules in aiConnectedOS."
+---
+## Contract status
+
+`Canonical interface contract`
+
+The aiConnectedOS docs define personas, instances, roles, and lifecycle behavior in enough detail to serve as a service contract, even though final HTTP paths are not fixed in the repo.
+
+## Source documents
+
+- [aiConnectedOS developer documentation](/docs/knowledge-base/aiconnected-os/aiconnected-os-developer-documentation)
+- [quick system overview](/docs/knowledge-base/aiconnected-os/quick-system-overview)
+- [aiConnected OS master planning document](/docs/knowledge-base/aiconnected-os/ai-connected-os-master-planning-document)
+
+## Core concepts
+
+### Persona
+
+A persona is a long-lived AI entity with:
+
+- Stable identity
+- Role and responsibility assignment
+- Persistent memory
+- Emotional and behavioral state
+- Configurable communication style
+- Integration access inside an instance
+
+### Instance
+
+An instance is the bounded workspace or business context that contains:
+
+- One or more personas
+- Its own data and integrations
+- Its own workflows and access boundaries
+- Shared contextual memory scoped to that environment
+
+## Required persona resources
+
+| Resource | Purpose |
+|---|---|
+| `personas` | Identity, role, tone, model, and lifecycle state |
+| `persona_profiles` | Display identity, wake settings, voice, and public metadata |
+| `persona_assignments` | Persona-to-instance responsibility mapping |
+| `persona_states` | Mood, mode, activation, and runtime state |
+| `instances` | Workspace containers for data, permissions, and integrations |
+| `instance_integrations` | Connected services available to personas in an instance |
+
+## Required persona operations
+
+The OS docs require operations for:
+
+- Creating personas
+- Updating identity, role, and voice settings
+- Assigning personas to instances
+- Switching active persona context
+- Loading a persona's persistent state before interaction
+- Exporting and importing persona definitions where appropriate
+
+## Persona profile fields
+
+The developer docs and related feature docs imply these fields:
+
+- `id`
+- `name`
+- `description`
+- `role`
+- `communication_style`
+- `wakeword`
+- `tts_voice`
+- `preferred_llm`
+- `default_tools`
+- `schedule`
+- `avatar`
+- `status`
+
+## Instance rules
+
+- Instances are isolation boundaries.
+- Persona access is explicit, not global.
+- Data access must follow instance permissions.
+- Personas can collaborate inside an instance, but only through governed orchestration.
+- Instance context should flow into memory retrieval and downstream integrations.
+
+## Multi-persona collaboration
+
+The OS docs describe collaborative personas and meeting-like coordination. That implies APIs or service operations for:
+
+- Enumerating personas in an instance
+- Declaring which persona is primary for a task
+- Invoking supporting personas for a shared context
+- Preserving persona-specific authorship in messages, tasks, and memory writes
+
+## Recommended service response
+
+```json
+{
+  "persona_id": "prs_001",
+  "instance_id": "inst_001",
+  "name": "Orion",
+  "role": "operator",
+  "wakeword": "Hey Orion",
+  "tts_voice": "com.apple.voice.Alex",
+  "preferred_llm": {
+    "provider": "openai",
+    "model": "gpt-4o"
+  },
+  "status": "active"
+}
+```
+
+## Implementation note
+
+The repo consistently treats personas as persistent team members, not disposable assistants. Model your contracts around lifecycle and continuity, not single-request chat sessions.

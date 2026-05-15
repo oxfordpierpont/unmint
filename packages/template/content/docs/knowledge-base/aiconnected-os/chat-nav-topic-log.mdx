@@ -1,0 +1,153 @@
+---
+title: "Chat Nav > Topic Log"
+---
+## PRD Addendum | In-Chat Navigation Feature
+
+**Document type:** Addendum to existing ChatNav specification
+
+**Adds to:** aiConnected OS In-Chat Navigation (Document 17)
+
+**Status:** Specified — ready for PRD integration
+
+---
+
+## Overview
+
+This addendum extends the ChatNav feature with **Topic-Scoped Export** — the ability to initiate an export, move, or share action directly from a ChatNav sidebar entry, using that topic segment as the export boundary.
+
+This is distinct from the existing **Filter Bar Export** (which exports whatever is currently visible in the chat after applying filters/search). Topic-Scoped Export allows the user to target a specific segment of the conversation by intent — by selecting the topic itself — rather than by constructing a filter.
+
+These two export mechanisms coexist and complement each other.
+
+---
+
+## Background & Motivation
+
+ChatNav already defines:
+
+- A per-conversation sidebar that functions as a living table of contents
+- Semantic checkpoints that mark meaningful topic shifts within a chat
+- Clickable entries that scroll the user to the corresponding position in the transcript
+- Hover states that reveal a short summary of each topic segment
+- AI use of checkpoint summaries for selective context rehydration
+
+What was not previously specified is the ability to **act on a topic segment directly from the sidebar** — specifically, to export, move, or share the messages that belong to a given topic without first manually filtering them in the chat view.
+
+This addendum closes that gap.
+
+---
+
+## Feature Definition
+
+### Topic-Scoped Export
+
+Each entry in the ChatNav sidebar gains an **action menu**, accessible via:
+
+- Hovering over the entry (reveals a `⋯` icon on the right side of the row)
+- Right-clicking the entry
+- Long-pressing (mobile)
+
+Opening this menu presents the full export/move/share option set, scoped to the messages contained within that topic segment.
+
+---
+
+## Sidebar Entry Action Menu — Full Option Set
+
+The options mirror the existing Filter Bar Export specification exactly. The only difference is the scope: instead of "currently visible messages after filters," the scope is "messages belonging to this topic segment."
+
+### Copy
+
+- Copy as `.md`
+- Copy as `.txt`
+
+### Download
+
+- Download as `.md`
+- Download as `.txt`
+- Download as `.pdf`
+
+### Move
+
+- Move to new chat
+- Move to instance
+
+### Share
+
+- Share as link
+- Mobile share menu (e.g. iPhone share options)
+
+---
+
+## Scope Definition
+
+A "topic segment" for the purpose of export is defined as all messages from the moment the ChatNav checkpoint was created up to (but not including) the start of the next checkpoint.
+
+For the final topic segment in a conversation (the most recent), the scope extends to the last message in the thread at the time the action is taken.
+
+This scope definition is consistent with how checkpoints function throughout ChatNav and requires no special handling beyond what the checkpoint data model already provides.
+
+---
+
+## Relationship to Filter Bar Export
+
+| | Filter Bar Export | Topic-Scoped Export |
+
+|---|---|---|
+
+| **Trigger** | Filter chips \+ search in chat header | `⋯` menu on a ChatNav sidebar entry |
+
+| **Scope** | All currently visible messages | Messages in a specific topic segment |
+
+| **Use case** | Cross-cutting filters (e.g., all pinned messages, all messages with links) | Segment-specific extraction (e.g., "export just the memory architecture discussion") |
+
+| **Option set** | Identical | Identical |
+
+Both mechanisms are valid and serve different user needs. Neither replaces the other.
+
+---
+
+## User Experience Notes
+
+### Hover State
+
+The sidebar entry already has a defined hover state (per ChatNav spec — title highlight \+ summary reveal). The `⋯` icon appears within this same hover state on the trailing edge of the row. It should not be visible at rest to keep the sidebar clean.
+
+### No Disruption to Navigation
+
+Accessing the action menu does not scroll the chat or change the user's position in the conversation. It is a purely contextual action attached to the sidebar entry.
+
+### Mobile
+
+On mobile, the long-press gesture opens the action menu. The option set is the same. The "Mobile share menu" option triggers the native OS share sheet (e.g., iOS share sheet).
+
+---
+
+## Acceptance Criteria
+
+- \[ \] Each ChatNav sidebar entry displays a `⋯` icon on hover/focus
+- \[ \] Tapping or clicking `⋯` opens a contextual action menu
+- \[ \] The action menu contains all Copy, Download, Move, and Share options as specified above
+- \[ \] All actions operate on messages scoped to the selected topic segment only
+- \[ \] The final (most recent) topic segment extends to the last message in the thread
+- \[ \] On mobile, long-press triggers the action menu
+- \[ \] Accessing the menu does not alter scroll position or chat state
+- \[ \] The `⋯` icon is not visible at rest — only on hover, focus, or long-press
+
+---
+
+## Dependencies
+
+- ChatNav checkpoint creation (semantic \+ forced) — existing spec
+- ChatNav sidebar rendering — existing spec
+- Filter Bar Export option set — existing spec (document 7)
+- Message-to-checkpoint association in the data model
+
+---
+
+## Implementation Notes
+
+No new export logic is required. The same export pipeline used by the Filter Bar Export is called with a different message set — the messages belonging to the selected checkpoint segment — as its input. The action menu is a UI surface that passes the correct `messageIds[]` to the existing export handler.
+
+The checkpoint data model already associates each checkpoint with a starting message ID and implicitly ends at the next checkpoint's starting message ID. Deriving the correct `messageIds[]` for any given segment is a straightforward range query against this structure.
+
+---

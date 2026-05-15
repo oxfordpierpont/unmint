@@ -1,0 +1,18 @@
+{
+  "title": "Go To Market",
+  "pages": [
+    "index",
+    "bp-gtm-01-launch-strategy",
+    "bp-gtm-02-agency-acquisition-playbook",
+    "bp-gtm-03-sales-team-structure",
+    "bp-gtm-04-agency-onboarding-flow",
+    "bp-gtm-05-launch-marketing-plan",
+    "bp-gtm-06-content-thought-leadership",
+    "bp-gtm-07-developer-community-strategy",
+    "bp-gtm-08-partner-channel-strategy",
+    "bp-gtm-09-first-10-agency-targets",
+    "bp-gtm-10-enterprise-readiness",
+    "bp-gtm-11-churn-prevention"
+  ],
+  "defaultOpen": true
+}

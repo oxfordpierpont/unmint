@@ -1,0 +1,17 @@
+{
+  "title": "Knowledge Base",
+  "pages": [
+    "index",
+    "introduction",
+    "quickstart",
+    "aiconnected-apps-and-modules",
+    "aiconnected-business-platform",
+    "aiconnected-os",
+    "aiconnected-supporting-docs",
+    "neurigraph-memory-architecture",
+    "papers-and-research",
+    "raw-chats-and-brainstorming",
+    "sample-user-md-configuration"
+  ],
+  "defaultOpen": true
+}

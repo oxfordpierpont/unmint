@@ -1,0 +1,44 @@
+---
+title: "aiConnectedOS Three Tier Platform Access Model"
+description: "Tier 1: The Web Interface (Lightweight) This is your acquisition funnel and it's the right starting point for launch. You're basically offering the aiConnect..."
+---
+<Info>
+Normalized for Mintlify from `knowledge-base/aiconnected-os/aiConnectedOS-three-tier-access-model.md`.
+</Info>
+# aiConnectedOS Three Tier Platform Access Model
+
+## Tier 1: The Web Interface (Lightweight)
+
+This is your acquisition funnel and it's the right starting point for launch. You're basically offering the aiConnectedOS experience — personas, Cipher orchestration, CogniGraph memory, collaborative conversations, instances — but running entirely on your shared infrastructure. The AI can browse the web, do research, have conversations, manage knowledge, maybe interact with external APIs, but it doesn't have its own filesystem or compute sandbox.
+
+This is not a lesser product. For a huge percentage of users, this is all they need. Writers, consultants, small business owners, people managing knowledge and projects — they don't need the agent to SSH into a server. They need persistent AI personas that remember, learn, and collaborate. That alone puts you ahead of ChatGPT and Claude in terms of product differentiation, without any of the container infrastructure complexity.
+
+The important thing is that this tier should not feel like a demo or a crippled version. It should feel like a complete product that happens to not include compute environments. The moment it feels like you're holding features hostage, you lose trust. Position it as "the AI workspace" and let the next tier be "the AI workspace with a computer."
+
+## Tier 2: The Managed Professional Environment
+
+This is where your vision really comes to life, and it's also where all the hard decisions live.
+
+The partnership model you're describing — where you essentially resell or orchestrate cloud compute from a provider like DigitalOcean or Hetzner — is smart because it means you're not building a hosting company from scratch. You're building an orchestration layer that provisions, manages, and tears down environments on behalf of your users, on infrastructure that someone else maintains.
+
+There are a few ways to structure this technically. The cleanest model is probably something like what Gitpod or Railway does: your platform has an API integration with a cloud provider, and when a user needs compute, you programmatically spin up a container or microVM on that provider, configure it with the aiConnectedOS runtime, attach it to the user's account, and bill accordingly. The user never sees DigitalOcean or Hetzner — they just see their aiConnectedOS environment.
+
+The "spin up mini environments for specific tasks" concept is particularly interesting and maps well to your existing architecture. Instead of giving each user one big always-on environment, you could give them a lightweight persistent workspace plus the ability to spawn short-lived task containers. An agent needs to build and test a web application? Spin up a container with Node.js, do the work, save the artifacts, tear it down. Needs to do browser-based research? Spin up a KasmVNC session, do the work, capture the results, tear it down. This is much more economical than keeping full desktop environments running 24/7, and it matches how humans actually work — you don't leave every application open forever, you open what you need, do the work, and close it.
+
+The billing model here matters a lot. You have a few options. You could do a flat monthly fee that includes a compute allocation (say, 40 hours of active environment time per month), with overage charges beyond that. You could do pure usage-based pricing where users pay for what they consume. Or you could do the model you already outlined in your pricing tiers — the $49.99 Premium or $99.99 Pro includes a certain level of managed compute, and heavier usage costs more.
+
+The partnership angle with a hosting provider is worth pursuing seriously. DigitalOcean has a partner program. Hetzner has incredibly competitive pricing for European infrastructure. Vultr, Linode (now Akamai), and others all have APIs that support programmatic provisioning. You wouldn't need an exclusive partnership — you'd need API access and potentially a volume discount arrangement.
+
+## Tier 3: Self-Hosted
+
+This is your enterprise and power-user play, and your instinct about protecting source code is correct and solvable.
+
+The standard approach for distributing proprietary software that runs on customer infrastructure without exposing source code is **compiled/packaged container images distributed through a private registry**. Here's what that looks like in practice:
+
+You build your aiConnectedOS stack into Docker images. Those images are compiled, minified, and obfuscated — the customer gets a runnable binary, not your source code. You push those images to a private container registry (Docker Hub private repos, GitHub Container Registry, or your own registry). Customers authenticate with a license key to pull images. They run `docker compose up` and the platform starts on their hardware.
+
+This is exactly how GitLab self-managed works, how Mattermost self-hosted works, how n8n's enterprise edition works, and how dozens of other "cloud or self-hosted" products operate. The customer gets a working system. They can inspect network traffic. They can see the database schema. But they cannot read your application code any more than you can read the source code of a compiled macOS application.
+
+For a Mac Mini deployment specifically, Docker Desktop runs on macOS, so a user could literally download Docker Desktop, pull your private images with their license key, and run the full stack locally. More serious self-hosted deployments would run on a Linux server or a small cluster, but the Mac Mini use case is valid for individuals or small teams who want local-first AI.
+
+The things you'd need to provide for self-hosted customers: clear documentation, a configuration system for connecting their own API keys (OpenRouter, Anthropic, OpenAI), a way to receive updates (pull new image versions), and some form of license validation (phone-home check or offline license file for air-gapped environments).

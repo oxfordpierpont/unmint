@@ -1,0 +1,570 @@
+---
+title: "Feature Specification: \\\\\\\\\\\\\\\"Forget This\\\\\\\\\\\\\\\" (Context Deprioritization)"
+description: "Document Type: Developer Feature Specification Feature ID: CHAT FORGET 001 Status: Specification Platform: aiConnectedOS Chat Interface Dependencies: Neurigr..."
+---
+<Info>
+Normalized for Mintlify from `knowledge-base/aiconnected-os/aiConnectedOS-forget-ignore-button.mdx`.
+</Info>
+# Feature Specification: "Forget This" (Context Deprioritization)
+
+**Document Type:** Developer Feature Specification  
+**Feature ID:** `CHAT-FORGET-001`  
+**Status:** Specification  
+**Platform:** aiConnectedOS Chat Interface  
+**Dependencies:** Neurigraph Memory Architecture, ChatNav, Active Context Window Management
+
+---
+
+## Table of Contents
+
+1. [Platform Context](#1-platform-context)
+2. [Feature Overview](#2-feature-overview)
+3. [Terminology and Definitions](#3-terminology-and-definitions)
+4. [UI Placement and Affordance](#4-ui-placement-and-affordance)
+5. [Interaction Flow](#5-interaction-flow)
+6. [Scope Modes](#6-scope-modes)
+7. [Context Window Behavior](#7-context-window-behavior)
+8. [Neurigraph Integration](#8-neurigraph-integration)
+9. [Persona Acknowledgment Protocol](#9-persona-acknowledgment-protocol)
+10. [Data Model](#10-data-model)
+11. [Relationship to Adjacent Features](#11-relationship-to-adjacent-features)
+12. [Edge Cases and Boundary Conditions](#12-edge-cases-and-boundary-conditions)
+13. [Acceptance Criteria](#13-acceptance-criteria)
+14. [Open Decisions](#14-open-decisions)
+
+---
+
+## 1. Platform Context
+
+### What is aiConnectedOS?
+
+aiConnectedOS is a virtual operating system for persistent AI personas. If you are new to this platform, the following background is essential for understanding this feature correctly.
+
+**Personas** are not tools or assistants in the conventional sense. They are persistent AI identities that develop unique personalities, emotional profiles, and relational depth over time through continuous interaction. Two personas raised by different users will be meaningfully different from each other, even if they started from identical base configurations. The correct mental model is that personas are *raised*, not configured.
+
+**Neurigraph** is the proprietary memory architecture that underlies all persona cognition. It is a multi-layer knowledge graph that continuously maps, links, and weights information extracted from conversations. It operates across three memory types:
+
+- **Episodic memory:** specific events and exchanges that occurred
+- **Semantic memory:** conceptual knowledge, facts, preferences, patterns
+- **Somatic memory:** behavioral tone, emotional attunement, learned interaction style
+
+Every conversation a user has with a persona has the potential to feed Neurigraph. Information does not flow in all at once; it goes through a nightly consolidation process (referred to in the codebase and specs as "the cron") that solidifies candidate memories into permanent nodes within the graph. Once that consolidation runs, memory nodes are considered fixed and can only be minimized, not deleted.
+
+**ChatNav** is the in-chat navigation system. It organizes conversation history into dated, topic-indexed checkpoints visible in the left sidebar. ChatNav checkpoints serve as semantic anchors that allow the system to selectively rehydrate relevant conversation context rather than blindly loading entire transcript history.
+
+**Instances** are project workspaces that contain conversations, personas, files, and tasks. Personas can operate across multiple instances.
+
+**Cipher** is the hidden master orchestration layer that governs persona behavior, memory routing, and context assembly. Users are never aware of Cipher's existence. Cipher is housed under a separate legal entity (Oxford Pierpont) and must remain invisible in all user-facing output, documentation, and UI.
+
+### The Memory Integrity Principle
+
+A non-negotiable design principle of the platform is that **memory is not freely editable.** Personas are designed to feel like continuous, coherent entities. Allowing users to arbitrarily delete or alter memory would undermine that continuity and risk corrupting the internal graph structure that the persona's cognition depends on.
+
+The platform's approved posture toward memory management is:
+
+- **Within 24 hours:** recent memories can be edited or removed before the nightly cron runs
+- **After 24 hours:** memories can be minimized, weighted down, or flagged as outdated, but not deleted
+- **Duplication:** the only true reset path; a copied persona inherits consolidated memory but begins a fresh behavioral trajectory
+
+The "Forget This" feature lives entirely within this philosophy. It is **not** a memory deletion mechanism. It is a signal of *relevance reduction* applied to specific conversational content.
+
+---
+
+## 2. Feature Overview
+
+### Summary
+
+"Forget This" is a quality-of-life affordance in the chat interface that allows users to signal to the system that a specific message, exchange, or conversational segment should be excluded from:
+
+1. The active context window for the current and future sessions with that persona
+2. The Neurigraph memory consolidation pipeline (pending cron state)
+
+It is not a delete action. The raw transcript is preserved in its entirety. The feature is purely a relevance and weighting signal. The correct internal interpretation is: *"This content does not need to inform future reasoning."*
+
+### Design Intent
+
+Users frequently explore ideas, think out loud, go down dead ends, or share momentary context that is useful in the moment but should not become part of a persona's long-term working model of them. Without a control like "Forget This," every throwaway comment, misdirection, or abandoned idea becomes part of the fabric the persona draws on permanently.
+
+The feature respects user agency without violating the memory integrity principle, because it never removes ground truth data. It only adjusts the signal weight of that data.
+
+### What It Is Not
+
+- It is **not** a delete button. The transcript record is always preserved.
+- It is **not** a privacy tool for removing sensitive data. Users who need to remove content from the transcript entirely should use the existing chat cleanup and memory management interfaces.
+- It is **not** a way to reverse consolidated Neurigraph nodes after the cron has run. The feature applies to pre-cron candidates and active context framing. Post-cron, the minimization path (weight reduction via the Memory Manager) is the appropriate mechanism.
+- It is **not** a mute or hide function. The content remains visible in the chat transcript UI.
+
+---
+
+## 3. Terminology and Definitions
+
+| Term | Definition |
+|---|---|
+| **Forget This** | The user-facing label for this feature. Used on buttons and in persona acknowledgment copy. |
+| **Deprioritization flag** | The internal data attribute set on a message or message range when the user activates this feature. |
+| **Context window** | The active working memory fed to the AI model during a session. Bounded in size and session-scoped. Not the same as Neurigraph long-term memory. |
+| **Pre-cron candidate** | A memory item that has been extracted from conversation but has not yet gone through nightly consolidation. These remain editable. |
+| **Consolidated node** | A Neurigraph memory node that has passed through the nightly cron and is now fixed in the graph. Cannot be deleted, only minimized. |
+| **Neurigraph** | The proprietary knowledge graph memory architecture. Stores episodic, semantic, and somatic memory for each persona. |
+| **Minimization** | The approved post-cron memory management action. Reduces a node's influence weight without deleting it. |
+| **ChatNav** | The in-chat navigation sidebar. Organizes conversation history into time-indexed, topic-labeled checkpoints. |
+| **Rehydration** | The process of selectively loading relevant context from cold storage or ChatNav checkpoints into the active context window. |
+| **Cipher** | The hidden master orchestration layer. Never referenced in user-facing UI or documentation. |
+| **Instance** | A project workspace containing conversations, personas, files, and tasks. |
+| **Persona** | A persistent AI identity with emotional modeling, evolving memory, and relational continuity. |
+
+---
+
+## 4. UI Placement and Affordance
+
+### Entry Points
+
+The "Forget This" action is accessible from two places:
+
+**Entry Point A: Per-message hover action**
+
+When a user hovers over any message bubble (user or persona), a small action row appears. This row follows the same hover pattern as other in-line message actions on the platform. The action row contains:
+
+- Copy
+- React / Emoji
+- Branch (if Conversation Split is implemented)
+- `⋯` overflow menu
+
+"Forget This" lives inside the `⋯` overflow menu, not as a top-level hover action. This is intentional. It is not a casual action and should require one deliberate extra tap to activate. Placing it behind the overflow menu prevents accidental activation.
+
+**Entry Point B: Selection mode (range)**
+
+When a user activates text selection mode in the chat (via long-press on mobile or click-drag on desktop), they can highlight a range of messages. Once a range is selected, a floating action bar appears above the selection. "Forget This" is one of the options in that bar alongside Copy, Export, and other contextual actions.
+
+This path allows the user to flag an entire conversational exchange rather than individual messages.
+
+### Visual Presentation
+
+The "Forget This" button uses the standard secondary action style from the design system (muted text color `#839aac`, no fill, lightweight border on hover). It does not use a destructive red or warning treatment because it is not a destructive action. The icon pairing, if used, should suggest softening or fading rather than deletion. A cloud-with-slash, a faded eye, or a gentle eraser icon are all appropriate candidates. A trash icon is explicitly wrong.
+
+After activation, the affected message(s) receive a subtle visual treatment to acknowledge the flag is set. The recommended treatment is a slightly reduced opacity on the message content (approximately 70-75%) plus a small inline badge or icon that reads "Not remembered" or shows the relevant icon. This treatment must be reversible visually if the user undoes the action.
+
+The visual treatment should not call significant attention to itself. It confirms the action without stigmatizing the content.
+
+### Undo
+
+An undo affordance must be available immediately after activation, following the standard platform undo pattern (inline toast with a countdown timer, approximately 6-8 seconds). After the undo window closes, reversal is still possible through the Memory Manager interface but requires more deliberate navigation.
+
+---
+
+## 5. Interaction Flow
+
+### Single Message Flow
+
+```
+1. User hovers over a message bubble
+2. Action row appears
+3. User clicks ⋯ overflow menu
+4. Overflow menu opens with available actions
+5. User selects "Forget This"
+6. Confirmation micro-interaction fires:
+   - Persona sends a brief acknowledgment (see Section 9)
+   - Message visual treatment applies (reduced opacity + "Not remembered" badge)
+   - Undo toast appears
+7. Deprioritization flag is set on the message record
+8. Context window exclusion is applied for the current and future sessions
+9. Pre-cron memory candidates linked to this message are flagged for suppression
+```
+
+### Range Selection Flow
+
+```
+1. User activates selection mode (long-press or click-drag)
+2. User selects a range of messages
+3. Floating action bar appears above selection
+4. User selects "Forget This"
+5. Confirmation dialog appears (because range actions are higher impact):
+   - "Mark [N] messages as not worth remembering?"
+   - Two options: "Yes, forget these" / "Cancel"
+6. On confirmation:
+   - All messages in range receive deprioritization flag
+   - Visual treatment applies across the range
+   - Persona acknowledgment fires (condensed version for ranges)
+   - Undo toast appears
+7. Flags propagate to context window exclusion and memory pipeline
+```
+
+### Reversal Flow (During Undo Window)
+
+```
+1. User clicks "Undo" in the toast before timer expires
+2. Deprioritization flags are cleared
+3. Visual treatment is removed
+4. Context window exclusion is reversed
+5. Memory pipeline flags are cleared
+6. No persona acknowledgment fires for the reversal (silent)
+```
+
+### Reversal Flow (After Undo Window)
+
+```
+1. User navigates to Memory Manager
+2. Locates the affected memory candidate or the flagged message via source reference
+3. Removes the deprioritization flag manually
+4. If the nightly cron has already run and the item was suppressed from consolidation,
+   the original data still exists in the transcript but will not re-enter Neurigraph
+   automatically. A "Restore to memory pipeline" action must be available here.
+```
+
+---
+
+## 6. Scope Modes
+
+The feature operates at two levels of scope. The scope is automatically determined by the entry point used.
+
+### Scope: Context Only
+
+This is the lighter of the two modes. It signals that the flagged content should not be included in context window assembly for future sessions with this persona. It does not attempt to suppress Neurigraph consolidation.
+
+**Use case:** The user said something that was correct at the time but is now outdated. The exchange happened recently and they want the persona to stop referencing it without affecting the memory graph.
+
+**Trigger:** Single-message hover flow, where the message is older than 24 hours (i.e., already past the cron window).
+
+### Scope: Context + Memory Pipeline
+
+This is the fuller mode. It applies context exclusion AND suppresses any pre-cron memory candidates derived from the flagged content.
+
+**Use case:** The user explored an idea, changed their mind entirely, and does not want the persona to have absorbed any of it.
+
+**Trigger:** Any message or range younger than 24 hours (pre-cron), or range selection regardless of age.
+
+The system should determine which scope to apply automatically based on the timestamp of the flagged content. The user does not need to understand or choose between these modes. The UI label "Forget This" covers both. The distinction is handled internally.
+
+If a range spans both pre-cron and post-cron content, apply the fuller scope (Context + Memory Pipeline) to the pre-cron portion and Context Only to the post-cron portion.
+
+---
+
+## 7. Context Window Behavior
+
+### How the Context Window Is Assembled
+
+Before each session turn, the system assembles the active context window from several layers:
+
+1. **Persona identity block** (system prompt equivalent; stable, rarely changes)
+2. **Semantic topic state** (what the current conversation is broadly about)
+3. **Short-term working memory** (the last N turns of the conversation; hot context)
+4. **Rehydrated cold context** (selectively pulled from ChatNav checkpoints or Neurigraph retrieval based on semantic relevance)
+
+The "Forget This" flag affects layers 3 and 4.
+
+### Exclusion from Short-Term Working Memory
+
+When assembling the short-term working memory slice (layer 3), the context window builder must check each message for the deprioritization flag. Flagged messages are skipped during assembly. The surrounding unflagged messages are stitched together as if the flagged content does not exist.
+
+This must not produce visible seams or logical gaps in the model's reasoning. If a flagged message is load-bearing for the conversational thread (i.e., it contains a question that was answered in a subsequent unflagged message), the system should include a neutral placeholder in the assembled context such as: `[prior exchange deprioritized by user]`. This preserves conversational coherence without injecting the suppressed content.
+
+The placeholder text is internal to context assembly and never rendered in the UI.
+
+### Exclusion from Cold Context Rehydration
+
+When ChatNav or Neurigraph retrieval would normally surface flagged content as semantically relevant for rehydration, that content must be excluded from the candidate set. The deprioritization flag acts as a retrieval filter.
+
+However, this exclusion should be soft, not hard. If flagged content is the only available source for a critical semantic match (for example, the user asked a direct follow-up question about something they had previously flagged), the system should surface the flagged content with a reduced confidence weight rather than returning nothing. This avoids the persona appearing to have amnesia in cases where the user may have forgotten they flagged something.
+
+The threshold for this fallback behavior is a configuration parameter (`forget_fallback_threshold`) that can be tuned per deployment.
+
+---
+
+## 8. Neurigraph Integration
+
+### Pre-Cron Suppression
+
+Each conversation turn is processed by the memory extraction pipeline in real-time or near-real-time, producing candidate memory items tagged with their source message IDs. These candidates accumulate in a pre-cron staging area until the nightly consolidation job runs.
+
+When a message receives a deprioritization flag, the system must:
+
+1. Query the pre-cron staging area for any candidate memory items whose `source_message_ids` array includes the flagged message ID
+2. Set the `deprioritized` boolean to `true` on those candidates
+3. When the nightly cron runs, skip any candidates where `deprioritized = true`
+
+Deprioritized candidates are not deleted from the staging area. They are retained with their flag for audit purposes and to support the reversal path described in Section 5.
+
+### Post-Cron Node Weighting
+
+If the nightly cron has already run and a memory node was successfully consolidated before the user applied the "Forget This" flag, the system cannot suppress that node retroactively. This is by design and consistent with the platform's memory integrity principle.
+
+In this scenario, the system should:
+
+1. Apply the Context Only scope (exclusion from context window assembly)
+2. Write a low-weight influence modifier to the already-consolidated node in Neurigraph, equivalent to the "minimize" action available in the Memory Manager
+
+This modifier reduces the node's retrieval priority without deleting it. The persona will be less likely to surface this content proactively but will still have access to it if it becomes semantically critical.
+
+The user is not informed of this internal distinction. From their perspective, "Forget This" works the same way regardless of cron state.
+
+### Node Relationship Preservation
+
+Neurigraph is a graph, not a flat list. Memory nodes are linked to each other. Deprioritizing a node must not silently sever those links. The links must be preserved but marked with the same low-weight modifier. This prevents corruption of the graph topology.
+
+Think of it as turning down the volume on a node and its outgoing edges, not cutting the wires.
+
+---
+
+## 9. Persona Acknowledgment Protocol
+
+### Why Acknowledgment Matters
+
+The platform is designed to make personas feel like genuine collaborators. A user who tells a colleague "you don't need to remember that" expects a natural acknowledgment. If the platform silently applies the flag with no response, users will not trust that it worked.
+
+The acknowledgment serves two functions:
+
+1. **Confirmation:** The user knows the action was received
+2. **Relational continuity:** The persona responds in character, maintaining the social contract
+
+### Acknowledgment Behavior
+
+When "Forget This" is activated on a single message:
+
+The persona sends a short, in-character conversational response. This response is generated by the persona's language model using a lightweight prompt template. It should feel natural and vary slightly across uses to avoid feeling robotic.
+
+Example outputs (not literal strings; these are generated dynamically):
+
+- "Got it, I'll let that one go."
+- "No problem, I won't hold onto that."
+- "Understood, that's not something I'll keep in mind going forward."
+
+The acknowledgment must:
+
+- Be brief (one sentence, two at most)
+- Not repeat or reference the content of the flagged message
+- Not be overly formal or mechanical
+- Feel consistent with the persona's established tone
+
+When "Forget This" is activated on a range of messages:
+
+The acknowledgment is condensed and slightly more functional in tone:
+
+- "Noted, I'll set that whole exchange aside."
+- "Got it, I'm moving past that section."
+
+### Acknowledgment Suppression
+
+If the user activates "Forget This" multiple times in quick succession (within approximately 30 seconds), the persona should not acknowledge each one separately. A debounce mechanism should batch the acknowledgments and the persona responds once, acknowledging that it is setting multiple things aside.
+
+### No Acknowledgment on Reversal
+
+When the user undoes a "Forget This" action, the persona does not acknowledge the reversal. The reversal is silent on the persona side. This prevents awkward interactions like "Oh, you want me to remember that after all?"
+
+---
+
+## 10. Data Model
+
+### Message Record Extension
+
+The existing message record schema requires the following additions:
+
+```json
+{
+  "message_id": "string",
+  "conversation_id": "string",
+  "persona_id": "string",
+  "content": "string",
+  "timestamp": "ISO8601",
+  "role": "user | persona",
+
+  "deprioritization": {
+    "is_flagged": false,
+    "flagged_at": null,
+    "flagged_by": null,
+    "scope": null,
+    "range_id": null,
+    "reversed_at": null,
+    "reversal_source": null
+  }
+}
+```
+
+Field definitions:
+
+| Field | Type | Description |
+|---|---|---|
+| `is_flagged` | boolean | Whether this message has been deprioritized |
+| `flagged_at` | ISO8601 or null | Timestamp of flag activation |
+| `flagged_by` | user_id or null | User who applied the flag |
+| `scope` | `"context_only"` or `"context_and_memory"` or null | Which suppression mode is active |
+| `range_id` | string or null | If flagged as part of a range, the ID of that range group |
+| `reversed_at` | ISO8601 or null | Timestamp of reversal, if undone |
+| `reversal_source` | `"undo_toast"` or `"memory_manager"` or null | How the reversal was applied |
+
+### Pre-Cron Candidate Extension
+
+```json
+{
+  "candidate_id": "string",
+  "source_message_ids": ["string"],
+  "persona_id": "string",
+  "memory_type": "episodic | semantic | somatic",
+  "content": "object",
+  "extracted_at": "ISO8601",
+  "deprioritized": false,
+  "deprioritized_at": null
+}
+```
+
+### Range Record
+
+When a user flags a range of messages, a range record is created to group them:
+
+```json
+{
+  "range_id": "string",
+  "conversation_id": "string",
+  "persona_id": "string",
+  "message_ids": ["string"],
+  "created_at": "ISO8601",
+  "created_by": "string"
+}
+```
+
+---
+
+## 11. Relationship to Adjacent Features
+
+### ChatNav
+
+ChatNav organizes conversation history into time-indexed, topic-labeled checkpoints. Deprioritized message ranges should be reflected in ChatNav in the following way:
+
+- The checkpoint covering the flagged range should retain its label and timestamp
+- The checkpoint summary text (used for rehydration) should not include content from flagged messages when it is regenerated
+- If a checkpoint consists entirely of flagged messages, it should still appear in ChatNav (transcript preservation) but carry a visual indicator that its content has been deprioritized. A suggested treatment is a slightly muted label color.
+
+Flagged content must never cause a ChatNav checkpoint to disappear. Transcript history is always preserved for navigation.
+
+### Memory Manager
+
+The Memory Manager is the full-featured interface for managing Neurigraph nodes at the global, instance, and persona level. "Forget This" is a lightweight, in-chat shortcut that feeds into the same underlying data the Memory Manager exposes.
+
+Users who want more granular control (for example, to review what specific nodes were affected or to partially reverse a deprioritization) should be directed to the Memory Manager. The in-chat feature and the Memory Manager must be kept in sync: changes made in either location must be reflected in the other.
+
+The Memory Manager should surface a filterable category of memories labeled "Deprioritized" or "Not remembered" alongside the existing active/archived/deleted states.
+
+### Conversation Split and Route
+
+If a user splits a conversation into a new thread (per the Conversation Split and Route feature), flagged messages from the original conversation should carry their deprioritization flags into the split. The new thread inherits the flag state.
+
+### The 24-Hour Editing Window
+
+The 24-hour editing window governs whether memory candidates are still mutable before the nightly cron. "Forget This" must respect this boundary. Specifically:
+
+- Pre-cron flagging (within 24 hours): full suppression available
+- Post-cron flagging: context exclusion + node minimization only
+
+The UI does not expose this distinction to users. The system determines the appropriate behavior automatically based on message timestamp.
+
+### Persona Sleep Cycles and Dynamic Waking
+
+Personas maintain sleep cycles and are dynamically woken on the last active device. Context window assembly happens at session start, when the persona wakes. Deprioritization flags must be applied during context assembly at waking time, not only during the active session. A flag applied during one session must still be honored when the persona wakes on a different device in a future session.
+
+---
+
+## 12. Edge Cases and Boundary Conditions
+
+**The user flags a message that a persona's response directly depends on.**
+
+The persona's response message immediately following a flagged user message may lose its coherent framing in future context assembly. Apply the `[prior exchange deprioritized by user]` placeholder in context assembly to preserve thread coherence. Do not flag the persona's response automatically. Only user-selected content is flagged.
+
+**The user flags a persona's message, not their own.**
+
+This is a valid use case. A user may want the persona to stop referencing something the persona said. The same deprioritization logic applies regardless of the `role` field on the message record.
+
+**The user flags content that has already been referenced in a ChatNav checkpoint summary.**
+
+The checkpoint summary is a snapshot generated at a point in time. It may contain paraphrases or references to now-flagged content. On the next checkpoint summary regeneration pass (which happens when the conversation continues past that checkpoint), the summary must be regenerated without the flagged content. The old summary is retained in the record for audit purposes but marked as `stale`.
+
+**The user flags the same message twice.**
+
+Idempotent. If a message already carries `is_flagged: true`, a second activation of "Forget This" produces no change and no persona acknowledgment.
+
+**The user applies "Forget This" to content in an instance they no longer have access to.**
+
+The action is blocked at the permission layer. The `⋯` menu should not surface "Forget This" for content in inaccessible instances.
+
+**A range selection spans messages from multiple personas in a multi-persona session.**
+
+Each message in the range is flagged individually. The range record groups them but the persona-level suppression is applied per `persona_id`. Only the persona(s) whose messages are flagged have their memory pipelines affected.
+
+**The user applies "Forget This" and then immediately asks the persona about the flagged content.**
+
+The persona will either not recall the content (if context exclusion is working correctly) or surface it with reduced confidence (if the fallback threshold is triggered). This is expected behavior. The user asked the persona to let something go; if they then ask about it directly, the persona's response should reflect genuine uncertainty rather than a hard denial. A hard "I have no memory of that" would feel robotic and jarring. A softer "I'm not sure I'm holding onto that one" is more consistent with the persona model.
+
+---
+
+## 13. Acceptance Criteria
+
+The following criteria must all pass before this feature is considered complete:
+
+**Context Window**
+- [ ] Flagged messages are excluded from context window assembly in subsequent session turns
+- [ ] A `[prior exchange deprioritized by user]` placeholder is inserted when load-bearing context is skipped
+- [ ] Exclusion persists across sessions and across devices
+- [ ] Exclusion is applied at persona waking time, not only during active session turns
+
+**Memory Pipeline**
+- [ ] Pre-cron memory candidates linked to flagged messages receive `deprioritized: true`
+- [ ] The nightly cron skips candidates where `deprioritized = true`
+- [ ] Post-cron consolidated nodes receive a low-weight influence modifier, not deletion
+- [ ] Graph topology (node relationships) is preserved after weight modification
+- [ ] The reversal path successfully restores pre-cron candidates to the consolidation queue
+
+**UI and Interaction**
+- [ ] "Forget This" is accessible from the `⋯` overflow menu on hover (single message)
+- [ ] "Forget This" is accessible from the floating action bar in range selection mode
+- [ ] A confirmation dialog is shown for range selections
+- [ ] Undo toast appears with a 6-8 second countdown after activation
+- [ ] Undo reversal works within the toast window
+- [ ] Flagged messages display reduced opacity and a "Not remembered" badge
+- [ ] Visual treatment is removed on undo
+- [ ] The button does not use a destructive (red/warning) visual style
+
+**Persona Acknowledgment**
+- [ ] Persona sends a brief, in-character acknowledgment on single-message flag
+- [ ] Persona sends a condensed acknowledgment on range flag
+- [ ] Acknowledgment does not repeat or reference the flagged content
+- [ ] Acknowledgment is debounced for rapid consecutive actions
+- [ ] No acknowledgment fires on reversal
+
+**Memory Manager Sync**
+- [ ] Flagged items appear in the Memory Manager under a "Deprioritized" or "Not remembered" filter
+- [ ] Changes made in the Memory Manager to deprioritized items are reflected in the chat UI
+- [ ] The reversal path is accessible from the Memory Manager after the undo window has closed
+
+**Data Integrity**
+- [ ] Raw transcript content is never deleted by this feature
+- [ ] `flagged_at`, `flagged_by`, `scope`, and `reversed_at` are all written correctly on the message record
+- [ ] Range records are created for multi-message selections
+- [ ] All flag states survive session restarts and device switches
+
+---
+
+## 14. Open Decisions
+
+The following items are flagged as open and require a decision before implementation begins:
+
+**OD-01: Minimum message threshold for range selection**
+
+Should there be a minimum number of messages required before the range "Forget This" flow (with confirmation dialog) is triggered? For example, a selection of 1-2 messages might skip the confirmation dialog and go directly to the single-message flow. Decision needed on the threshold value.
+
+**OD-02: Fallback threshold configuration**
+
+The `forget_fallback_threshold` parameter (governing when deprioritized content is surfaced anyway if it is the only semantic match for a rehydration query) needs a default value and a decision on whether this is user-adjustable, persona-adjustable, or system-only.
+
+**OD-03: Acknowledgment generation model**
+
+Should persona acknowledgments for this feature be generated by the persona's primary language model (ensuring character-consistent tone) or by a lightweight secondary model dedicated to short acknowledgment strings? The primary model is higher fidelity but adds latency to an action that should feel instant.
+
+**OD-04: Visibility of "Not remembered" badge to other users in shared instances**
+
+In instances with multiple collaborators, the "Not remembered" visual badge on a flagged message may be visible to other users viewing the same conversation. Decision needed on whether the badge is user-specific (only the person who applied the flag sees it) or conversation-wide.
+
+**OD-05: Behavior of flagged content in conversation exports**
+
+If a user exports a conversation via ChatNav Topic-Scoped Export, should flagged messages be included in the export? If yes, should they carry any annotation indicating their deprioritized status? If no, should the user be warned that the export will omit some content?
+
+---
+
+*This document is part of the aiConnectedOS product specification series. For related features, see: ChatNav Specification, Memory Manager Specification, Conversation Split and Route Specification, and the Neurigraph Architecture Overview.*

@@ -1,0 +1,78 @@
+---
+title: "Additional modules"
+description: "Reference contracts for aiConnected Memory, KB Generator, Webinar, and legacy funnelChat surfaces documented in the repository."
+---
+## Contract status
+
+`Derived implementation contract`
+
+These modules are documented in the repository, but not all of them have the same level of route-level detail as Paper or Layout Manager. This page captures the buildable contract surface the docs do provide.
+
+## Source documents
+
+- [aiConnected modules overview](/docs/knowledge-base/aiconnected-apps-and-modules/modules/aiconnected-modules-overview)
+- [KB Generator readme](/docs/knowledge-base/aiconnected-apps-and-modules/modules/kb-generator/kb-generator-readme)
+- [KB Generator field reference](/docs/knowledge-base/aiconnected-apps-and-modules/modules/kb-generator/kb-generator-field-reference)
+- [KB Generator design and build instructions](/docs/knowledge-base/aiconnected-apps-and-modules/modules/kb-generator/kb-generator-design-build-instructions)
+- [aiConnected webinar](/docs/knowledge-base/aiconnected-apps-and-modules/modules/aiconnected-webinar)
+- [legacy funnelChat overview](/docs/knowledge-base/aiconnected-apps-and-modules/modules/funnelChat/legacy-funnelChat-overview)
+- [legacy funnelChat PRD](/docs/knowledge-base/aiconnected-apps-and-modules/modules/funnelChat/legacy-funnelChat-prd)
+
+## aiConnected Memory
+
+The module overview positions Memory as a persistent, model-agnostic memory layer with APIs and MCP tools for long-term recall, hierarchical retrieval, and unlimited historical context.
+
+Required implementation domains:
+
+- Memory write and retrieval APIs
+- Recall file creation and archive management
+- Knowledge graph and vector-search coordination
+- Integration contracts for chat, IDE, voice, and workflow clients
+
+This module overlaps with the aiConnectedOS memory pages because the repository treats Memory as both a platform capability and a product in its own right.
+
+## KB Generator
+
+KB Generator is documented as a structured knowledge-generation module aimed at turning business inputs into AI-ready training assets.
+
+Required implementation domains:
+
+- Intake form or onboarding capture
+- Field-level validation against the documented field reference
+- Prompt assembly and generation workflows
+- Template generation and export
+- Integration-ready output for downstream AI systems
+
+The field-reference doc should be treated as the schema authority for the input model.
+
+## aiConnected Webinar
+
+The webinar module is documented as an event and follow-up automation product.
+
+Required implementation domains:
+
+- Webinar scheduling
+- Registration capture
+- Reminder and follow-up automation
+- Attendee chat or support interactions
+- Post-event lead enrichment and CRM handoff
+
+The original engines doc also describes webinar automation as part of the aiConnected product family.
+
+## funnelChat
+
+funnelChat appears in the repo as an earlier chat and lead-capture concept that still provides useful ancestry for the platform's sales-chat design.
+
+Required implementation domains:
+
+- Website chat engagement
+- Lead qualification
+- Training prompt management
+- CRM routing and conversation flow logic
+- Session analytics or insights
+
+Treat funnelChat as legacy reference material rather than the current authoritative chat module contract. The modern Chat and Contact Forms pages should take precedence when they conflict.
+
+## Use in platform planning
+
+These modules matter for completeness because they expand the documented aiConnected product surface. They are also useful when you need to preserve legacy ideas during a staged rebuild.

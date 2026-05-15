@@ -1,0 +1,101 @@
+---
+title: "Shared entities"
+description: "The shell-owned data model that every aiConnected module is expected to share."
+---
+## Contract status
+
+`Canonical interface contract`
+
+The shared shell entities are called out directly in the MVP spec, the shell notes, and the v2 port map.
+
+## Source documents
+
+- [aiConnected Platform MVP specification](/docs/knowledge-base/aiconnected-business-platform/aiconnected-platform-v1-mvp-specification)
+- [What is the platform shell](/docs/knowledge-base/aiconnected-business-platform/what-is-the-platform-shell)
+- [aiConnected Platform v2 port map](/docs/knowledge-base/aiconnected-business-platform/aiconnected-platform-v2-port-map)
+
+## Shell-owned entities
+
+These entities belong to the shell and should not be duplicated per module:
+
+| Entity | Role |
+|---|---|
+| `workspaces` | Unified tenant record replacing separate agency and business concepts at the schema layer |
+| `contacts` | Universal person or lead record shared across modules |
+| `users` | Platform identities |
+| `events` | Shared event log and inter-module bus history |
+| `module_registry` | Installed modules and declared capability contracts |
+| `themes` | White-label visual configuration |
+| `layout_definitions` | Screen and layout metadata |
+| `module_installations` | Which workspaces have which modules enabled |
+| `billing_accounts` | Billing ownership and platform tax context |
+| `subscriptions` | Plan and module subscription state |
+
+## Module-owned tables
+
+The v2 port map provides concrete examples of module tables:
+
+| Module | Example module-owned tables |
+|---|---|
+| Voice | `voice_calls`, `voice_profiles`, `transcripts` |
+| Chat | `chat_conversations`, `chat_messages`, `chat_configs` |
+| Knowledge | `kb_entries`, `kb_projects` |
+| Contact Forms | `contact_forms`, `contact_submissions` |
+
+A module may read shared entities. It must write its private data to its own namespace.
+
+## Contacts as the common operating object
+
+`contacts` is the most important shared entity because multiple modules need to collaborate on the same person:
+
+- Chat creates or enriches a lead.
+- Contact Forms converts a submission into a lead record.
+- Voice logs call results against the same person.
+- LogicLegal can qualify and enrich legal-intake prospects.
+- Sales-facing features monitor engagement around the same contact lifecycle.
+
+## Required contact fields
+
+The repository does not publish one final schema, but a platform-ready `contacts` entity should support:
+
+- Stable contact ID
+- Workspace ownership
+- Name and organization
+- Phone and email
+- Channel provenance
+- Qualification status
+- Lead score or warmth
+- Consent or communication preferences
+- Cross-module metadata pointers
+
+## Event log expectations
+
+The `events` table or service must support:
+
+- Event name
+- Producing module
+- Workspace scope
+- Contact scope when applicable
+- Actor context
+- Payload
+- Timestamp
+- Delivery or processing state
+
+This is the interconnection layer the MVP spec describes for call completion, knowledge updates, lead capture, and future automation.
+
+## Data ownership rules
+
+- Shell entities define the common platform language.
+- Modules own their module tables and migrations.
+- Modules do not reach into one another's private storage.
+- Shared reads happen through shell entities or declared gateway contracts.
+- Cross-module reactions happen through emitted events.
+
+## Implementation checkpoints
+
+Before you build a module, verify:
+
+1. The module can resolve workspace and contact context.
+2. The module can emit typed events into the shared log.
+3. Another module can consume those events without private-table access.
+4. Theme and layout context can be applied without module-specific hacks.

@@ -1,0 +1,589 @@
+---
+title: "Neurigraph Hyperthyme — 7 Day Prototype Build Plan"
+description: "Purpose: Complete implementation spec for vibe coding with Claude Code and ChatGPT Codex Timeline: 7 days Output: A working personal memory system with visua..."
+---
+<Info>
+Normalized for Mintlify from `knowledge-base/neurigraph-memory-architecture/neurigraph-build-plan.mdx`.
+</Info>
+# Neurigraph Hyperthyme — 7-Day Prototype Build Plan
+
+**Author:** Oxford Pierpont
+**Purpose:** Complete implementation spec for vibe-coding with Claude Code and ChatGPT Codex
+**Timeline:** 7 days
+**Output:** A working personal memory system with visual graph UI and MCP integration
+
+---
+
+## What We're Building
+
+A persistent AI memory system with three axes:
+
+- **X-axis (Breadth):** A two-layer navigable knowledge graph. Layer 1 = broad topic nodes (e.g., "Medical", "Sales", "AI Projects"). Layer 2 = focused sub-topic nodes within each broad topic (e.g., under "Medical": conditions, medications, hospitalizations, diet, exercise, metrics).
+- **Y-axis (Depth):** Each focused node is a gateway to a database of conversation chunks. Each chunk contains the full transcript (~50K tokens), an AI-generated summary, extracted keywords, timestamps, and links to any generated artifacts/files.
+- **Z-axis (Time):** Memory temperature. Recently accessed chunks are "hot" (uncompressed, cached). Older chunks go "warm" then "cold" (compressed, slower access). Accessing any node "warms" connected nodes across the graph, preemptively decompressing them.
+
+The system is accessed two ways:
+1. **Web UI** — for the human to browse, search, and manage memories visually
+2. **MCP Server** — for any AI (Claude, ChatGPT, Gemini) to query and push memories during conversation
+
+---
+
+## Architecture Overview
+
+```
+┌──────────────────────────────────────────────────────┐
+│                    WEB UI (React)                      │
+│                                                        │
+│  ┌────────────┐  ┌────────────┐  ┌─────────────────┐  │
+│  │ Broad Graph │→│Focused Graph│→│  Memory Feed     │  │
+│  │ (d3-force)  │  │ (d3-force) │  │  (Card Layout)  │  │
+│  └────────────┘  └────────────┘  └─────────────────┘  │
+│                                                        │
+│  ┌─────────────────────────────────────────────────┐   │
+│  │              Global Search Bar                   │   │
+│  └─────────────────────────────────────────────────┘   │
+└──────────────────────┬───────────────────────────────┘
+                       │ HTTP API
+                       ▼
+┌──────────────────────────────────────────────────────┐
+│               BACKEND API (FastAPI)                    │
+│                                                        │
+│  ┌──────────┐ ┌──────────┐ ┌───────────┐ ┌────────┐  │
+│  │  Graph   │ │  Memory  │ │  Search   │ │ Temp   │  │
+│  │  Manager │ │  Store   │ │  Engine   │ │ Manager│  │
+│  └──────────┘ └──────────┘ └───────────┘ └────────┘  │
+└──────────────────────┬───────────────────────────────┘
+                       │
+          ┌────────────┼────────────┐
+          ▼            ▼            ▼
+    ┌──────────┐ ┌──────────┐ ┌──────────┐
+    │  SQLite  │ │ ChromaDB │ │Filesystem│
+    │ (graph + │ │ (vector  │ │ (recall  │
+    │ metadata)│ │  search) │ │  files)  │
+    └──────────┘ └──────────┘ └──────────┘
+
+┌──────────────────────────────────────────────────────┐
+│              MCP SERVER (FastMCP)                      │
+│                                                        │
+│  Tools: search_memory, save_conversation,              │
+│         get_context, list_topics, warm_node,           │
+│         get_recall_file, push_chunk                    │
+│                                                        │
+│  (Wraps the same Backend API)                          │
+└──────────────────────────────────────────────────────┘
+```
+
+---
+
+## Tech Stack
+
+### Backend
+- **Python 3.11+**
+- **FastAPI** — REST API for the web UI
+- **FastMCP** — MCP server for AI integration
+- **SQLite** — knowledge graph (nodes, edges), metadata, access tracking, temperature states
+- **ChromaDB** — local vector database for semantic search over summaries
+- **gzip** — compression for cold storage chunks
+- **An LLM API call** (Claude or OpenAI) — for generating summaries and extracting keywords when saving chunks
+
+### Frontend
+- **React 18+ with Next.js** or **Vite**
+- **TypeScript**
+- **Tailwind CSS**
+- **react-force-graph-2d** — interactive draggable graph visualization
+- **shadcn/ui** — card components, search bar, buttons, tabs, layouts
+- **Lucide icons**
+
+### File Structure
+```
+neurigraph/
+├── backend/
+│   ├── main.py                 # FastAPI app entry point
+│   ├── graph_manager.py        # Knowledge graph CRUD (SQLite)
+│   ├── memory_store.py         # Conversation chunk storage + recall files
+│   ├── search_engine.py        # Keyword + vector search cascade
+│   ├── temperature_manager.py  # Hot/warm/cold state + warming logic
+│   ├── summarizer.py           # LLM-based summary + keyword extraction
+│   ├── mcp_server.py           # FastMCP server wrapping the API
+│   ├── models.py               # Pydantic models / data schemas
+│   ├── database.py             # SQLite + ChromaDB initialization
+│   └── config.py               # Settings, paths, thresholds
+├── frontend/
+│   ├── src/
+│   │   ├── app/                # Next.js pages or Vite routes
+│   │   ├── components/
+│   │   │   ├── BroadGraph.tsx       # Layer 1 force graph
+│   │   │   ├── FocusedGraph.tsx     # Layer 2 force graph
+│   │   │   ├── MemoryFeed.tsx       # Card-based memory browser
+│   │   │   ├── MemoryCard.tsx       # Individual memory chunk card
+│   │   │   ├── SearchBar.tsx        # Global search
+│   │   │   ├── NodeDetail.tsx       # Node info sidebar
+│   │   │   └── ViewToggle.tsx       # Feed / Table / Tree view switch
+│   │   ├── lib/
+│   │   │   └── api.ts               # Backend API client
+│   │   └── styles/
+│   ├── package.json
+│   └── tailwind.config.js
+├── data/
+│   ├── neurigraph.db           # SQLite database
+│   ├── chroma/                 # ChromaDB persistent storage
+│   └── recall-files/           # Markdown transcripts + artifacts
+│       └── {topic}-{date}/
+│           ├── transcript.md
+│           ├── summary.md
+│           ├── keywords.txt
+│           └── artifacts/
+├── requirements.txt
+├── package.json
+└── README.md
+```
+
+---
+
+## Database Schema (SQLite)
+
+### Tables
+
+```sql
+-- Layer 1: Broad topic nodes
+CREATE TABLE broad_nodes (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    description TEXT,
+    color TEXT DEFAULT '#6366f1',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    last_accessed TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    access_count INTEGER DEFAULT 0
+);
+
+-- Layer 2: Focused sub-topic nodes
+CREATE TABLE focused_nodes (
+    id TEXT PRIMARY KEY,
+    broad_node_id TEXT NOT NULL REFERENCES broad_nodes(id),
+    name TEXT NOT NULL,
+    description TEXT,
+    color TEXT DEFAULT '#8b5cf6',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    last_accessed TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    access_count INTEGER DEFAULT 0
+);
+
+-- Edges between focused nodes (cross-connections)
+CREATE TABLE node_edges (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    source_node_id TEXT NOT NULL,
+    target_node_id TEXT NOT NULL,
+    relationship TEXT,         -- e.g., "related_to", "depends_on", "see_also"
+    weight REAL DEFAULT 1.0,   -- strength of connection (used for warming)
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(source_node_id, target_node_id)
+);
+
+-- Memory chunks (Y-axis depth)
+CREATE TABLE memory_chunks (
+    id TEXT PRIMARY KEY,
+    focused_node_id TEXT NOT NULL REFERENCES focused_nodes(id),
+    summary TEXT NOT NULL,
+    keywords TEXT NOT NULL,          -- comma-separated
+    token_count INTEGER,
+    recall_file_path TEXT NOT NULL,  -- path to transcript.md
+    artifacts_path TEXT,             -- path to artifacts/ folder
+    source_model TEXT,               -- "claude", "chatgpt", "gemini", etc.
+    temperature TEXT DEFAULT 'hot',  -- "hot", "warm", "cold"
+    is_compressed BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    last_accessed TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    access_count INTEGER DEFAULT 0
+);
+
+-- Access log (for warming algorithm)
+CREATE TABLE access_log (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    node_id TEXT NOT NULL,
+    node_type TEXT NOT NULL,         -- "broad", "focused", "chunk"
+    accessed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+---
+
+## API Endpoints (FastAPI)
+
+### Graph Management
+```
+GET    /api/graph/broad                    # List all broad nodes
+POST   /api/graph/broad                    # Create a broad node
+GET    /api/graph/broad/{id}/focused       # List focused nodes for a broad node
+POST   /api/graph/broad/{id}/focused       # Create a focused node under a broad node
+GET    /api/graph/focused/{id}             # Get focused node details + connections
+POST   /api/graph/edges                    # Create edge between focused nodes
+GET    /api/graph/edges/{node_id}          # Get all edges for a node
+```
+
+### Memory Operations
+```
+GET    /api/memory/{focused_node_id}           # List memory chunks (paginated, sorted)
+GET    /api/memory/chunk/{chunk_id}            # Get full chunk (decompress if cold)
+POST   /api/memory/{focused_node_id}/push      # Push a new conversation chunk
+DELETE /api/memory/chunk/{chunk_id}             # Delete a memory chunk
+```
+
+### Search
+```
+GET    /api/search?q={query}                   # Global search across all memories
+GET    /api/search?q={query}&scope={node_id}   # Scoped search within a node
+```
+
+### Temperature
+```
+GET    /api/temperature/status                 # Current temperature states
+POST   /api/temperature/warm/{node_id}         # Manually warm a node + connected nodes
+POST   /api/temperature/maintenance            # Run cooling cycle (called on schedule)
+```
+
+---
+
+## MCP Server Tools
+
+These are the tools exposed via FastMCP that any AI can call:
+
+```python
+@mcp.tool()
+async def search_memory(query: str, scope: str = None) -> str:
+    """Search across all memories. Returns ranked results with summaries.
+    Optionally scope to a specific broad or focused node ID."""
+
+@mcp.tool()
+async def save_conversation(
+    content: str,
+    broad_topic: str,
+    focused_topic: str,
+    source_model: str = "unknown"
+) -> str:
+    """Save a conversation chunk. Auto-generates summary and keywords.
+    Creates broad/focused nodes if they don't exist."""
+
+@mcp.tool()
+async def get_context(broad_topic: str = None, focused_topic: str = None) -> str:
+    """Retrieve relevant context for the current conversation.
+    Returns summaries from matching nodes. Warms connected nodes."""
+
+@mcp.tool()
+async def list_topics() -> str:
+    """List all broad topics and their focused sub-topics.
+    Returns the full graph structure."""
+
+@mcp.tool()
+async def get_recall_file(chunk_id: str) -> str:
+    """Retrieve the full transcript for a specific memory chunk.
+    Decompresses if the chunk is cold."""
+
+@mcp.tool()
+async def push_chunk(
+    focused_node_id: str,
+    transcript: str,
+    artifacts: list[str] = None
+) -> str:
+    """Push a new conversation chunk to a specific focused node.
+    Generates summary, extracts keywords, creates recall file."""
+
+@mcp.tool()
+async def warm_node(node_id: str) -> str:
+    """Manually warm a node and its connected nodes.
+    Decompresses cold chunks and caches them."""
+```
+
+---
+
+## Key Implementation Details
+
+### Summary + Keyword Generation (summarizer.py)
+
+When a conversation chunk is saved, make one LLM API call to generate:
+1. A 100-300 word summary
+2. 10-30 keywords/phrases
+3. A suggested topic classification (if broad/focused nodes don't exist yet)
+
+```python
+SUMMARIZE_PROMPT = """Analyze the following conversation transcript and return JSON:
+{
+  "summary": "A 100-300 word summary capturing the key points, decisions, and outcomes",
+  "keywords": ["keyword1", "keyword2", ...],
+  "suggested_broad_topic": "One or two word broad category",
+  "suggested_focused_topic": "More specific sub-topic"
+}
+
+TRANSCRIPT:
+{transcript}
+"""
+```
+
+### Search Cascade (search_engine.py)
+
+The search follows this order (fast → slow, narrow → broad):
+
+1. **Keyword match** — exact match against keywords.txt in SQLite (fastest)
+2. **Vector search** — semantic match against summaries in ChromaDB
+3. **Full-text search** — search inside transcripts if top results aren't confident enough
+
+Each step returns scored results. Merge and rank by combined score.
+
+```python
+async def search(query: str, scope: str = None) -> list[SearchResult]:
+    # Step 1: Keyword search (fast, exact)
+    keyword_results = await keyword_search(query, scope)
+
+    # Step 2: Vector search on summaries (semantic)
+    vector_results = await chroma_search(query, scope, n_results=20)
+
+    # Step 3: Merge and rank
+    combined = merge_results(keyword_results, vector_results)
+
+    # Step 4: If confidence is low, do full-text transcript search
+    if combined[0].score < 0.7:
+        transcript_results = await fulltext_search(query, scope)
+        combined = merge_results(combined, transcript_results)
+
+    return combined[:10]
+```
+
+### Temperature Management (temperature_manager.py)
+
+Run on a timer (every hour or on-demand):
+
+```python
+# Cooling rules:
+# - Not accessed in 1 hour  → warm (still uncompressed, just deprioritized)
+# - Not accessed in 7 days  → cold (transcript gzipped, only summary/keywords indexed)
+# - Not accessed in 30 days → deep cold (artifacts also compressed)
+
+# Warming rules:
+# - When node X is accessed, find all edges from node X
+# - For each connected node Y with weight W:
+#     - If Y is cold and W > 0.5: warm Y (decompress transcript)
+#     - If Y is cold and W <= 0.5: leave cold but pre-cache summary
+# - Warming is async / non-blocking
+```
+
+### Recall File Creation (memory_store.py)
+
+When a chunk is saved:
+
+```python
+async def create_recall_file(focused_node_id, transcript, summary, keywords, artifacts=None):
+    # Generate folder name
+    node = get_focused_node(focused_node_id)
+    date = datetime.now().strftime("%Y-%m-%d")
+    slug = slugify(node.name)
+    folder = f"data/recall-files/{slug}-{date}-{uuid4().hex[:6]}"
+
+    os.makedirs(folder, exist_ok=True)
+
+    # Write files
+    write_file(f"{folder}/transcript.md", transcript)
+    write_file(f"{folder}/summary.md", summary)
+    write_file(f"{folder}/keywords.txt", "\n".join(keywords))
+
+    if artifacts:
+        os.makedirs(f"{folder}/artifacts", exist_ok=True)
+        for artifact in artifacts:
+            copy_to(artifact, f"{folder}/artifacts/")
+
+    # Embed summary in ChromaDB
+    chroma_collection.add(
+        documents=[summary],
+        metadatas=[{"focused_node_id": focused_node_id, "chunk_id": chunk_id}],
+        ids=[chunk_id]
+    )
+
+    return folder
+```
+
+---
+
+## Frontend Components
+
+### BroadGraph.tsx
+- Uses `react-force-graph-2d`
+- Fetches `GET /api/graph/broad` on mount
+- Each node is a circle with the topic name
+- Clicking a node navigates to `FocusedGraph` for that broad topic
+- Drag to rearrange, scroll to zoom
+
+### FocusedGraph.tsx
+- Same graph library
+- Fetches `GET /api/graph/broad/{id}/focused`
+- Shows sub-topic nodes + edges between them
+- Clicking a node navigates to `MemoryFeed`
+- Back button returns to BroadGraph
+
+### MemoryFeed.tsx
+- Fetches `GET /api/memory/{focused_node_id}`
+- Renders a scrollable list of `MemoryCard` components
+- Sort by: date (newest first), access count, temperature
+- Filter by: keyword, date range, source model
+
+### MemoryCard.tsx
+- Card layout with:
+  - **Header:** date, source model badge, temperature indicator (🔴 hot / 🟡 warm / 🔵 cold)
+  - **Body:** summary text (always visible)
+  - **Expandable:** full transcript (lazy-loaded on click)
+  - **Footer:** keyword pills, artifact links, access count
+- Styled with shadcn/ui Card component + Tailwind
+
+### SearchBar.tsx
+- Always visible at top of page
+- Calls `GET /api/search?q={query}` with debounce
+- Results appear in a dropdown showing: matching summary snippet, node path (Broad &gt; Focused), relevance score
+- Clicking a result navigates to that chunk in context
+
+### ViewToggle.tsx
+- Toggles between: Feed (default), Table, and Tree views
+- Feed = MemoryCard list
+- Table = sortable columns (date, topic, summary, keywords, temperature)
+- Tree = file-system-like expandable tree (Broad &gt; Focused &gt; Chunks)
+
+---
+
+## 7-Day Build Schedule
+
+### Day 1 — Foundation + Data Layer
+**Assign to: Claude Code**
+
+- [ ] Initialize project (Python backend, React frontend)
+- [ ] Set up SQLite database with full schema
+- [ ] Implement `graph_manager.py` — CRUD for broad nodes, focused nodes, edges
+- [ ] Implement `models.py` — Pydantic schemas for all entities
+- [ ] Write seed data script with 3-4 example broad topics and 5-6 focused nodes each
+- [ ] Verify: Can create, read, update, delete graph nodes via Python
+
+### Day 2 — Memory Storage + Recall Files
+**Assign to: Claude Code**
+
+- [ ] Implement `memory_store.py` — create/read/delete memory chunks
+- [ ] Implement `summarizer.py` — LLM call to generate summary + keywords
+- [ ] Implement recall file creation (transcript.md, summary.md, keywords.txt)
+- [ ] Set up ChromaDB — embed summaries on save, query on search
+- [ ] Implement `search_engine.py` — keyword search + vector search + merge
+- [ ] Verify: Can save a conversation chunk, search for it, get it back
+
+### Day 3 — Temperature System + API
+**Assign to: Claude Code**
+
+- [ ] Implement `temperature_manager.py` — cooling cycle, warming logic
+- [ ] Implement gzip compression/decompression for cold chunks
+- [ ] Implement cross-node warming (access node → warm connected nodes)
+- [ ] Build FastAPI app (`main.py`) — all API endpoints listed above
+- [ ] Add CORS middleware for frontend
+- [ ] Verify: API is running, all endpoints return correct data
+
+### Day 4 — MCP Server
+**Assign to: Claude Code**
+
+- [ ] Implement `mcp_server.py` using FastMCP
+- [ ] Wire all 7 MCP tools to the backend API functions
+- [ ] Test with Claude Desktop or Claude Code: `search_memory`, `save_conversation`, `get_context`
+- [ ] Verify: Can have a conversation with Claude, save it via MCP, then retrieve it in a new conversation
+
+### Day 5 — Frontend: Graph Views
+**Assign to: Codex (or Claude Code)**
+
+- [ ] Scaffold React app (Vite + Tailwind + shadcn/ui)
+- [ ] Build `BroadGraph.tsx` — force-directed graph of broad topics
+- [ ] Build `FocusedGraph.tsx` — drill-down graph for a selected broad topic
+- [ ] Build navigation flow: Broad → Focused → (placeholder for feed)
+- [ ] Build `SearchBar.tsx` — global search with results dropdown
+- [ ] Verify: Can click through the graph hierarchy, search returns results
+
+### Day 6 — Frontend: Memory Feed + Views
+**Assign to: Codex (or Claude Code)**
+
+- [ ] Build `MemoryFeed.tsx` — scrollable card list for a focused node
+- [ ] Build `MemoryCard.tsx` — summary, expandable transcript, keywords, artifacts
+- [ ] Build `ViewToggle.tsx` — switch between Feed / Table / Tree
+- [ ] Build Table view (sortable data table with shadcn/ui)
+- [ ] Wire everything to the backend API
+- [ ] Verify: Full click-through from graph → feed → expanded memory works
+
+### Day 7 — Polish, Test, Integrate
+**Assign to: Both**
+
+- [ ] End-to-end test: Save a real conversation via MCP → browse it in the web UI
+- [ ] Test the warming system: access a node, verify connected nodes warm up
+- [ ] Test cold storage: wait for cooling cycle, verify compression, verify retrieval still works
+- [ ] Fix bugs, improve styling, handle edge cases (empty states, errors)
+- [ ] Write a basic README with setup instructions
+- [ ] Verify: The whole system works for daily personal use
+
+---
+
+## How to Hand This to Claude Code
+
+Copy this prompt for each day's work:
+
+```
+I'm building Neurigraph, a persistent AI memory system. Here is the full build plan:
+[paste this document or reference it]
+
+Today is Day [N]. Please implement everything listed under Day [N].
+
+The project structure is:
+[paste the file structure section]
+
+The database schema is:
+[paste the schema section]
+
+Start by creating any files that don't exist yet, then implement the functionality.
+Test everything before moving on.
+```
+
+## How to Hand This to Codex
+
+For the frontend days (5-6), give Codex:
+
+```
+Build a React frontend for a memory management system called Neurigraph.
+
+Tech stack: Vite + React 18 + TypeScript + Tailwind CSS + shadcn/ui + react-force-graph-2d
+
+The backend API is at http://localhost:8000 with these endpoints:
+[paste the API endpoints section]
+
+Build these components:
+[paste the Frontend Components section]
+
+The UX flow is:
+1. User sees a draggable force-directed graph of broad topic nodes
+2. Clicking a broad node shows a second force-directed graph of focused sub-topic nodes
+3. Clicking a focused node shows a scrollable feed of memory cards
+4. Each card shows: date, summary, expandable transcript, keyword pills, artifact links
+5. A global search bar is always visible at the top
+6. User can toggle between Feed, Table, and Tree views
+```
+
+---
+
+## Success Criteria
+
+At the end of 7 days, you should be able to:
+
+1. **Browse your memory visually** — click through the graph, see all your stored conversations organized by topic
+2. **Search across everything** — type a query, get ranked results from any topic
+3. **Save conversations automatically** — via MCP, any AI you talk to can push conversation chunks to the right node
+4. **Retrieve context in new conversations** — ask an AI about something you discussed weeks ago, and it finds the relevant memory
+5. **See the temperature system working** — recent memories are hot, old ones go cold, accessing one warms its neighbors
+
+---
+
+## Future Phases (Not in This Sprint)
+
+- Cross-model live conversation sharing
+- Mobile app (React Native)
+- Defining Memories (milestone/decision detection)
+- Multi-user support
+- End-to-end encryption
+- aiConnected OS persona integration
+- Sending specific memories to conversations from the web UI
+- File tree and 2D scrollable alternative views

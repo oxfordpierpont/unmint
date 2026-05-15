@@ -1,0 +1,478 @@
+---
+title: "Platform v1 Context"
+---
+# aiConnected v2 Core Shell — Completeness Pack
+Version: `1.0`  
+Date: `2026-03-26`  
+Status: `Implementation-Ready Draft (Pending Quality Gates)`  
+Owners: `Product + Architecture + Engineering`
+
+## Table of Contents
+1. [Purpose and Authority](#1-purpose-and-authority)
+2. [Program Boundary Addendum](#2-program-boundary-addendum)
+3. [v1 Parity Replication Matrix](#3-v1-parity-replication-matrix)
+4. [Schema + RLS Specification Pack](#4-schema--rls-specification-pack)
+5. [Contract Pack (OpenAPI + Canonical Types)](#5-contract-pack-openapi--canonical-types)
+6. [Event + Gateway Operational Semantics](#6-event--gateway-operational-semantics)
+7. [Billing Enforcement State Machine](#7-billing-enforcement-state-machine)
+8. [NFR + Security Control Pack](#8-nfr--security-control-pack)
+9. [Cutover and Validation Runbook](#9-cutover-and-validation-runbook)
+10. [Master Acceptance Matrix](#10-master-acceptance-matrix)
+11. [Quality Gates](#11-quality-gates)
+12. [Implementation-Ready Gate](#12-implementation-ready-gate)
+13. [Appendix A — Source References](#13-appendix-a--source-references)
+
+---
+
+## 1. Purpose and Authority
+This Completeness Pack is the implementation-readiness companion to the Core Shell PRD.  
+It closes remaining ambiguity for the **Shell phase** so Codex can build from a blank repo without product decisions during implementation.
+
+Authority rules:
+1. This document and the Shell PRD govern `Shell` phase behavior.
+2. The Layout Manager PRD governs Layout Manager internals; this pack governs shell integration boundaries.
+3. If a requirement conflicts with shell/module boundary, shell boundary wins and the requirement is deferred to a later phase.
+4. Shell must be fully operable with **zero modules installed**.
+
+---
+
+## 2. Program Boundary Addendum
+
+### 2.1 Phase Boundaries
+1. `Shell` phase: control-plane infrastructure only.
+2. `Modules` phase: first-party and imported module runtime/domain behavior.
+3. `Capabilities` phase: higher-order capability graph/composition features.
+
+### 2.2 Shell Done Definition
+Shell is considered done when:
+1. Super, Agency, Business workflows operate end-to-end.
+2. Tenancy, RBAC, branding, billing enforcement, layout lifecycle integration, module lifecycle infra, event bus, and gateway all work.
+3. No module business logic is present in shell code.
+4. Shell supports dynamic modules via contracts, while still functioning with none installed.
+
+### 2.3 Module-Absent Operating Mode (Required)
+1. Empty module registry does not break navigation or dashboards.
+2. Gateway returns deterministic errors:
+   - `MODULE_NOT_REGISTERED`
+   - `MODULE_NOT_ENABLED`
+3. Module admin UI shows actionable empty states.
+4. Event bus remains operational for shell-emitted events with no module subscribers.
+
+---
+
+## 3. v1 Parity Replication Matrix
+
+### 3.1 v1 Input Sources
+- `/Users/MrBobHunter-MacPro/Code/platform.sec-admn.com-2/docs/v1-audit/02-foundation-vs-apps.md`
+- `/Users/MrBobHunter-MacPro/Code/platform.sec-admn.com-2/docs/v1-audit/03a-auth-and-permissions.md`
+- `/Users/MrBobHunter-MacPro/Code/platform.sec-admn.com-2/docs/v1-audit/03b-module-manifest-system.md`
+- `/Users/MrBobHunter-MacPro/Code/platform.sec-admn.com-2/docs/v1-audit/03c-branding-and-theming.md`
+- `/Users/MrBobHunter-MacPro/Code/platform.sec-admn.com-2/docs/v1-audit/03f-db-client-server-patterns.md`
+- `/Users/MrBobHunter-MacPro/Code/platform.sec-admn.com-2/docs/v1-audit/07-multi-tenancy-clean-port-plan.md`
+
+### 3.2 Disposition Table
+| v1 behavior | Disposition | Reason | v2 owner package | Acceptance check |
+|---|---|---|---|---|
+| Role constants/group helpers (`permissions`) | Replicate now | Core shell RBAC primitive | `packages/permissions` | Unit tests for role/group helpers |
+| App-local route ACL maps | Retire | Drift risk, route coupling | `packages/permissions` + middleware | No route ACL hardcoding in page code |
+| Manifest normalization/validation/assessment (`app-sdk`) | Replicate now | Required module onboarding backbone | `packages/module-sdk` | Contract tests pass for valid/invalid manifests |
+| Hardcoded fallback module list in manifest layer | Retire | Must be registry-driven | `module_registry` data | Empty registry works cleanly |
+| Import assessment report concept | Replicate now | Operationally valuable for admins | `packages/module-sdk` + shell UI | Import attempt writes report record |
+| Deep internal imports (`@sec-admn/*/src/*`) | Retire | Boundary and version fragility | all packages | Static check fails on internal-path imports |
+| Supabase client/server/admin wrapper pattern | Replicate now | Proven shell utility pattern | `packages/db` | Auth/session tests pass |
+| Integration inheritance resolution pattern | Replicate now (genericized) | Strong tenancy behavior | `packages/db` + `packages/theme` | Inheritance tests for parent/child contexts |
+| Next-coupled shared DB internals | Rebuild | Keep behavior, reduce framework coupling | `packages/db` | Package APIs usable outside app routes |
+| Theme merge/default concept | Replicate now (tokenized) | Needed for white-label inheritance | `packages/theme` | Token inheritance + override tests |
+| Fragmented theming implementation | Retire | Must centralize token governance | `packages/theme` | Single token source of truth |
+| Tenancy context + impersonation behavior | Replicate now | Operator-critical shell behavior | `packages/permissions` + `packages/db` | Impersonation and scope tests |
+| Chat runtime logic in shell APIs/routes | Defer to Modules phase | Module domain logic | n/a | Shell has no chat business handlers |
+| KB pipeline/worker in shell | Defer to Modules phase | Module domain logic | n/a | Shell runs with no KB runtime |
+| Plasmic host/render integration | Retire | Not aligned with v2 shell principles | n/a | No Plasmic dependency in shell |
+| Duplicate `.jsx/.tsx` route pairs and `.old` files | Retire | Non-deterministic maintenance | repo hygiene | Zero duplicate legacy route variants |
+
+### 3.3 Parity Acceptance Rules
+1. Every `Replicate now` row has package ownership and automated validation.
+2. Every `Defer` row is absent in shell implementation.
+3. Every `Retire` row has an explicit replacement or removal rationale in docs.
+
+---
+
+## 4. Schema + RLS Specification Pack
+
+### 4.1 Migration Order
+1. `001_identities.sql`
+2. `002_workspaces.sql`
+3. `003_memberships_roles_permissions.sql`
+4. `004_themes.sql`
+5. `005_layouts.sql`
+6. `006_module_registry_installations.sql`
+7. `007_events_audit.sql`
+8. `008_billing.sql`
+9. `009_contacts.sql`
+10. `010_rls_policies.sql`
+11. `011_seed_role_templates.sql`
+
+### 4.2 Table-Level Specification
+| Table | Key columns | Constraints | Indexes | Primary writers | Primary readers |
+|---|---|---|---|---|---|
+| `users` | `id`, `auth_user_id`, `email`, `status` | `auth_user_id` unique | `email` | auth sync/system | self/admin/super |
+| `workspaces` | `id`, `type`, `parent_workspace_id`, `name`, `status` | parent self-FK | `(parent_workspace_id,type)` | super/agency admin | scoped members |
+| `workspace_memberships` | `id`, `workspace_id`, `user_id`, `role_template`, `active` | unique `(workspace_id,user_id)` | `workspace_id`, `user_id` | workspace admins | scoped members |
+| `roles` | `id`, `code`, `scope_type` | `code` unique | `code` | system seed | auth system |
+| `permissions` | `id`, `code` | `code` unique | `code` | system seed | auth system |
+| `role_permissions` | `role_id`, `permission_id` | unique pair | `role_id`, `permission_id` | system/admin | auth system |
+| `membership_permissions` | `membership_id`, `permission_id`, `allow` | unique pair | `membership_id` | workspace admins | auth system |
+| `themes` | `id`, `workspace_id`, `token_payload`, `version` | unique `(workspace_id,version)` | `(workspace_id,version desc)` | admins | shell render/settings |
+| `layout_definitions` | `id`, `workspace_id`, `surface_key`, `current_version_id` | unique `(workspace_id,surface_key)` | `(workspace_id,surface_key)` | layout manager | shell renderer/admin |
+| `layout_versions` | `id`, `layout_definition_id`, `version_num`, `state`, `tree_json` | unique `(layout_definition_id,version_num)` | `(layout_definition_id,state)` | layout manager | shell renderer/admin |
+| `module_registry` | `id`, `module_key`, `version`, `manifest_json`, `status` | unique `(module_key,version)` | `(module_key,status)` | super/system | module admin/gateway |
+| `module_installations` | `id`, `workspace_id`, `module_key`, `state`, `config_json` | unique `(workspace_id,module_key)` | `(workspace_id,state)` | admins | nav/gateway |
+| `billing_accounts` | `id`, `workspace_id`, `stripe_customer_id`, `status` | unique `workspace_id`, unique `stripe_customer_id` | `stripe_customer_id` | billing service | billing/admin |
+| `subscriptions` | `id`, `billing_account_id`, `stripe_sub_id`, `state`, `period_end` | unique `stripe_sub_id` | `(billing_account_id,state)` | billing service | enforcement/admin |
+| `events` | `id`, `workspace_id`, `event_name`, `payload_json`, `delivery_state`, `correlation_id` | append-only | `(workspace_id,event_name,occurred_at desc)`, `correlation_id` | shell/modules | subscribers/admin |
+| `audit_logs` | `id`, `workspace_id`, `actor_user_id`, `action`, `target_type`, `target_id`, `metadata_json`, `created_at` | append-only | `(workspace_id,created_at desc)`, `(actor_user_id,created_at desc)` | system only | admin/super |
+| `contacts` | `id`, `workspace_id`, `name`, `email`, `phone` | workspace scope | `(workspace_id,email)` | shell/module contracts | scoped users/modules |
+
+### 4.3 RLS Policy Baseline
+1. `workspaces`: member-scoped read, super full read/manage.
+2. `workspace_memberships`: workspace admins manage; users self-read membership rows.
+3. `themes`: `branding.edit` required for write, membership required for read.
+4. `layout_definitions/layout_versions`: `layouts.edit` for write; membership for read.
+5. `module_installations`: `modules.install|modules.enable|modules.disable` for write; membership for read.
+6. `billing_accounts/subscriptions`: `billing.manage` for write/read in scope; super override.
+7. `events`: emitter must be authenticated and scoped; reads scoped by workspace.
+8. `audit_logs`: write by trusted service role only; read by workspace admins and super.
+
+### 4.4 Tenancy and Integrity Invariants
+1. All mutable business rows are workspace-scoped unless explicitly global.
+2. Cross-workspace access is denied-by-default.
+3. `layout_versions` are immutable snapshots.
+4. `events` and `audit_logs` are append-only.
+5. Impersonation must not bypass workspace permission checks.
+
+### 4.5 Retention Policy (MVP)
+1. `events`: retain minimum 180 days online.
+2. `audit_logs`: retain minimum 365 days online.
+3. Archival beyond this window is operationally optional in MVP.
+
+---
+
+## 5. Contract Pack (OpenAPI + Canonical Types)
+
+### 5.1 Endpoint Families and Minimum Contracts
+| Domain | Endpoint | Purpose | Auth | Required permission |
+|---|---|---|---|---|
+| Auth | `POST /auth/sign-in` | start session | no | n/a |
+| Auth | `POST /auth/sign-out` | end session | yes | n/a |
+| Auth | `POST /auth/impersonation/start` | begin impersonation | yes | super scope |
+| Auth | `POST /auth/impersonation/stop` | stop impersonation | yes | super scope |
+| Workspaces | `POST /workspaces` | create top-level workspace | yes | scope admin |
+| Workspaces | `POST /workspaces/{id}/children` | create child business workspace | yes | agency admin |
+| Workspaces | `POST /workspaces/switch` | switch active workspace | yes | membership |
+| Memberships | `POST /memberships` | invite/add member | yes | `users.invite` |
+| Memberships | `PATCH /memberships/{id}` | role/state update | yes | `users.manage` |
+| Permissions | `GET /permissions/effective` | resolve effective ACL | yes | membership |
+| Themes | `GET /themes/current` | fetch effective theme | yes | membership |
+| Themes | `PUT /themes/current` | update theme tokens | yes | `branding.edit` |
+| Layouts | `POST /layouts/{id}/save` | save draft | yes | `layouts.edit` |
+| Layouts | `POST /layouts/{id}/preview` | preview draft | yes | `layouts.edit` |
+| Layouts | `POST /layouts/{id}/test` | validate/test draft | yes | `layouts.edit` |
+| Layouts | `POST /layouts/{id}/publish` | publish version | yes | `layouts.edit` + policy |
+| Layouts | `POST /layouts/{id}/rollback` | rollback publish | yes | `layouts.edit` + policy |
+| Modules | `POST /modules/import` | validate/register module package | yes | `modules.install` |
+| Modules | `POST /modules/{key}/install` | install in workspace | yes | `modules.install` |
+| Modules | `POST /modules/{key}/enable` | enable module | yes | `modules.enable` |
+| Modules | `POST /modules/{key}/disable` | disable module | yes | `modules.disable` |
+| Modules | `DELETE /modules/{key}/uninstall` | uninstall module | yes | `modules.install` |
+| Events | `POST /events` | emit event | yes | contract-based |
+| Events | `GET /events` | query events | yes | workspace scope |
+| Gateway | `ALL /gateway/{moduleKey}/{path...}` | proxy to module target | yes | auth+perm+billing+enabled |
+| Billing | `GET /billing/status` | entitlement status | yes | workspace admin |
+| Billing | `POST /billing/recovery` | recovery actions | yes | workspace admin |
+| Billing | `POST /billing/reconcile` | stripe reconciliation | yes | super/system |
+
+### 5.2 Canonical Types
+#### `WorkspaceContext`
+```json
+{
+  "user_id": "usr_123",
+  "active_workspace_id": "ws_abc",
+  "effective_role": "agency_admin",
+  "effective_permissions": ["users.invite", "modules.enable"],
+  "impersonation": {
+    "active": false,
+    "actor_user_id": null,
+    "target_workspace_id": null
+  }
+}
+```
+
+#### `EffectivePermissions`
+```json
+{
+  "workspace_id": "ws_abc",
+  "role_template": "agency_admin",
+  "grants": ["users.invite","users.manage","branding.edit","modules.enable"],
+  "overrides": [{"permission":"billing.manage","allow":false}]
+}
+```
+
+#### `ModuleManifest`
+```json
+{
+  "id": "voice-hub",
+  "name": "Voice Hub",
+  "version": "1.0.0",
+  "description": "Voice runtime",
+  "routes": ["/voice"],
+  "sidebar": {"label":"Voice","icon":"phone","position":3},
+  "required_permissions": ["modules.enable"],
+  "capabilities": {"inputs":[],"outputs":[]},
+  "required_shared_entities": ["contacts"],
+  "events_emitted": ["voice.call.completed"],
+  "events_consumed": ["contact.updated"],
+  "config_schema": {"type":"object","properties":{}},
+  "runtime_target": {"type":"http","base_url":"http://voice-hub:3000"}
+}
+```
+
+#### `ModuleInstallationState`
+```json
+{
+  "workspace_id": "ws_abc",
+  "module_key": "voice-hub",
+  "state": "enabled",
+  "installed_at": "2026-03-26T18:00:00Z",
+  "updated_at": "2026-03-26T18:10:00Z"
+}
+```
+
+#### `EventEnvelope`
+```json
+{
+  "event_id": "evt_01",
+  "workspace_id": "ws_abc",
+  "emitter": "shell",
+  "event_name": "workspace.theme.updated",
+  "payload": {"theme_version": 4},
+  "occurred_at": "2026-03-26T18:15:00Z",
+  "correlation_id": "corr_99"
+}
+```
+
+#### `GatewayForwardHeaders`
+```json
+{
+  "x-user-id": "usr_123",
+  "x-workspace-id": "ws_abc",
+  "x-module-key": "voice-hub",
+  "x-correlation-id": "corr_99",
+  "x-impersonation-active": "false"
+}
+```
+
+#### `BillingEntitlementState`
+```json
+{
+  "workspace_id": "ws_abc",
+  "state": "grace",
+  "effective_at": "2026-03-26T18:20:00Z",
+  "module_activation_allowed": false,
+  "module_usage_allowed": true,
+  "recovery_access_allowed": true
+}
+```
+
+### 5.3 Stable Error Model
+| Code | HTTP | Meaning |
+|---|---|---|
+| `AUTH_REQUIRED` | 401 | missing/invalid session |
+| `SESSION_INVALID` | 401 | session expired/invalidated |
+| `WORKSPACE_REQUIRED` | 400 | no active workspace context |
+| `WORKSPACE_FORBIDDEN` | 403 | workspace out of scope |
+| `PERMISSION_DENIED` | 403 | capability denied |
+| `IMPERSONATION_FORBIDDEN` | 403 | invalid impersonation action |
+| `MANIFEST_INVALID` | 422 | manifest fails schema/contract |
+| `MANIFEST_INCOMPATIBLE` | 422 | manifest conflicts with platform constraints |
+| `MODULE_NOT_REGISTERED` | 404 | unknown module key |
+| `MODULE_NOT_ENABLED` | 409 | module not enabled in workspace |
+| `MODULE_TARGET_UNHEALTHY` | 503 | runtime target unavailable |
+| `EVENT_SCHEMA_INVALID` | 422 | event payload/schema invalid |
+| `EVENT_DELIVERY_FAILED` | 502 | downstream delivery failed after retries |
+| `BILLING_REQUIRED` | 402 | no valid entitlement |
+| `BILLING_SUSPENDED` | 402 | entitlement suspended |
+| `VALIDATION_BLOCKING` | 422 | lifecycle blocked by validation |
+| `CONFLICT` | 409 | optimistic concurrency/version conflict |
+| `RATE_LIMITED` | 429 | request throttled |
+| `INTERNAL_ERROR` | 500 | server fault |
+
+---
+
+## 6. Event + Gateway Operational Semantics
+
+### 6.1 Event Delivery Behavior
+1. Ordering guarantee is scoped to `(workspace_id, stream_key)` only.
+2. Publisher must provide idempotency key for retry-safe writes.
+3. Retry policy: exponential backoff, max 5 attempts.
+4. Terminal failures go to dead-letter store with replay capability.
+5. Replay requires admin/super authorization in same workspace scope.
+6. Event envelope schema is validated pre-persist and pre-delivery.
+
+### 6.2 Event Authorization
+1. Emitter can publish only declared/allowed event names.
+2. Subscriber can consume only declared/allowed event names.
+3. Cross-workspace event reads are forbidden.
+4. All delivery attempts and failures are auditable.
+
+### 6.3 Gateway Forwarding Behavior
+1. Resolve module target from `module_installations + module_registry`.
+2. Apply pre-forward checks in this order:
+   - auth/session
+   - workspace scope
+   - permission
+   - billing entitlement
+   - module registered/enabled
+   - target health
+3. Forward trusted server-issued claims only.
+4. Default timeout 8s.
+5. Circuit breaker opens on repeated failures; shell returns `MODULE_TARGET_UNHEALTHY`.
+6. Every forward logs correlation id, target, and enforcement decision.
+
+### 6.4 Impersonation Protections
+1. Forwarded claims include actor/effective identity separation when impersonating.
+2. Module cannot self-assert identity.
+3. Client-supplied identity headers are stripped at gateway edge.
+
+---
+
+## 7. Billing Enforcement State Machine
+
+### 7.1 States
+1. `active`
+2. `past_due`
+3. `grace`
+4. `suspended`
+5. `canceled`
+
+### 7.2 Transition Rules
+1. `active -> past_due`: Stripe payment failure event.
+2. `past_due -> grace`: grace window begins.
+3. `grace -> suspended`: grace expiry without recovery.
+4. `past_due|grace|suspended -> active`: successful recovery payment.
+5. `suspended -> canceled`: explicit cancellation/termination.
+6. `active -> canceled`: explicit cancellation.
+
+### 7.3 Entitlement Effects
+| State | Module usage | New module activation | Recovery routes |
+|---|---|---|---|
+| `active` | allowed | allowed | allowed |
+| `past_due` | allowed (warn) | allowed (warn) | allowed |
+| `grace` | allowed (warn) | blocked | allowed |
+| `suspended` | blocked | blocked | allowed |
+| `canceled` | blocked | blocked | allowed (reactivation only) |
+
+### 7.4 Stripe Truth and Reconciliation
+1. Stripe webhooks are source of truth for billing events.
+2. Shell stores normalized entitlement snapshots.
+3. Reconciliation job repairs divergence and is idempotent.
+4. Every state transition writes `audit_logs`.
+
+---
+
+## 8. NFR + Security Control Pack
+
+### 8.1 MVP SLO Targets
+1. Auth guard decision p95 `< 200ms`.
+2. Workspace switch p95 `< 500ms`.
+3. Module route resolution p95 `< 300ms`.
+4. Gateway overhead p95 `< 150ms` (excluding module runtime time).
+5. Layout publish/rollback acknowledgment p95 `< 2s`.
+6. Event enqueue p95 `< 250ms`.
+
+### 8.2 Reliability Controls
+1. Publish and rollback are idempotent by operation key.
+2. Autosave recovery restores last valid layout draft after interruption.
+3. Audit log coverage for privileged actions is 100%.
+4. Dead-letter replay is safe and workspace-scoped.
+
+### 8.3 Security Controls
+1. Deny-by-default authorization.
+2. Server-side enforcement independent of UI.
+3. Impersonation requires explicit start/stop and audit events.
+4. Header trust boundary enforced at gateway.
+5. Cross-workspace access denied unless explicit super scope.
+
+---
+
+## 9. Cutover and Validation Runbook
+
+### 9.1 Blank-Repo Build Sequence
+1. Bootstrap monorepo + package boundaries.
+2. Implement auth/session and workspace context.
+3. Implement tenancy schema + RLS + permission core.
+4. Implement theme token system + inheritance.
+5. Implement module manifest validator + registry/install lifecycle.
+6. Implement event bus baseline.
+7. Implement gateway baseline.
+8. Integrate Layout Manager shell touchpoints.
+9. Implement billing entitlement enforcement.
+10. Run acceptance suite and dry-run audits.
+
+### 9.2 Environment Contracts
+1. `local`: developer auth + seed data + billing sandbox mode.
+2. `staging`: real webhook paths + production-like RLS + full acceptance tests.
+3. `prod`: strict secrets, audit retention enabled, alerting active.
+
+### 9.3 v1 Backfill Approach (Shell phase)
+1. Migrate shell-owned entities only.
+2. Do not migrate module domain records in shell phase.
+3. Rebuild module installation state from valid manifests.
+4. Preserve user/workspace/membership continuity.
+
+### 9.4 Go-Live Checklist
+1. All acceptance matrix rows passing.
+2. Billing transition tests passing in staging.
+3. Impersonation audit verified.
+4. Module-absent mode verified.
+5. Rollback drill completed and documented.
+
+---
+
+## 10. Master Acceptance Matrix
+
+| Requirement | Schema artifact | API contract | UI route | Enforcement rule | Automated test | Status |
+|---|---|---|---|---|---|---|
+| Super creates Agency workspace | `workspaces`,`workspace_memberships` | `POST /workspaces` | Super dashboard | role policy | integration | pending |
+| Agency creates Business child | `workspaces.parent_workspace_id` | `POST /workspaces/{id}/children` | Agency dashboard | scope check | integration | pending |
+| Workspace RBAC enforcement | roles/permissions tables | `GET /permissions/effective` | protected shell screens | middleware + RLS | unit+integration | pending |
+| Workspace switch | memberships + session context | `POST /workspaces/switch` | workspace switcher | membership required | e2e | pending |
+| Super impersonation | `audit_logs` | `/auth/impersonation/*` | super tools | super-only + scope | integration | pending |
+| Branding inheritance | `themes` | `/themes/current` | branding settings | `branding.edit` | integration | pending |
+| Layout draft/publish/rollback lifecycle | `layout_definitions`,`layout_versions` | `/layouts/*` | layout manager | `layouts.edit` + validators | e2e | pending |
+| Module import/validation | `module_registry` | `POST /modules/import` | module admin | manifest validator | contract tests | pending |
+| Module install/enable/disable/uninstall | `module_installations` | `/modules/{key}/*` | module admin | module permissions | integration | pending |
+| Dynamic nav from installs | install state | modules list APIs | shell nav | enabled-only filter | e2e | pending |
+| Event emit/query | `events` | `/events` | events monitor | schema + auth + workspace | integration | pending |
+| Gateway forwarding | registry+installs | `/gateway/{module}/{path}` | module shell entry | auth+perm+billing+enabled | integration | pending |
+| Billing state access gating | `billing_accounts`,`subscriptions` | `/billing/status` | billing settings | entitlement middleware | integration | pending |
+| Module-absent shell behavior | empty registry/installs | modules + gateway APIs | module admin/nav | graceful empty/error paths | e2e | pending |
+| Audit completeness | `audit_logs` | privileged endpoints | audit screen | system-only writes | integration | pending |
+| No module business logic in shell | package boundaries | n/a | all shell routes | architecture review gate | static+review | pending |
+
+---
+
+## 11. Quality Gates
+1. No unresolved `TBD` in shell-critical sections.
+2. Every endpoint family has request/response/error contracts.
+3. Every shell-owned entity has schema + RLS policy.
+4. Every v1 parity item has `replicate/defer/retire` disposition and acceptance method.
+5. Shell/module ownership is unambiguous to independent reviewer.
+
+---
+
+## 12. Implementation-Ready Gate
+Mark this pack `READY` only when:
+1. Quality gates all pass.
+2. Acceptance matrix has no unresolved ownership or contract gaps.
+3. Independent architecture review signs shell/module boundary conformance.
+4. Module-absent mode tests are green.

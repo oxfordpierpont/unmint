@@ -1,0 +1,21 @@
+---
+title: "Introduction"
+description: "Receive real-time event notifications from your aiConnected instance."
+---
+Webhooks allow your external systems to receive instant notifications when events occur inside aiConnected — a Persona completes a task, a message is delivered, a workflow errors, or a contact is created.
+
+## Supported events
+
+| Event | Description |
+|-------|-------------|
+| `persona.action.completed` | A Persona finished executing a task |
+| `message.sent` | An outbound message was dispatched |
+| `message.delivered` | Delivery confirmed by recipient server |
+| `message.bounced` | Message could not be delivered |
+| `contact.created` | A new contact was added to Audience |
+| `workflow.completed` | An n8n workflow run finished |
+| `workflow.failed` | An n8n workflow run errored |
+
+## Registering a webhook
+
+Navigate to **Settings → Webhooks** and add your endpoint URL. Select the events you want to receive and save. aiConnected will send a verification ping to confirm the endpoint is reachable.

@@ -1,0 +1,166 @@
+---
+title: "Platform v1 Audit — Save vs. Trash"
+---
+
+# Platform v1 Audit — Save vs. Trash
+**Assessed against v2 MVP requirements — March 2026**
+
+---
+
+## The Short Answer
+
+The apps are trash. The packages are gold.
+
+The v1 repo has two distinct layers: a set of shared `packages` containing real, working business logic — and a set of `apps` (platform, chat, kb-studio) containing a broken, inconsistent UI layer built without a coherent design system. The packages should be carried forward almost entirely. The apps should be rebuilt from scratch on shadcn/ui.
+
+This is actually good news. The hardest parts — the AI logic, the KB engine, the manifest system — are already built and working. What needs rebuilding is the shell and the UI presentation layer, which is time-consuming but straightforward.
+
+---
+
+## Package-by-Package Assessment
+
+---
+
+### `packages/kb-engine` — **SAVE ENTIRELY**
+
+This is the most valuable thing in the repo. It is the brain of the Knowledge Base Generator module and it is substantive, working code.
+
+| File | Lines | What it does | Status |
+|---|---|---|---|
+| `scraper.js` | 161 | Website crawler via Crawl4AI — crawls, batches, follows internal links | Save |
+| `researcher.js` | 172 | Takes raw service data and generates comprehensive educational content via AI | Save |
+| `compiler.js` | 338 | Compiles scraped + researched content into a structured KB | Save |
+| `extractor.js` | 99 | Extracts structured service/business data from raw page content | Save |
+| `generate.js` | 138 | Orchestrates the full KB generation pipeline | Save |
+| `ai.js` | 266 | AI inference layer (chatJSON, structured responses) | Save |
+| `runtime.js` | 487 | KB runtime — handles queries, retrieval, context assembly | Save |
+| `system-prompt.js` | 111 | Generates KB-aware system prompts for AI interactions | Save |
+| `starters.js` | 95 | Conversation starter generation from KB content | Save |
+| `concern-mapper.js` | 109 | Maps customer concerns to KB content sections | Save |
+| `quiz.js` | 151 | Service qualification quiz logic | Save |
+
+**v2 action:** Port as the `kb-engine` module package. The logic is correct. Wrap it in the v2 module manifest format. The UI that presents it gets rebuilt in shadcn — the engine underneath does not change.
+
+---
+
+### `packages/chat-core` — **SAVE ENTIRELY**
+
+Over 3,000 lines of chat AI logic. This is the engine that powers conversations, lead capture, structured responses, and runtime configuration. None of it is UI — it is all pure logic.
+
+| File | Lines | What it does | Status |
+|---|---|---|---|
+| `runtime-config.js` | 1,092 | Full chat configuration model — every setting, validation, default | Save |
+| `lead-capture.js` | 987 | Lead form templates, field types, capture logic | Save |
+| `lead-delivery.js` | 436 | Delivers captured leads to configured destinations | Save |
+| `knowledge.js` | 135 | Connects chat runtime to KB for context retrieval | Save |
+| `ai-config.js` | 150 | AI model configuration, provider routing | Save |
+| `system-prompt.js` | 110 | Chat system prompt assembly | Save |
+| `structured-response.js` | 67 | Formats AI responses into structured card/message format | Save |
+| `rate-limit.js` | 107 | Rate limiting logic | Save |
+| `composio.js` | 289 | Composio integration layer | Save — review for v2 adapter pattern |
+
+**v2 action:** Port as the `chat-core` package. Same approach as kb-engine — logic stays, UI gets rebuilt.
+
+---
+
+### `packages/permissions` — **SAVE ENTIRELY**
+
+The role and permission system is clean, correct, and already maps exactly to the v2 user type model.
+
+```
+SUPER_ADMIN / SUPER_ADMIN_STAFF
+AGENCY_ADMIN / AGENCY_STAFF
+BUSINESS_ADMIN / BUSINESS_STAFF
+```
+
+Role groups, helper functions (`isSuperAdmin`, `isAgencyUser`, `isBusinessUser`) — all correct. This is already the v2 permission model in code.
+
+**v2 action:** Copy as-is into v2 `packages/permissions`.
+
+---
+
+### `packages/app-sdk` — **SAVE THE MANIFEST SPEC**
+
+The manifest system in `manifests.js` is the most architecturally significant thing in the repo. It already implements the module manifest concept with `inputs`, `outputs`, `extensionPoints`, `permissions`, and `capabilities` — exactly what the v2 module system requires. This wasn't vibe-coded; this was thoughtfully designed.
+
+The existing manifests for Chat and KB Studio can be used as the template for the v2 manifest spec and as starting points for those modules' v2 manifests.
+
+**v2 action:** The manifest format should become the official v2 module manifest spec. Extend it to add `events_emitted` and `events_consumed` fields (which the v2 event bus requires), then use it as the foundation for every v2 module.
+
+---
+
+### `packages/branding` — **SAVE THE LOGIC, REPLACE THE TOKENS**
+
+The `mergeTheme` function and the theme inheritance model are correct. The specific CSS variable names don't map to TweakCN tokens, so the token definitions themselves get replaced — but the merge pattern is reusable.
+
+**v2 action:** Keep `mergeTheme`. Replace `DEFAULT_PLATFORM_THEME` token names with TweakCN-compatible equivalents.
+
+---
+
+### `packages/db` — **SAVE THE PATTERNS, AUDIT THE SCHEMA**
+
+The Supabase client setup, browser/server split, and connection patterns are reusable. The actual database schema needs a full audit before v2 — it accumulated migrations in an uncontrolled way and likely has inconsistencies. But the connection architecture is correct.
+
+**v2 action:** Keep the Supabase client setup. Define the v2 schema cleanly from scratch using the v2 data model (workspaces, contacts, users, events, module_registry). Do not migrate the v1 schema — start fresh.
+
+---
+
+## App-by-App Assessment
+
+---
+
+### `apps/platform` — **TRASH**
+
+The main platform admin UI. Built without a consistent design system — mix of custom CSS, Tailwind, partial shadcn adoption, and Plasmic artifacts. The Plasmic integration files (`plasmic-init.ts`, `plasmic-init-client.ts`) are dead weight. Seventeen sidebar links go to "Coming Soon." Core pages (subscriptions, invoices, payments) are empty. The dashboard shows mock data.
+
+**v2 action:** Delete. Rebuild the platform shell from scratch on shadcn/ui. The business logic it calls into (from packages) is being saved — only the UI layer is being discarded.
+
+---
+
+### `apps/chat` — **TRASH THE UI, KEEP NOTHING**
+
+The chat interface UI deviates from the original design, has broken component styling, a non-functional mobile view, and configuration settings that apply styles to the wrong elements. The underlying logic that powers it lives in `packages/chat-core` — which is being saved. The UI presentation layer itself has no salvageable parts.
+
+**v2 action:** Delete. Rebuild entirely on shadcn/ui using chat-core as the logic engine.
+
+---
+
+### `apps/kb-studio` — **TRASH THE UI, KEEP NOTHING**
+
+Same pattern. The KB Studio UI has the wrong colors, broken onboarding flow, an API key error that persists despite successful connections, and missing navigation. The engine underneath it (`packages/kb-engine`) is being saved. The UI is not.
+
+**v2 action:** Delete. Rebuild entirely on shadcn/ui using kb-engine as the logic engine.
+
+---
+
+### `apps/capabilities` — **REFERENCE ONLY**
+
+Contains the capabilities system PRD (22-step build plan) and related planning documents. This is context, not code. The approach it describes is being superseded by the v2 module import system architecture.
+
+**v2 action:** Keep as reference. Do not build from it.
+
+---
+
+## Migration Decisions
+
+| Item | Decision | Reason |
+|---|---|---|
+| Supabase instance | **Keep** | Existing data, connected infrastructure |
+| Supabase schema | **Rebuild** | Accumulated inconsistencies, v2 needs clean model |
+| Crawl4AI integration | **Keep** | Working scraper infrastructure at crawl.sec-admn.com |
+| DigitalOcean / Dokploy | **Keep** | Working deployment infrastructure |
+| n8n workflows | **Keep** | Separate conversion effort, not blocking v2 |
+| OpenRouter integration | **Keep** | Already the AI inference layer |
+| Stripe setup | **Keep** | Existing payment infrastructure |
+| Plasmic integration | **Trash** | Abandoned approach |
+| Custom CSS/styling | **Trash** | Replaced by shadcn/ui + TweakCN |
+
+---
+
+## Summary for v2 Build
+
+**Start fresh:** Shell (platform app), Chat UI, KB Studio UI, database schema.
+
+**Carry forward:** kb-engine package, chat-core package, permissions package, app-sdk manifest format, branding merge logic, Supabase client patterns, all existing infrastructure (DigitalOcean, Crawl4AI, OpenRouter, Stripe, n8n).
+
+**The honest assessment:** Three months of vibe-coded UI work gets discarded. Three months of AI logic, KB engine, lead capture, manifest architecture, and permissions work gets carried forward. The rebuild is faster than it looks because the intellectual heavy lifting is already done.

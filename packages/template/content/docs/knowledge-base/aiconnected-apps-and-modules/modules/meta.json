@@ -1,0 +1,15 @@
+{
+  "title": "Modules",
+  "pages": [
+    "index",
+    "aiConnected-paper",
+    "aiConnected-voice",
+    "funnelChat",
+    "kb-generator",
+    "logicLegal",
+    "aiConnected-modules-overview",
+    "aiConnected-webinar",
+    "legacy-siteGuide-prd"
+  ],
+  "defaultOpen": false
+}

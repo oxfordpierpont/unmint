@@ -1,0 +1,35 @@
+---
+title: "Dynamic screen routing"
+description: "Feature-level API contract for context-aware screen routing and display behavior across devices and environments."
+---
+## Contract status
+
+`Derived implementation contract`
+
+## Source document
+
+- [Dynamic screen routing](/docs/knowledge-base/aiconnected-os/dynamic-screen-routing)
+
+## Feature purpose
+
+Defines how the OS decides where visual output should appear and when output should be deferred or verbalized instead.
+
+## Required operations
+
+- Resolve target display from current device and environment
+- Suppress or defer screen output in constrained contexts
+- Fall back to spoken descriptions when screens are unavailable
+- Store deferred routing actions and reminders
+
+## Suggested resources
+
+- `screen_routes`
+- `device_contexts`
+- `route_suppression_rules`
+- `deferred_routes`
+
+## Implementation notes
+
+- Keep this feature workspace-scoped and persona-aware where applicable.
+- Preserve authorship, timestamps, and auditability for all state changes.
+- Treat the source doc as the behavioral specification even where final route names remain open.

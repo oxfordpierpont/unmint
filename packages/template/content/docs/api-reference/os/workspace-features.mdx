@@ -1,0 +1,122 @@
+---
+title: "Workspace features"
+description: "Feature-level service contracts for spaces, tasks, documents, folders, references, and other aiConnectedOS workspace tools."
+---
+## Contract status
+
+`Derived implementation contract`
+
+The feature-spec docs define behavior, user flows, and object boundaries clearly, but most do not lock final route paths. This page consolidates the feature contracts developers need to implement.
+
+## Source documents
+
+- [spaces dashboard design](/docs/knowledge-base/aiconnected-os/aiconnected-os-1-spaces-dashboard-design)
+- [task feature spec](/docs/knowledge-base/aiconnected-os/aiconnected-os-2-task-feature-spec)
+- [live document feature](/docs/knowledge-base/aiconnected-os/aiconnected-os-3-live-document-feature)
+- [dashboard whiteboard integration](/docs/knowledge-base/aiconnected-os/aiconnected-os-4-dashboard-whiteboard-integration)
+- [folder system design](/docs/knowledge-base/aiconnected-os/aiconnected-os-4-folder-system-design)
+- [conversation reference feature](/docs/knowledge-base/aiconnected-os/aiconnected-os-6-conversation-reference-feature)
+- [pin message feature](/docs/knowledge-base/aiconnected-os/aiconnected-os-7-pin-message-feature)
+- [document and organize ideas](/docs/knowledge-base/aiconnected-os/aiconnected-os-15-document-and-organize-ideas)
+- [import and migration](/docs/knowledge-base/aiconnected-os/aiconnected-os-import-and-migration)
+
+## Feature families
+
+### Spaces and dashboards
+
+Required capabilities:
+
+- Create and list spaces
+- Assign personas and resources to a space
+- Render configurable dashboards per space
+- Persist dashboard widgets and layout preferences
+
+### Tasks
+
+Required capabilities:
+
+- Create, update, assign, and prioritize tasks
+- Associate tasks with conversations, documents, and personas
+- Track state changes and reminders
+- Preserve task history and authorship
+
+### Live documents
+
+Required capabilities:
+
+- Create persistent documents
+- Support AI-assisted drafting and editing
+- Track collaborators and revision history
+- Link documents to chats, tasks, and folders
+
+### Whiteboards
+
+Required capabilities:
+
+- Create whiteboards inside dashboard contexts
+- Link whiteboards to spaces and documents
+- Persist board metadata and access control
+
+### Folder system
+
+Required capabilities:
+
+- Create nested folders
+- Store documents, chats, tasks, and artifacts inside folder structures
+- Preserve consistent navigation across spaces
+
+### References and pins
+
+Required capabilities:
+
+- Save conversation references for later recall
+- Pin important messages or artifacts
+- Retrieve those anchors quickly during future sessions
+
+### Idea organization
+
+Required capabilities:
+
+- Capture loose ideas
+- Group ideas into structured collections
+- Convert ideas into tasks, docs, or project objects
+
+### Import and migration
+
+Required capabilities:
+
+- Import external conversations or workspace content into an archive
+- Deduplicate by content hash
+- Keep imported material separate from active work unless promoted
+
+## Shared resource model
+
+These feature docs point to a reusable workspace object model:
+
+| Resource | Examples |
+|---|---|
+| `spaces` | Team, client, or project containers |
+| `tasks` | Action items and task status history |
+| `documents` | Live editable records |
+| `whiteboards` | Visual collaboration surfaces |
+| `folders` | Navigable organization tree |
+| `references` | Pointers to useful prior context |
+| `pins` | High-importance anchors |
+| `imports` | Archived migrated content |
+
+## Cross-feature requirements
+
+- Every object must preserve authorship and workspace scope.
+- Every object should be linkable to chats and memory.
+- Objects must remain retrievable through persona context and navigation tools.
+- Imported content must be isolated by default.
+
+## Build order suggestion
+
+1. Spaces and folders
+2. Tasks and documents
+3. References and pins
+4. Whiteboards and ideation workflows
+5. Import and migration
+
+That order gives the OS a usable backbone before advanced collaboration features land.

@@ -1,0 +1,36 @@
+---
+title: "Dashboard whiteboards"
+description: "Feature-level API contract for dashboard-linked whiteboards, artifact placement, and board collaboration in aiConnectedOS."
+---
+## Contract status
+
+`Derived implementation contract`
+
+## Source document
+
+- [Dashboard whiteboards](/docs/knowledge-base/aiconnected-os/aiconnected-os-4-dashboard-whiteboard-integration)
+
+## Feature purpose
+
+Defines whiteboard surfaces as first-class workspace artifacts connected to dashboard context.
+
+## Required operations
+
+- Create boards from a dashboard or chat context
+- Place notes, files, messages, and AI artifacts on a board
+- Persist board structure and relationships
+- Support board-linked chat or analysis workflows
+
+## Suggested resources
+
+- `whiteboards`
+- `whiteboard_nodes`
+- `whiteboard_edges`
+- `whiteboard_views`
+- `whiteboard_activity`
+
+## Implementation notes
+
+- Keep this feature workspace-scoped and persona-aware where applicable.
+- Preserve authorship, timestamps, and auditability for all state changes.
+- Treat the source doc as the behavioral specification even where final route names remain open.

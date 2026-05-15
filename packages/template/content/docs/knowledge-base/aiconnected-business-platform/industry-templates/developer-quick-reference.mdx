@@ -1,0 +1,309 @@
+---
+title: "Developer Quick Reference"
+---
+# aiConnected Industries - Comprehensive Reference & Requirements
+
+## Project Status
+
+**Status**: Ideation/Documentation Phase  
+**Implementation Timeline**: Post-launch, after developer marketplace is thriving and proven  
+**Responsible Party**: TBD developer lead (once assigned)
+
+-----
+
+## Core Architecture
+
+### Model B: Industry = Collection of Configurations
+
+Industries are **not** monolithic templates. Industries **ARE** their configurations.
+
+Example: Real Estate Industry consists of:
+
+- Land Sales Configuration
+- Residential Home Sales Configuration
+- Commercial Real Estate Configuration
+- Build-to-Rent Configuration
+- Real Estate M&A Configuration
+- Construction-Side Real Estate Configuration
+
+**Agency Workflow**: “My client does land sales” → Real Estate > Land Sales → Apply → Done. No further customization needed (though agencies can customize if desired).
+
+-----
+
+## Configuration Snapshot Anatomy
+
+What gets captured when an agency exports a configuration:
+
+- Personas (all active personas and their configurations)
+- Integrations (all connected third-party integrations)
+- Workflows (all custom/active workflows)
+- Modules (which modules are enabled/disabled)
+- Settings (all system settings specific to that setup)
+- Any other platform-specific configurations
+
+**Data Privacy**: All snapshots are anonymized. No PII, no identifiable contacts, no specific client data - only the configuration map.
+
+-----
+
+## Core Principles (Non-Negotiable)
+
+### 1. NO AUTO-APPLY, EVER
+
+- Features must complete voting/testing before availability
+- Agencies receive notifications: “New skip-tracing feature for Real Estate. Here’s what it does. Enable/disable?”
+- Agencies decide per-business-client whether to adopt
+- No forced updates
+- No breaking changes imposed on users
+
+### 2. Agency Control Over Everything
+
+- Agencies decide what features are available to business clients
+- Agencies set pricing for every feature (free or paid upsell)
+- Agencies choose which configurations to offer
+- Agencies toggle Industry Templates/Configurations access on/off per client
+- Agencies control test mode participation
+
+### 3. Voluntary Adoption at Every Level
+
+- Configurations are optional starting points
+- Features are optional additions
+- Updates are opt-in
+- Versions can be held indefinitely (no forced upgrades)
+- Personas can reject new skills/capabilities
+- All actions are reversible
+
+-----
+
+## Feature Pricing Integration (CRITICAL - Applies Everywhere)
+
+**For every feature toggle available to agencies (enable/disable for business clients):**
+
+- Add Pricing button adjacent to toggle
+- When toggle is activated, pricing UI displays
+- Agencies can set price at $0 (free upsell) or custom amount (paid upsell)
+- Pricing applies per-feature, per-business-client (granular control)
+- Pricing data flows to billing system
+- **This applies to**:
+  - Individual features
+  - Modules
+  - Configurations
+  - Personas/skills
+  - Anything an agency can enable/disable
+
+-----
+
+## Testing & Feedback System
+
+### Configuration Testing (Beta Model)
+
+- Agencies enable Test Mode for configurations before production
+- Test mode allows business clients to beta test configurations
+- Test mode activates 30-day voting window (upvote/downvote)
+- Agencies can enable test for specific business clients (granular)
+
+### Data Visualization for Testing
+
+**Charts/data needed**:
+
+- Configuration voting trends over time
+- Acceptance likelihood visualization
+- User sentiment analysis during testing period
+- Real-time upvote/downvote counts
+
+**Display locations**:
+
+- In agency settings (showing configurations in test they’re participating in)
+- In Industry discovery page (showing configurations currently in test with trends)
+
+**Transition**: When configuration completes testing and passes voting → automatically moves to production
+
+-----
+
+## Configuration Management & Application
+
+### No Forking Model
+
+- Agencies apply configurations as-is (complete snapshot of settings)
+- After applying, agencies **can** customize/fine-tune for their needs
+- **No forking required** - each agency gets their own instance to modify
+- Customizations made by agencies don’t create public versions
+- If agencies want to share customizations, they submit as new configuration through voting
+
+### Application Granularity
+
+- Apply to entire agency (all business clients get config)
+- Apply to specific business clients (selective rollout)
+- Mix and match: some clients on v1.5, others on v2.0 (all fine, no forced sync)
+
+### Reversibility & Rollback
+
+- Agencies can remove/rollback configurations anytime
+- Can revert to prior versions indefinitely
+- Business clients can reject new persona skills/capabilities
+- All rejections are reversible
+
+-----
+
+## Configuration Discovery & Trust Signals (WordPress Plugin Model)
+
+Every configuration displays:
+
+- **Active Businesses/Users Count** (e.g., “1.2M active businesses using this”)
+- **Star/Rating System** (aggregated community ratings)
+- **Last Updated Date** (transparency on maintenance)
+- **Adoption Trends** (growing/declining/stable)
+- **Version History** (what changed, when, community vote outcomes)
+- **Currently in Test Badge** (if applicable, with test metrics)
+
+**Discovery Interface**:
+
+- Search + browse by industry + use case keywords
+- AI-assisted discovery: “I’m in land sales. What configurations work for me?”
+- Top configurations by category (most active, highest rated, newest)
+- Visual, scannable design
+
+-----
+
+## Governance & Voting System
+
+### Feature/Configuration Voting
+
+- Test window: **30 vs 90 days** (measure which performs better)
+- Simple voting: Thumbs up / Thumbs down
+- Optional comment field (for feedback)
+- AI processes all feedback at scale (no human bottleneck)
+- Accepted = moves to production / becomes new version
+- Rejected = doesn’t propagate globally, but current users keep it; feedback sent to contributor for improvement
+
+### Competing Configurations
+
+When two agencies submit competing configurations (e.g., two “Land Sales” configs):
+
+- Both go through voting
+- Accepted = becomes available as separate option (both coexist)
+- Rejected = doesn’t propagate, but submitter can continue using it
+- Community votes determine which gains adoption over time
+
+-----
+
+## Cold Start / Initial Bootstrap
+
+**Timing**: Post-launch, after developer marketplace thrives
+
+**Approach**:
+
+- Identify 10-20 most popular industry verticals
+- Build baseline configurations for launch industries
+- Contribution sources: Developers + Agencies (first collaborative effort mixing both)
+
+**Initial Industries (example list)**:
+
+- Real Estate
+- Legal
+- Med Spa
+- Dentistry
+- Insurance
+- Construction/Remodeling
+- Healthcare
+- Attorney
+- (plus 12+ more based on demand data)
+
+-----
+
+## Access Control for Business Clients
+
+### Agency Control Panel
+
+- Toggle “Industry Templates/Configurations” access on/off per business client
+- Whitelist/blacklist specific configurations per client
+- Set default configurations per client type
+- Control test mode participation per client
+
+### Business Client Access (Open Question - Agencies Decide)
+
+**Still being evaluated**: Should business clients be able to search/apply configurations themselves, or only agencies?
+
+**Current approach**: Agencies toggle this on/off per client (each agency defines their own workflow)
+
+-----
+
+## Persona Learning & Ecosystem Integration
+
+### Cross-Persona Learning
+
+When personas across industry template ecosystem improve:
+
+- Improved baseline personas are shared (anonymized experience)
+- Users (agencies/businesses) receive notification: “New skills available for Paralegal persona. Accept/reject?”
+- Acceptance is optional, not automatic
+- Users can reject or remove skills that don’t fit their use case
+- All persona skill adoption is reversible
+
+### Skill Propagation
+
+- New skills propagate to configuration baselines gradually
+- Each configuration version can inherit improved personas OR maintain prior version
+- Agencies control which versions their clients receive
+
+-----
+
+## Developer/Community Contribution Model
+
+### Who Can Contribute?
+
+- **Developers**: New features, modules, integrations, enhancements
+- **Agencies**: Configurations (proven setups), feature feedback, use case validation
+
+### Contribution Workflows
+
+- Developers submit features → voting system
+- Agencies submit configurations → voting system
+- Both go through same testing/feedback process
+- Community votes determine production inclusion
+- Rejected contributions can be improved and resubmitted
+
+-----
+
+## Monitoring & Metrics
+
+Track:
+
+- Voting window duration performance (30 vs 90 day outcomes)
+- Adoption rates per configuration
+- Feature acceptance/rejection ratios
+- Version retention patterns (which versions do agencies keep longest?)
+- Configuration migration patterns (when/why do agencies switch versions?)
+- Test mode participation rates
+
+-----
+
+## Architecture Decisions Made
+
+✅ **Model B** (Industry = Collection of Configurations)  
+✅ **No auto-apply, ever** (opt-in at every level)  
+✅ **No forced updates** (agencies control versions)  
+✅ **No forking** (apply, then customize locally)  
+✅ **Feature pricing everywhere** (pricing button on every toggle)  
+✅ **Community voting** (thumbs up/down, AI feedback processing)  
+✅ **Reversibility** (everything can be undone)  
+✅ **Granular access control** (agencies decide per-client what’s available)
+
+-----
+
+## Still Open / Requires Decision
+
+❓ Should business clients have direct access to search/apply configurations?  
+❓ What are the exact triggers for moving configurations from test → production?  
+❓ How to handle configuration dependencies (if config requires a module that’s disabled)?  
+❓ Configuration support/maintenance model - who maintains over time?  
+❓ Exact structure of “Industry” entity vs “Configuration” in database schema?
+
+-----
+
+## Not in Scope (Shelved for Later)
+
+- Modules + community evolution model (separate discussion needed)
+- Exact technical implementation details
+- Billing integration specifics
+- API contracts for configuration snapshots
+- Database schema design

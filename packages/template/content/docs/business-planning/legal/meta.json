@@ -1,0 +1,10 @@
+{
+  "title": "Legal",
+  "pages": [
+    "index",
+    "bp-legal-01-entity-corporate-records",
+    "bp-legal-04-cap-table",
+    "bp-legal-08-nda-confidentiality"
+  ],
+  "defaultOpen": true
+}

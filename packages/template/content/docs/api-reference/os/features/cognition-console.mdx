@@ -1,0 +1,35 @@
+---
+title: "Cognition console"
+description: "Feature-level API contract for the cognition console, operator visibility, and AI state presentation in aiConnectedOS."
+---
+## Contract status
+
+`Derived implementation contract`
+
+## Source document
+
+- [Cognition console](/docs/knowledge-base/aiconnected-os/aiconnected-os-8-cognition-console-ui-design)
+
+## Feature purpose
+
+Defines the advanced operator console for surfacing state, context, and oversight metadata.
+
+## Required operations
+
+- Load cognition state for the active workspace and personas
+- Expose tool activity, routing decisions, and context state
+- Render operator controls without breaking persona boundaries
+- Persist console preferences and visibility rules
+
+## Suggested resources
+
+- `console_sessions`
+- `console_panels`
+- `console_activity`
+- `routing_traces`
+
+## Implementation notes
+
+- Keep this feature workspace-scoped and persona-aware where applicable.
+- Preserve authorship, timestamps, and auditability for all state changes.
+- Treat the source doc as the behavioral specification even where final route names remain open.

@@ -1,0 +1,717 @@
+---
+title: "AI Knowledge Training System"
+description: "The Insight The Skin Beauty AI works exceptionally well not because of the model, but because of the structured knowledge base . This wasn't scraped content—..."
+---
+<Info>
+Normalized for Mintlify from `knowledge-base/aiconnected-apps-and-modules/modules/kb-generator/ai-knowledge-training-system.mdx`.
+</Info>
+# AI Knowledge Training System
+
+## The Insight
+
+The Skin Beauty AI works exceptionally well not because of the model, but because of the **structured knowledge base**. This wasn't scraped content—it was carefully authored educational content designed to:
+
+1. Map customer concerns to services  
+2. Help customers self-identify their needs  
+3. Explain the "why" behind each service  
+4. Guide decisions, not just list features
+
+**The goal: Replicate this quality for any business from just a URL.**
+
+---
+
+## The Transformation Pipeline
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                     USER PROVIDES URL                           │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                   STEP 1: WEB CRAWL                             │
+│                                                                 │
+│  • Crawl all pages (services, about, FAQ, blog, testimonials)   │
+│  • Extract raw text, images, structure                          │
+│  • Identify page types and hierarchy                            │
+│  • Capture pricing tables, contact info                         │
+│                                                                 │
+│  Output: Raw content corpus                                     │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                STEP 2: ENTITY EXTRACTION                        │
+│                                                                 │
+│  AI extracts structured data:                                   │
+│                                                                 │
+│  • Business: name, type, location, phone, hours                 │
+│  • Services: name, description, price, duration                 │
+│  • Brand signals: tone, formality, target demographic           │
+│  • Differentiators: what makes them unique                      │
+│  • Trust signals: credentials, experience, testimonials         │
+│                                                                 │
+│  Output: Structured business profile + service list             │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│            STEP 3: KNOWLEDGE ENHANCEMENT (THE MAGIC)            │
+│                                                                 │
+│  For each service, AI generates:                                │
+│                                                                 │
+│  ┌────────────────────────────────────────────────────────────┐ │
+│  │ CONCERN MAPPING                                            │ │
+│  │ "What problems does this service solve?"                   │ │
+│  │                                                            │ │
+│  │ Input:  "Morpheus8 RF microneedling treatment"             │ │
+│  │ Output: ["skin_laxity", "wrinkles", "acne_scars",          │ │
+│  │          "texture", "stretch_marks"]                       │ │
+│  └────────────────────────────────────────────────────────────┘ │
+│                                                                 │
+│  ┌────────────────────────────────────────────────────────────┐ │
+│  │ SELF-IDENTIFICATION TRIGGERS                               │ │
+│  │ "Who is this perfect for?"                                 │ │
+│  │                                                            │ │
+│  │ Output:                                                    │ │
+│  │ • "You notice your jawline isn't as defined as it used to  │ │
+│  │    be"                                                     │ │
+│  │ • "You're bothered by acne scars from your teenage years"  │ │
+│  │ • "Your skin just doesn't 'bounce back' like it used to"   │ │
+│  └────────────────────────────────────────────────────────────┘ │
+│                                                                 │
+│  ┌────────────────────────────────────────────────────────────┐ │
+│  │ CHOOSE THIS SERVICE FOR                                    │ │
+│  │ "Quick decision guidance"                                  │ │
+│  │                                                            │ │
+│  │ Output:                                                    │ │
+│  │ • Tightening loose or sagging skin                         │ │
+│  │ • Deep acne scar treatment                                 │ │
+│  │ • Long-lasting anti-aging results                          │ │
+│  │ • Safe treatment for all skin types                        │ │
+│  └────────────────────────────────────────────────────────────┘ │
+│                                                                 │
+│  ┌────────────────────────────────────────────────────────────┐ │
+│  │ EDUCATIONAL EXPANSION                                      │ │
+│  │ "The why behind the what"                                  │ │
+│  │                                                            │ │
+│  │ Takes basic description and expands with:                  │ │
+│  │ • How it works (in plain language)                         │ │
+│  │ • What to expect during treatment                          │ │
+│  │ • Results timeline                                         │ │
+│  │ • Why this vs. alternatives                                │ │
+│  └────────────────────────────────────────────────────────────┘ │
+│                                                                 │
+│  ┌────────────────────────────────────────────────────────────┐ │
+│  │ DIFFERENTIATION                                            │ │
+│  │ "How does this compare to similar services?"               │ │
+│  │                                                            │ │
+│  │ Output:                                                    │ │
+│  │ • "Unlike regular microneedling, Morpheus8 adds RF         │ │
+│  │    energy for deeper penetration"                          │ │
+│  │ • "Goes up to 4mm deep vs 1-2mm for standard devices"      │ │
+│  └────────────────────────────────────────────────────────────┘ │
+│                                                                 │
+│  Output: Enhanced service knowledge base                        │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│              STEP 4: RELATIONSHIP MAPPING                       │
+│                                                                 │
+│  Build the concern → service graph:                             │
+│                                                                 │
+│  concerns: {                                                    │
+│    "acne": ["acne_treatment", "chill_pill", "advatx"],          │
+│    "aging": ["morpheus8", "skin_tightening", "photoshop"],      │
+│    "glow": ["glow_getter", "oxygen_facial", "glacial"],         │
+│    "event_prep": ["photoshop", "oxygen_facial", "jetsetter"],   │
+│    ...                                                          │
+│  }                                                              │
+│                                                                 │
+│  Also map:                                                      │
+│  • Service → related services (upsell paths)                    │
+│  • Concern severity → service recommendations                   │
+│  • Customer journey paths (first visit → maintenance)           │
+│                                                                 │
+│  Output: Knowledge graph                                        │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│              STEP 5: CONVERSATION DESIGN                        │
+│                                                                 │
+│  Generate conversation starters based on:                       │
+│  • Most common concerns for this business type                  │
+│  • Highest-value services                                       │
+│  • Seasonal relevance                                           │
+│  • Customer journey entry points                                │
+│                                                                 │
+│  Output:                                                        │
+│  [                                                              │
+│    { icon: "✨", title: "I want glowing skin",                  │
+│      subtitle: "Radiance treatments",                           │
+│      message: "I want glowing, radiant skin" },                 │
+│    { icon: "🎯", title: "Help with acne",                       │
+│      subtitle: "Clear skin solutions",                          │
+│      message: "I need help with acne and breakouts" },          │
+│    ...                                                          │
+│  ]                                                              │
+│                                                                 │
+│  Also generate:                                                 │
+│  • Quiz questions (if applicable)                               │
+│  • Follow-up question templates                                 │
+│  • Objection handling responses                                 │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│              STEP 6: SYSTEM PROMPT GENERATION                   │
+│                                                                 │
+│  Create custom system prompt with:                              │
+│                                                                 │
+│  • Business identity and role                                   │
+│  • Brand voice characteristics                                  │
+│  • Service knowledge injection point                            │
+│  • Response formatting rules                                    │
+│  • Booking/conversion guidance                                  │
+│  • What NOT to do (competitor mentions, off-topic, etc.)        │
+│                                                                 │
+│  Output: Complete system prompt                                 │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│              STEP 7: HUMAN REVIEW (OPTIONAL)                    │
+│                                                                 │
+│  Present generated knowledge for review:                        │
+│  • "We found 12 services. Is this correct?"                     │
+│  • Preview enhanced descriptions                                │
+│  • Test conversation flow                                       │
+│  • Adjust tone if needed                                        │
+│                                                                 │
+│  Allow:                                                         │
+│  • Add missing services                                         │
+│  • Edit descriptions                                            │
+│  • Correct pricing                                              │
+│  • Adjust concern mappings                                      │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                      DEPLOY TO CHAT                             │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Admin UI Flow
+
+### Screen 1: Getting Started
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                                                                 │
+│                     🌟 Train Your AI                            │
+│                                                                 │
+│     We'll analyze your website to create a knowledgeable        │
+│     AI assistant that truly understands your business.          │
+│                                                                 │
+│     ┌─────────────────────────────────────────────────────┐     │
+│     │  https://                                           │     │
+│     └─────────────────────────────────────────────────────┘     │
+│                                                                 │
+│              [ Analyze My Website ]                             │
+│                                                                 │
+│     This usually takes 2-3 minutes.                             │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Screen 2: Analysis Progress
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                                                                 │
+│                   Analyzing your website...                     │
+│                                                                 │
+│     ✓ Found 24 pages                                            │
+│     ✓ Identified business type: Medical Spa                     │
+│     ✓ Extracted 14 services                                     │
+│     ◐ Generating knowledge base...                              │
+│     ○ Creating conversation flows                               │
+│     ○ Building your AI assistant                                │
+│                                                                 │
+│     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━░░░░░░░ 65%         │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Screen 3: Review Services
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                                                                 │
+│     We found 14 services                         [ + Add ]      │
+│                                                                 │
+│     ┌─────────────────────────────────────────────────────┐     │
+│     │ ✓  Morpheus8 RF Microneedling           $800+       │     │
+│     │    Concerns: aging, scars, texture, laxity    [Edit]│     │
+│     ├─────────────────────────────────────────────────────┤     │
+│     │ ✓  Glow Getter Facial                   $225+       │     │
+│     │    Concerns: dullness, hydration, glow       [Edit] │     │
+│     ├─────────────────────────────────────────────────────┤     │
+│     │ ✓  Acne Treatment                       $175+       │     │
+│     │    Concerns: acne, breakouts, oily           [Edit] │     │
+│     ├─────────────────────────────────────────────────────┤     │
+│     │ ...                                                 │     │
+│     └─────────────────────────────────────────────────────┘     │
+│                                                                 │
+│     Missing something? You can add services manually.           │
+│                                                                 │
+│                              [ Continue ]                       │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Screen 4: Review Knowledge (Expandable)
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                                                                 │
+│     Review AI Knowledge                                         │
+│                                                                 │
+│     ▼ Morpheus8 RF Microneedling                                │
+│     ┌─────────────────────────────────────────────────────┐     │
+│     │                                                     │     │
+│     │  Description:                                       │     │
+│     │  The deepest RF microneedling available, Morpheus8  │     │
+│     │  combines gold-coated microneedles with...          │     │
+│     │                                                     │     │
+│     │  Choose this service for:                           │     │
+│     │  • Tightening loose or sagging skin                 │     │
+│     │  • Deep acne scar treatment                         │     │
+│     │  • Long-lasting anti-aging results                  │     │
+│     │                                                     │     │
+│     │  Perfect for people who:                            │     │
+│     │  • Notice their jawline isn't as defined            │     │
+│     │  • Are bothered by acne scars                       │     │
+│     │  • Want results without surgery                     │     │
+│     │                                                     │     │
+│     │                                       [ Edit ]      │     │
+│     └─────────────────────────────────────────────────────┘     │
+│                                                                 │
+│     ▶ Glow Getter Facial                                        │
+│     ▶ Acne Treatment                                            │
+│     ▶ Chill Pill Facial                                         │
+│                                                                 │
+│                              [ Continue ]                       │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Screen 5: Conversation Style
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                                                                 │
+│     Your AI's Personality                                       │
+│                                                                 │
+│     Based on your website, we detected:                         │
+│                                                                 │
+│     Tone:        ○ Professional  ● Warm  ○ Casual               │
+│     Formality:   ○ Formal  ● Conversational  ○ Friendly         │
+│                                                                 │
+│     ┌─────────────────────────────────────────────────────┐     │
+│     │  Sample response:                                   │     │
+│     │                                                     │     │
+│     │  "I'd love to help you with that! For acne-prone    │     │
+│     │  skin, our Chill Pill facial is amazing—it uses RF  │     │
+│     │  technology to calm oil glands and reduce           │     │
+│     │  inflammation. Many clients see 50-70% improvement  │     │
+│     │  after just one session! Would you like to know     │     │
+│     │  more about how it works?"                          │     │
+│     └─────────────────────────────────────────────────────┘     │
+│                                                                 │
+│                              [ Continue ]                       │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Screen 6: Test & Launch
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                                                                 │
+│     Test Your AI Assistant                                      │
+│                                                                 │
+│     ┌─────────────────────────────────────────────────────┐     │
+│     │                                                     │     │
+│     │  ┌─────────────────────────────────────────────┐    │     │
+│     │  │                                             │    │     │
+│     │  │        [Live Chat Preview]                  │    │     │
+│     │  │                                             │    │     │
+│     │  │   User: I have acne scars from high school  │    │     │
+│     │  │                                             │    │     │
+│     │  │   AI: I completely understand—acne scars    │    │     │
+│     │  │   can really affect how you feel about      │    │     │
+│     │  │   your skin. The good news is we have       │    │     │
+│     │  │   excellent options for this!               │    │     │
+│     │  │                                             │    │     │
+│     │  │   [Service Card: Morpheus8]                 │    │     │
+│     │  │   [Service Card: TCA CROSS]                 │    │     │
+│     │  │                                             │    │     │
+│     │  └─────────────────────────────────────────────┘    │     │
+│     │                                                     │     │
+│     │  ┌─────────────────────────────────────────────┐    │     │
+│     │  │ Type a test message...                      │    │     │
+│     │  └─────────────────────────────────────────────┘    │     │
+│     └─────────────────────────────────────────────────────┘     │
+│                                                                 │
+│                        [ 🚀 Launch AI ]                         │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Data Schema
+
+```javascript
+// What gets stored after training
+{
+  // Basic business info
+  business: {
+    name: "Skin Beauty Med Spa",
+    type: "med_spa", // used for industry-specific prompting
+    location: {
+      address: "750 Hammond Dr",
+      city: "Atlanta",
+      state: "GA",
+      zip: "30328"
+    },
+    phone: "(404) 992-4345",
+    website: "https://skinbeauty.skin",
+    bookingUrl: "https://skinbeauty.skin/book",
+  },
+
+  // Brand voice settings
+  brandVoice: {
+    tone: "warm", // warm | professional | casual
+    formality: "conversational", // formal | conversational | friendly
+    characteristics: ["empathetic", "knowledgeable", "reassuring"],
+    avoidWords: ["cheap", "discount", "deal"], // luxury positioning
+    preferredPhrases: ["investment in yourself", "your skin journey"],
+  },
+
+  // Enhanced service data
+  services: [
+    {
+      id: "morpheus8",
+      name: "Morpheus8 RF Microneedling",
+      
+      // Basic info (from website)
+      description: "FDA-cleared fractional RF microneedling...",
+      price: "$800+",
+      duration: "60-90 min",
+      
+      // AI-generated enhancements
+      expandedEducation: "Unlike standard microneedling that only...",
+      
+      chooseThisFor: [
+        "Tightening loose or sagging skin",
+        "Deep acne scar treatment",
+        "Long-lasting anti-aging results",
+        "Safe treatment for all skin types"
+      ],
+      
+      perfectFor: [
+        "You notice your jawline isn't as defined as it used to be",
+        "You're bothered by acne scars from your teenage years",
+        "You want real results without going under the knife"
+      ],
+      
+      concerns: ["aging", "skin_laxity", "acne_scars", "texture", "wrinkles"],
+      
+      relatedServices: ["skin_tightening", "facial_scars", "tca_cross"],
+      
+      differentiators: [
+        "Deepest RF microneedling available (up to 4mm on face)",
+        "First device FDA-cleared for soft tissue contraction",
+        "Safe for all skin types including Fitzpatrick VI"
+      ],
+      
+      faqs: [
+        { q: "How many treatments do I need?", a: "Most clients see..." },
+        { q: "Is it painful?", a: "We use topical numbing..." }
+      ],
+      
+      tags: ["anti-aging", "scars", "tightening", "all-skin-types"],
+      requiresConsultation: true,
+    },
+    // ... more services
+  ],
+
+  // Concern-to-service mapping
+  concernMap: {
+    "acne": {
+      primary: ["acne_treatment", "chill_pill"],
+      secondary: ["advatx", "glacial"],
+      severity: {
+        mild: ["chill_pill", "glow_getter"],
+        moderate: ["acne_treatment", "advatx"],
+        severe: ["acne_treatment"] // consultation required
+      }
+    },
+    "aging": {
+      primary: ["morpheus8", "skin_tightening"],
+      secondary: ["photoshop_facial", "trilift"],
+      byArea: {
+        eyes: ["eye_treatment"],
+        jawline: ["morpheus8", "trilift"],
+        fullFace: ["skin_tightening"]
+      }
+    },
+    // ... more concerns
+  },
+
+  // Conversation starters
+  conversationStarters: [
+    {
+      icon: "✨",
+      title: "I want glowing skin",
+      subtitle: "Radiance treatments",
+      message: "I want glowing, radiant skin",
+      targetConcern: "glow"
+    },
+    // ... more starters
+  ],
+
+  // Generated system prompt
+  systemPrompt: `You are the AI assistant for Skin Beauty Med Spa...`,
+
+  // Quiz configuration (if enabled)
+  quiz: {
+    enabled: true,
+    questions: [...],
+    scoringLogic: {...}
+  },
+
+  // Metadata
+  training: {
+    sourceUrl: "https://skinbeauty.skin",
+    crawledAt: "2026-01-09T...",
+    pagesAnalyzed: 24,
+    lastUpdated: "2026-01-09T...",
+    version: 1
+  }
+}
+```
+
+---
+
+## AI Prompts for Each Transformation Step
+
+### Prompt: Entity Extraction
+
+```
+Analyze this website content and extract structured business information.
+
+Content:
+{raw_crawled_content}
+
+Extract and return JSON:
+{
+  "business": {
+    "name": "",
+    "type": "", // e.g., "med_spa", "dental", "salon", "fitness", "restaurant"
+    "location": {},
+    "phone": "",
+    "hours": "",
+    "bookingUrl": ""
+  },
+  "services": [
+    {
+      "name": "",
+      "description": "",
+      "price": "",
+      "duration": ""
+    }
+  ],
+  "brandSignals": {
+    "tone": "", // warm, professional, casual
+    "targetDemographic": "",
+    "uniqueSellingPoints": []
+  }
+}
+```
+
+### Prompt: Knowledge Enhancement (per service)
+
+```
+You are creating a knowledge base entry for an AI assistant that helps 
+customers find the right service.
+
+Business: {business_name} ({business_type})
+Service: {service_name}
+Current Description: {service_description}
+Price: {price}
+
+Generate enhanced knowledge that helps customers self-identify if this 
+service is right for them. Write in a {tone} tone.
+
+Return JSON:
+{
+  "expandedEducation": "2-3 paragraphs explaining how this works and why, 
+                        in plain language a customer would understand",
+  
+  "chooseThisFor": [
+    "3-5 clear use cases, starting with action verbs"
+  ],
+  
+  "perfectFor": [
+    "3-5 statements that help customers self-identify, 
+     written as 'You...' statements describing their situation"
+  ],
+  
+  "concerns": [
+    "list of concern keywords this service addresses"
+  ],
+  
+  "differentiators": [
+    "what makes this different from similar services or DIY alternatives"
+  ],
+  
+  "commonQuestions": [
+    { "q": "question customers often ask", "a": "helpful answer" }
+  ]
+}
+```
+
+### Prompt: System Prompt Generation
+
+```
+Create a system prompt for an AI assistant for this business:
+
+Business: {business_name}
+Type: {business_type}
+Tone: {brand_tone}
+Services: {service_list}
+
+The AI should:
+- Act as a knowledgeable consultant, not a salesperson
+- Help customers identify their needs through questions
+- Only recommend services this business offers
+- Guide toward booking when appropriate
+- Never mention competitors
+- Use the specified brand voice
+
+Generate a complete system prompt (500-800 words) that will make this AI 
+helpful, on-brand, and conversion-focused while feeling genuinely caring.
+```
+
+---
+
+## Technical Implementation
+
+### Crawling Options
+
+1. **Firecrawl** \- Best for JS-heavy sites, returns clean markdown  
+2. **Apify** \- More control, handles complex sites  
+3. **Custom Puppeteer** \- Full control, more maintenance
+
+### Processing Pipeline
+
+```javascript
+// Simplified flow
+async function trainFromUrl(url) {
+  // Step 1: Crawl
+  const pages = await firecrawl.crawl(url, { 
+    maxPages: 50,
+    includeHtml: false 
+  });
+  
+  // Step 2: Extract entities
+  const extraction = await ai.chat({
+    model: 'claude-sonnet-4-20250514',
+    messages: [{
+      role: 'user',
+      content: ENTITY_EXTRACTION_PROMPT.replace('{content}', pages.markdown)
+    }]
+  });
+  
+  const businessData = JSON.parse(extraction.content);
+  
+  // Step 3: Enhance each service
+  const enhancedServices = await Promise.all(
+    businessData.services.map(service => 
+      enhanceService(service, businessData.business)
+    )
+  );
+  
+  // Step 4: Build concern map
+  const concernMap = buildConcernMap(enhancedServices);
+  
+  // Step 5: Generate conversation starters
+  const starters = await generateStarters(businessData, enhancedServices);
+  
+  // Step 6: Generate system prompt
+  const systemPrompt = await generateSystemPrompt(businessData, enhancedServices);
+  
+  // Step 7: Compile final knowledge base
+  return {
+    business: businessData.business,
+    brandVoice: businessData.brandSignals,
+    services: enhancedServices,
+    concernMap,
+    conversationStarters: starters,
+    systemPrompt,
+    training: {
+      sourceUrl: url,
+      crawledAt: new Date().toISOString(),
+      pagesAnalyzed: pages.length
+    }
+  };
+}
+```
+
+---
+
+## Cost Estimation
+
+Per training run (typical business with 10-20 services):
+
+| Step | Tokens | Cost (Claude Sonnet) |
+| :---- | :---- | :---- |
+| Crawl | N/A | \~$0.01 (Firecrawl) |
+| Entity extraction | \~10K in, \~2K out | \~$0.04 |
+| Service enhancement (×15) | \~30K in, \~15K out | \~$0.20 |
+| Concern mapping | \~5K in, \~2K out | \~$0.02 |
+| Starter generation | \~5K in, \~1K out | \~$0.02 |
+| System prompt | \~8K in, \~2K out | \~$0.03 |
+| **Total** |  | **\~$0.35** |
+
+This is a one-time cost per business setup, with optional re-training when they update their website.
+
+---
+
+## Success Metrics
+
+A well-trained AI should:
+
+1. **Recommend relevant services** for any concern mentioned  
+2. **Never hallucinate** services or prices that don't exist  
+3. **Maintain brand voice** consistently  
+4. **Guide toward booking** naturally  
+5. **Handle edge cases** gracefully (unknown concerns, competitor questions)  
+6. **Self-identify triggers** resonate with actual customers
+
+---
+
+## Future Enhancements
+
+1. **Automatic re-training** \- Monitor website for changes, re-crawl weekly  
+2. **Analytics feedback loop** \- Learn from which recommendations convert  
+3. **Industry templates** \- Pre-built concern maps for common business types  
+4. **Multi-location support** \- Different services/prices per location  
+5. **Seasonal adjustments** \- Automatically suggest seasonal services

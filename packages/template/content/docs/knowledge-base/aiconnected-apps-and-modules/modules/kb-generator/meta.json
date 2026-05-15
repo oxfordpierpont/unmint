@@ -1,0 +1,16 @@
+{
+  "title": "Kb Generator",
+  "pages": [
+    "index",
+    "ai-knowledge-training-system",
+    "kb-generator-design-build-instructions",
+    "kb-generator-field-reference",
+    "kb-generator-onboarding-screen-plan",
+    "kb-generator-prompts",
+    "kb-generator-readme",
+    "kb-generator-sales-copy",
+    "kb-generator-target-industry-analysis",
+    "kb-generator-template-sample"
+  ],
+  "defaultOpen": false
+}

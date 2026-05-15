@@ -1,0 +1,35 @@
+---
+title: "Forget and memory deprioritization"
+description: "Feature-level API contract for forgetting, deprioritizing, or suppressing memories in aiConnectedOS."
+---
+## Contract status
+
+`Derived implementation contract`
+
+## Source document
+
+- [Forget and memory deprioritization](/docs/knowledge-base/aiconnected-os/aiconnected-os-forget-this-feature)
+
+## Feature purpose
+
+Defines governed memory suppression and decay without indiscriminate destructive deletion.
+
+## Required operations
+
+- Request forgetting or deprioritization for selected memory items
+- Apply policy-aware suppression or ranking changes
+- Retain audit state for trust and governance
+- Expose memory-visibility outcomes to later retrieval logic
+
+## Suggested resources
+
+- `forget_requests`
+- `memory_suppression_rules`
+- `memory_decay_updates`
+- `forget_audit_logs`
+
+## Implementation notes
+
+- Keep this feature workspace-scoped and persona-aware where applicable.
+- Preserve authorship, timestamps, and auditability for all state changes.
+- Treat the source doc as the behavioral specification even where final route names remain open.

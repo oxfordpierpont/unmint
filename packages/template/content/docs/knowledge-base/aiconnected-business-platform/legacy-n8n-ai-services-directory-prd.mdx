@@ -1,0 +1,2285 @@
+---
+title: "AI Services Business Directory"
+description: "Developer Product Requirements Document (PRD) Last Updated: October 2, 2025 Target Audience: Junior Developer (Beginner Level) Project Goal: Build an automat..."
+---
+<Info>
+Normalized for Mintlify from `knowledge-base/aiconnected-business-platform/legacy-n8n-build-business-services-directory.mdx`.
+</Info>
+# AI Services Business Directory
+## Developer Product Requirements Document (PRD)
+
+**Version:** 1.0  
+**Last Updated:** October 2, 2025  
+**Target Audience:** Junior Developer (Beginner Level)  
+**Project Goal:** Build an automated system to collect, validate, and maintain 50,000 AI services businesses across the United States
+
+---
+
+## Table of Contents
+
+1. [Project Overview](#project-overview)
+2. [System Architecture](#system-architecture)
+3. [Technical Stack](#technical-stack)
+4. [Database Design](#database-design)
+5. [n8n Workflow Implementation](#n8n-workflow-implementation)
+6. [API Integration Details](#api-integration-details)
+7. [Data Quality & Validation](#data-quality-validation)
+8. [Automatic Update System](#automatic-update-system)
+9. [Implementation Roadmap](#implementation-roadmap)
+10. [Testing Procedures](#testing-procedures)
+11. [Deployment Guide](#deployment-guide)
+12. [Troubleshooting](#troubleshooting)
+13. [Glossary](#glossary)
+
+---
+
+## 1. Project Overview
+
+### 1.1 What We're Building
+
+We're creating an **automated business directory** containing 50,000 companies that provide AI services (artificial intelligence consulting, machine learning development, chatbot creation, etc.) across the United States.
+
+**Key Features:**
+- Organized by **State → County → City** hierarchy
+- Top 100 highest-income cities per state (5,000 cities total)
+- Average 10 businesses per city
+- Automatically collects business information from APIs
+- Validates data quality (checks emails, phones, addresses)
+- Updates information automatically every 90 days
+
+### 1.2 Success Criteria
+
+- **Quantity:** 50,000 verified AI services businesses
+- **Quality Standards:**
+  - 95%+ valid email addresses
+  - 90%+ valid phone numbers
+  - 95%+ accurate addresses
+  - 80%+ overall data completeness
+- **Organization:** Properly categorized by location hierarchy
+- **Maintenance:** Automatic quarterly updates
+
+### 1.3 Timeline
+
+- **Week 1:** Setup and configuration
+- **Week 2-3:** Pilot test (1,000 businesses)
+- **Week 4-6:** Full production (49,000 remaining businesses)
+- **Week 7:** Quality assurance
+- **Week 8:** Finalization and documentation
+- **Ongoing:** Automatic updates every 90 days
+
+---
+
+## 2. System Architecture
+
+### 2.1 High-Level Overview
+
+Think of our system like a **factory assembly line**:
+
+1. **Raw Materials (Input):** City names and locations
+2. **Machines (n8n Workflows):** Automated processes that collect data
+3. **Quality Control (Validation):** Check that data is correct
+4. **Storage (Database):** Keep all the verified information
+5. **Maintenance (Auto-Update):** Refresh old information regularly
+
+### 2.2 Component Diagram
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    ORCHESTRATOR WORKFLOW                     │
+│  (Main controller that manages everything)                   │
+└───────────────────────┬─────────────────────────────────────┘
+                        │
+        ┌───────────────┼───────────────┐
+        │               │               │
+        ▼               ▼               ▼
+┌──────────────┐ ┌──────────────┐ ┌──────────────┐
+│  WORKER #1   │ │  WORKER #2   │ │  WORKER #3   │
+│ (Batch 1-100)│ │(Batch 101-200│ │(Batch 201-300│
+└──────┬───────┘ └──────┬───────┘ └──────┬───────┘
+       │                │                │
+       └────────────────┼────────────────┘
+                        │
+                        ▼
+        ┌───────────────────────────────┐
+        │      DATA VALIDATION          │
+        │  (Check quality of data)      │
+        └───────────────┬───────────────┘
+                        │
+                        ▼
+        ┌───────────────────────────────┐
+        │    POSTGRESQL DATABASE        │
+        │  (Store all verified data)    │
+        └───────────────────────────────┘
+```
+
+### 2.3 Why This Architecture?
+
+**Orchestrator Pattern Benefits:**
+- **Parallel Processing:** Multiple workers run simultaneously (faster)
+- **Resilience:** If one worker fails, others continue
+- **Memory Efficient:** Process small batches instead of all 50,000 at once
+- **Resumable:** Can restart from failure point, not from beginning
+
+---
+
+## 3. Technical Stack
+
+### 3.1 Core Technologies
+
+| Component | Technology | Cost | Why We Choose It |
+|-----------|-----------|------|------------------|
+| **Automation Platform** | n8n (self-hosted) | $10/month VPS | Visual workflow builder, 400+ integrations, no code required |
+| **Database** | PostgreSQL | $20-50/month | Handles millions of records easily, free and open-source |
+| **Primary Data Source** | Apollo.io API | $79/month + credits | Best AI/tech company coverage, 275M contacts |
+| **Geographic Data** | SimpleMaps | $199 one-time | Pre-calculated income rankings, saves weeks of work |
+| **Email Validation** | ZeroBounce API | ~$200 for 50k | Ensures emails are deliverable |
+| **Phone Validation** | Twilio Lookup API | ~$250 for 50k | Verifies phone numbers are real |
+| **Hosting** | DigitalOcean Droplet | $10/month | Simple VPS for n8n |
+
+**Total One-Time Cost:** ~$650  
+**Monthly Cost During Collection:** ~$110/month  
+**Monthly Cost After Collection:** ~$30/month (database + hosting)
+
+### 3.2 Free Alternatives (If Budget Constraints)
+
+- **Database:** SQLite (free, but slower)
+- **Email Validation:** Hunter.io free tier (50 checks/month)
+- **Geographic Data:** US Census API (free, but requires more processing)
+- **Hosting:** Oracle Cloud Free Tier (limited resources)
+
+### 3.3 Development Tools
+
+- **Code Editor:** VS Code (free)
+- **API Testing:** Postman (free tier)
+- **Database Management:** DBeaver (free)
+- **Version Control:** Git + GitHub (free)
+
+---
+
+## 4. Database Design
+
+### 4.1 Understanding Databases (Beginner Explanation)
+
+A **database** is like a giant Excel spreadsheet that computers can read extremely fast. Instead of one giant table, we organize data into multiple related tables.
+
+**Key Concepts:**
+- **Table:** Like one sheet in Excel
+- **Row:** One record (e.g., one business)
+- **Column:** One piece of information (e.g., business name)
+- **Primary Key:** Unique ID for each row (like a social security number)
+- **Foreign Key:** Links to another table (like a reference)
+
+### 4.2 Database Schema
+
+We'll create 4 main tables:
+
+#### Table 1: `states`
+Stores information about all 50 US states.
+
+```sql
+CREATE TABLE states (
+    state_code VARCHAR(2) PRIMARY KEY,     -- 'CA', 'NY', 'TX', etc.
+    state_name VARCHAR(100) NOT NULL,      -- 'California', 'New York'
+    total_cities INTEGER DEFAULT 0,        -- How many cities we're tracking
+    total_businesses INTEGER DEFAULT 0,    -- How many businesses collected
+    last_updated TIMESTAMP                 -- When we last updated this state
+);
+```
+
+#### Table 2: `cities`
+Stores the top 100 cities per state (5,000 cities total).
+
+```sql
+CREATE TABLE cities (
+    city_id SERIAL PRIMARY KEY,            -- Auto-incrementing unique ID
+    city_name VARCHAR(100) NOT NULL,       -- 'San Francisco', 'Austin'
+    state_code VARCHAR(2) NOT NULL,        -- Links to states table
+    county_name VARCHAR(100),              -- 'San Francisco County'
+    latitude DECIMAL(10, 7),               -- 37.7749295
+    longitude DECIMAL(10, 7),              -- -122.4194155
+    income_median INTEGER,                 -- $112,449 (median household income)
+    population INTEGER,                    -- 873,965 (city population)
+    rank_in_state INTEGER,                 -- 1-100 (income ranking)
+    target_businesses INTEGER DEFAULT 10,  -- How many businesses we want
+    collected_businesses INTEGER DEFAULT 0, -- How many we've collected
+    last_scraped TIMESTAMP,                -- When we last searched this city
+    
+    FOREIGN KEY (state_code) REFERENCES states(state_code)
+);
+
+-- Index for faster lookups
+CREATE INDEX idx_cities_state ON cities(state_code);
+CREATE INDEX idx_cities_rank ON cities(rank_in_state);
+```
+
+#### Table 3: `businesses`
+Stores all business information (our main table with 50,000 records).
+
+```sql
+CREATE TABLE businesses (
+    -- PRIMARY IDENTIFIERS
+    business_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    record_hash VARCHAR(64) UNIQUE,        -- For deduplication
+    
+    -- BASIC INFORMATION
+    business_name VARCHAR(255) NOT NULL,
+    doing_business_as VARCHAR(255),        -- Alternative name (DBA)
+    description TEXT,
+    website_url VARCHAR(500),
+    
+    -- CONTACT INFORMATION
+    email VARCHAR(255),
+    email_verified BOOLEAN DEFAULT FALSE,
+    phone VARCHAR(20),                     -- Format: +1-555-123-4567
+    phone_verified BOOLEAN DEFAULT FALSE,
+    
+    -- LOCATION INFORMATION
+    street_address VARCHAR(255),
+    city_id INTEGER NOT NULL,              -- Links to cities table
+    state_code VARCHAR(2) NOT NULL,        -- Links to states table
+    zip_code VARCHAR(10),
+    latitude DECIMAL(10, 7),
+    longitude DECIMAL(10, 7),
+    location_type VARCHAR(20),             -- 'physical', 'remote', 'hybrid'
+    
+    -- AI-SPECIFIC INFORMATION
+    ai_service_types TEXT[],               -- Array: ['AI Consulting', 'ML Development']
+    technologies_used TEXT[],              -- Array: ['TensorFlow', 'PyTorch', 'OpenAI']
+    industry_verticals TEXT[],             -- Array: ['Healthcare', 'Finance']
+    target_clients TEXT[],                 -- Array: ['Enterprise', 'SMB', 'Startups']
+    use_cases TEXT[],                      -- Array: ['Chatbots', 'Predictive Analytics']
+    
+    -- COMPANY INFORMATION
+    employee_count INTEGER,
+    employee_range VARCHAR(20),            -- '11-50', '51-200', etc.
+    founded_year INTEGER,
+    funding_stage VARCHAR(50),             -- 'Seed', 'Series A', 'Bootstrap'
+    total_funding_usd DECIMAL(15, 2),
+    
+    -- SOCIAL PRESENCE
+    linkedin_url VARCHAR(500),
+    twitter_url VARCHAR(500),
+    github_url VARCHAR(500),
+    
+    -- DATA QUALITY METRICS
+    completeness_score INTEGER,            -- 0-100 (percentage of fields filled)
+    quality_tier VARCHAR(20),              -- 'Excellent', 'Good', 'Sufficient'
+    data_source VARCHAR(50),               -- 'Apollo', 'Google Places', etc.
+    
+    -- METADATA
+    status VARCHAR(20) DEFAULT 'pending',  -- 'pending', 'validated', 'duplicate'
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW(),
+    last_verified TIMESTAMP,
+    
+    FOREIGN KEY (city_id) REFERENCES cities(city_id),
+    FOREIGN KEY (state_code) REFERENCES states(state_code)
+);
+
+-- Indexes for performance
+CREATE INDEX idx_businesses_city ON businesses(city_id);
+CREATE INDEX idx_businesses_state ON businesses(state_code);
+CREATE INDEX idx_businesses_hash ON businesses(record_hash);
+CREATE INDEX idx_businesses_status ON businesses(status);
+CREATE INDEX idx_businesses_email ON businesses(email);
+CREATE INDEX idx_businesses_updated ON businesses(updated_at);
+```
+
+#### Table 4: `collection_logs`
+Tracks our progress and errors.
+
+```sql
+CREATE TABLE collection_logs (
+    log_id SERIAL PRIMARY KEY,
+    city_id INTEGER,
+    execution_type VARCHAR(50),            -- 'initial_collection', 'update', 'validation'
+    records_processed INTEGER,
+    records_added INTEGER,
+    records_updated INTEGER,
+    duplicates_found INTEGER,
+    errors_count INTEGER,
+    error_details TEXT,
+    execution_time_seconds INTEGER,
+    created_at TIMESTAMP DEFAULT NOW(),
+    
+    FOREIGN KEY (city_id) REFERENCES cities(city_id)
+);
+
+CREATE INDEX idx_logs_city ON collection_logs(city_id);
+CREATE INDEX idx_logs_created ON collection_logs(created_at);
+```
+
+### 4.3 Setting Up the Database
+
+**Step-by-Step Instructions:**
+
+1. **Install PostgreSQL:**
+   ```bash
+   # On Ubuntu/Debian
+   sudo apt update
+   sudo apt install postgresql postgresql-contrib
+   
+   # On macOS (using Homebrew)
+   brew install postgresql
+   brew services start postgresql
+   ```
+
+2. **Create Database:**
+   ```bash
+   # Log in to PostgreSQL
+   sudo -u postgres psql
+   
+   # Create database
+   CREATE DATABASE ai_directory;
+   
+   # Create user
+   CREATE USER directory_app WITH PASSWORD 'your_secure_password_here';
+   
+   # Grant permissions
+   GRANT ALL PRIVILEGES ON DATABASE ai_directory TO directory_app;
+   
+   # Exit
+   \q
+   ```
+
+3. **Run Schema Creation:**
+   ```bash
+   # Save all CREATE TABLE commands above to a file: schema.sql
+   psql -U directory_app -d ai_directory -f schema.sql
+   ```
+
+4. **Verify Setup:**
+   ```bash
+   psql -U directory_app -d ai_directory
+   
+   # List tables
+   \dt
+   
+   # You should see: states, cities, businesses, collection_logs
+   ```
+
+---
+
+## 5. n8n Workflow Implementation
+
+### 5.1 Understanding n8n (Beginner Explanation)
+
+**n8n** is a visual automation tool where you connect "nodes" (boxes) together to create workflows.
+
+**Think of it like Lego blocks:**
+- Each block (node) does one specific task
+- You connect blocks in sequence
+- Data flows from one block to the next
+- No programming required (mostly)
+
+**Example Simple Workflow:**
+```
+[Trigger] → [Get Data from API] → [Transform Data] → [Save to Database]
+```
+
+### 5.2 Installing n8n
+
+**Option A: Docker (Recommended for Beginners)**
+
+```bash
+# Install Docker first (if not installed)
+# Visit: https://docs.docker.com/get-docker/
+
+# Run n8n
+docker run -d \
+  --name n8n \
+  -p 5678:5678 \
+  -v ~/.n8n:/home/node/.n8n \
+  n8nio/n8n
+
+# Access n8n at: http://localhost:5678
+```
+
+**Option B: npm (If you have Node.js)**
+
+```bash
+npm install -g n8n
+n8n start
+```
+
+### 5.3 Workflow Architecture
+
+We'll build **3 main workflows:**
+
+1. **Orchestrator Workflow** (Main controller)
+2. **Data Collection Workflow** (Worker)
+3. **Validation Workflow** (Quality checker)
+4. **Update Workflow** (Automatic refresh)
+
+---
+
+### 5.4 WORKFLOW #1: Orchestrator
+
+**Purpose:** Controls the entire collection process, manages batches, tracks progress.
+
+**Nodes in Order:**
+
+```
+1. Schedule Trigger (runs daily at 2 AM)
+   ↓
+2. PostgreSQL: Get Next Batch of Cities
+   ↓
+3. Split Into Batches (100 cities per batch)
+   ↓
+4. Loop Through Batches
+   ↓
+5. HTTP Request: Call Data Collection Workflow (webhook)
+   ↓
+6. Wait (5 minutes between batches for rate limiting)
+   ↓
+7. PostgreSQL: Update Progress Log
+   ↓
+8. Check if Complete → Loop or End
+```
+
+**Detailed Node Configuration:**
+
+#### Node 1: Schedule Trigger
+```
+Type: Schedule Trigger
+Settings:
+  - Trigger Interval: Days
+  - Days Between Triggers: 1
+  - Trigger at Hour: 2
+  - Trigger at Minute: 0
+  - Timezone: America/New_York
+```
+
+#### Node 2: PostgreSQL - Get Cities
+```
+Type: PostgreSQL
+Operation: Execute Query
+Query:
+  SELECT 
+    city_id, 
+    city_name, 
+    state_code, 
+    latitude, 
+    longitude,
+    target_businesses,
+    collected_businesses
+  FROM cities
+  WHERE collected_businesses < target_businesses
+  ORDER BY rank_in_state, state_code
+  LIMIT 100;
+
+Connection:
+  Host: localhost (or your database server)
+  Database: ai_directory
+  User: directory_app
+  Password: [your password]
+  Port: 5432
+```
+
+#### Node 3: Split in Batches
+```
+Type: Split In Batches
+Settings:
+  - Batch Size: 10 (process 10 cities at a time)
+  - Options: Reset (check this box)
+```
+
+#### Node 4: Loop Through Each City
+```
+Type: Code (JavaScript)
+Code:
+  // This node processes each city in the batch
+  const cities = $input.all();
+  const processedCities = [];
+  
+  for (const city of cities) {
+    processedCities.push({
+      city_id: city.json.city_id,
+      city_name: city.json.city_name,
+      state_code: city.json.state_code,
+      lat: city.json.latitude,
+      lng: city.json.longitude,
+      needed: city.json.target_businesses - city.json.collected_businesses
+    });
+  }
+  
+  return processedCities.map(city => ({ json: city }));
+```
+
+#### Node 5: HTTP Request - Trigger Worker
+```
+Type: HTTP Request
+Method: POST
+URL: http://localhost:5678/webhook/collect-businesses
+Headers:
+  Content-Type: application/json
+Body (JSON):
+  {
+    "city_id": "\{\{ $json.city_id \}\}",
+    "city_name": "\{\{ $json.city_name \}\}",
+    "state": "\{\{ $json.state_code \}\}",
+    "coordinates": {
+      "lat": "\{\{ $json.lat \}\}",
+      "lng": "\{\{ $json.lng \}\}"
+    },
+    "count_needed": "\{\{ $json.needed \}\}"
+  }
+```
+
+#### Node 6: Wait Between Batches
+```
+Type: Wait
+Settings:
+  - Time: 5
+  - Unit: Minutes
+  - Reason: Prevents API rate limiting
+```
+
+#### Node 7: Log Progress
+```
+Type: PostgreSQL
+Operation: Insert
+Table: collection_logs
+Columns:
+  - city_id: \{\{ $json.city_id \}\}
+  - execution_type: 'batch_processing'
+  - records_processed: \{\{ $json.records_added \}\}
+  - created_at: NOW()
+```
+
+---
+
+### 5.5 WORKFLOW #2: Data Collection Worker
+
+**Purpose:** Collects business data for one city from Apollo.io API.
+
+**Nodes in Order:**
+
+```
+1. Webhook Trigger (receives city info from orchestrator)
+   ↓
+2. Apollo.io API: Search for AI Businesses
+   ↓
+3. Loop Through Results
+   ↓
+4. Transform Data (map API fields to our database schema)
+   ↓
+5. Generate Record Hash (for deduplication)
+   ↓
+6. PostgreSQL: Check if Duplicate
+   ↓
+7. IF Block: Is Duplicate?
+   ├─ YES → Skip
+   └─ NO → Continue to validation
+   ↓
+8. Email Validation (ZeroBounce API)
+   ↓
+9. Phone Validation (Twilio API)
+   ↓
+10. Calculate Completeness Score
+   ↓
+11. PostgreSQL: Insert Business Record
+   ↓
+12. Return Success Response
+```
+
+**Detailed Node Configuration:**
+
+#### Node 1: Webhook Trigger
+```
+Type: Webhook
+Settings:
+  - HTTP Method: POST
+  - Path: collect-businesses
+  - Response Code: 200
+  - Response Mode: Wait for Webhook Response
+```
+
+#### Node 2: Apollo.io API Search
+```
+Type: HTTP Request
+Method: POST
+URL: https://api.apollo.io/v1/mixed_people/search
+Headers:
+  Content-Type: application/json
+  X-Api-Key: [Your Apollo.io API Key]
+
+Body (JSON):
+{
+  "q_organization_keyword_tags": ["artificial intelligence", "machine learning", "AI services", "deep learning"],
+  "organization_locations": ["\{\{ $json.city_name \}\}, \{\{ $json.state \}\}"],
+  "page": 1,
+  "per_page": 25,
+  "organization_num_employees_ranges": ["1,10", "11,50", "51,200", "201,500", "501,1000", "1001,10000"],
+  "person_titles": ["CEO", "Founder", "CTO", "VP"]
+}
+
+Settings:
+  - Response Format: JSON
+  - Pagination:
+      - Pagination Mode: Update a Parameter
+      - Parameter Name: page
+      - Max Requests: 10
+```
+
+#### Node 3: Loop Through Results
+```
+Type: Item Lists
+Operation: Split Out Items
+Settings:
+  - Field Name: organizations (or whatever Apollo returns)
+```
+
+#### Node 4: Transform Data
+```
+Type: Code (JavaScript)
+Code:
+  // Map Apollo.io response to our database schema
+  const org = $input.item.json;
+  
+  // Extract AI service types from keywords
+  function extractServiceTypes(keywords) {
+    const services = [];
+    if (keywords.includes('consulting')) services.push('AI Consulting');
+    if (keywords.includes('machine learning')) services.push('ML Development');
+    if (keywords.includes('chatbot')) services.push('Conversational AI');
+    // Add more logic as needed
+    return services;
+  }
+  
+  // Extract technologies from tech stack
+  function extractTechnologies(techStack) {
+    const tech = [];
+    if (techStack.includes('tensorflow')) tech.push('TensorFlow');
+    if (techStack.includes('pytorch')) tech.push('PyTorch');
+    if (techStack.includes('aws')) tech.push('AWS AI/ML');
+    // Add more logic as needed
+    return tech;
+  }
+  
+  return {
+    json: {
+      business_name: org.name,
+      website_url: org.website_url,
+      email: org.email || org.primary_email,
+      phone: org.phone,
+      street_address: org.street_address,
+      city_id: $node["Webhook"].json.city_id,
+      state_code: $node["Webhook"].json.state,
+      zip_code: org.postal_code,
+      latitude: org.latitude,
+      longitude: org.longitude,
+      description: org.short_description,
+      ai_service_types: extractServiceTypes(org.keywords || []),
+      technologies_used: extractTechnologies(org.technologies || []),
+      employee_count: org.employee_count,
+      employee_range: org.employee_range,
+      founded_year: org.founded_year,
+      funding_stage: org.funding_stage,
+      linkedin_url: org.linkedin_url,
+      twitter_url: org.twitter_url,
+      data_source: 'Apollo.io'
+    }
+  };
+```
+
+#### Node 5: Generate Record Hash
+```
+Type: Code (JavaScript)
+Code:
+  const crypto = require('crypto');
+  
+  // Create unique hash from key fields
+  const hashString = [
+    $json.business_name.toLowerCase().trim(),
+    $json.website_url,
+    $json.email,
+    $json.phone
+  ].filter(x => x).join('|');
+  
+  const hash = crypto.createHash('sha256').update(hashString).digest('hex');
+  
+  return {
+    json: {
+      ...$json,
+      record_hash: hash
+    }
+  };
+```
+
+#### Node 6: Check for Duplicates
+```
+Type: PostgreSQL
+Operation: Execute Query
+Query:
+  SELECT business_id 
+  FROM businesses 
+  WHERE record_hash = '\{\{ $json.record_hash \}\}'
+  LIMIT 1;
+```
+
+#### Node 7: IF Duplicate Exists
+```
+Type: IF
+Conditions:
+  - \{\{ $json.business_id \}\} is not empty
+  
+If TRUE: Connect to Skip node
+If FALSE: Connect to Email Validation
+```
+
+#### Node 8: Email Validation
+```
+Type: HTTP Request
+Method: GET
+URL: https://api.zerobounce.net/v2/validate
+Query Parameters:
+  - api_key: [Your ZeroBounce API Key]
+  - email: \{\{ $json.email \}\}
+  
+Settings:
+  - Continue On Fail: true
+  
+Response Mapping:
+  - Save status to email_verified field
+```
+
+#### Node 9: Phone Validation
+```
+Type: HTTP Request
+Method: GET
+URL: https://lookups.twilio.com/v1/PhoneNumbers/\{\{ $json.phone \}\}
+Authentication:
+  - Type: Basic Auth
+  - User: [Your Twilio Account SID]
+  - Password: [Your Twilio Auth Token]
+
+Settings:
+  - Continue On Fail: true
+
+Response Mapping:
+  - Save valid status to phone_verified field
+```
+
+#### Node 10: Calculate Completeness Score
+```
+Type: Code (JavaScript)
+Code:
+  // Calculate what percentage of fields are filled
+  const data = $json;
+  const requiredFields = ['business_name', 'website_url', 'email', 'phone', 'street_address'];
+  const recommendedFields = ['description', 'ai_service_types', 'employee_range'];
+  const optionalFields = ['linkedin_url', 'founded_year', 'funding_stage'];
+  
+  let score = 0;
+  
+  // Required: 50 points
+  requiredFields.forEach(field => {
+    if (data[field]) score += 10;
+  });
+  
+  // Recommended: 30 points
+  recommendedFields.forEach(field => {
+    if (data[field] && data[field].length > 0) score += 10;
+  });
+  
+  // Optional: 20 points
+  optionalFields.forEach(field => {
+    if (data[field]) score += 6.67;
+  });
+  
+  // Determine quality tier
+  let tier = 'Insufficient';
+  if (score >= 90) tier = 'Excellent';
+  else if (score >= 75) tier = 'Good';
+  else if (score >= 50) tier = 'Sufficient';
+  
+  return {
+    json: {
+      ...data,
+      completeness_score: Math.round(score),
+      quality_tier: tier
+    }
+  };
+```
+
+#### Node 11: Insert to Database
+```
+Type: PostgreSQL
+Operation: Insert
+Table: businesses
+Columns: (map all fields from $json to corresponding database columns)
+
+Settings:
+  - Continue On Fail: true
+  - Return Fields: business_id, created_at
+```
+
+#### Node 12: Respond to Orchestrator
+```
+Type: Respond to Webhook
+Settings:
+  - Response Code: 200
+  - Response Body:
+    {
+      "success": true,
+      "business_id": "\{\{ $json.business_id \}\}",
+      "business_name": "\{\{ $json.business_name \}\}"
+    }
+```
+
+---
+
+### 5.6 WORKFLOW #3: Validation & Quality Check
+
+**Purpose:** Performs deeper validation on collected data.
+
+**Trigger:** Runs once per day after collection.
+
+**Nodes:**
+
+```
+1. Schedule Trigger (daily at 6 AM)
+   ↓
+2. Get Unvalidated Records (status = 'pending')
+   ↓
+3. Split Into Batches (500 records per batch)
+   ↓
+4. Validate Email Deliverability (batch API call)
+   ↓
+5. Validate Phone Numbers (batch API call)
+   ↓
+6. Geocode Addresses (confirm coordinates)
+   ↓
+7. Update Validation Status
+   ↓
+8. Generate Quality Report
+   ↓
+9. Send Email Notification (if quality below threshold)
+```
+
+---
+
+### 5.7 WORKFLOW #4: Automatic Update System
+
+**Purpose:** Refreshes business data every 90 days to keep directory current.
+
+**Nodes:**
+
+```
+1. Schedule Trigger (runs weekly)
+   ↓
+2. Get Businesses Needing Update
+   (WHERE last_verified < NOW() - INTERVAL '90 days')
+   ↓
+3. Split Into Daily Batches (700 businesses per day)
+   ↓
+4. For Each Business:
+   ├─ Re-query Apollo.io for updated info
+   ├─ Compare with existing data
+   ├─ IF significant changes: Update record
+   ├─ IF business closed: Mark as inactive
+   └─ Update last_verified timestamp
+   ↓
+5. Log Update Results
+   ↓
+6. Generate Weekly Update Report
+```
+
+**Detailed Update Logic:**
+
+```javascript
+// Node: Check for Changes
+const existing = $node["Get Existing Business"].json;
+const fresh = $node["Apollo API Update"].json;
+
+function hasSignificantChanges(old, new) {
+  // Check critical fields
+  const criticalChanges = [
+    old.email !== new.email,
+    old.phone !== new.phone,
+    old.website_url !== new.website_url,
+    old.street_address !== new.street_address
+  ];
+  
+  return criticalChanges.some(change => change === true);
+}
+
+function businessStillActive(apiResponse) {
+  // Check if business is still operational
+  return apiResponse.status !== 'closed' && 
+         apiResponse.status !== 'inactive';
+}
+
+const needsUpdate = hasSignificantChanges(existing, fresh);
+const stillActive = businessStillActive(fresh);
+
+return {
+  json: {
+    business_id: existing.business_id,
+    needs_update: needsUpdate,
+    is_active: stillActive,
+    changes_detected: needsUpdate ? ['email', 'phone'] : [],
+    updated_data: fresh
+  }
+};
+```
+
+---
+
+## 6. API Integration Details
+
+### 6.1 Apollo.io Setup
+
+**Step 1: Create Account**
+1. Visit https://www.apollo.io/
+2. Sign up for Professional plan ($79/month)
+3. Navigate to Settings → API
+4. Generate API key (keep this secret!)
+
+**Step 2: Test API Connection**
+
+Using Postman or curl:
+```bash
+curl -X POST https://api.apollo.io/v1/mixed_people/search \
+  -H "Content-Type: application/json" \
+  -H "X-Api-Key: YOUR_API_KEY" \
+  -d '{
+    "q_organization_keyword_tags": ["artificial intelligence"],
+    "organization_locations": ["San Francisco, CA"],
+    "page": 1,
+    "per_page": 10
+  }'
+```
+
+**Step 3: Understanding the Response**
+
+Apollo returns JSON like this:
+```json
+{
+  "organizations": [
+    {
+      "id": "12345",
+      "name": "AI Innovations Inc",
+      "website_url": "https://aiinnovations.com",
+      "primary_phone": {
+        "number": "+1-415-555-0123"
+      },
+      "primary_email": "info@aiinnovations.com",
+      "street_address": "123 Market St",
+      "city": "San Francisco",
+      "state": "California",
+      "postal_code": "94103",
+      "employee_count": 50,
+      "founded_year": 2018,
+      "keywords": ["machine learning", "consulting"]
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "per_page": 10,
+    "total_entries": 250
+  }
+}
+```
+
+**Step 4: Rate Limits**
+
+- **Free Tier:** 50 searches/month
+- **Professional:** Unlimited searches, 12,000 email credits/year
+- **Best Practice:** Add 500ms delay between requests
+
+### 6.2 SimpleMaps Setup
+
+**Step 1: Purchase Database**
+1. Visit https://simplemaps.com/data/us-cities
+2. Purchase "Comprehensive" version ($199)
+3. Download CSV file
+
+**Step 2: Import to Database**
+
+```bash
+# Using PostgreSQL COPY command
+psql -U directory_app -d ai_directory
+
+\copy cities(city_name, state_code, county_name, latitude, longitude, income_median, population) 
+FROM '/path/to/simplemaps.csv' 
+DELIMITER ',' 
+CSV HEADER;
+```
+
+**Step 3: Calculate Rankings**
+
+```sql
+-- Add rank_in_state column
+UPDATE cities c1
+SET rank_in_state = (
+  SELECT COUNT(*) + 1
+  FROM cities c2
+  WHERE c2.state_code = c1.state_code
+    AND c2.income_median > c1.income_median
+);
+
+-- Keep only top 100 per state
+DELETE FROM cities
+WHERE city_id NOT IN (
+  SELECT city_id
+  FROM (
+    SELECT city_id, ROW_NUMBER() OVER (
+      PARTITION BY state_code 
+      ORDER BY income_median DESC
+    ) as rn
+    FROM cities
+  ) ranked
+  WHERE rn <= 100
+);
+```
+
+### 6.3 Validation APIs
+
+#### ZeroBounce (Email Validation)
+
+**Setup:**
+1. Create account at https://www.zerobounce.net/
+2. Purchase credits ($16 per 1,000 validations)
+3. Get API key from dashboard
+
+**Usage in n8n:**
+```
+Node: HTTP Request
+URL: https://api.zerobounce.net/v2/validate
+Method: GET
+Query Parameters:
+  - api_key: YOUR_KEY
+  - email: \{\{ $json.email \}\}
+  
+Response Codes:
+  - valid: Email is deliverable
+  - invalid: Email doesn't exist
+  - catch-all: Domain accepts all emails
+  - unknown: Cannot determine
+```
+
+#### Twilio Lookup (Phone Validation)
+
+**Setup:**
+1. Create account at https://www.twilio.com/
+2. Purchase credits ($0.005 per lookup)
+3. Get Account SID and Auth Token
+
+**Usage in n8n:**
+```
+Node: HTTP Request
+URL: https://lookups.twilio.com/v1/PhoneNumbers/\{\{ $json.phone \}\}
+Method: GET
+Authentication: Basic Auth
+  - Username: Account SID
+  - Password: Auth Token
+
+Response:
+{
+  "phone_number": "+14155551234",
+  "valid": true,
+  "country_code": "US",
+  "carrier": {
+    "name": "Verizon",
+    "type": "mobile"
+  }
+}
+```
+
+---
+
+## 7. Data Quality & Validation
+
+### 7.1 Multi-Level Deduplication Strategy
+
+**Level 1: Exact Match (100% confidence)**
+
+```sql
+-- Check for exact duplicates before inserting
+SELECT COUNT(*) FROM businesses
+WHERE business_name = 'AI Solutions Inc'
+  AND website_url = 'https://aisolutions.com'
+  AND state_code = 'CA';
+```
+
+**Level 2: Hash-Based Match (99% confidence)**
+
+```javascript
+// Generate hash from multiple fields
+const crypto = require('crypto');
+
+function generateHash(business) {
+  const normalized = {
+    name: business.name.toLowerCase().replace(/[^a-z0-9]/g, ''),
+    website: business.website.replace(/https?:\/\/(www\.)?/, ''),
+    phone: business.phone.replace(/[^0-9]/g, '')
+  };
+  
+  const hashString = Object.values(normalized).join('|');
+  return crypto.createHash('sha256').update(hashString).digest('hex');
+}
+```
+
+**Level 3: Fuzzy Match (85-95% confidence)**
+
+```javascript
+// Levenshtein distance for similar names
+function levenshteinDistance(a, b) {
+  const matrix = [];
+  
+  for (let i = 0; i <= b.length; i++) {
+    matrix[i] = [i];
+  }
+  
+  for (let j = 0; j <= a.length; j++) {
+    matrix[0][j] = j;
+  }
+  
+  for (let i = 1; i <= b.length; i++) {
+    for (let j = 1; j <= a.length; j++) {
+      if (b.charAt(i - 1) === a.charAt(j - 1)) {
+        matrix[i][j] = matrix[i - 1][j - 1];
+      } else {
+        matrix[i][j] = Math.min(
+          matrix[i - 1][j - 1] + 1,
+          matrix[i][j - 1] + 1,
+          matrix[i - 1][j] + 1
+        );
+      }
+    }
+  }
+  
+  return matrix[b.length][a.length];
+}
+
+function calculateSimilarity(name1, name2) {
+  const distance = levenshteinDistance(name1, name2);
+  const maxLength = Math.max(name1.length, name2.length);
+  return 1 - (distance / maxLength);
+}
+
+// Usage
+const similarity = calculateSimilarity("AI Solutions Inc", "A.I. Solutions Incorporated");
+if (similarity > 0.85) {
+  console.log("Likely duplicate!");
+}
+```
+
+### 7.2 Data Completeness Scoring
+
+**Formula:**
+
+```javascript
+function calculateCompletenessScore(business) {
+  let score = 0;
+  let maxScore = 100;
+  
+  // Required Fields (50 points)
+  const required = {
+    business_name: 10,
+    website_url: 10,
+    email: 10,
+    phone: 10,
+    street_address: 10
+  };
+  
+  for (const [field, points] of Object.entries(required)) {
+    if (business[field] && business[field].trim() !== '') {
+      score += points;
+    }
+  }
+  
+  // Recommended Fields (30 points)
+  const recommended = {
+    description: 10,
+    ai_service_types: 10,
+    employee_range: 10
+  };
+  
+  for (const [field, points] of Object.entries(recommended)) {
+    if (business[field] && business[field].length > 0) {
+      score += points;
+    }
+  }
+  
+  // Optional Enrichment (20 points)
+  const optional = {
+    linkedin_url: 5,
+    founded_year: 5,
+    funding_stage: 5,
+    technologies_used: 5
+  };
+  
+  for (const [field, points] of Object.entries(optional)) {
+    if (business[field]) {
+      score += points;
+    }
+  }
+  
+  return {
+    score: score,
+    tier: score >= 90 ? 'Excellent' :
+          score >= 75 ? 'Good' :
+          score >= 50 ? 'Sufficient' : 'Incomplete'
+  };
+}
+```
+
+### 7.3 Automated Quality Reports
+
+**SQL Query for Daily Quality Report:**
+
+```sql
+-- Generate quality metrics
+SELECT 
+  state_code,
+  COUNT(*) as total_businesses,
+  AVG(completeness_score) as avg_completeness,
+  SUM(CASE WHEN email_verified THEN 1 ELSE 0 END) as verified_emails,
+  SUM(CASE WHEN phone_verified THEN 1 ELSE 0 END) as verified_phones,
+  SUM(CASE WHEN quality_tier = 'Excellent' THEN 1 ELSE 0 END) as excellent_records,
+  SUM(CASE WHEN quality_tier = 'Good' THEN 1 ELSE 0 END) as good_records,
+  SUM(CASE WHEN quality_tier = 'Sufficient' THEN 1 ELSE 0 END) as sufficient_records,
+  SUM(CASE WHEN quality_tier = 'Incomplete' THEN 1 ELSE 0 END) as incomplete_records
+FROM businesses
+WHERE created_at >= CURRENT_DATE - INTERVAL '1 day'
+GROUP BY state_code
+ORDER BY state_code;
+```
+
+**n8n Node for Sending Report:**
+
+```
+Type: Send Email (Gmail)
+To: your-email@example.com
+Subject: Daily AI Directory Quality Report - \{\{ $now.format('YYYY-MM-DD') \}\}
+Body:
+Quality Metrics for \{\{ $now.format('YYYY-MM-DD') \}\}
+
+Total Records Collected: \{\{ $json.total \}\}
+Average Completeness: \{\{ $json.avg_completeness \}\}%
+
+Email Verification Rate: \{\{ ($json.verified_emails / $json.total * 100).toFixed(2) \}\}%
+Phone Verification Rate: \{\{ ($json.verified_phones / $json.total * 100).toFixed(2) \}\}%
+
+Quality Distribution:
+- Excellent: \{\{ $json.excellent_records \}\}
+- Good: \{\{ $json.good_records \}\}
+- Sufficient: \{\{ $json.sufficient_records \}\}
+- Incomplete: \{\{ $json.incomplete_records \}\}
+```
+
+---
+
+## 8. Automatic Update System
+
+### 8.1 Update Strategy
+
+**Principle:** Keep data fresh without excessive API costs.
+
+**Update Schedule:**
+- **Critical fields (email, phone, website):** Every 90 days
+- **Nice-to-have fields (funding, employees):** Every 180 days
+- **Static fields (founded_year):** Never update
+
+### 8.2 Update Workflow Logic
+
+```javascript
+// Node: Determine Update Priority
+function getUpdatePriority(business) {
+  const daysSinceUpdate = Math.floor(
+    (Date.now() - new Date(business.last_verified)) / (1000 * 60 * 60 * 24)
+  );
+  
+  // Priority levels
+  if (daysSinceUpdate > 180) return 'urgent';    // 6+ months old
+  if (daysSinceUpdate > 90) return 'high';       // 3-6 months old
+  if (daysSinceUpdate > 30) return 'medium';     // 1-3 months old
+  return 'low';                                   // <1 month old
+}
+
+function shouldUpdate(business) {
+  const priority = getUpdatePriority(business);
+  const quality = business.quality_tier;
+  
+  // Always update urgent records
+  if (priority === 'urgent') return true;
+  
+  // Update high priority if quality isn't excellent
+  if (priority === 'high' && quality !== 'Excellent') return true;
+  
+  // Update medium priority if quality is insufficient
+  if (priority === 'medium' && quality === 'Insufficient') return true;
+  
+  return false;
+}
+
+// Usage in workflow
+const needsUpdate = shouldUpdate($json);
+if (needsUpdate) {
+  // Proceed to API call
+} else {
+  // Skip this business
+}
+```
+
+### 8.3 Detecting Closed Businesses
+
+```javascript
+// Node: Check Business Status
+async function verifyBusinessActive(business) {
+  const checks = {
+    website_accessible: false,
+    email_deliverable: false,
+    phone_working: false
+  };
+  
+  // Check 1: Website returns 200
+  try {
+    const response = await fetch(business.website_url);
+    checks.website_accessible = response.status === 200;
+  } catch (e) {
+    checks.website_accessible = false;
+  }
+  
+  // Check 2: Email domain has MX records
+  // (This would be done via ZeroBounce API in n8n)
+  
+  // Check 3: Phone number still assigned
+  // (This would be done via Twilio API in n8n)
+  
+  // Business is likely closed if all checks fail
+  const failedChecks = Object.values(checks).filter(x => !x).length;
+  
+  return {
+    status: failedChecks >= 2 ? 'likely_closed' : 'active',
+    checks: checks,
+    confidence: (3 - failedChecks) / 3
+  };
+}
+```
+
+### 8.4 Incremental Update vs Full Refresh
+
+**Incremental (Recommended):**
+- Update ~700 businesses per day
+- Spreads API costs over time
+- Completes full refresh in ~72 days
+- Less disruptive to live directory
+
+**Full Refresh (Emergency only):**
+- Update all 50,000 in 1-2 weeks
+- High API costs
+- Risk of hitting rate limits
+- Use only when data quality degrades severely
+
+**n8n Implementation:**
+
+```sql
+-- Get businesses for today's update batch
+SELECT * FROM businesses
+WHERE last_verified < NOW() - INTERVAL '90 days'
+ORDER BY last_verified ASC
+LIMIT 700;
+```
+
+---
+
+## 9. Implementation Roadmap
+
+### Week 1: Setup & Configuration
+
+**Day 1-2: Infrastructure Setup**
+- [ ] Provision DigitalOcean Droplet ($10/month)
+- [ ] Install Docker and n8n
+- [ ] Install PostgreSQL
+- [ ] Set up database backups (automated daily)
+- [ ] Configure firewall rules
+
+**Day 3-4: Database Setup**
+- [ ] Create database schema (run all CREATE TABLE commands)
+- [ ] Import SimpleMaps data
+- [ ] Calculate city rankings
+- [ ] Verify data integrity (check row counts)
+- [ ] Create database indexes
+
+**Day 5: API Account Setup**
+- [ ] Create Apollo.io account, verify API access
+- [ ] Create ZeroBounce account, purchase credits
+- [ ] Create Twilio account, purchase credits
+- [ ] Test each API with Postman
+- [ ] Document API keys in secure location (password manager)
+
+**Day 6-7: Build Test Workflow**
+- [ ] Create simple n8n workflow: Get 1 city → Call Apollo → Save to DB
+- [ ] Test with San Francisco (should return ~10-20 businesses)
+- [ ] Verify data saves correctly to PostgreSQL
+- [ ] Check for errors in execution logs
+
+**Checkpoint:** By end of Week 1, you should be able to collect 10 businesses manually.
+
+---
+
+### Weeks 2-3: Pilot Testing
+
+**Week 2: Build Core Workflows**
+- [ ] Build Orchestrator Workflow (Days 1-2)
+- [ ] Build Data Collection Worker (Days 3-4)
+- [ ] Build Validation Workflow (Day 5)
+- [ ] Connect workflows via webhooks (Day 6-7)
+
+**Week 3: Run Pilot (1,000 Businesses)**
+- [ ] Select 100 cities for pilot (top 2 per state)
+- [ ] Run collection workflow (Days 1-3)
+- [ ] Expected: ~10 businesses × 100 cities = 1,000 records
+- [ ] Monitor execution logs for errors
+- [ ] Run validation workflow (Day 4)
+- [ ] Analyze results (Day 5):
+  - Email deliverability rate
+  - Phone validity rate
+  - Average completeness score
+  - Data quality tier distribution
+- [ ] Calculate actual costs (Day 6)
+- [ ] Optimize workflow based on findings (Day 7)
+
+**Success Criteria:**
+- ✓ At least 800 valid businesses collected
+- ✓ &gt;90% email deliverability
+- ✓ &gt;85% phone validity
+- ✓ Average completeness &gt;75%
+- ✓ Actual cost &lt;$100 for 1,000 businesses
+
+**If success criteria not met:** Pause and troubleshoot before continuing.
+
+---
+
+### Weeks 4-6: Full Production
+
+**Strategy:** Collect 10,000 businesses per week
+
+**Daily Routine:**
+1. Morning (9 AM): Check overnight execution logs
+2. Review quality metrics from previous day
+3. Address any errors or failures
+4. Monitor API credit usage
+5. Run validation on yesterday's new records
+
+**Week 4: Cities Ranked 1-33 per State**
+- Expected: ~16,500 businesses
+- Apollo searches: ~1,650
+- Monitor rate limiting
+
+**Week 5: Cities Ranked 34-66 per State**
+- Expected: ~16,500 businesses
+- Check running costs vs budget
+- Adjust batch sizes if needed
+
+**Week 6: Cities Ranked 67-100 per State**
+- Expected: ~16,500 businesses
+- Total should reach ~49,500
+- Prepare for final validation
+
+**Monitoring Checklist:**
+```
+Daily:
+□ Check n8n execution logs for errors
+□ Verify database row count increasing
+□ Monitor API credit balance
+□ Review quality metrics
+
+Weekly:
+□ Generate quality report by state
+□ Identify data gaps (cities with <10 businesses)
+□ Calculate cost per business
+□ Backup database
+```
+
+---
+
+### Week 7: Quality Assurance
+
+**Day 1: Automated Validation**
+- [ ] Run comprehensive validation workflow on all 50,000 records
+- [ ] Re-verify emails (sample 1,000)
+- [ ] Re-verify phones (sample 1,000)
+- [ ] Update quality scores
+
+**Day 2-3: Manual Spot Checking**
+- [ ] Randomly select 200 businesses across states
+- [ ] Visit websites to verify businesses exist
+- [ ] Check if AI services are actually offered
+- [ ] Document findings
+
+**Day 4: Gap Analysis**
+- [ ] Identify cities with &lt;10 businesses
+- [ ] Run supplemental searches for low-count cities
+- [ ] Consider alternative data sources for gaps
+
+**Day 5: Data Enrichment**
+- [ ] Fill missing LinkedIn URLs (sample)
+- [ ] Add missing descriptions
+- [ ] Improve categorization of AI services
+
+**Day 6: Generate Reports**
+```sql
+-- Final Quality Report
+SELECT 
+  'Total Businesses' as metric, 
+  COUNT(*)::text as value 
+FROM businesses
+UNION ALL
+SELECT 
+  'Average Completeness', 
+  ROUND(AVG(completeness_score), 2)::text
+FROM businesses
+UNION ALL
+SELECT 
+  'Verified Emails', 
+  ROUND(AVG(CASE WHEN email_verified THEN 100 ELSE 0 END), 2)::text || '%'
+FROM businesses
+UNION ALL
+SELECT 
+  'Verified Phones',
+  ROUND(AVG(CASE WHEN phone_verified THEN 100 ELSE 0 END), 2)::text || '%'
+FROM businesses;
+```
+
+**Day 7: Review & Approve**
+- [ ] Present quality report
+- [ ] Document known limitations
+- [ ] Get approval to proceed
+
+---
+
+### Week 8: Finalization
+
+**Day 1: Final Deduplication**
+- [ ] Run aggressive deduplication
+- [ ] Review flagged duplicates manually
+- [ ] Merge or remove duplicates
+
+**Day 2: Data Export**
+- [ ] Export to CSV for backup
+- [ ] Export to JSON for API
+- [ ] Create state-specific exports
+
+**Day 3-4: Set Up Auto-Update**
+- [ ] Build automatic update workflow
+- [ ] Schedule weekly execution
+- [ ] Test update on 100 businesses
+
+**Day 5: Documentation**
+- [ ] Document all workflows
+- [ ] Create operations manual
+- [ ] Write troubleshooting guide
+
+**Day 6-7: Deployment**
+- [ ] Move to production environment (if applicable)
+- [ ] Set up monitoring alerts
+- [ ] Configure backup schedule
+- [ ] Launch! 🚀
+
+---
+
+## 10. Testing Procedures
+
+### 10.1 Unit Tests (Test Individual Nodes)
+
+**Test 1: Apollo API Connection**
+```
+Expected Input: City name "San Francisco, CA"
+Expected Output: JSON array with 10-25 organizations
+Success Criteria: 
+  - HTTP status 200
+  - Response contains "organizations" key
+  - At least 1 organization returned
+```
+
+**Test 2: Email Validation**
+```
+Test Cases:
+  1. Valid email: "contact@example.com" → expect "valid"
+  2. Invalid email: "invalid@notarealdomain.fake" → expect "invalid"
+  3. Catch-all: "anything@gmail.com" → expect "catch-all"
+
+Success Criteria: API returns status within 2 seconds
+```
+
+**Test 3: Duplicate Detection**
+```
+Test Case: Insert same business twice
+Expected: Second insert should be skipped
+Verify: Check collection_logs shows "duplicates_found: 1"
+```
+
+### 10.2 Integration Tests (Test Full Workflows)
+
+**Test 1: End-to-End Collection**
+```bash
+# Test collecting 1 city
+Input: city_id = 1 (e.g., New York, NY)
+Expected Output:
+  - 10-15 new businesses in database
+  - All have valid record_hash
+  - No duplicates
+  - Completeness score >50%
+
+Verification:
+SELECT COUNT(*), AVG(completeness_score)
+FROM businesses
+WHERE city_id = 1
+AND created_at > NOW() - INTERVAL '1 hour';
+```
+
+**Test 2: Orchestrator → Worker Communication**
+```
+Steps:
+1. Manually trigger orchestrator
+2. Verify webhook calls are made
+3. Check worker receives data correctly
+4. Confirm responses return to orchestrator
+
+Success: All 3 workers process batches without errors
+```
+
+**Test 3: Update Workflow**
+```
+Steps:
+1. Mark 10 businesses as needing update (set last_verified to 100 days ago)
+2. Run update workflow
+3. Verify:
+   - API calls made for those 10
+   - last_verified timestamp updated
+   - Changes logged in collection_logs
+
+Success: All 10 businesses updated, no errors
+```
+
+### 10.3 Load Testing
+
+**Test 1: Batch Processing**
+```
+Test: Process 1,000 cities in orchestrator
+Expected:
+  - All batches complete within 24 hours
+  - No memory errors
+  - Database remains responsive
+
+Monitor:
+  - n8n execution queue size
+  - PostgreSQL connection count
+  - Server CPU/RAM usage
+```
+
+**Test 2: Database Performance**
+```sql
+-- Test query performance on 50,000 records
+EXPLAIN ANALYZE
+SELECT * FROM businesses
+WHERE city_id = 1
+AND completeness_score > 80
+LIMIT 100;
+
+-- Expected: Query time <100ms
+```
+
+### 10.4 Data Quality Tests
+
+**Test 1: Completeness Distribution**
+```sql
+-- All records should have minimum required fields
+SELECT COUNT(*) as incomplete_records
+FROM businesses
+WHERE business_name IS NULL
+   OR email IS NULL
+   OR phone IS NULL;
+
+-- Expected: 0 incomplete records
+```
+
+**Test 2: Validation Rates**
+```sql
+-- Check validation percentages
+SELECT 
+  ROUND(AVG(CASE WHEN email_verified THEN 100 ELSE 0 END), 2) as email_rate,
+  ROUND(AVG(CASE WHEN phone_verified THEN 100 ELSE 0 END), 2) as phone_rate
+FROM businesses;
+
+-- Expected: email_rate >90%, phone_rate >85%
+```
+
+---
+
+## 11. Deployment Guide
+
+### 11.1 Production Environment Setup
+
+**Server Requirements:**
+- **CPU:** 2 cores minimum (4 recommended)
+- **RAM:** 4GB minimum (8GB recommended)
+- **Storage:** 50GB SSD
+- **Network:** 100Mbps
+- **OS:** Ubuntu 22.04 LTS
+
+**DigitalOcean Droplet Setup:**
+
+```bash
+# 1. Create Droplet
+# Go to: https://cloud.digitalocean.com/droplets/new
+# Select:
+#   - Image: Ubuntu 22.04 LTS
+#   - Plan: Basic ($24/month, 4GB RAM)
+#   - Datacenter: New York (or closest to you)
+#   - Enable: Monitoring
+
+# 2. SSH into server
+ssh root@your_droplet_ip
+
+# 3. Update system
+apt update && apt upgrade -y
+
+# 4. Install Docker
+curl -fsSL https://get.docker.com -o get-docker.sh
+sh get-docker.sh
+
+# 5. Install Docker Compose
+apt install docker-compose -y
+
+# 6. Create n8n directory
+mkdir -p /opt/n8n
+cd /opt/n8n
+
+# 7. Create docker-compose.yml
+cat > docker-compose.yml <<EOF
+version: '3.8'
+
+services:
+  n8n:
+    image: n8nio/n8n
+    restart: always
+    ports:
+      - "5678:5678"
+    environment:
+      - N8N_BASIC_AUTH_ACTIVE=true
+      - N8N_BASIC_AUTH_USER=admin
+      - N8N_BASIC_AUTH_PASSWORD=your_secure_password
+      - N8N_HOST=your_domain.com
+      - N8N_PROTOCOL=https
+      - NODE_ENV=production
+      - WEBHOOK_URL=https://your_domain.com/
+    volumes:
+      - n8n_data:/home/node/.n8n
+      
+  postgres:
+    image: postgres:15
+    restart: always
+    environment:
+      - POSTGRES_USER=directory_app
+      - POSTGRES_PASSWORD=your_db_password
+      - POSTGRES_DB=ai_directory
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+volumes:
+  n8n_data:
+  postgres_data:
+EOF
+
+# 8. Start services
+docker-compose up -d
+
+# 9. Check status
+docker-compose ps
+```
+
+### 11.2 SSL Certificate (HTTPS)
+
+```bash
+# Install Nginx
+apt install nginx certbot python3-certbot-nginx -y
+
+# Configure Nginx
+cat > /etc/nginx/sites-available/n8n <<EOF
+server {
+    server_name your_domain.com;
+
+    location / {
+        proxy_pass http://localhost:5678;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host \$host;
+        proxy_cache_bypass \$http_upgrade;
+    }
+}
+EOF
+
+# Enable site
+ln -s /etc/nginx/sites-available/n8n /etc/nginx/sites-enabled/
+nginx -t
+systemctl restart nginx
+
+# Get SSL certificate
+certbot --nginx -d your_domain.com
+```
+
+### 11.3 Backup Configuration
+
+```bash
+# Create backup script
+cat > /opt/backup.sh <<'EOF'
+#!/bin/bash
+DATE=$(date +%Y%m%d_%H%M%S)
+BACKUP_DIR="/opt/backups"
+
+mkdir -p $BACKUP_DIR
+
+# Backup database
+docker exec postgres pg_dump -U directory_app ai_directory > $BACKUP_DIR/db_$DATE.sql
+
+# Backup n8n workflows
+docker exec n8n tar czf - /home/node/.n8n > $BACKUP_DIR/n8n_$DATE.tar.gz
+
+# Keep only last 7 days
+find $BACKUP_DIR -name "db_*.sql" -mtime +7 -delete
+find $BACKUP_DIR -name "n8n_*.tar.gz" -mtime +7 -delete
+
+echo "Backup completed: $DATE"
+EOF
+
+chmod +x /opt/backup.sh
+
+# Add to crontab (daily at 2 AM)
+(crontab -l 2>/dev/null; echo "0 2 * * * /opt/backup.sh") | crontab -
+```
+
+### 11.4 Monitoring Setup
+
+```bash
+# Install monitoring tools
+apt install htop iotop nethogs -y
+
+# Set up alerts (using simple email)
+cat > /opt/monitor.sh <<'EOF'
+#!/bin/bash
+DISK_USAGE=$(df -h / | tail -1 | awk '{print $5}' | sed 's/%//')
+MEM_USAGE=$(free | grep Mem | awk '{print int($3/$2 * 100)}')
+
+if [ $DISK_USAGE -gt 80 ]; then
+    echo "Disk usage is $DISK_USAGE%" | mail -s "Alert: High Disk Usage" your@email.com
+fi
+
+if [ $MEM_USAGE -gt 90 ]; then
+    echo "Memory usage is $MEM_USAGE%" | mail -s "Alert: High Memory Usage" your@email.com
+fi
+EOF
+
+chmod +x /opt/monitor.sh
+
+# Run every hour
+(crontab -l 2>/dev/null; echo "0 * * * * /opt/monitor.sh") | crontab -
+```
+
+---
+
+## 12. Troubleshooting
+
+### 12.1 Common Issues & Solutions
+
+**Issue 1: "API Rate Limit Exceeded"**
+```
+Symptoms: Workflow fails with 429 error
+Cause: Too many API requests too quickly
+
+Solution:
+1. Increase wait time between requests
+   - Change Wait node from 200ms to 500ms
+2. Reduce batch size
+   - Change from 100 to 50 items per batch
+3. Add exponential backoff:
+
+// In HTTP Request node settings
+Retry On Fail: true
+Max Tries: 3
+Wait Between Tries: 5000 (5 seconds)
+```
+
+**Issue 2: "Duplicate Key Violation"**
+```
+Symptoms: INSERT fails with "duplicate key value violates unique constraint"
+Cause: Trying to insert business that already exists
+
+Solution:
+1. Verify hash generation is working:
+   SELECT record_hash, COUNT(*) 
+   FROM businesses 
+   GROUP BY record_hash 
+   HAVING COUNT(*) > 1;
+
+2. Add ON CONFLICT clause:
+   INSERT INTO businesses (...) 
+   VALUES (...)
+   ON CONFLICT (record_hash) DO NOTHING;
+
+3. Or use UPSERT:
+   INSERT INTO businesses (...)
+   VALUES (...)
+   ON CONFLICT (record_hash) 
+   DO UPDATE SET updated_at = NOW();
+```
+
+**Issue 3: "Out of Memory Error"**
+```
+Symptoms: n8n crashes or becomes unresponsive
+Cause: Processing too much data at once
+
+Solution:
+1. Reduce batch size in Split In Batches node
+2. Increase server RAM (upgrade DigitalOcean droplet)
+3. Add pagination to large queries:
+
+   SELECT * FROM businesses
+   LIMIT 1000 OFFSET 0;  -- Process 1000 at a time
+```
+
+**Issue 4: "Connection Timeout"**
+```
+Symptoms: PostgreSQL node fails with timeout
+Cause: Database overloaded or network issues
+
+Solution:
+1. Increase connection timeout in PostgreSQL node:
+   Timeout: 60000 (60 seconds)
+
+2. Check database connections:
+   SELECT COUNT(*) FROM pg_stat_activity;
+   
+3. If >100 connections, add connection pooling:
+   npm install pg-pool
+```
+
+**Issue 5: "Invalid Email/Phone Format"**
+```
+Symptoms: Validation fails, data looks correct
+Cause: Unexpected format from API
+
+Solution:
+1. Add data cleaning step before validation:
+
+function cleanEmail(email) {
+  if (!email) return null;
+  return email.toLowerCase().trim();
+}
+
+function cleanPhone(phone) {
+  if (!phone) return null;
+  // Convert to E.164 format
+  let cleaned = phone.replace(/[^0-9]/g, '');
+  if (cleaned.length === 10) {
+    cleaned = '1' + cleaned; // Add US country code
+  }
+  return '+' + cleaned;
+}
+```
+
+### 12.2 Debugging Tips
+
+**Enable Debug Mode:**
+```bash
+# In n8n
+docker-compose down
+docker-compose up -d -e N8N_LOG_LEVEL=debug
+```
+
+**Check Logs:**
+```bash
+# n8n logs
+docker logs -f n8n
+
+# PostgreSQL logs
+docker logs -f postgres
+
+# System logs
+journalctl -f
+```
+
+**Test Individual Nodes:**
+1. In n8n editor, click on a node
+2. Click "Execute Node" button
+3. View output in right panel
+4. Check for errors in JSON data
+
+**Database Debugging:**
+```sql
+-- Check for orphaned records
+SELECT city_id, COUNT(*) 
+FROM businesses
+WHERE city_id NOT IN (SELECT city_id FROM cities);
+
+-- Find slow queries
+SELECT query, mean_exec_time
+FROM pg_stat_statements
+ORDER BY mean_exec_time DESC
+LIMIT 10;
+
+-- Check table sizes
+SELECT 
+  schemaname,
+  tablename,
+  pg_size_pretty(pg_total_relation_size(schemaname||'.'||tablename)) AS size
+FROM pg_tables
+WHERE schemaname = 'public'
+ORDER BY pg_total_relation_size(schemaname||'.'||tablename) DESC;
+```
+
+---
+
+## 13. Glossary
+
+**API (Application Programming Interface):** A way for different software programs to talk to each other. Like a waiter taking your order to the kitchen.
+
+**Batch Processing:** Processing data in groups (batches) instead of one at a time. Faster and more efficient.
+
+**Database:** Organized collection of data stored electronically. Like a giant, super-fast filing cabinet.
+
+**Deduplication:** Removing duplicate (identical or similar) records from a database.
+
+**Docker:** Software that packages applications in "containers" so they run the same everywhere.
+
+**Foreign Key:** A field in a database table that links to the primary key of another table.
+
+**Fuzzy Matching:** Finding records that are similar but not exactly identical (e.g., "IBM Corp" vs "IBM Corporation").
+
+**Hash:** A unique fingerprint for data. Same input always produces same hash.
+
+```text
+**JSON (JavaScript Object Notation):** A format for storing and transmitting data. Looks like: `{"name": "value"}`.
+
+```
+**n8n:** Visual workflow automation tool that connects different apps and services.
+
+**Node:** In n8n, a single step in a workflow that performs one specific task.
+
+**Orchestrator:** A workflow that manages and coordinates other workflows.
+
+**PostgreSQL:** A free, open-source database system. Very powerful and reliable.
+
+**Primary Key:** A unique identifier for each row in a database table (like a Social Security Number).
+
+**Rate Limiting:** Restricting how many requests you can make to an API per time period.
+
+**Schema:** The structure of a database - what tables exist and what columns they have.
+
+**SQL (Structured Query Language):** The language used to interact with databases.
+
+**UUID (Universally Unique Identifier):** A 128-bit number that's unique across all computers and time. Looks like: `550e8400-e29b-41d4-a716-446655440000`.
+
+**VPS (Virtual Private Server):** A virtual computer running in the cloud that you can rent.
+
+**Webhook:** A URL that receives data when an event occurs. Like a mailbox that programs can send messages to.
+
+**Workflow:** A sequence of automated steps that accomplish a task.
+
+---
+
+## Appendix A: Cost Breakdown (Detailed)
+
+### One-Time Setup Costs
+| Item | Cost | Notes |
+|------|------|-------|
+| SimpleMaps Database | $199 | One-time purchase |
+| Initial Apollo.io Credits | $79 | First month subscription |
+| ZeroBounce Credits (50k) | $200 | ~$4 per 1,000 validations |
+| Twilio Credits (50k) | $250 | $0.005 per lookup |
+| **Total One-Time** | **$728** | |
+
+### Monthly Recurring Costs (During Collection)
+| Item | Cost | Duration |
+|------|------|----------|
+| DigitalOcean Droplet | $24 | 2 months |
+| PostgreSQL (managed) | $15 | 2 months |
+| Apollo.io Subscription | $79 | 1 month |
+| **Total Monthly** | **$118** | |
+| **Total for 2 Months** | **$236** | |
+
+### Monthly Recurring Costs (After Collection)
+| Item | Cost |
+|------|------|
+| DigitalOcean Droplet | $24 |
+| PostgreSQL | $15 |
+| **Total Monthly** | **$39** |
+
+### Total Project Cost
+- **Setup Phase:** $728 + $236 = **$964**
+- **Annual Maintenance:** $39 × 12 = **$468**
+- **Total First Year:** **$1,432**
+
+---
+
+## Appendix B: Example API Responses
+
+### Apollo.io Search Response
+```json
+{
+  "breadcrumbs": [],
+  "partial_results_only": false,
+  "disable_eu_prospecting": false,
+  "partial_results_limit": 10000,
+  "pagination": {
+    "page": 1,
+    "per_page": 25,
+    "total_entries": 247,
+    "total_pages": 10
+  },
+  "organizations": [
+    {
+      "id": "5f7b1234567890abcdef1234",
+      "name": "AI Solutions Inc",
+      "website_url": "https://aisolutions.com",
+      "blog_url": null,
+      "angellist_url": null,
+      "linkedin_url": "https://www.linkedin.com/company/ai-solutions",
+      "twitter_url": "https://twitter.com/aisolutions",
+      "facebook_url": null,
+      "primary_phone": {
+        "number": "4155551234",
+        "source": "Account"
+      },
+      "languages": [],
+      "alexa_ranking": 1250000,
+      "phone": "4155551234",
+      "linkedin_uid": "12345678",
+      "founded_year": 2018,
+      "publicly_traded_symbol": null,
+      "publicly_traded_exchange": null,
+      "logo_url": "https://logo.clearbit.com/aisolutions.com",
+      "crunchbase_url": null,
+      "primary_domain": "aisolutions.com",
+      "sanitized_phone": "+14155551234",
+      "industry": "Computer Software",
+      "keywords": [
+        "artificial intelligence",
+        "machine learning",
+        "consulting"
+      ],
+      "estimated_num_employees": 50,
+      "snippets_loaded": true,
+      "industry_tag_id": "5567cdfe7369647540020000",
+      "retail_location_count": 0,
+      "raw_address": "123 Market St, San Francisco, CA 94103",
+      "street_address": "123 Market St",
+      "city": "San Francisco",
+      "state": "California",
+      "postal_code": "94103",
+      "country": "United States",
+      "owned_by_organization_id": null,
+      "suborganizations": [],
+      "num_suborganizations": 0,
+      "seo_description": "AI Solutions provides consulting and ML development services",
+      "short_description": "Enterprise AI consulting",
+      "annual_revenue_printed": "$5M-$10M",
+      "annual_revenue": 7500000,
+      "technologies": [
+        "Google Analytics",
+        "Amazon AWS",
+        "TensorFlow"
+      ]
+    }
+  ]
+}
+```
+
+---
+
+## Appendix C: Sample SQL Queries
+
+### Query 1: Find AI Companies in Top 10 Cities by State
+```sql
+SELECT 
+    s.state_name,
+    c.city_name,
+    COUNT(b.business_id) as business_count,
+    AVG(b.completeness_score) as avg_quality
+FROM states s
+JOIN cities c ON s.state_code = c.state_code
+LEFT JOIN businesses b ON c.city_id = b.city_id
+WHERE c.rank_in_state <= 10
+GROUP BY s.state_name, c.city_name
+ORDER BY s.state_name, c.rank_in_state;
+```
+
+### Query 2: Identify Data Gaps
+```sql
+SELECT 
+    c.state_code,
+    c.city_name,
+    c.target_businesses,
+    c.collected_businesses,
+    (c.target_businesses - c.collected_businesses) as gap
+FROM cities c
+WHERE c.collected_businesses < c.target_businesses
+ORDER BY gap DESC
+LIMIT 50;
+```
+
+### Query 3: Best Quality Businesses
+```sql
+SELECT 
+    business_name,
+    city_name,
+    state_code,
+    completeness_score,
+    email_verified,
+    phone_verified,
+    array_to_string(ai_service_types, ', ') as services
+FROM businesses b
+JOIN cities c ON b.city_id = c.city_id
+WHERE completeness_score >= 90
+    AND email_verified = true
+    AND phone_verified = true
+ORDER BY completeness_score DESC
+LIMIT 100;
+```
+
+### Query 4: Technology Distribution
+```sql
+SELECT 
+    unnest(technologies_used) as technology,
+    COUNT(*) as company_count
+FROM businesses
+WHERE technologies_used IS NOT NULL
+GROUP BY technology
+ORDER BY company_count DESC
+LIMIT 20;
+```
+
+---
+
+## Final Checklist
+
+Before launching to production, verify:
+
+- [ ] All API keys are configured and tested
+- [ ] Database schema is created with all indexes
+- [ ] SimpleMaps data is imported and ranked
+- [ ] Test workflow successfully collects 10 businesses
+- [ ] Pilot test of 1,000 businesses meets quality targets
+- [ ] Orchestrator workflow handles batches correctly
+- [ ] Worker workflows don't hit rate limits
+- [ ] Validation workflows verify data accurately
+- [ ] Update workflow runs without errors
+- [ ] Backups are automated and tested
+- [ ] Monitoring alerts are configured
+- [ ] Documentation is complete and clear
+- [ ] Junior developer can follow all instructions
+
+---
+
+**End of Product Requirements Document**
+
+*Version 1.0 - October 2, 2025*
+*For questions or clarifications, refer to the troubleshooting section or contact the technical lead.*

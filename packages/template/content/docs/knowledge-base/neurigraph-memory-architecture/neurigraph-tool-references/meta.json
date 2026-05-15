@@ -1,0 +1,18 @@
+{
+  "title": "Neurigraph Tool References",
+  "pages": [
+    "index",
+    "01-MCP-Knowledge-Graph-Memory-Server",
+    "02-Multi-Database-Conversation-Memory-System",
+    "03-Temporal-Knowledge-Graph-Adaptive-Decay",
+    "04-Markdown-Based-Local-Knowledge-Graph",
+    "05-SQL-Native-Entity-Memory-Layer",
+    "06-Hierarchical-Agentic-Memory-Auto-Taxonomy",
+    "07-AI-Chat-UI-Component-Library",
+    "08-Conversational-AI-App-Shell-Framework",
+    "09-Artifact-Panel-Starter-Template",
+    "10-Lightweight-Fact-Based-AI-Memory-API",
+    "11-Full-Stack-AI-Memory-Platform-Hybrid-Search"
+  ],
+  "defaultOpen": false
+}

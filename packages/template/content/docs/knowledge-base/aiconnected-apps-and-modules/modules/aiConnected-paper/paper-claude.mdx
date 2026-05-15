@@ -1,0 +1,353 @@
+---
+title: "CLAUDE.md Content Strategist AI"
+description: "This file provides guidance to Claude Code for working on the Content Strategist AI project. Project Overview Content Strategist AI is a white label SaaS pla..."
+---
+<Info>
+Normalized for Mintlify from `knowledge-base/aiconnected-apps-and-modules/modules/aiConnected-paper/paper-claude.mdx`.
+</Info>
+# CLAUDE.md - Content Strategist AI
+
+This file provides guidance to Claude Code for working on the Content Strategist AI project.
+
+## Project Overview
+
+Content Strategist AI is a white-label SaaS platform that generates professional thought leadership content for marketing agencies and their clients. The platform produces executive-quality PDF documents with original research, statistics, data visualizations, and professional design.
+
+**Key Documentation:**
+- `DEVELOPER-PRD.md` - Complete technical specification (12,000+ lines)
+- `UI-UX-DESIGN-SPEC.md` - Design system and UI specifications
+
+## Technology Stack
+
+### Backend (Python/FastAPI)
+- **Framework:** FastAPI 0.109+
+- **Database:** PostgreSQL 15+ with SQLAlchemy 2.0+
+- **Task Queue:** Celery 5.3+ with Redis
+- **PDF Generation:** WeasyPrint 60+
+- **AI:** Anthropic Claude API
+
+### Frontend (Next.js)
+- **Framework:** Next.js 14+ with App Router
+- **Language:** TypeScript 5.3+
+- **Styling:** Tailwind CSS 3.4+ with shadcn/ui
+- **State:** Zustand + TanStack Query
+- **Forms:** React Hook Form + Zod
+
+## Project Structure
+
+```
+content-strategist/
+├── backend/                 # FastAPI backend
+│   ├── app/
+│   │   ├── main.py         # FastAPI app entry
+│   │   ├── config.py       # Settings
+│   │   ├── database.py     # DB connection
+│   │   ├── models/         # SQLAlchemy models
+│   │   ├── schemas/        # Pydantic schemas
+│   │   ├── api/v1/         # API routes
+│   │   ├── services/       # Business logic
+│   │   ├── workers/        # Celery tasks
+│   │   └── templates/      # PDF templates
+│   ├── alembic/            # Migrations
+│   ├── tests/
+│   └── requirements.txt
+│
+├── frontend/               # Next.js frontend
+│   ├── src/
+│   │   ├── app/           # App Router pages
+│   │   ├── components/    # React components
+│   │   ├── hooks/         # Custom hooks
+│   │   ├── lib/           # Utilities & API client
+│   │   ├── stores/        # Zustand stores
+│   │   └── types/         # TypeScript types
+│   └── package.json
+│
+└── docker/                # Docker configs
+```
+
+## Development Commands
+
+### Backend
+```bash
+# Setup
+cd backend
+python -m venv venv
+source venv/bin/activate  # or `venv\Scripts\activate` on Windows
+pip install -r requirements.txt
+
+# Run development server
+uvicorn app.main:app --reload --port 8000
+
+# Run Celery worker
+celery -A app.workers.celery_app worker --loglevel=info
+
+# Run Celery beat (scheduler)
+celery -A app.workers.celery_app beat --loglevel=info
+
+# Database migrations
+alembic upgrade head
+alembic revision --autogenerate -m "description"
+
+# Tests
+pytest
+pytest --cov=app tests/
+```
+
+### Frontend
+```bash
+# Setup
+cd frontend
+npm install
+
+# Run development server
+npm run dev
+
+# Type checking
+npm run type-check
+
+# Linting
+npm run lint
+npm run lint:fix
+
+# Build
+npm run build
+
+# Tests
+npm test
+```
+
+### Docker
+```bash
+# Development
+docker-compose -f docker/docker-compose.yml up -d
+
+# Production
+docker-compose -f docker/docker-compose.prod.yml up -d
+```
+
+## Code Style Guidelines
+
+### Python
+- Use **type hints** for all function parameters and return types
+- Follow **PEP 8** style guide
+- Use **async/await** for I/O operations
+- Docstrings for public functions (Google style)
+- Maximum line length: 100 characters
+
+```python
+# Example
+async def get_client(
+    client_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Client:
+    """
+    Retrieve a client by ID.
+    
+    Args:
+        client_id: The UUID of the client to retrieve.
+        db: Database session.
+        current_user: The authenticated user.
+        
+    Returns:
+        The client object.
+        
+    Raises:
+        HTTPException: If client not found or access denied.
+    """
+    client = await client_service.get_by_id(db, client_id)
+    if not client or client.agency_id != current_user.agency_id:
+        raise HTTPException(status_code=404, detail="Client not found")
+    return client
+```
+
+### TypeScript/React
+- Use **TypeScript strict mode**
+- Prefer **functional components** with hooks
+- Use **named exports** (not default exports for components)
+- Props interfaces should be named `ComponentNameProps`
+- Use **absolute imports** (`@/components/...`)
+
+```typescript
+// Example
+interface ClientCardProps {
+  client: Client;
+  onEdit?: (client: Client) => void;
+  onDelete?: (clientId: string) => void;
+}
+
+export function ClientCard({ client, onEdit, onDelete }: ClientCardProps) {
+  // Component implementation
+}
+```
+
+### CSS/Tailwind
+- Use Tailwind utility classes
+- Extract repeated patterns to components
+- Follow mobile-first responsive design
+- Use CSS variables for theme colors (defined in globals.css)
+
+## Key Patterns
+
+### API Endpoints
+All API endpoints follow REST conventions:
+- `GET /api/v1/clients` - List with pagination
+- `GET /api/v1/clients/{id}` - Get single
+- `POST /api/v1/clients` - Create
+- `PATCH /api/v1/clients/{id}` - Partial update
+- `DELETE /api/v1/clients/{id}` - Delete
+
+### Authentication
+- JWT tokens (access + refresh)
+```text
+- Access token in Authorization header: `Bearer {token}`
+```
+- Refresh token rotation on use
+- Role-based access control (RBAC)
+
+### Multi-tenancy
+- All data queries must filter by `agency_id`
+- Agency resolved from JWT token or domain
+- Super admins have cross-agency access
+
+### Error Handling
+Backend returns consistent error format:
+```json
+{
+  "error": {
+    "code": "CLIENT_NOT_FOUND",
+    "message": "The requested client was not found",
+    "details": {}
+  }
+}
+```
+
+### State Management
+- **Server state** (API data): TanStack Query
+- **Client state** (UI, auth): Zustand
+- **Form state**: React Hook Form
+- **URL state**: Next.js searchParams
+
+## Database Schema Overview
+
+Main entities:
+1. **plans** - Subscription tiers (Pro, Enterprise)
+2. **agencies** - Marketing agencies (tenants)
+3. **users** - All users with roles
+4. **clients** - Agency's clients (seats)
+5. **documents** - Generated content
+6. **templates** - PDF templates
+7. **scheduled_content** - Future generations
+8. **generation_jobs** - Job tracking
+9. **api_keys** - External API keys (encrypted)
+
+See `DEVELOPER-PRD.md` Section 4 for complete schema.
+
+## Content Generation Pipeline
+
+1. **Topic Analysis** - Parse and expand topic
+2. **Keyword Research** - Generate search terms
+3. **Web Research** - Fetch and analyze sources (Claude)
+4. **Industry Analysis** - Context from industry knowledge
+5. **Outline Generation** - Structure the document
+6. **Content Writing** - Generate each section (Claude)
+7. **Statistics Extraction** - Pull data points
+8. **Chart Generation** - Create visualizations
+9. **PDF Rendering** - WeasyPrint HTML→PDF
+
+See `DEVELOPER-PRD.md` Section 7 for implementation details.
+
+## Environment Variables
+
+### Backend (.env)
+```
+DATABASE_URL=postgresql+asyncpg://user:pass@localhost:5432/content_strategist
+REDIS_URL=redis://localhost:6379/0
+SECRET_KEY=your-secret-key-min-32-chars
+ANTHROPIC_API_KEY=sk-ant-...
+FREEPIK_API_KEY=...
+```
+
+### Frontend (.env.local)
+```
+NEXT_PUBLIC_API_URL=http://localhost:8000
+NEXT_PUBLIC_WS_URL=http://localhost:8000
+```
+
+## Testing Strategy
+
+### Backend Tests
+- **Unit tests:** Services, utilities
+- **Integration tests:** API endpoints with test DB
+- **Use factories:** factory-boy for test data
+- **Async tests:** pytest-asyncio
+
+### Frontend Tests
+- **Component tests:** React Testing Library
+- **Hook tests:** renderHook utility
+- **E2E tests:** Playwright (future)
+
+## Common Tasks
+
+### Adding a New API Endpoint
+1. Create/update Pydantic schema in `schemas/`
+2. Add service method in `services/`
+3. Create route in `api/v1/`
+4. Add to router in `api/v1/router.py`
+5. Write tests
+
+### Adding a New Frontend Page
+1. Create page in `app/(dashboard)/feature/page.tsx`
+2. Create components in `components/feature/`
+3. Add API functions in `lib/api/feature.ts`
+4. Create query hooks in `hooks/queries/use-feature.ts`
+5. Add to navigation if needed
+
+### Adding a New Database Table
+1. Create model in `models/`
+2. Export in `models/__init__.py`
+3. Create migration: `alembic revision --autogenerate -m "add_table"`
+4. Apply: `alembic upgrade head`
+5. Create corresponding schema, service, and routes
+
+## Deployment
+
+Target platform: **Dokploy on DigitalOcean**
+
+See `DEVELOPER-PRD.md` Section 20 for:
+- Dockerfile configurations
+- docker-compose files
+- Dokploy configuration
+- Environment setup
+
+## Important Notes
+
+1. **Never commit secrets** - Use environment variables
+2. **Always filter by agency_id** - Multi-tenant isolation
+3. **Use async everywhere** - FastAPI is async-first
+4. **Validate all inputs** - Pydantic for backend, Zod for frontend
+5. **Handle errors gracefully** - User-friendly error messages
+6. **Log important operations** - Structured logging with structlog
+
+## Getting Help
+
+If you need more context:
+1. Read the relevant section in `DEVELOPER-PRD.md`
+2. Check `UI-UX-DESIGN-SPEC.md` for design decisions
+3. Look at existing similar code in the codebase
+4. Ask for clarification if requirements are unclear
+
+## Quick Reference
+
+| Task | Location |
+|------|----------|
+| API Routes | `backend/app/api/v1/` |
+| Database Models | `backend/app/models/` |
+| Business Logic | `backend/app/services/` |
+| Background Tasks | `backend/app/workers/` |
+| PDF Templates | `backend/app/templates/` |
+| React Pages | `frontend/src/app/` |
+| React Components | `frontend/src/components/` |
+| API Client | `frontend/src/lib/api/` |
+| State Stores | `frontend/src/stores/` |
+| Type Definitions | `frontend/src/types/` |

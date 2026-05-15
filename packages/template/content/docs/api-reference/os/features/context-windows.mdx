@@ -1,0 +1,35 @@
+---
+title: "Context windows"
+description: "Feature-level API contract for context ranking, rolling windows, and long-horizon retrieval in aiConnectedOS."
+---
+## Contract status
+
+`Derived implementation contract`
+
+## Source document
+
+- [Context windows](/docs/knowledge-base/aiconnected-os/aiconnected-os-18-context-windows-in-ai)
+
+## Feature purpose
+
+Defines the layered context system that keeps the most relevant state active while preserving long-term recall.
+
+## Required operations
+
+- Assemble always-hot context for the active interaction
+- Rank older context for retrieval and injection
+- Preserve permanent instruction or decision classes
+- Track context composition for later debugging
+
+## Suggested resources
+
+- `context_windows`
+- `context_layers`
+- `context_candidates`
+- `context_audit_logs`
+
+## Implementation notes
+
+- Keep this feature workspace-scoped and persona-aware where applicable.
+- Preserve authorship, timestamps, and auditability for all state changes.
+- Treat the source doc as the behavioral specification even where final route names remain open.

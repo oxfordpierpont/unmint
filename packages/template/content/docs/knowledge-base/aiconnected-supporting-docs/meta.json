@@ -1,0 +1,19 @@
+{
+  "title": "aiConnected Supporting Docs",
+  "pages": [
+    "index",
+    "aiConnected-trademark-and-patents",
+    "additional-considerations",
+    "ai-connected-license-agreement",
+    "aiConnected-fundraising-strategy",
+    "aiConnected-project-memory-backup",
+    "aiConnectedOS-memory-backup",
+    "doc-dump-2-64-of-258-docs",
+    "document-inventory-194-docs",
+    "engaging-the-dev-community",
+    "how-will-developers-use-the-ai-connected-platform",
+    "persona-ide-system-prompt",
+    "self-hosting"
+  ],
+  "defaultOpen": true
+}

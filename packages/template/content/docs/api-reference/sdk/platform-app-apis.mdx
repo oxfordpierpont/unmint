@@ -1,0 +1,190 @@
+---
+title: "Platform app APIs"
+description: "Platform-side SDK support endpoints from the original v1 platform build for app catalog retrieval, app package import, and app metadata updates."
+---
+## Contract status
+
+`Canonical route contract`
+
+This page is based on the route handlers in:
+
+- `platform.sec-admn.com-2/apps/platform/src/app/api/platform/apps/route.js`
+- `platform.sec-admn.com-2/apps/platform/src/app/api/platform/apps/import/route.js`
+- `platform.sec-admn.com-2/apps/platform/src/app/api/platform/apps/[appKey]/route.js`
+
+## Use this page when
+
+- you are importing a module package into the platform
+- you need to inspect the platform app catalog
+- you need to update app metadata after registration
+
+## Auth model
+
+These endpoints are platform-admin APIs.
+
+Requirements from the source:
+
+- authenticated session required
+- user must exist
+- user must be `isSuperAdmin`
+
+## Golden path
+
+### 1. Fetch the current catalog
+
+```http
+GET /api/platform/apps
+```
+
+### 2. Import a package
+
+```http
+POST /api/platform/apps/import
+Content-Type: multipart/form-data
+
+file=<voice-ai.zip>
+```
+
+### 3. Review the returned assessment
+
+The import route returns:
+
+- normalized manifest summary
+- assessment details
+- import record
+- extracted or skipped files
+- refreshed catalog payload
+
+### 4. Update nav metadata if needed
+
+```http
+PATCH /api/platform/apps/voice-ai
+Content-Type: application/json
+
+{
+  "nav": {
+    "label": "Voice",
+    "icon": "Phone"
+  }
+}
+```
+
+## `GET /api/platform/apps`
+
+Purpose:
+
+- return the platform app catalog payload for admin surfaces
+
+Behavior:
+
+- loads authenticated context
+- calls `getPlatformAppCatalogPayload()`
+- returns `{ success: true, data }`
+
+Error modes:
+
+- `401` authentication required
+- `403` platform admin access required
+- `404` user not found
+- `500` failed to load platform apps
+
+## `POST /api/platform/apps/import`
+
+Purpose:
+
+- import a platform app package from a zip or manifest JSON file
+
+Request:
+
+- same-origin enforced
+- `multipart/form-data`
+- form field: `file`
+
+Behavior:
+
+- validates admin auth
+- accepts a `.zip` app package or manifest `.json`
+- calls `importPlatformAppPackage()`
+- refreshes the catalog payload
+
+Response payload from the route:
+
+```json
+{
+  "success": true,
+  "data": {
+    "app": {
+      "appKey": "voice-ai",
+      "name": "Voice AI",
+      "version": "1.0.0",
+      "category": "customer-facing",
+      "description": "Adds real-time voice to the platform."
+    },
+    "assessment": {
+      "status": "needs-attention",
+      "warnings": []
+    },
+    "importRecord": {},
+    "registered": true,
+    "extractedFiles": [],
+    "extractionSkipped": [],
+    "catalog": {}
+  }
+}
+```
+
+## Common import failure cases
+
+- no `file` field provided
+- same-origin enforcement fails
+- user is authenticated but not a super admin
+- manifest file is missing or invalid
+- required inputs or extensions cannot be satisfied
+- package import succeeds with warnings that still need review
+
+## `PATCH /api/platform/apps/{appKey}`
+
+Purpose:
+
+- update platform app metadata, specifically navigation settings in v1
+
+Current behavior:
+
+- fetches the existing `platform_apps` record by `app_key`
+- merges `body.nav` into `metadata.nav`
+- updates `metadata` and `updated_at`
+- returns the refreshed app catalog payload
+
+Error modes:
+
+- `401` authentication required
+- `403` platform admin access required
+- `404` missing app record
+- `500` failed to update platform app settings
+
+## Operator checklist after import
+
+1. Confirm `registered` is true.
+2. Review `assessment.warnings`.
+3. Confirm extracted files and skipped files make sense.
+4. Verify the app appears in the catalog.
+5. Verify nav metadata if the app exposes admin or runtime surfaces.
+
+## v1 reality vs v2 target
+
+### Implemented in v1
+
+- admin-only app catalog fetch
+- package import route
+- metadata patch route
+
+### Carry forward to v2
+
+- admin import workflow
+- explicit assessment response
+- manifest-driven app catalog
+
+### Known mismatch or migration risk
+
+- these routes are super-admin centered and may need broader workspace-aware ownership in v2
+- some metadata behavior is narrowly focused on nav settings rather than a broader app-management surface

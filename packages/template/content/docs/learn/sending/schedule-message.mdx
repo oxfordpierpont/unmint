@@ -1,0 +1,21 @@
+---
+title: "Schedule Messages"
+description: "Queue outbound messages for future delivery."
+---
+Messages can be scheduled for a specific future time. Scheduled messages appear in the Outbox with a `scheduled` status until delivery.
+
+## Scheduling a message
+
+Add a `scheduled_at` field in ISO 8601 format:
+
+```json
+{
+  "to": "user@example.com",
+  "subject": "Your trial ends tomorrow",
+  "scheduled_at": "2026-04-01T09:00:00Z"
+}
+```
+
+## Canceling a scheduled message
+
+Scheduled messages can be canceled before delivery via the dashboard or API as long as their status remains `scheduled`.

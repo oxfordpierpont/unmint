@@ -1,0 +1,418 @@
+---
+title: "Spaces dashboard design"
+description: "Prompt: Okay, so now our interface for individual instances has a pretty robust set of features, and we need one place for all of these features to go within..."
+---
+<Info>
+Converted from `aiConnected OS - 1. Spaces dashboard design.md`.
+</Info>
+# Spaces dashboard design
+
+**User:** Oxford Pierpont  
+**Created:** 12/10/2025 6:38:28  
+**Updated:** 12/10/2025 6:47:33  
+**Exported:** 2/11/2026 6:46:13  
+**Link:** [https://chatgpt.com/g/g-p-69395d9991108191841f1dac1fd8d1a1-oxpi-aiconnected-ui-features/c/69395bb3-7204-832a-b419-732e172185b1](https://chatgpt.com/g/g-p-69395d9991108191841f1dac1fd8d1a1-oxpi-aiconnected-ui-features/c/69395bb3-7204-832a-b419-732e172185b1)  
+
+## Prompt:
+Okay, so now our interface for individual instances has a pretty robust set of features, and we need one place for all of these features to go within the dashboard. And instead of having a whole bunch of just links in a sidebar, because that can be overwhelming and cluttering, I'd like to compile them all into a single tab called Spaces. So Spaces essentially lets you, when you click on the button Spaces, it then is going to present you a menu of like, let me see my tasks, let me see the whiteboard, let me see my live documents, let me see the chats, let me see all of the files that I have, like all the images and things like that, or let me see code snippets, right? So Spaces would essentially be this living place for easy access to everything that I'm trying to organize, but I can quickly get to it. And folders, sorry, I almost forgot, folders should be in Spaces as well. So yeah, that's definitely where everything is coming together. Links as well, exports, all that.
+
+## Response:
+Perfect, this is exactly the right moment to introduce a unifying layer.
+
+Here’s how I’d structure **Spaces** so it feels like one calm, powerful hub instead of “yet another menu.”
+
+* * *
+
+1\. What Spaces is in the system
+--------------------------------
+
+Conceptually, Spaces is:
+
+> “The organized attic for an instance: one place where every artifact lives, regardless of which chat created it.”
+
+So for a given Instance, Spaces holds:
+
+*   Tasks
+*   Whiteboard items
+*   Live Documents
+*   Chats
+*   Folders
+*   Files (images, audio, PDFs, etc.)
+*   Code Snippets
+*   Links (internal and external)
+*   Exports (PDFs, decks, summaries, etc.)
+
+You access all of this via **one** sidebar entry: `Spaces`. Everything else is organized inside that view.
+
+* * *
+
+2\. Entry point: The Spaces Home view
+-------------------------------------
+
+Click `Spaces` in the instance dashboard, and you land on a **Spaces Home** screen instead of a list.
+
+Think of it as a “control room” with sections, not a file manager.
+
+### Layout
+
+**Top bar:**
+
+*   Scope selector:
+    *   `This Instance` (default)
+    *   `All Instances` (global cross-instance view – useful later)
+*   Global search bar:
+    *   Search across tasks, docs, chats, files, etc.
+*   Filters:
+    *   Type: \[Tasks, Docs, Whiteboard, Chats, Files, Snippets, Folders, Links, Exports\]
+    *   Time: \[Today, This week, This month, Custom\]
+    *   Source: \[All, AI-created, User-created, Imported\]
+
+**Main content: “Spaces overview cards”**
+
+Each type is a big card with a few key stats and quick actions:
+
+*   **Tasks**
+    *   “12 Open | 3 Due Today”
+    *   Buttons: `View all`, `New Task`
+    *   A quick list of the next 3 tasks
+*   **Whiteboard**
+    *   “1 Whiteboard | 42 pinned items”
+    *   Buttons: `Open whiteboard`, `View pinned items list`
+    *   Shows a “recently pinned” strip
+*   **Live Documents**
+    *   “6 Documents | Last updated 2 hours ago”
+    *   Buttons: `View all`, `New document`
+    *   Recently updated docs list
+*   **Chats**
+    *   “32 Chats | 5 linked to this instance”
+    *   Buttons: `View chats`, `Start chat from task`
+    *   Shows last 3 active chats related to this instance
+*   **Folders**
+    *   “4 Folders | 21 items inside”
+    *   Buttons: `View all folders`, `New folder`
+*   **Files**
+    *   “63 Files | 18 Images, 11 PDFs, 4 Audio, 30 Other”
+    *   Buttons: `Browse files`
+    *   Recent uploads
+*   **Code Snippets**
+    *   “9 Snippets”
+    *   Buttons: `View all`, `New snippet`
+*   **Links**
+    *   “15 Links”
+    *   Buttons: `View all`, `Add link`
+*   **Exports**
+    *   “7 Exports | 3 Presentations, 4 Docs”
+    *   Buttons: `View all`, `Create export`
+
+You can “star” any card type; starred types appear at the top of the Spaces Home and can also be collapsed into a compact row if you want less visual noise.
+
+* * *
+
+3\. Secondary navigation inside Spaces
+--------------------------------------
+
+To avoid turning Spaces into its own cluttered sidebar, use a **tabbed sub-navigation** inside the Spaces view, not in the main app sidebar.
+
+At the top of Spaces, under the search bar:
+
+`Overview | Tasks | Whiteboard | Live Docs | Chats | Folders | Files | Snippets | Links | Exports`
+
+*   `Overview` is the Spaces Home described above.
+*   Clicking any tab turns the main panel into a dedicated view for that type.
+*   The tabs can scroll horizontally if there are more types than fit on-screen, but most people will see the main ones without scrolling.
+
+* * *
+
+4\. How each Space type behaves
+-------------------------------
+
+### 4.1 Tasks Space
+
+**Purpose:** View and control everything you need to do, regardless of which chat created it.
+
+Key elements:
+
+*   List with columns:
+    *   Task name
+    *   Source (which chat / message / instance)
+    *   Status (Open, In Progress, Done)
+    *   Due date
+    *   Tags (e.g., “PRD,” “UI,” “Sales”)
+    *   Actions
+*   Quick filters:
+    *   `Open / In Progress / Done`
+    *   `Due Today / This Week / Overdue`
+    *   `Created from chat / Created manually / Created by AI`
+*   Row actions:
+    *   `Open in chat` (jump to original message)
+    *   `Start new chat from task`
+    *   `Convert to live document`
+    *   `Create reminder / external notification` (send to email, Slack, whatever integration we define later)
+    *   `Pin to whiteboard`
+
+This is where your “agentic” behavior hooks in: from a task, you can:
+
+*   Spin up a new chat context seeded with that task.
+*   Schedule reminders.
+*   Trigger external notifications.
+
+* * *
+
+### 4.2 Whiteboard Space
+
+**Purpose:** Manage the big, visual, cross-chat canvas.
+
+Whiteboard is one canvas per instance (or multiple later if needed), but in Spaces it’s represented as:
+
+*   A primary button: `Open Whiteboard`
+*   A table/list of “pinned items”:
+    *   Type (message, image, export, link, note)
+    *   Source chat
+    *   Short preview
+    *   When it was pinned
+
+From here, you can:
+
+*   Filter pinned items by type.
+*   Open a pinned item in its original chat.
+*   Unpin items.
+*   Convert pinned content to:
+    *   Task
+    *   Live document section
+    *   Export draft
+
+* * *
+
+### 4.3 Live Documents Space
+
+**Purpose:** Central hub for long-form, evolving documents (PRDs, specs, plans) that multiple chats can feed into.
+
+Live Docs list:
+
+*   Columns:
+    *   Title
+    *   Description / Tagline
+    *   Last updated
+    *   Linked chats count
+    *   Status (Draft, In Review, Final)
+
+From here:
+
+*   Open document in the editor panel.
+*   See “Linked chats” (list of conversations that have contributed content).
+*   Add new section from a chat message (we already defined that interaction inside chats; here you manage the docs).
+*   Create exports from a live doc (e.g., PDF, presentation).
+
+* * *
+
+### 4.4 Chats Space
+
+**Purpose:** All chats associated with this instance, plus references.
+
+Chats list:
+
+*   Columns:
+    *   Chat title
+    *   Type (Standard chat, Linked conversation, Reference)
+    *   Last activity
+    *   Linked artifacts (tasks, docs, whiteboard items)
+    *   Folder association (if any)
+
+From here you can:
+
+*   Open any chat.
+*   View a “Relationships” panel:
+    *   Linked conversations (parent/child based on your linking feature).
+    *   References (conversations this one pulls context from).
+*   Add a chat to a folder.
+*   Mark a chat as “primary” for a given topic.
+
+* * *
+
+### 4.5 Folders Space
+
+**Purpose:** Structural organization that sits between “instance” and “chat,” but also can hold tasks, docs, and more.
+
+Folder list:
+
+*   Columns:
+    *   Folder name
+    *   Description
+    *   Item counts (Chats | Docs | Tasks | Files)
+    *   Last updated
+
+Inside a folder, the view becomes a mini-Spaces scoped to that folder:
+
+*   Tabs: `Summary | Chats | Tasks | Docs | Files`
+*   So a folder itself is almost like a “sub-space,” but confined to that subset of content.
+
+This solves your use case of:
+
+*   One folder for UI work,
+*   One for market research,
+*   One for Cognigraph architecture,
+*   One for sales teams, etc.
+
+* * *
+
+### 4.6 Files Space
+
+**Purpose:** One place for all uploaded or generated artifacts.
+
+Files grid/list with:
+
+*   Filters:
+    *   Type (Image, PDF, Audio, Video, Other)
+    *   Source (Upload, Generated by AI, Imported)
+    *   Linked to (Chats, Live Docs, Whiteboard, Exports)
+*   For each file:
+    *   Preview/thumbnail
+    *   Name
+    *   Type
+    *   Size
+    *   Linked items
+
+Actions:
+
+*   Open file viewer.
+*   Attach file to a live doc or export.
+*   Pin to whiteboard.
+*   Insert into chat.
+*   Add to folder.
+
+* * *
+
+### 4.7 Code Snippets Space
+
+**Purpose:** Keep reusable bits of code, prompts, or configuration.
+
+Snippets list:
+
+*   Language / Type (JS, Python, Shell, Prompt, N8N expression, etc.)
+*   Title
+*   Short description
+*   Tags
+*   Where it was originally created
+
+Actions:
+
+*   Copy to clipboard.
+*   Insert into chat.
+*   Insert into live doc.
+*   Attach to a folder.
+
+* * *
+
+### 4.8 Links Space
+
+**Purpose:** All saved references, both internal and external.
+
+Each link:
+
+*   Title
+*   URL
+*   Type:
+    *   External website
+    *   Internal chat
+    *   Live doc section
+    *   Export
+*   Origin (what created it)
+*   Tags
+
+Actions:
+
+*   Open link
+*   Add link to folder
+*   Convert to task (“Follow up on this resource”)
+
+* * *
+
+### 4.9 Exports Space
+
+**Purpose:** Where final outputs live.
+
+Exports list:
+
+*   Title
+*   Type (PDF, Deck, Markdown, etc.)
+*   Source (which live doc/whiteboard/task)
+*   Created date
+*   Last regenerated
+
+Actions:
+
+*   Download
+*   Regenerate (if doc/whiteboard changed)
+*   Share link
+*   Attach to email (later via integrations)
+*   Add to folder
+
+* * *
+
+5\. How content flows into Spaces
+---------------------------------
+
+Spaces works best if it feels automatic. High-level content flow:
+
+1.  **From a chat message:**
+    *   `Save as task`
+    *   `Pin to whiteboard`
+    *   `Add to live document`
+    *   `Save snippet`
+    *   `Save link`
+    *   `Attach file to...`
+    Every one of these actions creates/updates an item in Spaces.
+2.  **From a system event:**
+    *   Create export from doc → Exports Space.
+    *   Upload file → Files Space.
+3.  **From Spaces itself:**
+    *   You can create tasks, docs, folders, etc. directly from the Spaces views without going back to a chat.
+
+In other words, Spaces is both:
+
+*   A **collector** (stuff flows in from conversations), and
+*   A **workbench** (you can create and manage things directly inside it).
+
+* * *
+
+6\. Relationship between Dashboard, Instances, and Spaces
+---------------------------------------------------------
+
+At the top level:
+
+*   **Dashboard** = overview across all instances:
+    *   Global stats, activity feed, maybe a global “Spaces” quick summary.
+*   **Instance View**:
+    *   Tabs like: `Chat`, `Spaces`, `Settings`, etc.
+    *   `Spaces` inside each instance is scoped by default to that instance.
+*   Later, we can add a **Global Spaces** view:
+    *   Same UI, but “Scope = All Instances” to see tasks/docs/files everywhere.
+
+* * *
+
+7\. A quick example flow
+------------------------
+
+You’re brainstorming a feature in a chat:
+
+1.  You write: “We should create an onboarding flow for developers submitting engines.”
+2.  You click `Save as Task`.
+3.  That task shows up under `Spaces → Tasks` for the instance.
+4.  Tomorrow, you click `Spaces → Tasks`, see it, and hit `Start chat from task`.
+5.  A new chat opens, pre-filled with that task description.
+6.  Later, you summarize decisions into a Live Document section from that new chat.
+7.  In Spaces, you see:
+    *   One task (now In Progress or Done),
+    *   One live document with updated sections,
+    *   Two chats linked together, all living in one organized place.
+
+* * *
+
+If you want, next step I can do is:
+
+*   Design a wireframe-level layout for the Spaces screen (section by section) so you can hand it straight to a designer or drop it into Figma.
+
+
+
+---
+Powered by [ChatGPT Exporter](https://www.chatgptexporter.com)

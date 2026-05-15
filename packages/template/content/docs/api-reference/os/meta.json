@@ -1,0 +1,12 @@
+{
+  "title": "OS",
+  "pages": [
+    "index",
+    "features",
+    "conversation-tools",
+    "memory-context",
+    "personas-instances",
+    "workspace-features"
+  ],
+  "defaultOpen": true
+}

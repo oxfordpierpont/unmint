@@ -1,0 +1,38 @@
+---
+title: "Complete Infrastructure Stack"
+description: "Component Service Purpose : : : Phone System GoToConnect PSTN, call control, WebRTC Real time Audio LiveKit Cloud Room manageme..."
+---
+<Info>
+Normalized for Mintlify from `knowledge-base/aiconnected-apps-and-modules/modules/aiConnected-voice/complete-infra-stack.mdx`.
+</Info>
+# **Complete Infrastructure Stack**
+
+| Component | Service | Purpose |
+| :---- | :---- | :---- |
+| **Phone System** | GoToConnect | PSTN, call control, WebRTC |
+| **Real-time Audio** | LiveKit Cloud | Room management, audio routing |
+| **TTS** | RunPod (Chatterbox) | Speech synthesis |
+| **STT** | Deepgram | Speech-to-text transcription |
+| **LLM** | Anthropic API (Claude) | Conversational AI brain |
+| **Platform Hosting** | DigitalOcean/Dokploy | Web app, API gateway, agents |
+| **Database** | PostgreSQL (on DO) | Tenants, configs, call logs |
+| **Cache/State** | Redis (on DO) | Session state, call state machine |
+| **Automation** | n8n (on DO) | Tool calling, CRM webhooks |
+| **Object Storage** | DO Spaces or S3 | Voice samples, recordings |
+| **Monitoring** | Grafana/Prometheus or Datadog | Logs, metrics, alerts |
+
+---
+
+## Monthly Cost Estimate (Starting)
+
+| Service | Est. Cost |
+| :---- | :---- |
+| GoToConnect | $17/user (grandfathered) |
+| LiveKit Cloud | \~$50-100 (low volume) |
+| RunPod A5000 | \~$197 |
+| Deepgram | \~$50-100 (low volume) |
+| Anthropic API | \~$100-300 (depends on usage) |
+| DigitalOcean | \~$50-100 (droplets \+ spaces) |
+| **Total** | **\~$500-800/mo to start** |
+
+---

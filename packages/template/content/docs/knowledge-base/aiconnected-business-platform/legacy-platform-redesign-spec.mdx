@@ -1,0 +1,1969 @@
+---
+title: "SecureChat Admin Redesign Full Context Handoff"
+description: "Project Overview Project: SecureChat White label AI Chat Platform Location: /root/securechat.sec admn Repo: https://github.com/oxfordpierpont/securechat.sec..."
+---
+<Info>
+Normalized for Mintlify from `knowledge-base/aiconnected-business-platform/legacy-platform-redesign-spec.mdx`.
+</Info>
+# SecureChat Admin Redesign \- Full Context Handoff
+
+## Project Overview
+
+Project: SecureChat \- White-label AI Chat Platform  
+Location: /root/securechat.sec-admn  
+Repo: https://github.com/oxfordpierpont/securechat.sec-admn  
+Production URL: securechat.sec-admn.com  
+Supabase: [securechat-supabase.sec-admn.com](http://securechat-supabase.sec-admn.com)
+
+From the start, the Secure Chat system will be a white label product, intended to be sold to agencies, and resold to business owners.  
+First for the settings page, you will need to add seven types of user account pairs:
+
+1. Super Admin (me/Oxford Pierpont)  
+2. Super Admin Staff  
+3. Agency Admin (white label client)  
+4. Agency Staff  
+5. Business Admin (end user clients) white-label-domain.com/secure-login  
+6. Business Admin Staff  
+7. Business Customers (end users)
+
+In the Admin interface, you will also need to create a sidebar for the admin tabs so that it can be uncluttered. Different user types will see different tabs.  
+Super Admin tabs might include Dashboard, Agencies (with feature access toggles & settings access), Sub-Accounts, Business Information, Integrations (webhooks, API keys, tokens, licenses, etc.), Branding & Styling, Email Settings, Embed Snippets, Billing, Reporting, Switch Services (Grayed Out), Sign Out  
+Agency Admin tabs might include Dashboard, Clients (with feature access toggles & Settings Access), Business Information, Integrations (webhooks, API keys, tokens, licenses, etc.), Branding & Styling, Email Settings, Embed Snippets, Billing, Reporting, Switch Services (grayed out), Sign Out  
+Business Admin tabs might include Dashboard, Live Sessions, Session History, Leads, Business Information, Integrations (webhooks, API keys, tokens, licenses, etc.), Branding & Styling, Chat Settings, Prompts & Training, Knowledge Base, Email Settings, Embed Snippets, Billing, Reporting, Switch Services (Grayed Out)  
+For each of these tabs, obviously there will be a variety of fields and components, for example, Billing would have things like usage, invoices, payment methods, etc.  
+I think you can handle that part without me, and my main concern is the granular control of the chat interface. Users can choose simple edits where they only need to choose primary and secondary colors, or advanced edits where nearly every component can be changed individually. No layout structural layout changes.  
+Customizations should be broken down by section (Sidebar, Header, Chat Window, Chat Input), and then into components, like backgrounds, buttons, fonts, and finally granular changes like component color, stroke, corner radius, thickness, weight. Last, users should be able to upload logos, custom CSS. All of these settings should be separately customizable for light mode and dark mode. Users can only modify surface level aesthetics, not structural layout changes. They should also be an option to enable/disable emoji icons. Google Fonts also need to be integrated. If a color picker can be integrated, let's do that. Otherwise, HEX and RGB fields will be fine.  
+Widgets and icons should also be customizable, as well as all headings and labels.  
+Agency admins should be able to access these theming settings for their clients, as many clients may choose to skip this process. The default setting for all interfaces should be black/white/grayscale. It would also be nice to have premade themes for the major colors, like red, green, blue, yellow, etc.  
+Moving on, I want all users to have an Account ID, and this can be used to access the live chat without embedding. So the link would be "domain/chat/Account-ID".  
+Agencies should also have the option to set agency-level branding, custom domains, add/remove clients, customize billing options, provide API keys to clients  
+Knowledge base content should be editable with red warnings that modifying the prompts can degrade performance. There should also be an option to periodically crawl the business's website for new pages or content.  
+No user should ever see another user's chat history on the front end. The Account ID and Session ID should prevent this.
+
+User Hierarchy
+
+* 7 user levels from Super Admin → Customer  
+* 2 separate login routes  
+  * Unbranded  
+  * Custom Whitelabel Domain  
+* Staff roles inherit parent permissions
+
+Database
+
+* Full schema with RLS policies  
+* Agencies → Businesses → Sessions → Messages chain  
+* Knowledge bases stored per business  
+* Encrypted API keys
+
+Styling System (Section 6\)
+
+* Simple mode: Just 2 colors \+ logo  
+* Advanced mode: 100+ customizable properties  
+* Organized by section: Sidebar, Header, Chat Window, Chat Input  
+* Separate light/dark mode configs  
+* Google Fonts integration  
+* Custom CSS upload  
+* 8 premade color themes (grayscale default)  
+* All labels/headings editable
+
+Admin Sidebar
+
+* Role-based tab visibility  
+* All tabs you specified are mapped  
+* "Switch Services" grayed out for future
+
+Route Structure
+
+* /chat/\[account\_id\] for public access  
+* /admin/\* for all admin functions  
+* Session-based chat (no customer login)
+
+Implementation Phases
+
+* 7 phases from core platform → billing
+
+# securechat Platform Specification
+
+## Product Requirements Document v1.0
+
+Platform Name: securechat Staging URL: staging.authAPI.net Production URL: securechat.sec-admn.com Product Type: White-label AI Chat Platform for Agencies
+
+---
+
+# 1\. PLATFORM OVERVIEW
+
+## 1.1 Business Model
+
+securechat is a B2B2B white-label platform:
+
+- Oxford Pierpont (Super Admin) operates the platform  
+- Agencies purchase white-label access and resell to their clients  
+- Businesses are the end clients who use the AI chat for their customers  
+- Customers interact with the chat interface (no account required)
+
+## 1.2 Core Value Proposition
+
+Agencies can offer branded AI chat solutions to their clients without building the technology. Each business gets a customized chat interface powered by their own knowledge base.
+
+---
+
+# 2\. USER HIERARCHY & AUTHENTICATION
+
+## 2.1 User Types (7 Levels)
+
+| Level | Role | Description |  |
+| :---- | :---- | :---- | :---- |
+| 1 | Super Admin | Platform owner (Oxford Pierpont) |  |
+| 2 | Super Admin Staff | Platform team members |  |
+| 3 | Agency Admin | White-label client (reseller) |  |
+| 4 | Agency Staff | Agency team members |  |
+| 5 | Business Admin | End client (business owner) |  |
+| 6 | Business Staff | Business team members |  |
+| 7 | Customer | Chat end-user |  |
+
+## 2.2 Authentication Routes
+
+```
+securechat.sec-admn.com/login        → Unbranded
+custom-white-label-domain.com/secure-login      → Custom Domain
+```
+
+## 2.3 Account Identification
+
+- Every account (Agency, Business) has a unique account\_id  
+- Chat access via: \[domain\]/chat/\[account\_id\]  
+- Session tracking via session\_id (UUID, no login required)  
+- No user can access another user's chat history
+
+---
+
+# 3\. DATABASE SCHEMA
+
+## 3.1 Core Tables
+
+```sql
+-- Platform users (all admin types)
+CREATE TABLE users (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  email TEXT UNIQUE NOT NULL,
+  password_hash TEXT NOT NULL,
+  role TEXT NOT NULL CHECK (role IN (
+    'super_admin', 'super_admin_staff',
+    'agency_admin', 'agency_staff',
+    'business_admin', 'business_staff'
+  )),
+  parent_id UUID REFERENCES users(id), -- Staff → Admin relationship
+  agency_id UUID REFERENCES agencies(id),
+  business_id UUID REFERENCES businesses(id),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  last_login TIMESTAMPTZ,
+  is_active BOOLEAN DEFAULT true
+);
+
+-- Agencies (white-label clients)
+CREATE TABLE agencies (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  account_id TEXT UNIQUE NOT NULL, -- Public identifier
+  name TEXT NOT NULL,
+  email TEXT NOT NULL,
+  phone TEXT,
+  
+  -- Custom domain
+  custom_domain TEXT UNIQUE,
+  domain_verified BOOLEAN DEFAULT false,
+  
+  -- Branding (agency-level defaults)
+  branding JSONB DEFAULT '{}',
+  
+  -- Feature access (what they can offer clients)
+  features JSONB DEFAULT '{}',
+  
+  -- Billing
+  stripe_customer_id TEXT,
+  subscription_tier TEXT,
+  subscription_status TEXT,
+  
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  is_active BOOLEAN DEFAULT true
+);
+
+-- Businesses (end clients)
+CREATE TABLE businesses (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  account_id TEXT UNIQUE NOT NULL, -- Public identifier for chat URL
+  agency_id UUID REFERENCES agencies(id), -- Which agency owns this client
+  
+  -- Business info
+  name TEXT NOT NULL,
+  email TEXT,
+  phone TEXT,
+  address TEXT,
+  city TEXT,
+  state TEXT,
+  zip TEXT,
+  website TEXT,
+  booking_url TEXT,
+  
+  -- Branding & styling (full customization)
+  branding JSONB DEFAULT '{}',
+  styling JSONB DEFAULT '{}',
+  
+  -- Chat settings
+  chat_settings JSONB DEFAULT '{}',
+  
+  -- Feature access (inherited from agency + overrides)
+  features JSONB DEFAULT '{}',
+  
+  -- Billing (if direct billing enabled)
+  stripe_customer_id TEXT,
+  
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  is_active BOOLEAN DEFAULT true
+);
+
+-- Knowledge bases
+CREATE TABLE knowledge_bases (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  business_id UUID REFERENCES businesses(id) ON DELETE CASCADE,
+  
+  -- Source
+  source_url TEXT,
+  last_crawl TIMESTAMPTZ,
+  crawl_frequency TEXT, -- 'manual', 'daily', 'weekly', 'monthly'
+  
+  -- Generated content
+  raw_scrape JSONB,
+  extracted_data JSONB,
+  enhanced_services JSONB,
+  concern_map JSONB,
+  conversation_starters JSONB,
+  system_prompt TEXT,
+  quiz JSONB,
+  service_guide TEXT,
+  compiled_sc JSONB,
+  
+  -- Status
+  status TEXT DEFAULT 'pending', -- pending, generating, complete, error
+  generation_log JSONB,
+  
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Chat sessions
+CREATE TABLE chat_sessions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  session_id TEXT UNIQUE NOT NULL, -- Public session identifier
+  business_id UUID REFERENCES businesses(id) ON DELETE CASCADE,
+  
+  -- Session data
+  started_at TIMESTAMPTZ DEFAULT NOW(),
+  last_activity TIMESTAMPTZ DEFAULT NOW(),
+  is_active BOOLEAN DEFAULT true,
+  
+  -- Lead capture (if collected)
+  lead_id UUID REFERENCES leads(id),
+  
+  -- Metadata
+  user_agent TEXT,
+  ip_address INET,
+  referrer TEXT
+);
+
+-- Chat messages
+CREATE TABLE chat_messages (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  session_id UUID REFERENCES chat_sessions(id) ON DELETE CASCADE,
+  
+  role TEXT NOT NULL CHECK (role IN ('user', 'assistant', 'system')),
+  content TEXT NOT NULL,
+  
+  -- Metadata
+  tokens_used INTEGER,
+  model TEXT,
+  
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Leads
+CREATE TABLE leads (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  business_id UUID REFERENCES businesses(id) ON DELETE CASCADE,
+  session_id UUID REFERENCES chat_sessions(id),
+  
+  -- Contact info
+  name TEXT,
+  email TEXT,
+  phone TEXT,
+  sms_opt_in BOOLEAN DEFAULT false,
+  
+  -- Assessment results
+  assessment JSONB,
+  
+  -- Status
+  webhook_sent BOOLEAN DEFAULT false,
+  email_sent BOOLEAN DEFAULT false,
+  
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Integrations (per business)
+CREATE TABLE integrations (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  business_id UUID REFERENCES businesses(id) ON DELETE CASCADE,
+  
+  -- AI Provider
+  ai_provider TEXT, -- 'anthropic', 'openrouter', 'gemini'
+  ai_api_key_encrypted TEXT,
+  ai_model TEXT,
+  
+  -- Webhooks
+  webhook_enabled BOOLEAN DEFAULT false,
+  webhook_url TEXT,
+  webhook_preset TEXT,
+  
+  -- Email (SMTP)
+  email_enabled BOOLEAN DEFAULT false,
+  smtp_host TEXT,
+  smtp_port INTEGER,
+  smtp_user TEXT,
+  smtp_pass_encrypted TEXT,
+  smtp_from_name TEXT,
+  smtp_from_email TEXT,
+  notification_email TEXT,
+  
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Audit log
+CREATE TABLE audit_log (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES users(id),
+  action TEXT NOT NULL,
+  entity_type TEXT,
+  entity_id UUID,
+  details JSONB,
+  ip_address INET,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+## 3.2 Row Level Security
+
+```sql
+-- Users can only see their own data and data they manage
+-- Super Admin: All data
+-- Agency Admin: Own agency + their businesses
+-- Business Admin: Own business only
+-- Staff: Same as their parent admin
+
+-- Example RLS policy for businesses table
+ALTER TABLE businesses ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY businesses_access ON businesses
+  USING (
+    -- Super admins see all
+    (SELECT role FROM users WHERE id = auth.uid()) IN ('super_admin', 'super_admin_staff')
+    OR
+    -- Agency admins see their clients
+    agency_id = (SELECT agency_id FROM users WHERE id = auth.uid())
+    OR
+    -- Business admins see their own business
+    id = (SELECT business_id FROM users WHERE id = auth.uid())
+  );
+```
+
+---
+
+# 4\. ROUTE STRUCTURE
+
+## 4.1 Authentication Routes
+
+```
+/login                  Unbranded Login
+/secure-login            Custom Domain login
+/forgot-password         Password reset
+/reset-password          Password reset confirmation
+/logout                  Sign out
+```
+
+## 4.2 Admin Routes (Role-Based Access)
+
+```
+/admin                   Dashboard (redirect based on role)
+/admin/dashboard         Main dashboard
+
+-- Super Admin Only
+/admin/agencies          Agency management
+/admin/agencies/[id]     Agency details
+/admin/sub-accounts      All business accounts
+
+-- Agency Admin Only
+/admin/clients           Client (business) management
+/admin/clients/[id]      Client details
+
+-- Business Admin Only
+/admin/live-sessions     Active chat sessions
+/admin/session-history   Past sessions
+/admin/leads             Lead management
+/admin/chat-settings     Chat configuration
+/admin/prompts           Prompts & Training
+/admin/knowledge-base    sc management
+
+-- Shared (with role-appropriate data)
+/admin/business-info     Business information
+/admin/integrations      Webhooks, API keys, etc.
+/admin/branding          Branding & styling
+/admin/email-settings    Email/SMTP config
+/admin/embed             Embed snippets
+/admin/billing           Usage, invoices, payments
+/admin/reporting         Analytics & reports
+/admin/account           Account settings
+```
+
+## 4.3 Public Routes
+
+```
+/                        Landing page (if any)
+/chat/[account_id]       Public chat interface
+```
+
+---
+
+# 5\. ADMIN SIDEBAR NAVIGATION
+
+## 5.1 Super Admin Tabs
+
+```
+Dashboard
+Agencies                 → Feature toggles, settings access
+Sub-Accounts             → All businesses across all agencies
+Business Information
+Integrations             → Webhooks, API keys, tokens, licenses
+Branding & Styling
+Email Settings
+Embed Snippets
+Billing
+Reporting
+---
+Switch Services          → [Grayed out - future feature]
+Sign Out
+```
+
+## 5.2 Agency Admin Tabs
+
+```
+Dashboard
+Clients                  → Feature toggles, settings access
+Business Information
+Integrations             → Webhooks, API keys, tokens, licenses
+Branding & Styling       → Agency-level defaults for clients
+Email Settings
+Embed Snippets
+Billing
+Reporting
+---
+Switch Services          → [Grayed out - future feature]
+Sign Out
+```
+
+## 5.3 Business Admin Tabs
+
+```
+Dashboard
+Live Sessions            → Real-time active chats
+Session History          → Past conversations
+Leads                    → Captured lead data
+Business Information
+Integrations             → Webhooks, API keys, tokens, licenses
+Branding & Styling       → Full chat customization
+Chat Settings            → Behavior settings
+Prompts & Training       → System prompt, starters
+Knowledge Base           → sc content, crawl settings
+Email Settings
+Embed Snippets
+Billing
+Reporting
+---
+Switch Services          → [Grayed out - future feature]
+Sign Out
+```
+
+---
+
+# 6\. BRANDING & STYLING SYSTEM
+
+## 6.1 Customization Modes
+
+### Simple Mode
+
+- Primary color  
+- Secondary color  
+- Logo upload  
+- (Auto-generates compatible theme)
+
+### Advanced Mode
+
+Full granular control over every component.
+
+## 6.2 Styling Structure
+
+```json
+{
+  "mode": "simple" | "advanced",
+  "simple": {
+    "primaryColor": "#000000",
+    "secondaryColor": "#666666",
+    "logo": "url"
+  },
+  "advanced": {
+    "light": { /* Light mode styles */ },
+    "dark": { /* Dark mode styles */ }
+  }
+}
+```
+
+## 6.3 Advanced Styling Schema
+
+```json
+{
+  "light": {
+    "sidebar": {
+      "background": {
+        "color": "#FFFFFF",
+        "gradient": null
+      },
+      "logo": {
+        "url": "",
+        "maxHeight": "40px"
+      },
+      "navigation": {
+        "fontFamily": "Inter",
+        "fontSize": "14px",
+        "fontWeight": "500",
+        "color": "#333333",
+        "hoverColor": "#000000",
+        "activeColor": "#000000",
+        "activeBackground": "#F0F0F0"
+      },
+      "divider": {
+        "color": "#E0E0E0",
+        "thickness": "1px"
+      },
+      "width": "280px"
+    },
+    
+    "header": {
+      "background": {
+        "color": "#FFFFFF"
+      },
+      "title": {
+        "fontFamily": "Inter",
+        "fontSize": "18px",
+        "fontWeight": "600",
+        "color": "#000000"
+      },
+      "subtitle": {
+        "fontFamily": "Inter",
+        "fontSize": "14px",
+        "fontWeight": "400",
+        "color": "#666666"
+      },
+      "border": {
+        "color": "#E0E0E0",
+        "thickness": "1px"
+      },
+      "height": "64px"
+    },
+    
+    "chatWindow": {
+      "background": {
+        "color": "#FAFAFA"
+      },
+      "userMessage": {
+        "background": "#000000",
+        "color": "#FFFFFF",
+        "fontFamily": "Inter",
+        "fontSize": "14px",
+        "fontWeight": "400",
+        "borderRadius": "16px",
+        "padding": "12px 16px"
+      },
+      "assistantMessage": {
+        "background": "#FFFFFF",
+        "color": "#000000",
+        "fontFamily": "Inter",
+        "fontSize": "14px",
+        "fontWeight": "400",
+        "borderRadius": "16px",
+        "padding": "12px 16px",
+        "border": {
+          "color": "#E0E0E0",
+          "thickness": "1px"
+        }
+      },
+      "timestamp": {
+        "fontFamily": "Inter",
+        "fontSize": "11px",
+        "color": "#999999"
+      },
+      "scrollbar": {
+        "trackColor": "#F0F0F0",
+        "thumbColor": "#CCCCCC",
+        "width": "6px"
+      }
+    },
+    
+    "chatInput": {
+      "container": {
+        "background": "#FFFFFF",
+        "padding": "16px",
+        "border": {
+          "color": "#E0E0E0",
+          "thickness": "1px"
+        }
+      },
+      "field": {
+        "background": "#F5F5F5",
+        "color": "#000000",
+        "placeholderColor": "#999999",
+        "fontFamily": "Inter",
+        "fontSize": "14px",
+        "borderRadius": "24px",
+        "padding": "12px 16px",
+        "border": {
+          "color": "#E0E0E0",
+          "thickness": "1px"
+        },
+        "focusBorder": {
+          "color": "#000000",
+          "thickness": "2px"
+        }
+      },
+      "sendButton": {
+        "background": "#000000",
+        "color": "#FFFFFF",
+        "hoverBackground": "#333333",
+        "borderRadius": "50%",
+        "size": "40px",
+        "icon": "arrow" | "send" | "custom"
+      }
+    },
+    
+    "buttons": {
+      "primary": {
+        "background": "#000000",
+        "color": "#FFFFFF",
+        "hoverBackground": "#333333",
+        "fontFamily": "Inter",
+        "fontSize": "14px",
+        "fontWeight": "500",
+        "borderRadius": "8px",
+        "padding": "10px 20px"
+      },
+      "secondary": {
+        "background": "transparent",
+        "color": "#000000",
+        "hoverBackground": "#F0F0F0",
+        "border": {
+          "color": "#000000",
+          "thickness": "1px"
+        },
+        "fontFamily": "Inter",
+        "fontSize": "14px",
+        "fontWeight": "500",
+        "borderRadius": "8px",
+        "padding": "10px 20px"
+      },
+      "conversationStarter": {
+        "background": "#FFFFFF",
+        "color": "#000000",
+        "hoverBackground": "#F5F5F5",
+        "border": {
+          "color": "#E0E0E0",
+          "thickness": "1px"
+        },
+        "fontFamily": "Inter",
+        "fontSize": "13px",
+        "fontWeight": "400",
+        "borderRadius": "12px",
+        "padding": "12px 16px"
+      }
+    },
+    
+    "widgets": {
+      "quizProgress": {
+        "trackColor": "#E0E0E0",
+        "fillColor": "#000000",
+        "height": "4px",
+        "borderRadius": "2px"
+      },
+      "loadingIndicator": {
+        "color": "#000000",
+        "style": "dots" | "spinner" | "pulse"
+      },
+      "avatar": {
+        "assistantBackground": "#000000",
+        "assistantIcon": "bot" | "custom",
+        "size": "32px",
+        "borderRadius": "50%"
+      }
+    },
+    
+    "icons": {
+      "style": "outlined" | "filled" | "rounded",
+      "color": "#000000",
+      "size": "20px"
+    },
+    
+    "emojis": {
+      "enabled": true,
+      "style": "native" | "twemoji"
+    }
+  },
+  
+  "dark": {
+    /* Same structure, different values */
+  },
+  
+  "fonts": {
+    "google": ["Inter", "Roboto"],
+    "custom": []
+  },
+  
+  "customCSS": {
+    "light": "",
+    "dark": ""
+  },
+  
+  "labels": {
+    "welcomeHeading": "How can we help?",
+    "welcomeSubheading": "Ask us anything",
+    "inputPlaceholder": "Type your message...",
+    "sendButton": "Send",
+    "startQuizButton": "Take Assessment",
+    "skipQuizButton": "Skip to Chat",
+    "leadFormTitle": "Get Personalized Recommendations",
+    "leadFormSubmit": "Submit"
+  }
+}
+```
+
+## 6.4 Premade Themes
+
+```json
+{
+  "themes": {
+    "grayscale": { /* Default - black/white/gray */ },
+    "midnight": { /* Dark blue theme */ },
+    "forest": { /* Green theme */ },
+    "ocean": { /* Blue theme */ },
+    "sunset": { /* Orange/red theme */ },
+    "lavender": { /* Purple theme */ },
+    "coral": { /* Pink/coral theme */ },
+    "gold": { /* Yellow/gold theme */ }
+  }
+}
+```
+
+## 6.5 Styling Inheritance
+
+```
+Platform Defaults (grayscale)
+       ↓
+Agency Branding (if set)
+       ↓
+Business Branding (overrides)
+```
+
+---
+
+# 7\. KNOWLEDGE BASE MANAGEMENT
+
+## 7.1 Generation Flow
+
+```
+1. Business enters website URL
+2. System crawls website
+3. sc Generator runs (9-step pipeline)
+4. Generated files stored in database
+5. Business can preview/edit
+6. Business publishes to live chat
+```
+
+## 7.2 Editing Interface
+
+- View mode: Read-only display of generated content  
+- Edit mode: Editable with warnings
+
+### Warning System
+
+```
+⚠️ CAUTION: Modifying AI-generated content may degrade chat performance.
+Changes to the system prompt or concern mapping can affect how the AI 
+responds to customers. Proceed with care.
+
+[ ] I understand the risks
+[Save Changes] [Revert to Generated]
+```
+
+## 7.3 Crawl Settings
+
+```json
+{
+  "sourceUrl": "https://example.com",
+  "crawlFrequency": "manual" | "daily" | "weekly" | "monthly",
+  "lastCrawl": "2026-01-10T...",
+  "nextScheduledCrawl": "2026-01-17T...",
+  "crawlDepth": 3,
+  "excludePatterns": ["/blog/*", "/news/*"],
+  "notifyOnChanges": true
+}
+```
+
+---
+
+# 8\. CHAT SETTINGS
+
+## 8.1 Behavior Settings
+
+```json
+{
+  "quiz": {
+    "enabled": true,
+    "required": false,
+    "showSkipButton": true
+  },
+  "leadCapture": {
+    "enabled": true,
+    "timing": "after_quiz" | "after_messages" | "on_demand",
+    "requiredFields": ["email"],
+    "optionalFields": ["name", "phone"],
+    "smsOptIn": true
+  },
+  "conversationStarters": {
+    "enabled": true,
+    "count": 4,
+    "randomize": false
+  },
+  "typing": {
+    "showIndicator": true,
+    "simulateDelay": true,
+    "minDelay": 500,
+    "maxDelay": 1500
+  },
+  "session": {
+    "timeout": 30, // minutes
+    "persistHistory": true
+  }
+}
+```
+
+---
+
+# 9\. INTEGRATIONS
+
+## 9.1 AI Provider
+
+```json
+{
+  "provider": "anthropic" | "openrouter" | "gemini",
+  "apiKey": "encrypted",
+  "model": "claude-sonnet-4-20250514",
+  "temperature": 0.7,
+  "maxTokens": 4096
+}
+```
+
+## 9.2 Webhooks
+
+```json
+{
+  "enabled": true,
+  "url": "https://...",
+  "preset": "gohighlevel" | "n8n" | "zapier" | "custom",
+  "events": ["lead_captured", "session_started", "session_ended"],
+  "headers": {},
+  "retryAttempts": 3
+}
+```
+
+## 9.3 Email (SMTP)
+
+```json
+{
+  "enabled": true,
+  "host": "smtp.gmail.com",
+  "port": 587,
+  "secure": true,
+  "user": "...",
+  "pass": "encrypted",
+  "fromName": "Business Name",
+  "fromEmail": "noreply@...",
+  "notificationEmail": "leads@..."
+}
+```
+
+---
+
+# 10\. BILLING
+
+## 10.1 Metrics Tracked
+
+- Messages sent (AI API calls)  
+- Active sessions  
+- Leads captured  
+- sc generations  
+- Storage used
+
+## 10.2 Billing Levels
+
+- Platform → Agency: Usage-based or flat monthly  
+- Agency → Business: Agency controls pricing
+
+---
+
+# 11\. SECURITY
+
+## 11.1 Data Isolation
+
+- Row Level Security on all tables  
+- Account ID \+ Session ID prevents cross-user access  
+- API keys encrypted at rest  
+- Audit logging for admin actions
+
+## 11.2 Session Security
+
+- Chat sessions are anonymous (no PII required)  
+- Session ID is UUID, not guessable  
+- Sessions expire after inactivity  
+- No session can access another session's data
+
+---
+
+# 12\. IMPLEMENTATION PHASES
+
+## Phase 1: Core Platform
+
+- [ ] Database schema  
+- [ ] Authentication (all user types)  
+- [ ] Admin sidebar navigation  
+- [ ] Basic dashboard for each role  
+- [ ] Business management (CRUD)
+
+## Phase 2: Knowledge Base
+
+- [ ] sc generator integration  
+- [ ] sc storage and retrieval  
+- [ ] sc editing interface  
+- [ ] Crawl scheduling
+
+## Phase 3: Chat Interface
+
+- [ ] Public chat route  
+- [ ] Session management  
+- [ ] Message storage  
+- [ ] Lead capture
+
+## Phase 4: Styling System
+
+- [ ] Simple mode  
+- [ ] Advanced mode  
+- [ ] Premade themes  
+- [ ] Live preview
+
+## Phase 5: Agency Features
+
+- [ ] Agency management  
+- [ ] Client management  
+- [ ] Custom domains  
+- [ ] Agency-level branding
+
+## Phase 6: Integrations
+
+- [ ] Webhook system  
+- [ ] Email notifications  
+- [ ] Multi-provider AI
+
+## Phase 7: Billing & Reporting
+
+- [ ] Usage tracking  
+- [ ] Stripe integration  
+- [ ] Analytics dashboard
+
+---
+
+# 13\. FILE STRUCTURE
+
+```
+securechat/
+├── src/
+│   ├── app/
+│   │   ├── (auth)/
+│   │   │   ├── login/
+│   │   │   ├── secure-login/
+│   │   │   ├── forgot-password/
+│   │   │   └── reset-password/
+│   │   ├── (admin)/
+│   │   │   ├── admin/
+│   │   │   │   ├── dashboard/
+│   │   │   │   ├── agencies/
+│   │   │   │   ├── clients/
+│   │   │   │   ├── sub-accounts/
+│   │   │   │   ├── live-sessions/
+│   │   │   │   ├── session-history/
+│   │   │   │   ├── leads/
+│   │   │   │   ├── business-info/
+│   │   │   │   ├── integrations/
+│   │   │   │   ├── branding/
+│   │   │   │   ├── chat-settings/
+│   │   │   │   ├── prompts/
+│   │   │   │   ├── knowledge-base/
+│   │   │   │   ├── email-settings/
+│   │   │   │   ├── embed/
+│   │   │   │   ├── billing/
+│   │   │   │   ├── reporting/
+│   │   │   │   └── account/
+│   │   │   └── layout.jsx  (sidebar)
+│   │   ├── (public)/
+│   │   │   └── chat/
+│   │   │       └── [accountId]/
+│   │   └── api/
+│   │       ├── auth/
+│   │       ├── admin/
+│   │       ├── chat/
+│   │       ├── knowledge-base/
+│   │       ├── leads/
+│   │       ├── webhooks/
+│   │       └── billing/
+│   ├── components/
+│   │   ├── admin/
+│   │   │   ├── Sidebar.jsx
+│   │   │   ├── Header.jsx
+│   │   │   └── ...
+│   │   ├── chat/
+│   │   │   ├── ChatWindow.jsx
+│   │   │   ├── ChatInput.jsx
+│   │   │   ├── MessageBubble.jsx
+│   │   │   └── ...
+│   │   ├── forms/
+│   │   ├── ui/
+│   │   └── branding/
+│   │       ├── StyleEditor.jsx
+│   │       ├── ColorPicker.jsx
+│   │       ├── FontSelector.jsx
+│   │       └── ThemePreview.jsx
+│   ├── lib/
+│   │   ├── supabase/
+│   │   ├── auth/
+│   │   ├── ai/
+│   │   ├── styling/
+│   │   └── utils/
+│   ├── hooks/
+│   └── middleware.js
+├── tools/
+│   └── sc-generator/
+├── supabase/
+│   ├── schema.sql
+│   └── rls-policies.sql
+└── public/
+    └── widget.js
+```
+
+---
+
+# 14\. NEXT STEPS
+
+1. Review this spec \- Confirm structure and features  
+2. Set up Supabase project \- New project for securechat  
+3. Implement database schema \- Run migrations  
+4. Build auth system \- All login routes  
+5. Create admin layout \- Sidebar \+ role-based tabs  
+6. Build first admin pages \- Dashboard, Business Info  
+7. Integrate styling system \- Simple mode first  
+8. Connect chat interface \- Public route with styling
+
+---
+
+Document Version: 1.0 Created: January 10, 2026 Author: Claude \+ Bob (Oxford Pierpont)
+
+### 
+
+### Business Model
+
+* Oxford Pierpont (Super Admin) operates the platform  
+* Agencies purchase white-label access and resell to clients  
+* Businesses are end clients who use the AI chat  
+* Customers interact with chat (no account required)
+
+---
+
+## What Was Accomplished This Session
+
+### 1\. Supabase Troubleshooting
+
+Fixed the new securechat-supabase.sec-admn.com instance:
+
+* Connected Traefik to the Supabase network  
+* Fixed missing ENABLE\_ANONYMOUS\_USERS env var  
+* Cloned data from sbms-supabase (192 conversations, 1 lead, 1 settings, 1 auth user)  
+* Updated .env.local to point to new Supabase URL
+
+Note: Production Dokploy env vars still point to old sbms-supabase.sec-admn.com \- needs manual update in Dokploy dashboard.
+
+### 2\. Installed Claude Design Skill
+
+* Cloned https://github.com/Dammyjay93/claude-design-skill.git  
+* Installed to /root/.claude/skills/design-principles/SKILL.md  
+* Provides design principles for UI (Sophistication & Trust direction)
+
+### 3\. Multi-Tenant Admin System
+
+Built the foundation for a 7-tier user system:  
+---
+
+## User Hierarchy (7 Levels)
+
+| Level | Role | Login Route | Access |
+| :---- | :---- | :---- | :---- |
+| 1 | super\_admin | /auth-login | Full platform |
+| 2 | super\_admin\_staff | /auth-login | Full platform (read-heavy) |
+| 3 | agency\_admin | /agency-login | Own agency \+ clients |
+| 4 | agency\_staff | /agency-login | Own agency (limited) |
+| 5 | business\_admin | /business-login | Own business |
+| 6 | business\_staff | /business-login | Own business (limited) |
+| 7 | Customer | No login | Chat only (session-based) |
+
+---
+
+## Files Created
+
+### Database Migrations
+
+```
+/supabase/migrations/001_multi_tenant_schema.sql
+```
+
+* Creates tables: agencies, businesses, users, knowledge\_bases, integrations, chat\_sessions, chat\_messages, new\_leads, audit\_log, themes  
+* Defines enums: user\_role, subscription\_status, sc\_status, crawl\_frequency  
+* Inserts 8 premade themes (grayscale, midnight, forest, ocean, sunset, lavender, coral, gold)  
+* Creates helper functions: generate\_account\_id(), get\_user\_permissions()  
+* Creates update triggers for updated\_at columns
+
+```
+/supabase/migrations/002_rls_policies.sql
+```
+
+* Enables RLS on all tables  
+* Creates auth.get\_current\_user\_info() helper function  
+* Defines policies for each table based on user role  
+* Super admins see all, agency admins see their clients, business admins see own data
+
+### Auth System
+
+```
+/src/lib/auth.js
+```
+
+* Defines USER\_ROLES and ROLE\_GROUPS constants  
+* Permission definitions (PERMISSIONS object)  
+* Helper functions: isSuperAdmin(), isAgencyUser(), isBusinessUser(), hasPermission(), canAccessRoute(), getUserContext(), getTenantContext()
+
+```
+/src/lib/navigation.js
+```
+
+* Defines NAV\_ITEMS with icons, labels, hrefs, and allowed roles  
+* Defines NAV\_STRUCTURE per role (which tabs each role sees)  
+* Functions: getNavigationForRole(), isNavItemVisible(), getBreadcrumbs(), getPageTitle()
+
+### Login Pages
+
+```
+/src/components/auth/LoginForm.jsx
+```
+
+* Reusable login form component with split-panel design  
+* Accepts config prop for theming (accent color, title, features, pattern)  
+* Accepts allowedRoles prop for role validation  
+* Handles Supabase auth \+ user profile lookup
+
+```
+/src/app/auth-login/page.jsx      - Slate-800 theme, super admin
+/src/app/agency-login/page.jsx    - Deep blue theme, agency admin
+/src/app/business-login/page.jsx  - Black theme, business admin
+```
+
+### Admin Layout & Sidebar
+
+```
+/src/components/admin/Sidebar.jsx
+```
+
+* Collapsible sidebar with role-based navigation  
+* Inline SVG icons (Phosphor-style)  
+* Shows user email and role in footer  
+* Sign out button with red hover state  
+* "Switch Services" grayed out (future feature)
+
+```
+/src/app/admin/layout.jsx
+```
+
+* Wraps all /admin/\* routes  
+* Checks auth session, fetches user profile from users table  
+* Falls back to default business\_admin role if user not in database (backwards compatibility)  
+* Renders Sidebar \+ top header with page title  
+* Responsive margin adjustment when sidebar collapsed
+
+### Admin Pages Created
+
+```
+/src/app/admin/page.jsx           - Redirects to /admin/dashboard
+/src/app/admin/page.jsx.old       - Backup of original settings page
+/src/app/admin/dashboard/page.jsx - Role-aware stats + quick actions
+/src/app/admin/agencies/page.jsx  - Agency management (super admin)
+/src/app/admin/clients/page.jsx   - Client management (agency admin)
+/src/app/admin/leads/page.jsx     - Leads table with grade display
+/src/app/admin/live-sessions/page.jsx - Active sessions monitor
+/src/app/admin/business-info/page.jsx - Business details form
+```
+
+### Middleware
+
+```
+/src/middleware.js
+```
+
+* Defines LOGIN\_ROUTES, PROTECTED\_ROUTES, PUBLIC\_ROUTES  
+* Redirects unauthenticated users from /admin/\* to /login  
+* Redirects authenticated users from login pages to /admin/dashboard  
+* Root path redirects based on auth state
+
+### Empty Directories Created
+
+```
+/src/app/admin/sub-accounts/
+/src/app/admin/session-history/
+/src/app/admin/integrations/
+/src/app/admin/branding/
+/src/app/admin/chat-settings/
+/src/app/admin/prompts/
+/src/app/admin/knowledge-base/
+/src/app/admin/email-settings/
+/src/app/admin/embed/
+/src/app/admin/billing/
+/src/app/admin/reporting/
+```
+
+---
+
+## Design Direction
+
+Following /design-principles skill:
+
+* Direction: Sophistication & Trust (enterprise B2B)  
+* Colors: Slate palette (slate-50 bg, slate-200 borders, slate-900 text)  
+* Depth: Subtle borders, minimal shadows  
+* Typography: System fonts, 4px grid spacing  
+* Layout: Collapsible sidebar, clean cards with rounded-xl corners
+
+---
+
+## Sidebar Tab Configuration
+
+### Super Admin Tabs
+
+Dashboard, Agencies, Sub-Accounts, Business Information, Integrations, Branding & Styling, Email Settings, Embed Snippets, Billing, Reporting, \[Switch Services \- grayed\], Sign Out
+
+### Agency Admin Tabs
+
+Dashboard, Clients, Business Information, Integrations, Branding & Styling, Email Settings, Embed Snippets, Billing, Reporting, \[Switch Services \- grayed\], Sign Out
+
+### Business Admin Tabs
+
+Dashboard, Live Sessions, Session History, Leads, Business Information, Integrations, Branding & Styling, Chat Settings, Prompts & Training, Knowledge Base, Email Settings, Embed Snippets, Billing, Reporting, \[Switch Services \- grayed\], Sign Out  
+---
+
+## Styling System Requirements (Not Yet Built)
+
+### Two Modes
+
+Simple Mode:
+
+* Primary color picker  
+* Secondary color picker  
+* Logo upload  
+* Auto-generates theme
+
+Advanced Mode:
+
+* Organized by section: Sidebar, Header, Chat Window, Chat Input  
+* Each component: background, fonts, borders, radius, colors  
+* Separate light/dark mode configs  
+* Google Fonts integration  
+* Custom CSS upload  
+* Emoji enable/disable  
+* All labels/headings editable
+
+### Styling Schema (JSONB)
+
+```json
+{
+  "mode": "simple|advanced",
+  "simple": { "primaryColor", "secondaryColor", "logo" },
+  "advanced": {
+    "light": { "sidebar": {...}, "header": {...}, "chatWindow": {...}, "chatInput": {...} },
+    "dark": { "sidebar": {...}, "header": {...}, "chatWindow": {...}, "chatInput": {...} }
+  },
+  "fonts": { "google": [], "custom": [] },
+  "customCSS": { "light": "", "dark": "" },
+  "labels": { "welcomeHeading", "inputPlaceholder", ... }
+}
+```
+
+### Premade Themes (Already in DB migration)
+
+grayscale (default), midnight, forest, ocean, sunset, lavender, coral, gold  
+---
+
+## API Routes Needed
+
+| Route | Purpose |
+| :---- | :---- |
+| /api/agencies | CRUD for agencies |
+| /api/businesses | CRUD for businesses |
+| /api/users | User management |
+| /api/branding | Save/load styling |
+| /api/themes | Get premade themes |
+| /api/knowledge-base | sc operations |
+| /api/chat/\[accountId\] | Account-specific chat |
+| /api/sessions | Session management |
+
+Existing routes to update for multi-tenant:
+
+* /api/settings \- Per-business settings  
+* /api/leads \- Per-business leads
+
+---
+
+## Public Chat Route
+
+New route: /chat/\[accountId\]
+
+* Account ID identifies the business  
+* Loads business-specific styling from database  
+* Session-based (no login for customers)  
+* Session ID prevents cross-user chat access
+
+---
+
+## Database Migration Status
+
+NOT YET RUN \- Migrations are in /supabase/migrations/ but have not been applied to the database.  
+To run:
+
+1. Go to Supabase dashboard for securechat-supabase.sec-admn.com  
+2. SQL Editor → Run 001\_multi\_tenant\_schema.sql  
+3. Then run 002\_rls\_policies.sql  
+4. Create super\_admin user linking to existing auth.users
+
+---
+
+## Environment Variables
+
+.env.local (updated this session):
+
+```
+NEXT_PUBLIC_SUPABASE_URL=https://securechat-supabase.sec-admn.com
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+ENCRYPTION_KEY=5k/hNUZkSp1Ei64MaWhMgbIJrdJ5GJ1l
+NEXT_PUBLIC_APP_URL=http://localhost:3002
+```
+
+Dokploy production still has old URL \- update manually:
+
+* Change NEXT\_PUBLIC\_SUPABASE\_URL from sbms-supabase.sec-admn.com to securechat-supabase.sec-admn.com
+
+---
+
+## Known Issues / Backwards Compatibility
+
+1. User table fallback: If user exists in auth.users but not in users table, layout.jsx creates a temporary object with role: 'business\_admin'. This is for backwards compatibility until migration is complete.  
+2. Old settings page: Backed up as page.jsx.old. Contains the 7-section settings form that needs to be migrated to individual pages (business-info, integrations, branding, email-settings, embed, chat-settings).  
+3. Existing data: Current settings, leads, conversations tables still work. New tables (businesses, new\_leads, chat\_sessions, chat\_messages) are for the new multi-tenant structure.
+
+---
+
+## Git Status
+
+Last commit: df524cf \- "feat: Add multi-tenant admin system with role-based sidebar"  
+All changes pushed to origin/main. Dokploy should auto-deploy.  
+---
+
+## Remaining Work Summary
+
+1. Run database migrations on Supabase  
+2. Create remaining 12 admin pages (most are empty directories)  
+3. Build branding/styling system (most complex feature)  
+4. Create API routes for multi-tenant operations  
+5. Refactor chat route for account-based access  
+6. Connect knowledge base to sc generator  
+7. Add billing (Stripe integration)  
+8. Add reporting (analytics dashboard)  
+9. Test everything
+
+---
+
+## Quick Start for Continuation
+
+```shell
+cd /root/securechat.sec-admn
+git pull origin main
+npm install
+npm run dev -- -p 3002
+```
+
+Then continue building from the plan at:  
+/root/.claude/plans/rippling-meandering-swan.md
+
+# Here's a comprehensive list of everything remaining to complete the project:
+
+---
+
+## Remaining Tasks
+
+### 1\. Database Setup
+
+*  Run 001\_multi\_tenant\_schema.sql migration on Supabase  
+*  Run 002\_rls\_policies.sql migration on Supabase  
+*  Create initial super\_admin user in the users table (link to existing auth.users)  
+*  Migrate existing settings data to new businesses table structure  
+*  Migrate existing leads data to new new\_leads table  
+*  Migrate existing conversations to new chat\_sessions \+ chat\_messages tables
+
+### 2\. Remaining Admin Pages (12 pages)
+
+*  /admin/sub-accounts/page.jsx \- Super admin view of all businesses  
+*  /admin/session-history/page.jsx \- Past chat sessions  
+*  /admin/integrations/page.jsx \- Webhooks, API keys, AI provider config  
+*  /admin/branding/page.jsx \- Complex \- Full styling system (see Section 6 below)  
+*  /admin/chat-settings/page.jsx \- Quiz, lead capture, conversation starters  
+*  /admin/prompts/page.jsx \- System prompt, training content  
+*  /admin/knowledge-base/page.jsx \- sc editor with crawl settings  
+*  /admin/email-settings/page.jsx \- SMTP configuration  
+*  /admin/embed/page.jsx \- Embed code snippets  
+*  /admin/billing/page.jsx \- Usage, invoices, Stripe integration  
+*  /admin/reporting/page.jsx \- Analytics dashboard  
+*  /admin/agencies/\[id\]/page.jsx \- Individual agency detail/edit  
+*  /admin/clients/\[id\]/page.jsx \- Individual client detail/edit
+
+### 3\. Branding & Styling System (Complex Feature)
+
+*  /src/components/branding/StyleEditor.jsx \- Main editor component  
+*  /src/components/branding/ColorPicker.jsx \- Color picker with HEX/RGB  
+*  /src/components/branding/FontSelector.jsx \- Google Fonts integration  
+*  /src/components/branding/ThemePreview.jsx \- Live preview component  
+*  /src/components/branding/SectionEditor.jsx \- Per-section editing (Sidebar, Header, Chat Window, Chat Input)  
+*  /src/lib/themes.js \- 8 premade theme definitions  
+*  /src/lib/styling.js \- Style application utilities  
+*  Simple mode implementation (2 colors \+ logo)  
+*  Advanced mode implementation (100+ properties)  
+*  Light/dark mode separate configs  
+*  Custom CSS upload  
+*  Emoji enable/disable toggle  
+*  Labels/headings customization
+
+### 4\. Public Chat Route Refactor
+
+*  /src/app/chat/\[accountId\]/page.jsx \- Account-based chat  
+*  /src/app/chat/\[accountId\]/layout.jsx \- Layout with dynamic styling  
+*  Load business-specific styling from database  
+*  Session-based anonymous chat (no login)  
+*  Session ID generation and tracking
+
+### 5\. Knowledge Base Integration
+
+*  Connect to existing /tools/sc-generator  
+*  sc content display with edit mode  
+*  Warning system for content modification  
+*  Crawl scheduling (manual, daily, weekly, monthly)  
+*  Website URL configuration  
+*  Crawl status and logs display
+
+### 6\. API Routes (New/Updated)
+
+*  /api/agencies/route.js \- CRUD for agencies  
+*  /api/businesses/route.js \- CRUD for businesses  
+*  /api/users/route.js \- User management  
+*  /api/branding/route.js \- Save/load styling  
+*  /api/themes/route.js \- Premade themes  
+*  /api/knowledge-base/route.js \- sc operations  
+*  /api/chat/\[accountId\]/route.js \- Account-specific chat  
+*  /api/sessions/route.js \- Session management  
+*  Update /api/settings/route.js for multi-tenant  
+*  Update /api/leads/route.js for multi-tenant
+
+### 7\. Authentication Enhancements
+
+*  /src/app/forgot-password/page.jsx \- Password reset request  
+*  /src/app/reset-password/page.jsx \- Password reset confirmation  
+*  Server-side role verification in middleware (currently client-side)  
+*  User onboarding flow for new users without profile
+
+### 8\. Billing Integration
+
+*  Stripe customer creation for agencies/businesses  
+*  Usage tracking (messages, sessions, leads, sc generations)  
+*  Invoice display  
+*  Payment method management  
+*  Subscription tier management
+
+### 9\. Reporting & Analytics
+
+*  Session metrics (count, duration, completion)  
+*  Lead metrics (capture rate, source breakdown)  
+*  Usage charts and graphs  
+*  Export functionality (CSV)  
+*  Date range filtering
+
+### 10\. Testing & Validation
+
+*  Test all 3 login routes with different user roles  
+*  Verify RLS policies work correctly  
+*  Test sidebar shows correct tabs per role  
+*  Verify role-based route protection  
+*  Test chat with account-based routing  
+*  Build verification (npm run build)
+
+### 11\. Missing Utility Files
+
+*  Ensure /src/lib/ai-providers.js exists (referenced in old admin page)  
+*  Update /src/lib/supabase-server.js for multi-tenant queries  
+*  Update /src/lib/supabase-client.js if needed
+
+### 12\. UI Components (Shared)
+
+*  /src/components/ui/Card.jsx \- Reusable card component  
+*  /src/components/ui/Button.jsx \- Consistent button styles  
+*  /src/components/ui/Input.jsx \- Form input component  
+*  /src/components/ui/Select.jsx \- Custom select dropdown  
+*  /src/components/ui/Toggle.jsx \- Toggle switch  
+*  /src/components/ui/Modal.jsx \- Modal dialog  
+*  /src/components/ui/Table.jsx \- Data table with sorting/pagination
+
+---
+
+## Priority Order (Recommended)
+
+1. Database migrations \- Foundation for everything  
+2. Remaining admin pages \- Complete the UI structure  
+3. Branding system \- High-value feature  
+4. API routes \- Connect UI to database  
+5. Chat route refactor \- Enable account-based chat  
+6. Knowledge base \- Connect sc generator  
+7. Billing \- Revenue-critical  
+8. Reporting \- Analytics  
+9. Testing \- Verify everything works
+
+---
+
+## Files Created So Far
+
+```
+src/
+├── app/
+│   ├── admin/
+│   │   ├── layout.jsx ✅
+│   │   ├── page.jsx ✅ (redirects to dashboard)
+│   │   ├── page.jsx.old ✅ (backup)
+│   │   ├── dashboard/page.jsx ✅
+│   │   ├── agencies/page.jsx ✅
+│   │   ├── clients/page.jsx ✅
+│   │   ├── leads/page.jsx ✅
+│   │   ├── live-sessions/page.jsx ✅
+│   │   └── business-info/page.jsx ✅
+│   ├── auth-login/page.jsx ✅
+│   ├── agency-login/page.jsx ✅
+│   └── business-login/page.jsx ✅
+├── components/
+│   ├── admin/Sidebar.jsx ✅
+│   └── auth/LoginForm.jsx ✅
+├── lib/
+│   ├── auth.js ✅
+│   └── navigation.js ✅
+└── middleware.js ✅
+
+supabase/
+└── migrations/
+    ├── 001_multi_tenant_schema.sql ✅
+    └── 002_rls_policies.sql ✅
+```
+
+---
+
+This represents approximately 60-70% of the total project completed. The branding/styling system is the most complex remaining feature.
+
+# Here are additional critical details the next Claude Code session will need:
+
+---
+
+## Additional Context
+
+### Existing Files NOT Modified (But Important)
+
+```
+/src/app/login/page.jsx          - Original login (keep for backwards compat)
+/src/app/secure-login/page.jsx   - Whitelabel login variant (dark gray accent, logo placeholder)
+/src/app/chat/page.jsx           - Current chat interface (needs refactor to [accountId])
+/src/lib/supabase-client.js      - Browser Supabase client (singleton pattern)
+/src/lib/supabase-server.js      - Server Supabase client (has getSupabaseAdmin for service role)
+/src/lib/ai-providers.js         - AI provider config (PROVIDER_MODELS, getDefaultModel)
+/tools/sc-generator/             - Knowledge base generator tool (9-step pipeline)
+```
+
+### Original Settings Page Structure (in page.jsx.old)
+
+The old admin page had 7 collapsible sections that need to be migrated to individual pages:
+
+1. API Configuration → /admin/integrations  
+   * Provider selector (Anthropic, OpenRouter, Gemini)  
+   * API key input  
+   * Model selector  
+   * Test connection button  
+2. Business Information → /admin/business-info ✅ (created)  
+   * Name, phone, address, city/state/zip, email, website, booking URL  
+3. Branding → /admin/branding  
+   * Logo URLs (sidebar, start page, mobile)  
+   * Primary/accent color pickers  
+4. Lead Webhook → /admin/integrations  
+   * Enable toggle  
+   * Destination (GoHighLevel, n8n, custom)  
+   * Webhook URL  
+   * Test button  
+5. Email Settings → /admin/email-settings  
+   * Enable toggle  
+   * SMTP host, port, security  
+   * Username, password  
+   * From name/email  
+   * Notification email  
+   * Test button  
+6. Chat Interface → /admin/chat-settings  
+   * Welcome heading/subheading  
+   * Input placeholder  
+   * Quiz toggle  
+   * Quiz/booking button text  
+7. Embed Snippets → /admin/embed  
+   * Full-page iframe code  
+   * Floating widget script  
+   * Copy buttons
+
+### Current Database Schema (Old \- Still Active)
+
+```sql
+-- settings (single row, all config)
+id, ai_provider, ai_api_key_encrypted, ai_model,
+business_name, business_phone, business_address, business_address_2,
+business_city, business_state, business_zip, business_email,
+business_website, business_booking_url,
+logo_sidebar_url, logo_startpage_url, logo_mobile_url,
+color_primary, color_accent,
+webhook_enabled, webhook_destination, webhook_url,
+smtp_enabled, smtp_host, smtp_port, smtp_security,
+smtp_user, smtp_password_encrypted, smtp_from_name, smtp_from_email,
+notification_email,
+welcome_heading, welcome_subheading, input_placeholder,
+quiz_enabled, quiz_button_text, booking_button_text,
+created_at, updated_at
+
+-- leads
+id, name, email, phone, sms_opt_in,
+assessment_answers, assessment_results,
+source, webhook_sent, email_sent, created_at
+
+-- conversations
+id, session_id, messages (JSONB array), source, created_at, updated_at
+```
+
+### Encryption Pattern
+
+API keys and SMTP passwords are encrypted using AES-256:
+
+* Key: ENCRYPTION\_KEY env var (32 chars)  
+* Functions in /src/lib/supabase-server.js: encrypt/decrypt helpers  
+* Fields: ai\_api\_key\_encrypted, smtp\_password\_encrypted
+
+### Chat Interface Components (Existing)
+
+The chat UI in /src/app/chat/page.jsx has:
+
+* Sidebar with logo, welcome message, conversation starters  
+* Quiz flow with progress bar  
+* Lead capture form  
+* Message bubbles (user/assistant)  
+* Typing indicator  
+* Booking button
+
+These need to be styled dynamically based on business branding settings.
+
+### Webhook Presets
+
+```javascript
+const WEBHOOK_PRESETS = {
+  gohighlevel: { /* GHL format */ },
+  n8n: { /* n8n format */ },
+  zapier: { /* Zapier format */ },
+  custom: { /* Raw JSON */ }
+};
+```
+
+### Test Connection Functions
+
+The old admin page has test functions for:
+
+* AI connection (sends test prompt)  
+* SMTP (sends test email)  
+* Webhook (sends test payload)
+
+These should be preserved in the new integrations page.  
+---
+
+## Component Patterns Used
+
+### Card Pattern
+
+```
+<div className="bg-white rounded-xl border border-slate-200 p-6">
+  
+</div>
+```
+
+### Form Input Pattern
+
+```
+<div>
+  <label className="block text-sm font-medium text-slate-700 mb-2">
+    Label
+  </label>
+  <input
+    className="w-full px-4 py-2 border border-slate-200 rounded-lg 
+               focus:ring-2 focus:ring-slate-200 focus:border-slate-400 
+               outline-none transition-all"
+  />
+</div>
+```
+
+### Button Patterns
+
+```
+// Primary
+<button className="px-4 py-2 bg-slate-900 text-white rounded-lg text-sm font-medium hover:bg-slate-800 transition-colors">
+
+// Secondary
+<button className="px-4 py-2 text-slate-600 border border-slate-200 rounded-lg text-sm font-medium hover:bg-slate-50 transition-colors">
+```
+
+### Empty State Pattern
+
+```
+<div className="p-8 text-center">
+  <div className="w-12 h-12 bg-slate-100 rounded-xl flex items-center justify-center mx-auto mb-4">
+    
+  </div>
+  <h3 className="font-medium text-slate-900 mb-1">Title</h3>
+  <p className="text-sm text-slate-500 mb-4">Description</p>
+  <button>Action</button>
+</div>
+```
+
+---
+
+## Icons Reference
+
+Sidebar uses inline SVGs (Phosphor-style). The Icons object in Sidebar.jsx contains:
+
+* LayoutDashboard, Building2, Users, Briefcase, Radio, History, UserPlus  
+* Building, Plug, Palette, MessageSquare, Sparkles, BookOpen  
+* Mail, Code, CreditCard, BarChart3, ArrowLeftRight, LogOut  
+* Menu, ChevronLeft
+
+Copy these when creating new pages that need consistent icons.  
+---
+
+## Tailwind Classes Reference
+
+The project uses Tailwind CSS. Key color classes:
+
+* Backgrounds: bg-slate-50, bg-white  
+* Borders: border-slate-200, border-slate-100  
+* Text: text-slate-900 (primary), text-slate-600 (secondary), text-slate-500 (muted), text-slate-400 (faint)  
+* Accent: bg-slate-900 (buttons), hover:bg-slate-800  
+* Status: bg-emerald-50 text-emerald-700 (success), bg-red-50 text-red-600 (error)
+
+---
+
+## Port Configuration
+
+* Dev server: Port 3002 (3000 used by Docker)  
+* Command: npm run dev \-- \-p 3002  
+* VS Code port forwarding required for remote access
+
+---
+
+## Dokploy Deployment
+
+* Auto-deploys on push to main  
+* Container: software-applications-securechatsecadmncom-tkxads  
+* Env vars configured in Dokploy dashboard (not in repo)  
+* Build command: npm run build
+
+---
+
+## Plan File Location
+
+The implementation plan is saved at:
+
+```
+/root/.claude/plans/rippling-meandering-swan.md
+```
+
+This contains the full phase breakdown and file structure.  
+---
+
+## User Preferences Noted
+
+1. Custom domains are for end-client businesses, not agencies  
+2. Billing: Stripe only  
+3. sc Generator: Use existing /tools/sc-generator  
+4. API access: No programmatic API for businesses (admin UI only)  
+5. Default theme: Grayscale (black/white/gray)
+
+---
+
+That should be everything needed to continue the project seamlessly.
+
+# **Connecting Local Build to Self-Hosted Supabase**
+
+### Supabase Instance Details
+
+| Item | Value |
+| :---- | :---- |
+| URL | https://securechat-supabase.sec-admn.com |
+| Dashboard | https://securechat-supabase.sec-admn.com (Studio) |
+| API Endpoint | https://securechat-supabase.sec-admn.com/rest/v1/ |
+| Auth Endpoint | https://securechat-supabase.sec-admn.com/auth/v1/ |
+
+### API Keys
+
+```
+# Anon Key (safe for browser)
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyAgCiAgICAicm9sZSI6ICJhbm9uIiwKICAgICJpc3MiOiAic3VwYWJhc2UtZGVtbyIsCiAgICAiaWF0IjogMTY0MTc2OTIwMCwKICAgICJleHAiOiAxNzk5NTM1NjAwCn0.dc_X5iR_VP_qT0zsiyj_I_OZ2T9FtRU2BBNWN8Bu4GE
+
+# Service Role Key (server-only, bypasses RLS)
+SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyAgCiAgICAicm9sZSI6ICJzZXJ2aWNlX3JvbGUiLAogICAgImlzcyI6ICJzdXBhYmFzZS1kZW1vIiwKICAgICJpYXQiOiAxNjQxNzY5MjAwLAogICAgImV4cCI6IDE3OTk1MzU2MDAKfQ.DaYlNEoUrrEn2Ig7tqibS-PHK5vgusbcbo7X36XVt4Q
+```
+
+### Local .env.local File
+
+Create this file in your local project root:
+
+```
+# Supabase Connection
+NEXT_PUBLIC_SUPABASE_URL=https://securechat-supabase.sec-admn.com
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyAgCiAgICAicm9sZSI6ICJhbm9uIiwKICAgICJpc3MiOiAic3VwYWJhc2UtZGVtbyIsCiAgICAiaWF0IjogMTY0MTc2OTIwMCwKICAgICJleHAiOiAxNzk5NTM1NjAwCn0.dc_X5iR_VP_qT0zsiyj_I_OZ2T9FtRU2BBNWN8Bu4GE
+SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyAgCiAgICAicm9sZSI6ICJzZXJ2aWNlX3JvbGUiLAogICAgImlzcyI6ICJzdXBhYmFzZS1kZW1vIiwKICAgICJpYXQiOiAxNjQxNzY5MjAwLAogICAgImV4cCI6IDE3OTk1MzU2MDAKfQ.DaYlNEoUrrEn2Ig7tqibS-PHK5vgusbcbo7X36XVt4Q
+
+# Encryption (for API keys, SMTP passwords)
+ENCRYPTION_KEY=5k/hNUZkSp1Ei64MaWhMgbIJrdJ5GJ1l
+
+# App URL (local dev)
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+```
+
+### Verify Connection
+
+Test the connection works:
+
+```shell
+# Test REST API
+curl -s "https://securechat-supabase.sec-admn.com/rest/v1/" \
+  -H "apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyAgCiAgICAicm9sZSI6ICJhbm9uIiwKICAgICJpc3MiOiAic3VwYWJhc2UtZGVtbyIsCiAgICAiaWF0IjogMTY0MTc2OTIwMCwKICAgICJleHAiOiAxNzk5NTM1NjAwCn0.dc_X5iR_VP_qT0zsiyj_I_OZ2T9FtRU2BBNWN8Bu4GE"
+
+# Test Auth health
+curl -s "https://securechat-supabase.sec-admn.com/auth/v1/health" \
+  -H "apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyAgCiAgICAicm9sZSI6ICJhbm9uIiwKICAgICJpc3MiOiAic3VwYWJhc2UtZGVtbyIsCiAgICAiaWF0IjogMTY0MTc2OTIwMCwKICAgICJleHAiOiAxNzk5NTM1NjAwCn0.dc_X5iR_VP_qT0zsiyj_I_OZ2T9FtRU2BBNWN8Bu4GE"
+```
+
+### Existing Auth User
+
+There's one auth user already in the database:
+
+| Email | Password |
+| :---- | :---- |
+| admin@oxpi.co | (use existing password or reset via Supabase dashboard) |
+
+### Running Database Migrations
+
+The migrations have NOT been run yet. To apply them:
+
+1. Option A: Supabase Studio  
+   * Go to https://securechat-supabase.sec-admn.com  
+   * Login with dashboard credentials  
+   * Go to SQL Editor  
+   * Paste and run supabase/migrations/001\_multi\_tenant\_schema.sql  
+   * Then run supabase/migrations/002\_rls\_policies.sql  
+2. Option B: Direct psql
+
+```shell
+# From the server
+docker exec securechat-supabase-sec-admn-db psql -U postgres -f /path/to/001_multi_tenant_schema.sql
+```
+
+### After Running Migrations
+
+Create the super admin user linking to existing auth user:
+
+```sql
+-- Get the auth user ID first
+SELECT id, email FROM auth.users WHERE email = 'admin@oxpi.co';
+
+-- Then insert into users table (replace YOUR_AUTH_ID)
+INSERT INTO users (auth_id, email, name, role)
+VALUES (
+  'YOUR_AUTH_ID_HERE',
+  'admin@oxpi.co',
+  'Oxford Pierpont',
+  'super_admin'
+);
+```
+
+### SSL Certificate Note
+
+The Supabase instance uses Let's Encrypt SSL. If you get certificate errors locally, the cert may still be provisioning. You can temporarily bypass with:
+
+```javascript
+// NOT for production - development only
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+```
+
+Or just wait a few minutes for the cert to fully provision.
+
+### Local Development
+
+```shell
+# Clone repo
+git clone https://github.com/oxfordpierpont/securechat.sec-admn.git
+cd securechat.sec-admn
+
+# Install dependencies
+npm install
+
+# Create .env.local with contents above
+
+# Run dev server
+npm run dev
+
+# Opens at http://localhost:3000
+```

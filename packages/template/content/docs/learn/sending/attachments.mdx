@@ -1,0 +1,25 @@
+---
+title: "Attachments"
+description: "Attach files and documents to outbound messages sent by Personas."
+---
+Personas can attach files to outbound emails and messages. Attachments are passed as base64-encoded content or as a signed URL from your connected storage provider.
+
+## Example
+
+```json
+{
+  "to": "client@example.com",
+  "subject": "Your contract is ready",
+  "attachments": [
+    {
+      "filename": "contract.pdf",
+      "content": "<base64-encoded-content>",
+      "type": "application/pdf"
+    }
+  ]
+}
+```
+
+<Info>
+  Maximum attachment size is 25MB per message. For larger files, use a signed URL instead.
+</Info>

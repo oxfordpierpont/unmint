@@ -1,0 +1,319 @@
+---
+title: "aiConnected Platform v2 — Port Map"
+---
+
+# aiConnected Platform v2 — Port Map
+**Old path → New v2 path, with migration instructions**
+*March 2026*
+
+---
+
+## Overview
+
+The v2 monorepo follows the same Turborepo structure as v1. Package names and locations are preserved where possible for developer familiarity. The key differences are: a new `packages/ui` package (shadcn/ui layer), a replaced `packages/db` schema, and three fully rebuilt `apps/`.
+
+```
+platform-v2/
+├── apps/
+│   ├── platform/          ← Rebuilt from scratch (shadcn shell)
+│   ├── chat/              ← Rebuilt from scratch (shadcn + chat-core)
+│   └── kb-studio/         ← Rebuilt from scratch (shadcn + kb-engine)
+├── packages/
+│   ├── permissions/       ← Ported as-is
+│   ├── app-sdk/           ← Ported + extended (events_emitted/consumed)
+│   ├── kb-engine/         ← Ported as-is
+│   ├── chat-core/         ← Ported as-is
+│   ├── branding/          ← Logic ported, tokens replaced for TweakCN
+│   ├── db/                ← Client patterns ported, schema rebuilt
+│   └── ui/                ← NEW — shadcn/ui component package
+├── supabase/
+│   └── migrations/        ← Rebuilt from v2 schema contracts
+└── turbo.json / package.json
+```
+
+---
+
+## Package Port Map
+
+---
+
+### `packages/permissions`
+**Action: Copy as-is. Zero changes required.**
+
+| v1 path | v2 path | Changes |
+|---|---|---|
+| `packages/permissions/src/auth.js` | `packages/permissions/src/auth.js` | None |
+| `packages/permissions/src/index.js` | `packages/permissions/src/index.js` | None |
+
+The USER_ROLES constants, ROLE_GROUPS, and all helper functions (`isSuperAdmin`, `isAgencyUser`, `isBusinessUser`, etc.) are correct and match the v2 user model exactly. Copy verbatim.
+
+---
+
+### `packages/app-sdk`
+**Action: Port + extend for events.**
+
+| v1 path | v2 path | Changes |
+|---|---|---|
+| `packages/app-sdk/src/manifests.js` | `packages/app-sdk/src/manifests.js` | Add `events_emitted` and `events_consumed` arrays to each manifest |
+| `packages/app-sdk/src/imports.js` | `packages/app-sdk/src/imports.js` | Extend VALID_CONTRACT_KINDS to include `event` |
+| `packages/app-sdk/src/index.js` | `packages/app-sdk/src/index.js` | No change |
+
+**Manifest extension required:**
+Add to every module manifest object:
+```js
+events_emitted: ['module.event.name', ...],  // events this module fires
+events_consumed: ['other.module.event', ...], // events this module listens to
+```
+
+The existing `inputs`, `outputs`, `extensionPoints`, `permissions`, and `capabilities` fields are correct and carry forward unchanged. The two new fields complete the event bus contract.
+
+**Updated Chat manifest (example):**
+```js
+{
+  key: 'chat',
+  // ... existing fields ...
+  events_emitted: [
+    'chat.session.started',
+    'chat.message.sent',
+    'chat.lead.captured',
+    'chat.lead.warmed',
+    'chat.session.ended',
+  ],
+  events_consumed: [
+    'kb.published',
+    'contact.updated',
+    'voice.call.completed',
+  ],
+}
+```
+
+---
+
+### `packages/kb-engine`
+**Action: Port as-is. No logic changes.**
+
+| v1 path | v2 path | Changes |
+|---|---|---|
+| `packages/kb-engine/src/scraper.js` | `packages/kb-engine/src/scraper.js` | None |
+| `packages/kb-engine/src/researcher.js` | `packages/kb-engine/src/researcher.js` | None |
+| `packages/kb-engine/src/compiler.js` | `packages/kb-engine/src/compiler.js` | None |
+| `packages/kb-engine/src/extractor.js` | `packages/kb-engine/src/extractor.js` | None |
+| `packages/kb-engine/src/generate.js` | `packages/kb-engine/src/generate.js` | None |
+| `packages/kb-engine/src/ai.js` | `packages/kb-engine/src/ai.js` | None |
+| `packages/kb-engine/src/runtime.js` | `packages/kb-engine/src/runtime.js` | None |
+| `packages/kb-engine/src/system-prompt.js` | `packages/kb-engine/src/system-prompt.js` | None |
+| `packages/kb-engine/src/starters.js` | `packages/kb-engine/src/starters.js` | None |
+| `packages/kb-engine/src/concern-mapper.js` | `packages/kb-engine/src/concern-mapper.js` | None |
+| `packages/kb-engine/src/quiz.js` | `packages/kb-engine/src/quiz.js` | None |
+
+The scraper already points to `crawl.sec-admn.com` as the Crawl4AI endpoint. This infrastructure carries forward. No changes to the engine logic.
+
+---
+
+### `packages/chat-core`
+**Action: Port as-is. One file to review.**
+
+| v1 path | v2 path | Changes |
+|---|---|---|
+| `packages/chat-core/src/runtime-config.js` | `packages/chat-core/src/runtime-config.js` | None |
+| `packages/chat-core/src/lead-capture.js` | `packages/chat-core/src/lead-capture.js` | None |
+| `packages/chat-core/src/lead-delivery.js` | `packages/chat-core/src/lead-delivery.js` | None |
+| `packages/chat-core/src/knowledge.js` | `packages/chat-core/src/knowledge.js` | None |
+| `packages/chat-core/src/ai-config.js` | `packages/chat-core/src/ai-config.js` | None |
+| `packages/chat-core/src/system-prompt.js` | `packages/chat-core/src/system-prompt.js` | None |
+| `packages/chat-core/src/structured-response.js` | `packages/chat-core/src/structured-response.js` | None |
+| `packages/chat-core/src/rate-limit.js` | `packages/chat-core/src/rate-limit.js` | None |
+| `packages/chat-core/src/composio.js` | `packages/chat-core/src/composio.js` | Review: ensure it calls through API gateway, not direct |
+
+**Note on composio.js:** In v2, all external service calls route through the module's declared API surface and the platform API gateway — not via direct SDK imports. Review composio.js to confirm it follows this pattern before porting. If it makes direct SDK calls, wrap them in the platform.http or composio.connection input pattern.
+
+---
+
+### `packages/branding`
+**Action: Port merge logic, replace token definitions.**
+
+| v1 path | v2 path | Changes |
+|---|---|---|
+| `packages/branding/src/index.js` | `packages/branding/src/index.js` | Keep `mergeTheme()` function. Replace `DEFAULT_PLATFORM_THEME` object with TweakCN-compatible CSS variable names. |
+
+**Token replacement mapping (v1 → v2 TweakCN):**
+```
+sidebar_bg        → --sidebar-background
+sidebar_text      → --sidebar-foreground
+button_bg         → --primary
+button_text       → --primary-foreground
+body_bg           → --background
+card_bg           → --card
+heading_text      → --foreground
+body_text         → --muted-foreground
+```
+Map all remaining v1 tokens to their shadcn/TweakCN equivalents. The `mergeTheme(...themes)` function logic is correct and carries forward unchanged.
+
+---
+
+### `packages/db`
+**Action: Port client patterns. Rebuild schema.**
+
+| v1 path | v2 path | Changes |
+|---|---|---|
+| `packages/db/src/supabase-client.js` | `packages/db/src/supabase-client.js` | None |
+| `packages/db/src/supabase-server.js` | `packages/db/src/supabase-server.js` | None |
+| `packages/db/src/browser.js` | `packages/db/src/browser.js` | None |
+| `packages/db/src/server.js` | `packages/db/src/server.js` | None |
+| `packages/db/src/business-connectors.js` | `packages/db/src/business-connectors.js` | Review against v2 schema |
+| `packages/db/src/integration-sharing.js` | `packages/db/src/integration-sharing.js` | Review against v2 schema |
+
+**Schema: Rebuild from v2 contracts. Do not run v1 migrations.**
+
+v2 core schema (new migrations, written fresh):
+```sql
+-- Core shared entities
+workspaces          -- tenant record (replaces v1 agencies/businesses)
+contacts            -- universal entity, all modules read/write
+users               -- platform users, workspace-scoped roles
+events              -- shared event log for module interconnection
+module_registry     -- installed modules + capability contracts
+
+-- Module-owned tables (created by each module's migration)
+voice_calls
+voice_profiles
+transcripts
+chat_conversations
+chat_messages
+chat_configs
+kb_entries
+kb_projects
+contact_forms
+contact_submissions
+```
+
+---
+
+### `packages/ui` — NEW PACKAGE
+**Action: Create from scratch.**
+
+This package did not exist meaningfully in v1. In v2 it is the shadcn/ui component layer used by all apps and modules.
+
+```
+packages/ui/
+├── src/
+│   ├── components/    ← shadcn/ui components (button, card, dialog, etc.)
+│   ├── hooks/         ← shared React hooks
+│   ├── lib/           ← utils (cn, etc.)
+│   └── index.ts       ← barrel export
+├── components.json    ← shadcn/ui config
+└── package.json
+```
+
+All apps import from `@aiconnected/ui`. No app ever imports directly from `shadcn/ui`. This enforces design system consistency and enables global component updates.
+
+---
+
+## App Port Map
+
+---
+
+### `apps/platform` → Rebuild
+**Do not port. Build fresh.**
+
+New platform shell structure:
+```
+apps/platform/
+├── src/
+│   ├── app/
+│   │   ├── (auth)/         ← login, signup, reset
+│   │   ├── (shell)/        ← authenticated shell layout
+│   │   │   ├── layout.tsx  ← sidebar + header shell
+│   │   │   ├── dashboard/
+│   │   │   ├── agencies/[agencyId]/
+│   │   │   ├── businesses/[businessId]/
+│   │   │   ├── settings/
+│   │   │   └── billing/
+│   │   └── api/
+│   │       ├── auth/
+│   │       ├── modules/    ← module registry endpoints
+│   │       └── events/     ← event bus endpoints
+│   ├── components/
+│   │   ├── shell/          ← Sidebar, Header, Nav
+│   │   └── shared/         ← reusable page components
+│   └── lib/
+│       ├── navigation.ts   ← sidebar structure by role
+│       └── auth.ts         ← role utilities (from permissions package)
+```
+
+**Reference from v1 (logic only, no UI):**
+- `src/lib/navigation.js` — sidebar menu structure logic
+- `src/lib/auth.js` — auth utility patterns
+- `src/context/ImpersonationContext.jsx` — impersonation state logic (rewrite in TypeScript)
+
+---
+
+### `apps/chat` → Rebuild
+**Do not port. Build fresh.**
+
+New chat app structure:
+```
+apps/chat/
+├── src/
+│   ├── app/
+│   │   ├── [businessId]/   ← full-screen chat interface
+│   │   ├── widget/         ← embeddable bubble widget
+│   │   └── api/
+│   │       ├── chat/       ← AI response endpoint (uses chat-core)
+│   │       └── leads/      ← lead capture endpoint
+│   ├── components/
+│   │   ├── ChatWindow/
+│   │   ├── MessageBubble/
+│   │   ├── ServiceCard/
+│   │   ├── VoiceToggle/
+│   │   └── LeadForm/
+│   └── lib/
+│       └── chat-client.ts
+```
+
+**Port from v1 (logic only):**
+- All of `packages/chat-core` (unchanged)
+- `apps/chat/public/widget.js` — widget embed logic (review and port)
+
+---
+
+### `apps/kb-studio` → Rebuild
+**Do not port. Build fresh.**
+
+```
+apps/kb-studio/
+├── src/
+│   ├── app/
+│   │   ├── onboarding/     ← KB generator onboarding flow
+│   │   ├── editor/         ← KB management UI
+│   │   └── api/
+│   │       ├── generate/   ← triggers kb-engine pipeline
+│   │       └── publish/    ← publishes KB, emits kb.published event
+│   └── components/
+│       ├── OnboardingWizard/
+│       ├── KBEditor/
+│       └── ServiceCardEditor/
+```
+
+**Port from v1 (logic only):**
+- All of `packages/kb-engine` (unchanged)
+- `apps/kb-studio/kb-ui/kb-editor-spec.md` — reference for editor UI design
+
+---
+
+## Infrastructure Port Map
+
+| v1 resource | v2 action | Notes |
+|---|---|---|
+| Supabase project | Keep | Update schema via new migrations |
+| DigitalOcean droplets | Keep | Redeploy v2 via Dokploy |
+| Dokploy config | Update | New app paths and build commands |
+| Crawl4AI service (`crawl.sec-admn.com`) | Keep | Already referenced correctly in kb-engine |
+| OpenRouter integration | Keep | Already the inference layer |
+| Stripe account | Keep | Reconnect to v2 billing module |
+| n8n instance | Keep | Separate from platform rebuild |
+
+---
+
+*Port map v1.0 — March 2026*
+*Read alongside: aiConnected-Platform-V2-Build-Plan.md*

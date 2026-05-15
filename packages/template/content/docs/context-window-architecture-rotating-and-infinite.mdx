@@ -1,0 +1,141 @@
+---
+title: "Context Window Architecture: Rotating & Infinite"
+---
+**Concept Author:** Bob Hunter\
+**Date:** March 12, 2026\
+**Status:** Defined — Pending Implementation\
+**Classification:** aiConnected OS — Memory Architecture Layer 1
+
+---
+
+## The Underlying Mechanism
+
+A conversation is a live database. The context window is not a passive container — it is an active memory surface that manages itself in real time, with the entire conversation history immediately accessible and nothing ever permanently out of reach.
+
+This is the foundational memory model for aiConnected OS. How it is implemented depends entirely on one variable: whether the platform imposes an external token ceiling.
+
+- **On platforms you don't control** — the Rotating Context Window is the implementation
+- **On aiConnected OS** — the Infinite Context Window is the implementation
+
+Same mechanism. Two expressions of it depending on the constraints of the environment.
+
+---
+
+## The Problem Both Solve
+
+Existing approaches present a forced tradeoff:
+
+- **RAG** — Chunks documents for efficient retrieval but loses information at chunk boundaries, severs semantic continuity, and retrieves fragments that may be slightly off-target or misleading
+- **Long Context** — Preserves full fidelity by loading everything into the window but forces the model to re-read the entire document on every turn, making it economically unviable at scale
+
+The conventional wisdom was to use RAG for small scale, RAG for enterprise, and long context for a fuzzy middle ground. Nobody was asking why the tradeoff had to exist at all.
+
+This architecture rejects the tradeoff entirely. The context window and the retrieval layer are not two separate systems to be coordinated — they are one unified memory surface.
+
+---
+
+## The Rotating Context Window
+
+_Implementation for third-party platforms with imposed token limits._
+
+### Window Division
+
+The total available context window is divided into two zones:
+
+| Zone | Size | Purpose |
+| :-- | :-- | :-- |
+| **Live Window** | 50% of total context | Active conversation memory — always in context, no retrieval needed |
+| **RAG Layer** | Unlimited | Conversation history that has been chunked, enriched, and stored — retrieved on demand |
+
+_Example with a 1M token window: 500K tokens live, unlimited RAG storage._
+
+The 50% live limit is deliberate — models demonstrably degrade past the halfway point of their context window. Working within 50% means the model is always operating at full capacity.
+
+### The Chunking Threshold
+
+Chunking begins proactively at **80% of the live window capacity** — giving the system enough runway to complete the current turn without interruption, chunk clean complete exchanges rather than cutting mid-thought, and run the entire process as a background operation with no conversation pause.
+
+_Example: In a 500K live window, chunking begins at 400K tokens. The conversation never feels it._
+
+The 80% threshold is tunable — the principle matters more than the exact number: protect turn integrity and never interrupt the user.
+
+### Background Chunking Process
+
+When content crosses the threshold, a background process:
+
+1. Segments the oldest content into clean chunks at natural turn boundaries
+2. Enriches each chunk with keywords, a short summary, and a timestamp
+3. Stores enriched chunks in the conversation's micro-database
+4. Frees the live window space for the continuing conversation
+
+This runs continuously and silently — a streaming process, not a scheduled job. The threshold is a trigger, not a pause point.
+
+### Retrieval — Every Turn
+
+A lightweight semantic search runs against the RAG layer on every conversation turn automatically — not triggered by the user referencing something old, but constant, because the model doesn't always know what it doesn't know. Relevant stored context may connect to the current turn in ways that aren't linguistically obvious.
+
+Retrieved content is ranked by relevance and recency and brought into the live window, displacing the least relevant current content if space requires it. The most relevant information always occupies live memory.
+
+### Conflict Resolution and Version History
+
+When retrieved content conflicts with something in the live window:
+
+- Timestamps resolve priority automatically — newer content takes precedence by default
+- Both versions are preserved — nothing is deleted
+- Conflicts are surfaced to the user when relevant
+- Implicit version history is a natural byproduct of the architecture
+
+---
+
+## The Infinite Context Window
+
+_Native implementation on aiConnected OS where no external token ceiling exists._
+
+The conversation is the database. The database has no ceiling other than available storage. Storage is cheap. Therefore there is no context window to manage.
+
+Rotation is not needed. The live/RAG split is not needed. The workaround dissolves because the constraint it was solving doesn't exist.
+
+Certain practices from the Rotating Context Window remain valuable as optimization choices rather than survival requirements:
+
+- **Chunking** — not because you have to, but because well-formed enriched chunks make retrieval faster across very long histories
+- **Semantic search every turn** — still valuable for surfacing relevant history in long sessions
+- **Timestamps and version history** — still essential for conflict resolution
+- **Micro-database per conversation** — still the right model for isolation and permissions
+
+The difference is that none of these are constraints being managed. They are tools being chosen.
+
+---
+
+## Shared Principles
+
+Regardless of implementation:
+
+1. **No hard stop** — chunking is a background stream, never an interruption
+2. **Every turn is searched** — retrieval is constant, not reactive
+3. **Turns and tokens govern everything** — no complex intent-detection pipelines making judgment calls
+4. **Nothing is deleted** — version history is implicit and automatic
+5. **RAG storage is unlimited** — storage is cheap; there is no reason to cap it
+6. **Chunks are enriched** — keywords, summaries, and timestamps travel with every chunk
+7. **Every conversation is its own micro-database** — isolation is the default; broader access is a permissions decision
+
+---
+
+## Relationship to Neurigraph
+
+This architecture is **Layer 1** of the aiConnected memory stack — intra-conversation memory.
+
+Neurigraph is **Layer 2** — inter-conversation, cross-project, long-term memory organized as a hierarchical 3D knowledge graph.
+
+The Context Window Architecture does not need to know anything about Neurigraph. It manages its own micro-database and passes upward. The boundary is clean. The Infinite Context Window feeds Neurigraph more richly because nothing was ever compressed or rotated out — full conversation fidelity is always available to the graph.
+
+---
+
+## Why This Matters for aiConnected OS
+
+The Rotating Context Window gives aiConnected competitive capability on platforms it doesn't own. The Infinite Context Window is what makes aiConnected OS itself a fundamentally different product — not constrained by the architectural compromises baked into every third-party platform.
+
+Users on aiConnected OS are never told a conversation is too long. The system never forgets. History never degrades. The conversation just grows.
+
+---
+
+_Originated by Bob Hunter, March 12, 2026. Developed through iterative conversation with Claude (Anthropic). All conceptual authorship belongs to Bob Hunter._

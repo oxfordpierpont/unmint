@@ -1,0 +1,1298 @@
+---
+title: "Shell Codex PRD"
+---
+# aiConnected v2 Core Shell PRD (Canonical)
+Version: 1.0  
+Date: March 26, 2026  
+Status: Implementation-Ready Draft  
+Audience: Product, Architecture, Engineering, QA
+
+## 0. Document Purpose and Authority
+This is the highest-priority source of truth for building the aiConnected v2 Core Shell from a blank repository.
+
+Interpretation rules:
+1. When this document is explicit, implementation must follow it exactly.
+2. When this document is silent, implementation must choose the simplest approach that preserves future extensibility and shell/module boundaries.
+3. When functionality could be shell-owned or module-owned, it must be treated as module-owned unless explicitly marked shell-owned here.
+4. The shell must prioritize architectural correctness over convenience, decorative polish, and short-term coupling.
+5. This document governs `Shell` phase only; module and capability behavior is deferred by design.
+
+## 1. Product Identity
+aiConnected v2 Core Shell is a white-label, multi-tenant SaaS control plane that owns:
+1. Authentication and session lifecycle.
+2. Workspace and tenancy hierarchy.
+3. Role and permission enforcement.
+4. Routing and navigation infrastructure.
+5. Theme token governance and white-label branding inheritance.
+6. Layout Manager integration for shell surfaces.
+7. Billing entitlement enforcement.
+8. Module contract validation, registration, installation, and activation infrastructure.
+9. Shared event bus and API gateway infrastructure.
+10. Shared platform entities and auditability.
+
+The shell is not:
+1. A chat product.
+2. A voice product.
+3. A knowledge-base product.
+4. A CRM.
+5. A marketplace.
+6. A workflow engine.
+7. A module itself.
+8. A private assistant/system-chat runtime.
+
+## 2. Product Goal
+The shell must provide a durable operating layer so agencies can run a white-label platform and future modules can plug in without core rewrites.
+
+Practical outcomes required:
+1. Agency can onboard and operate platform as agency-owned software.
+2. Agency can create and manage child business workspaces.
+3. Shell can enforce permissions, billing state, branding, and route access consistently.
+4. Modules can be added through contract-driven registration and activation rather than shell source edits.
+5. Core shell remains stable while module ecosystem evolves.
+
+## 3. Non-Negotiable Product Principles
+1. The system must be multi-tenant from day one.
+2. The shell must be white-label from day one.
+3. The shell must use a shadcn-based shared UI foundation.
+4. Theming must be centralized and inheritance-based.
+5. Layout Manager integration must be in MVP.
+6. Module import and registration infrastructure must be in MVP.
+7. Modules must be installable without hardcoded shell route implementations per module.
+8. Inter-module communication must use declared contracts, events, and gateway routing.
+9. Business-domain logic must not be embedded into shell code.
+10. Shell architecture must support unknown future modules.
+
+## 4. Phase Ownership and Product Boundaries
+### 4.1 Phase Boundaries
+1. `Shell` phase: control plane only.
+2. `Modules` phase: first-party and imported module runtime/domain behavior.
+3. `Capabilities` phase: capability graph/composition, advanced cross-module automation.
+
+### 4.2 Shell Done Definition
+Shell is done when:
+1. Super, Agency, Business shell workflows are complete.
+2. Module lifecycle infrastructure (import/validate/register/install/enable/disable/uninstall) is complete.
+3. Event bus, gateway, billing enforcement, theme engine, and layout governance are complete.
+4. Shell runs correctly with zero modules installed.
+5. No module business logic exists in shell implementation.
+6. Integration-provider control plane and shell AI orchestration hooks are complete and policy-enforced.
+
+### 4.3 Module-Absent Operating Mode (Required)
+1. Empty module registry must not break shell routes or navigation.
+2. Module access attempts must return stable errors (`MODULE_NOT_REGISTERED`, `MODULE_NOT_ENABLED`).
+3. Module admin surfaces must show actionable empty states.
+4. Gateway and event systems must remain operational for shell-owned flows.
+
+## 5. Exact MVP Scope (Shell Phase)
+MVP shell must include:
+1. Auth/session lifecycle.
+2. Workspace hierarchy and membership model.
+3. RBAC and capability-level authorization.
+4. Super/Agency/Business shell experiences.
+5. Shared shell UI system and theme engine.
+6. Layout Manager shell integration.
+7. Module SDK contract validation and module registry.
+8. Module installation and workspace activation controls.
+9. Event bus infrastructure.
+10. Gateway infrastructure.
+11. Billing account and subscription entitlement enforcement.
+12. Shared shell-owned entities and audit logging.
+13. Container-aware module target model.
+14. Shell support for standalone module route entrypoints.
+15. Shell-owned integration-provider infrastructure with Composio-ready connection lifecycle (provider config, oauth callback handling, workspace-scoped connection records).
+16. Shell-level AI orchestration integration hooks for governed authoring workflows (job state, audit, permissions), without embedding module business behavior.
+17. Layout Manager `Create New` path for module draft generation (manifest draft, initial layout draft, route scaffold metadata) with registry persistence.
+
+Out of scope for this phase:
+1. Module business logic.
+2. Module-specific customer workflows.
+3. Marketplace and developer community UX.
+4. Capability pipeline features.
+5. System-chat/private assistant behavior.
+6. Conversion pipelines (GitHub/WordPress/n8n) beyond shell registration contract handling.
+7. Module-specific Composio workflow implementations and toolkit business behavior.
+8. Module domain/business behavior beyond shell-generated draft scaffolds.
+
+## 6. User Types and Tenant Structure
+Top-level user layers:
+1. Super
+2. Agency
+3. Business
+4. Developer
+5. Personal
+
+MVP fully supports operational flows for:
+1. Super
+2. Agency
+3. Business
+
+Developer and Personal in MVP are structural compatibility targets only.
+
+Required tenancy model:
+1. Workspace is the runtime tenant boundary for permissions, branding, modules, and route access.
+2. Agencies are parent workspaces.
+3. Businesses are managed child workspaces.
+4. Users belong to one or more workspaces via membership records.
+5. Effective access is always workspace-scoped unless super with explicit platform scope.
+6. Super impersonation is required and must be auditable.
+7. Agency impersonation of Business context is required but only for Business workspaces owned by that Agency and only with explicit impersonation capability.
+
+## 7. Permissions and Access Control
+The shell must enforce capability-based authorization.
+
+Required permission capabilities (minimum set):
+1. `users.invite`
+2. `users.manage`
+3. `branding.edit`
+4. `billing.manage`
+5. `layouts.edit`
+6. `modules.install`
+7. `modules.enable`
+8. `modules.disable`
+9. `settings.manage`
+10. `impersonation.super.start`
+11. `impersonation.agency_business.start`
+12. `impersonation.stop`
+13. `integrations.manage`
+14. `ai.orchestration.manage`
+15. `users.password.reset`
+16. `users.email.update`
+17. `branding.login.edit`
+18. `domains.manage`
+19. `navigation.manage`
+20. `features.manage`
+21. `credentials.inheritance.manage`
+
+Required role templates (minimum set):
+1. `super_admin`, `super_manager`, `super_user`
+2. `agency_admin`, `agency_manager`, `agency_user`
+3. `business_admin`, `business_manager`, `business_user`
+
+Enforcement must exist at:
+1. Route guard level.
+2. UI feature visibility level.
+3. API authorization layer.
+4. Data access policy layer (RLS).
+
+Authority defaults:
+1. Super roles can manage all users and workspaces.
+2. Agency admin/manager roles can manage agency users and users inside child business workspaces they own.
+3. Business admin/manager roles can manage only users in their own business workspace.
+4. No role may mutate users outside allowed workspace scope, even with impersonation active.
+
+## 8. Required Technical Stack
+The shell must use:
+1. Next.js 14 App Router.
+2. TypeScript.
+3. Turborepo monorepo.
+4. shadcn/ui.
+5. Tailwind CSS.
+6. TweakCN-compatible token architecture.
+7. Supabase Auth + Postgres.
+8. Stripe billing integration.
+9. Containerized module runtime targets (DigitalOcean + Dokploy model).
+10. Shell-hosted gateway + event bus.
+
+Framework substitution is not allowed without explicit instruction.
+
+## 9. Monorepo and Project Structure
+Required starting structure:
+1. `apps/platform` (shell app only).
+2. `packages/ui` (shared UI primitives).
+3. `packages/permissions` (role templates, capability maps, guards).
+4. `packages/module-sdk` (manifest schema, validator, registry contracts).
+5. `packages/theme` (theme token schema and inheritance).
+6. `packages/db` (data access and shell entity repositories).
+7. `packages/events` (event contracts and bus helpers).
+8. `packages/billing` (stripe + entitlement logic).
+9. `packages/layout-manager` (shell-side layout contracts/integration hooks).
+10. `packages/gateway` (routing/forwarding contracts and enforcement).
+11. `packages/integrations` (provider registry, connection contracts, oauth callback handlers, secret indirection).
+12. `packages/ai-orchestration` (shell-owned AI job contracts, status model, permission/audit adapters).
+13. `packages/sdk-contracts` (shared public types for manifest/events/gateway/error envelopes).
+14. `packages/navigation` (sidebar/nav policy, override contracts, resolver).
+15. `packages/features` (workspace feature flags and module feature gating contracts).
+
+Boundary rule:
+`apps/platform` must orchestrate package behavior; it must not absorb package-level logic.
+
+## 10. Core Shell Architecture
+Required shell layers:
+1. Auth/session layer.
+2. Tenancy/workspace layer.
+3. Permission policy layer.
+4. Theme/branding layer.
+5. Layout governance layer.
+6. Module registration layer.
+7. Event layer.
+8. Gateway layer.
+9. Billing entitlement layer.
+
+Shell/module boundary must enforce:
+1. Modules register with shell via manifest contracts.
+2. Shell grants routes/nav/permissions from contracts.
+3. Modules can be enabled/disabled per workspace.
+4. Modules communicate through events and gateway.
+5. Modules must not directly mutate other modules’ private data stores.
+6. Shell must not contain module business logic.
+
+## 11. Shared Platform Data Model (Shell-Owned)
+Required shell-owned entities:
+1. `users`
+2. `workspaces`
+3. `workspace_memberships`
+4. `roles`
+5. `permissions`
+6. `role_permissions`
+7. `membership_permissions`
+8. `themes`
+9. `layout_definitions`
+10. `layout_versions`
+11. `module_registry`
+12. `module_installations`
+13. `billing_accounts`
+14. `subscriptions`
+15. `events`
+16. `audit_logs`
+17. `contacts`
+18. `integration_connections`
+19. `ai_jobs`
+20. `workspace_domains`
+21. `branding_assets`
+22. `workspace_feature_flags`
+23. `navigation_profiles`
+24. `credential_policies`
+25. `sdk_contract_versions`
+
+Ownership rules:
+1. Shell owns all shared entities above.
+2. Modules may read shared entities through authorized contracts.
+3. Module-private tables remain module-owned and isolated.
+4. Cross-module behavior must use shared entities, event contracts, or gateway calls.
+
+## 12. Schema + RLS Specification Pack
+### 12.1 Migration Order
+1. `001_identities.sql`
+2. `002_workspaces.sql`
+3. `003_memberships_roles_permissions.sql`
+4. `004_themes.sql`
+5. `005_layouts.sql`
+6. `006_module_registry_installations.sql`
+7. `007_events_audit.sql`
+8. `008_integration_connections.sql`
+9. `009_ai_jobs.sql`
+10. `010_billing.sql`
+11. `011_contacts.sql`
+12. `012_rls_policies.sql`
+13. `013_seed_role_templates.sql`
+14. `014_domains_branding_navigation_features.sql`
+15. `015_rls_extension_policies.sql`
+16. `016_sdk_contract_versions.sql`
+
+### 12.2 Table-Level Requirements
+| Table | Must include | Required constraints | Required indexes |
+|---|---|---|---|
+| users | id, auth_user_id, email, status | auth_user_id unique | email |
+| workspaces | id, type, parent_workspace_id, name, status | parent FK self-ref | (parent_workspace_id,type) |
+| workspace_memberships | id, workspace_id, user_id, role_template, active | unique (workspace_id,user_id) | workspace_id, user_id |
+| roles | id, code, scope_type | code unique | code |
+| permissions | id, code | code unique | code |
+| role_permissions | role_id, permission_id | unique pair | role_id |
+| membership_permissions | membership_id, permission_id, allow | unique pair | membership_id |
+| themes | id, workspace_id, token_payload, version | unique(workspace_id,version) | (workspace_id,version desc) |
+| layout_definitions | id, workspace_id, surface_key, current_version_id | unique(workspace_id,surface_key) | (workspace_id,surface_key) |
+| layout_versions | id, layout_definition_id, version_num, state, tree_json | unique(layout_definition_id,version_num) | (layout_definition_id,state) |
+| module_registry | id, module_key, version, manifest_json, status | unique(module_key,version) | (module_key,status) |
+| module_installations | id, workspace_id, module_key, state, config_json | unique(workspace_id,module_key) | (workspace_id,state) |
+| billing_accounts | id, workspace_id, stripe_customer_id, status | workspace unique, stripe_customer_id unique | stripe_customer_id |
+| subscriptions | id, billing_account_id, stripe_sub_id, state, period_end | stripe_sub_id unique | (billing_account_id,state) |
+| events | id, workspace_id, event_name, payload_json, delivery_state, correlation_id | append-only policy | (workspace_id,event_name,occurred_at desc), correlation_id |
+| audit_logs | id, workspace_id, actor_user_id, action, target_type, target_id, metadata_json, created_at | append-only policy | (workspace_id,created_at desc), (actor_user_id,created_at desc) |
+| contacts | id, workspace_id, name, email, phone | workspace-scoped | (workspace_id,email) |
+| integration_connections | id, workspace_id, provider_key, provider_account_ref, status, secret_ref, scopes_json | unique(workspace_id,provider_key,provider_account_ref) | (workspace_id,provider_key,status) |
+| ai_jobs | id, workspace_id, job_type, state, context_ref, intent_json, artifacts_json | append-only state transitions | (workspace_id,state,created_at desc), (workspace_id,job_type,created_at desc) |
+| workspace_domains | id, workspace_id, host, status, verification_token, verified_at | unique(host) | (workspace_id,status), host |
+| branding_assets | id, workspace_id, asset_type, storage_path, mime_type, size_bytes, active | unique(workspace_id,asset_type,active) partial | (workspace_id,asset_type) |
+| workspace_feature_flags | id, workspace_id, feature_key, enabled, source_scope | unique(workspace_id,feature_key) | (workspace_id,enabled) |
+| navigation_profiles | id, workspace_id, scope_type, role_template, config_json, version | unique(workspace_id,scope_type,role_template,version) | (workspace_id,scope_type,role_template,version desc) |
+| credential_policies | id, workspace_id, provider_key, resolution_order_json, allow_parent_fallback | unique(workspace_id,provider_key) | (workspace_id,provider_key) |
+| sdk_contract_versions | id, contract_name, semver, status, schema_json | unique(contract_name,semver) | (contract_name,status) |
+
+### 12.3 Tenancy Invariants
+1. All mutable records must be workspace-scoped unless explicitly global.
+2. Cross-workspace access must be denied by default.
+3. `layout_versions` must be immutable.
+4. `events` and `audit_logs` must be append-only.
+5. Impersonation must never bypass capability checks.
+6. Agency impersonation target workspace must have `parent_workspace_id == actor_agency_workspace_id`.
+7. Domain hostnames must be globally unique across all workspaces.
+8. Credential resolution must always evaluate within workspace ancestry (`business -> agency -> super`) and must never cross agency boundaries.
+
+### 12.4 RLS Policy Baseline
+1. `workspaces`: membership-scoped read; super full access.
+2. `workspace_memberships`: workspace admin manage; user self-read.
+3. `themes`: `branding.edit` required for mutation.
+4. `layout_*`: `layouts.edit` required for mutation.
+5. `module_installations`: module permissions required for mutation.
+6. `billing_*`: `billing.manage` required for mutation, super override.
+7. `events`: emit/read restricted by workspace scope and contracts.
+8. `audit_logs`: service-write only, admin/super read.
+9. `integration_connections`: workspace-scoped read/write, `integrations.manage` required for mutation.
+10. `ai_jobs`: workspace-scoped read/write, `ai.orchestration.manage` required for mutation.
+11. `workspace_domains`: workspace-scoped read/write, `domains.manage` required for mutation.
+12. `branding_assets`: workspace-scoped read/write, `branding.edit` required for mutation.
+13. `workspace_feature_flags`: workspace-scoped read/write, `features.manage` required for mutation.
+14. `navigation_profiles`: workspace-scoped read/write, `navigation.manage` required for mutation.
+15. `credential_policies`: workspace-scoped read/write, `credentials.inheritance.manage` required for mutation.
+16. `sdk_contract_versions`: super-only write, read for authorized module tooling endpoints.
+
+### 12.5 Retention Rules
+1. Events must retain at least 180 days online.
+2. Audit logs must retain at least 365 days online.
+3. AI jobs must retain at least 90 days online.
+4. Domain verification history must retain at least 365 days online.
+5. Credential policy change history must retain at least 365 days online.
+
+### 12.6 Migration Rollback and Recovery Expectations
+1. Migrations `001` through `014` must be reversible in staging via explicit down scripts during pre-production validation.
+2. Migrations `012_rls_policies.sql` and `015_rls_extension_policies.sql` are forward-only in production; rollback is performed by applying superseding corrective migrations, not destructive policy deletion.
+3. Migrations `013_seed_role_templates.sql` and `016_sdk_contract_versions.sql` must be idempotent and re-runnable safely.
+4. Production rollback strategy must prioritize data integrity:
+   - schema rollback only for non-destructive migrations
+   - entitlement and auth-impacting defects fixed by forward corrective migrations
+5. Every migration must include:
+   - pre-check query
+   - post-check query
+   - failure handling note
+
+## 13. Authentication and Session Requirements
+Required behaviors:
+1. Sign-in and sign-out.
+2. Session persistence.
+3. Workspace resolution at login.
+4. Workspace switching for multi-membership users.
+5. Route-level authorization and unauthorized handling.
+6. Invitation-based onboarding.
+7. Role-aware post-login destination routing.
+8. Super impersonation start/stop with audit logging.
+9. Agency admin/manager impersonation start/stop for owned Business workspaces with audit logging.
+10. Password reset initiation and completion flows.
+11. Admin-triggered password reset links for in-scope users.
+12. In-scope email address updates with verification.
+13. User lifecycle actions (`active`, `invited`, `suspended`) with audit trail.
+14. Admin password management must use secure reset tokens; no direct password readback or plaintext storage.
+
+Session context must include:
+1. user id
+2. active workspace id
+3. effective role template
+4. effective permission set
+5. impersonation state
+6. impersonation actor workspace id
+7. impersonation target workspace id
+
+Identity migration and reuse rules:
+1. Existing Supabase Auth users from v1 are reused by default.
+2. v2 `users` records must be backfilled by stable `auth_user_id` mapping.
+3. Existing v1 memberships are migrated only where they map to shell-owned workspace model; invalid/missing links must be quarantined for manual resolution.
+4. No plaintext password material is migrated; password lifecycle remains Supabase Auth managed.
+5. First login after migration must resolve deterministic workspace context or route user to workspace selection with safe fallback.
+
+## 14. Multi-Tenant Workspace Requirements
+1. Super must manage agency workspaces.
+2. Agency must create/manage business child workspaces.
+3. Business users must operate only in assigned workspaces.
+4. Agency A must not access Agency B data.
+5. Business X must not access Business Y data.
+6. Theme inheritance must support parent agency defaults and child workspace override compatibility.
+7. Module enablement must be workspace-scoped.
+8. Agency impersonation is allowed only from an Agency workspace into its own child Business workspaces.
+9. Theme inheritance precedence must be `super baseline -> agency override -> business override`.
+10. Credential inheritance precedence must be `business key -> agency key -> super key` when and only when policy permits fallback.
+
+## 15. UI Foundation and Theme Engine
+1. Shell UI must be shadcn-based and token-driven.
+2. Theme tokens must be central source of branding truth.
+3. Theme inheritance must be deterministic across workspace hierarchy.
+4. Branding edits must propagate consistently across shell routes.
+5. Shell must not use ad hoc page-specific branding logic.
+6. White-label branding must include logo asset management, login-screen customization, and domain-bound branding resolution.
+7. Agency admins must be able to customize agency login screen branding for their scope.
+8. Business login branding may override inherited agency branding only where policy allows.
+9. Super-level baseline theme must be configurable and inherited by agency workspaces unless explicitly overridden.
+
+### 15.1 White-Label Surface Requirements
+1. Custom domains:
+   - workspace domain add/remove/verify lifecycle is required.
+   - active domain must map deterministically to workspace branding context.
+2. Logo assets:
+   - logo upload and activation is required for super, agency, and business scopes subject to permission.
+   - logo assets must be stored as managed branding assets, not inline blobs.
+3. Login-screen customization:
+   - branding profile must support logo, primary/secondary colors, typography tokens, and allowed text copy slots.
+   - agency and business login screens must inherit from parent scope unless explicit override exists.
+4. Theme inheritance:
+   - precedence order must remain `super -> agency -> business`.
+   - override behavior must be deterministic and testable.
+
+## 16. Layout Manager Integration (Shell Perspective)
+Layout Manager internals are defined in the dedicated Layout Manager PRD.
+
+Shell must provide:
+1. Entry points:
+   - in-context edit trigger on supported shell surfaces
+   - admin routes: `Layout Manager > Modules`, `Layout Manager > Create New`
+2. Authorization and lifecycle enforcement for save/preview/test/publish/rollback.
+3. Persistence integration with `layout_definitions` + `layout_versions`.
+4. Audit logging for privileged layout lifecycle actions.
+5. Boundary enforcement: layout edits must not author backend module business logic.
+6. AI orchestration handoff integration (job status/events/permissions) required for `Create New` and `Data Source -> Create New` shell-governed entrypoints.
+7. Builder component registry integration must expose approved shadcn/ui builder-compatible components to privileged users on supported shell surfaces.
+8. `Create New` must support module draft generation and return editable draft artifacts to builder workflow.
+9. Module drafts created via builder must remain non-live until manifest validation, permission mapping, and explicit enablement are complete.
+
+## 17. Module System Overview (Shell Perspective)
+1. Module must be recognized by manifest contract only.
+2. Module routes and navigation must be dynamic from registry/installations.
+3. Module enablement must be workspace-scoped.
+4. Module access must be gated by permission + billing + installation state.
+5. Module business workflows are out of shell scope.
+
+## 18. Module Manifest Contract
+Required fields:
+1. module id
+2. name
+3. version
+4. description
+5. routes
+6. sidebar config
+7. required permissions
+8. capabilities declaration
+9. required shared entities
+10. events emitted
+11. events consumed
+12. configuration schema
+13. runtime target definition
+
+Validation rules:
+1. Missing required fields must reject import.
+2. Invalid semantic version must reject import.
+3. Duplicate incompatible module key/version must reject import.
+4. Route collisions must reject import unless namespace-compatible by policy.
+5. Unknown permission keys must reject import.
+6. Unknown/invalid event names must reject import.
+7. Unhealthy runtime target must block enablement.
+
+## 19. Module Import and Registration Process
+Required flow:
+1. Accept module package/scaffold.
+2. Parse and validate manifest.
+3. Persist module metadata in `module_registry`.
+4. Create/update workspace `module_installations` record.
+5. Assign route/nav metadata dynamically.
+6. Enforce required permission mappings.
+7. Register gateway target mapping.
+8. Support install, enable, disable, uninstall transitions.
+9. Support builder-originated module draft registration (`draft` state) before runtime enablement.
+10. Promote draft module to installable state only after manifest + contract validation pass.
+
+Required MVP admin UI behavior:
+1. Import package.
+2. Show validation failures clearly.
+3. Install into target workspace.
+4. Enable/disable.
+5. Uninstall.
+6. Show current state and target health.
+7. Review builder-originated module drafts and promote/reject explicitly.
+
+## 20. Contract Pack (OpenAPI Baseline)
+Required endpoint families:
+1. `/auth/*`
+2. `/workspaces/*`
+3. `/memberships/*`
+4. `/users/*`
+5. `/permissions/*`
+6. `/themes/*`
+7. `/branding/*`
+8. `/domains/*`
+9. `/navigation/*`
+10. `/features/*`
+11. `/credentials/*`
+12. `/layouts/*`
+13. `/modules/*`
+14. `/events/*`
+15. `/gateway/*`
+16. `/billing/*`
+17. `/integrations/*`
+18. `/ai-orchestration/*`
+19. `/sdk/*`
+
+### 20.1 Canonical Types
+1. `WorkspaceContext`
+2. `EffectivePermissions`
+3. `ModuleManifest`
+4. `ModuleInstallationState`
+5. `EventEnvelope`
+6. `GatewayForwardHeaders`
+7. `BillingEntitlementState`
+8. `IntegrationConnectionState`
+9. `AIJobState`
+10. `BrandingProfile`
+11. `DomainMapping`
+12. `NavigationProfile`
+13. `FeatureFlagSet`
+14. `CredentialResolutionResult`
+15. `SDKContractVersion`
+
+### 20.2 Stable Error Codes
+Required stable codes:
+1. `AUTH_REQUIRED`
+2. `SESSION_INVALID`
+3. `WORKSPACE_REQUIRED`
+4. `WORKSPACE_FORBIDDEN`
+5. `PERMISSION_DENIED`
+6. `IMPERSONATION_FORBIDDEN`
+7. `MANIFEST_INVALID`
+8. `MANIFEST_INCOMPATIBLE`
+9. `MODULE_NOT_REGISTERED`
+10. `MODULE_NOT_ENABLED`
+11. `MODULE_TARGET_UNHEALTHY`
+12. `EVENT_SCHEMA_INVALID`
+13. `EVENT_DELIVERY_FAILED`
+14. `BILLING_REQUIRED`
+15. `BILLING_SUSPENDED`
+16. `VALIDATION_BLOCKING`
+17. `CONFLICT`
+18. `RATE_LIMITED`
+19. `INTERNAL_ERROR`
+20. `IMPERSONATION_SCOPE_FORBIDDEN`
+21. `INTEGRATION_PROVIDER_UNAVAILABLE`
+22. `INTEGRATION_SCOPE_FORBIDDEN`
+23. `AI_JOB_INVALID_STATE`
+24. `AI_JOB_FORBIDDEN`
+25. `DOMAIN_INVALID`
+26. `DOMAIN_ALREADY_CLAIMED`
+27. `DOMAIN_VERIFICATION_FAILED`
+28. `BRANDING_ASSET_INVALID`
+29. `NAVIGATION_INVALID`
+30. `FEATURE_FLAG_INVALID`
+31. `CREDENTIAL_RESOLUTION_FAILED`
+32. `SDK_CONTRACT_INCOMPATIBLE`
+
+### 20.3 Endpoint-Level Contract Baseline (Execution Required)
+All protected endpoints must require a validated session and resolved `WorkspaceContext`.
+
+Required auth claim shape for protected requests:
+1. `sub` (user id)
+2. `workspace_id` (active workspace)
+3. `role_template`
+4. `permissions` (effective capability array)
+5. `impersonation` (`active`, `actor_user_id`, `target_workspace_id`)
+6. `session_id`
+
+| Endpoint | Request body (minimum) | Response body (minimum) | Primary error codes |
+|---|---|---|---|
+| `POST /auth/sign-in` | `email`, `password` | `session`, `workspace_options`, `default_workspace_id` | `AUTH_REQUIRED`, `INTERNAL_ERROR` |
+| `POST /auth/sign-out` | none | `ok` | `SESSION_INVALID` |
+| `POST /auth/impersonation/start` | `target_workspace_id`, `reason` | `impersonation_state`, `effective_context` | `PERMISSION_DENIED`, `IMPERSONATION_FORBIDDEN`, `IMPERSONATION_SCOPE_FORBIDDEN` |
+| `POST /auth/impersonation/stop` | none | `impersonation_state`, `effective_context` | `SESSION_INVALID` |
+| `POST /workspaces` | `type`, `name`, `parent_workspace_id?` | `workspace` | `PERMISSION_DENIED`, `CONFLICT` |
+| `POST /workspaces/{id}/children` | `name`, `child_type` | `workspace` | `WORKSPACE_FORBIDDEN`, `PERMISSION_DENIED` |
+| `POST /workspaces/switch` | `workspace_id` | `effective_context` | `WORKSPACE_FORBIDDEN`, `SESSION_INVALID` |
+| `POST /memberships` | `workspace_id`, `email`, `role_template` | `membership`, `invite_status` | `PERMISSION_DENIED`, `CONFLICT` |
+| `PATCH /memberships/{id}` | `role_template?`, `active?`, `permission_overrides?` | `membership` | `PERMISSION_DENIED`, `WORKSPACE_FORBIDDEN` |
+| `PATCH /users/{id}` | `profile?`, `status?` | `user` | `PERMISSION_DENIED`, `WORKSPACE_FORBIDDEN` |
+| `POST /auth/password/reset` | `email` | `reset_status` | `AUTH_REQUIRED`, `WORKSPACE_FORBIDDEN` |
+| `POST /auth/password/set` | `token`, `new_password` | `reset_status` | `SESSION_INVALID`, `VALIDATION_BLOCKING` |
+| `PATCH /users/{id}/email` | `new_email` | `user`, `verification_status` | `PERMISSION_DENIED`, `CONFLICT` |
+| `GET /permissions/effective` | none | `effective_permissions`, `role_template` | `SESSION_INVALID` |
+| `GET /themes/current` | none | `theme_tokens`, `source_workspace_id`, `version` | `WORKSPACE_FORBIDDEN` |
+| `PUT /themes/current` | `theme_tokens`, `change_note` | `theme_version`, `theme_tokens` | `PERMISSION_DENIED`, `VALIDATION_BLOCKING` |
+| `POST /branding/assets/logo-upload-url` | `workspace_id`, `mime_type`, `size_bytes` | `upload_url`, `asset_id` | `PERMISSION_DENIED`, `BRANDING_ASSET_INVALID` |
+| `PUT /branding/login-screen` | `workspace_id`, `branding_profile` | `branding_profile`, `version` | `PERMISSION_DENIED`, `VALIDATION_BLOCKING` |
+| `GET /branding/login-screen` | query: `workspace_id` | `branding_profile`, `effective_source_workspace_id` | `WORKSPACE_FORBIDDEN` |
+| `POST /domains` | `workspace_id`, `host` | `domain_record`, `verification_token` | `DOMAIN_INVALID`, `DOMAIN_ALREADY_CLAIMED` |
+| `POST /domains/{id}/verify` | none | `domain_record` | `DOMAIN_VERIFICATION_FAILED`, `WORKSPACE_FORBIDDEN` |
+| `DELETE /domains/{id}` | none | `ok` | `PERMISSION_DENIED`, `WORKSPACE_FORBIDDEN` |
+| `GET /navigation/sidebar` | query: `workspace_id`, `role_template` | `navigation_profile` | `WORKSPACE_FORBIDDEN` |
+| `PUT /navigation/sidebar` | `workspace_id`, `role_template`, `config_json` | `navigation_profile`, `version` | `PERMISSION_DENIED`, `NAVIGATION_INVALID` |
+| `GET /features` | query: `workspace_id` | `feature_flags` | `WORKSPACE_FORBIDDEN` |
+| `PUT /features` | `workspace_id`, `feature_flags` | `feature_flags`, `version` | `PERMISSION_DENIED`, `FEATURE_FLAG_INVALID` |
+| `POST /credentials/resolve` | `workspace_id`, `provider_key` | `resolution`, `source_scope` | `CREDENTIAL_RESOLUTION_FAILED`, `WORKSPACE_FORBIDDEN` |
+| `GET /layouts/components` | query: `surface_key?`, `category?` | `items[]` | `PERMISSION_DENIED` |
+| `POST /layouts/{id}/save` | `draft`, `history_cursor` | `layout_version`, `validation_summary` | `PERMISSION_DENIED`, `VALIDATION_BLOCKING` |
+| `POST /layouts/{id}/preview` | `draft_version_id` | `preview_url`, `validation_summary` | `VALIDATION_BLOCKING` |
+| `POST /layouts/{id}/test` | `draft_version_id` | `test_report` | `VALIDATION_BLOCKING` |
+| `POST /layouts/{id}/publish` | `draft_version_id`, `publish_note` | `published_version_id` | `PERMISSION_DENIED`, `VALIDATION_BLOCKING` |
+| `POST /layouts/{id}/rollback` | `target_version_id`, `reason` | `published_version_id` | `PERMISSION_DENIED`, `CONFLICT` |
+| `POST /modules/import` | `package_uri` or `manifest` | `assessment`, `registry_record` | `MANIFEST_INVALID`, `MANIFEST_INCOMPATIBLE` |
+| `POST /modules/{key}/install` | `workspace_id`, `config?` | `installation_state` | `MODULE_NOT_REGISTERED`, `PERMISSION_DENIED` |
+| `POST /modules/{key}/enable` | `workspace_id` | `installation_state` | `MODULE_TARGET_UNHEALTHY`, `BILLING_SUSPENDED` |
+| `POST /modules/{key}/disable` | `workspace_id` | `installation_state` | `PERMISSION_DENIED` |
+| `DELETE /modules/{key}/uninstall` | `workspace_id` | `ok` | `PERMISSION_DENIED`, `CONFLICT` |
+| `GET /modules/available` | query: `workspace_id` | `items[]` | `WORKSPACE_FORBIDDEN` |
+| `POST /events` | `event_name`, `payload`, `correlation_id`, `idempotency_key` | `event_id`, `delivery_state` | `EVENT_SCHEMA_INVALID`, `PERMISSION_DENIED` |
+| `GET /events` | query: `workspace_id`, `event_name?`, `cursor?` | `items`, `next_cursor` | `WORKSPACE_FORBIDDEN` |
+| `ALL /gateway/{module}/{path}` | proxied payload | proxied payload + normalized error envelope | `MODULE_NOT_ENABLED`, `MODULE_TARGET_UNHEALTHY`, `BILLING_SUSPENDED` |
+| `GET /billing/status` | none | `entitlement_state`, `subscription_state` | `WORKSPACE_FORBIDDEN` |
+| `POST /billing/recovery` | `action`, `workspace_id` | `entitlement_state`, `next_steps` | `BILLING_REQUIRED`, `CONFLICT` |
+| `POST /billing/reconcile` | `workspace_id?`, `force?` | `reconcile_result` | `PERMISSION_DENIED`, `INTERNAL_ERROR` |
+| `POST /integrations/providers/composio/connect` | `workspace_id`, `provider_account_ref`, `scopes` | `connection_state`, `oauth_url_or_status` | `INTEGRATION_PROVIDER_UNAVAILABLE`, `INTEGRATION_SCOPE_FORBIDDEN` |
+| `POST /integrations/providers/composio/disconnect` | `workspace_id`, `connection_id` | `connection_state` | `PERMISSION_DENIED`, `INTEGRATION_SCOPE_FORBIDDEN` |
+| `GET /integrations/providers/composio/connections` | query: `workspace_id` | `items[]` | `WORKSPACE_FORBIDDEN` |
+| `POST /ai-orchestration/jobs` | `workspace_id`, `job_type`, `context_ref`, `intent_payload` | `job_id`, `state` | `AI_JOB_FORBIDDEN`, `VALIDATION_BLOCKING` |
+| `GET /ai-orchestration/jobs/{id}` | none | `job_state`, `artifacts`, `audit_ref` | `AI_JOB_FORBIDDEN`, `SESSION_INVALID` |
+| `GET /sdk/contracts` | query: `contract_name?`, `status?` | `items[]` | `PERMISSION_DENIED` |
+
+## 21. Event Bus and Inter-Module Communication
+Required event behavior:
+1. Standard envelope schema.
+2. Workspace-scoped publishing and subscription.
+3. Auth and contract validation on emit and consume.
+4. Durable event storage.
+5. Delivery state tracking.
+6. Retry strategy (exponential, bounded attempts).
+7. Dead-letter path and replay controls.
+8. Audit trail for delivery and failures.
+
+Ordering/idempotency rules:
+1. Ordering guarantee is per `(workspace, stream)` not global.
+2. Publisher idempotency key is required for retry-safe emit.
+
+## 22. API Gateway Requirements
+Gateway must:
+1. Resolve targets dynamically from registry/installations.
+2. Enforce auth, workspace scope, permission, billing, enabled-state before forwarding.
+3. Forward trusted server claims (`user`, `workspace`, `module`, `correlation`, `impersonation`).
+4. Strip untrusted client claims/headers.
+5. Use deterministic error responses.
+6. Implement timeout and circuit-breaker behavior.
+7. Log every forward attempt with decision metadata.
+
+## 23. Billing and Activation Rules
+### 23.1 Billing State Machine
+States:
+1. `active`
+2. `past_due`
+3. `grace`
+4. `suspended`
+5. `canceled`
+
+Transitions:
+1. `active -> past_due` on payment failure.
+2. `past_due -> grace` when grace starts.
+3. `grace -> suspended` when grace expires unrecovered.
+4. `past_due|grace|suspended -> active` on successful recovery.
+5. `suspended -> canceled` on cancellation.
+
+### 23.2 Entitlement Effects
+1. `active`: normal shell/module access per permissions.
+2. `past_due`: warning state, controlled access.
+3. `grace`: recovery accessible; block new paid module activations.
+4. `suspended`: block module usage; keep recovery/account/billing routes accessible.
+5. `canceled`: no module usage until reactivation.
+
+### 23.3 Stripe Truth Model
+1. Stripe webhook events are billing event source of truth.
+2. Shell stores normalized entitlement state.
+3. Reconciliation job must be idempotent and auditable.
+
+### 23.4 Integrations and AI Orchestration Boundary Rule
+1. Shell manages provider/account connection state, auth lifecycle, and access policy for integrations (including Composio provider support).
+2. Shell manages AI job lifecycle contracts, permissions, and auditability for shell-governed authoring workflows.
+3. Module-specific integration workflows, agent/tool execution behavior, and domain automation remain module-phase scope.
+
+### 23.5 Credential Inheritance and Fallback Rules
+1. Default credential resolution order is `business -> agency -> super`.
+2. Parent fallback is allowed only when `credential_policies.allow_parent_fallback = true`.
+3. Credential fallback must never cross agency boundaries.
+4. Every credential resolution decision must emit audit metadata (`provider`, `workspace`, `resolved_scope`).
+5. Workspace-level explicit key always overrides inherited keys when valid.
+
+### 23.6 Module and Feature Access Governance
+1. Module enable/disable is controlled through `module_installations` state.
+2. Feature-level enable/disable is controlled through `workspace_feature_flags`.
+3. Super may set global baseline feature defaults; agency and business may override only where policy permits.
+4. Feature flags must not bypass billing or permission checks.
+
+## 24. Core Shell Screens and Routes (MVP)
+Required shell routes/screens:
+1. Sign-in/sign-out.
+2. Workspace selector/switcher.
+3. Super dashboard.
+4. Agency dashboard.
+5. Business dashboard.
+6. User management.
+7. Workspace settings.
+8. Branding/theme settings.
+9. Layout Manager shell routes.
+10. Module registry/installations management.
+11. Billing status/settings/recovery.
+12. Platform/system settings.
+13. Integrations settings (provider connections, including Composio).
+14. AI job monitor (shell-governed authoring jobs only).
+15. Super account/profile settings.
+16. Module draft review queue (including builder-originated drafts).
+17. White-label branding manager (logo, login-screen profile, baseline tokens).
+18. Domain manager (custom domains + verification state).
+19. Navigation manager (sidebar/nav profile editor by scope).
+20. Feature flags manager (module and shell feature toggles by workspace scope).
+21. SDK contracts viewer (active contract versions and compatibility state).
+
+Each route must:
+1. Resolve active workspace.
+2. Enforce required permissions.
+3. Use centralized theme token system.
+4. Avoid embedding module business behavior.
+
+## 25. Measurable NFRs + Security Controls
+### 25.1 SLO Targets (MVP)
+1. Auth route guard p95 < 200ms.
+2. Workspace switch p95 < 500ms.
+3. Module route resolution p95 < 300ms.
+4. Gateway shell overhead p95 < 150ms (excluding module runtime).
+5. Layout publish/rollback ack p95 < 2s.
+6. Event enqueue p95 < 250ms.
+
+### 25.2 Reliability Controls
+1. Publish/rollback operations must be idempotent.
+2. Layout draft autosave recovery must restore last valid draft.
+3. Audit logging coverage for privileged shell actions must be 100%.
+4. Event dead-letter replay must remain workspace-scoped.
+5. Domain verification jobs must be retry-safe and idempotent.
+6. Navigation and feature-flag updates must be versioned and rollback-capable.
+7. Credential-resolution service must fail closed (no silent cross-scope fallback).
+
+### 25.3 Security Controls
+1. Deny-by-default authorization.
+2. Server-side enforcement independent of UI state.
+3. Impersonation start/stop and effective context must be fully auditable.
+4. Gateway trust boundary must reject client-forged identity claims.
+5. Cross-workspace access must be denied by default.
+6. Branding asset uploads must use signed upload URLs, MIME/size validation, and malware scan hooks.
+7. Custom-domain verification must require proof-of-control token challenge before activation.
+8. Password reset and email update flows must enforce anti-enumeration and rate limits.
+9. Credential fallback decisions must be logged and queryable by super/agency scope.
+10. SDK contract publication must require super authorization and semver compatibility checks.
+11. Admin password operations must be tokenized reset flows; direct plaintext password retrieval is prohibited.
+
+### 25.4 Supabase Security Baseline
+1. Supabase service-role key must be server-only and must not be exposed to browser bundles.
+2. Browser clients must use anon/public key only with RLS-protected access paths.
+3. All workspace-scoped shell tables must have RLS enabled before production launch.
+4. SECURITY DEFINER database functions must be minimized, schema-qualified, and reviewed with explicit threat notes.
+5. Supabase Realtime subscriptions must be workspace-scoped and authorization-checked.
+6. Secrets and provider tokens referenced by integration connections must be encrypted at rest and never returned in plaintext API responses.
+7. Auth/session, RLS, and impersonation policy tests must run in CI as release-blocking checks.
+
+## 26. MVP Build Phases
+1. Phase 1: monorepo bootstrap, auth/session, base shell routing.
+2. Phase 2: workspaces, memberships, roles/permissions, impersonation, user lifecycle actions.
+3. Phase 3: UI foundation, theme engine, white-label controls, domain/branding assets.
+4. Phase 4: module manifest SDK, registry, import/install lifecycle, SDK contract publication.
+5. Phase 5: integration-provider infrastructure (Composio-ready), credential inheritance/fallback, plus event bus and gateway.
+6. Phase 6: layout manager shell integration, navigation/feature governance, plus shell AI orchestration hooks.
+7. Phase 7: billing entitlement enforcement.
+8. Phase 8: final integration and acceptance validation.
+
+Constraint:
+No phase may introduce module business logic into shell.
+
+## 27. Cutover and Validation Runbook
+### 27.1 Blank-Repo Build Sequence
+1. Set up monorepo boundaries.
+2. Implement auth/session and workspace context.
+3. Implement schema + RLS + policy tests.
+4. Implement user lifecycle admin operations (invite, suspend, reset-password links, email update).
+5. Implement theme engine, branding assets, login-screen profile, and inheritance.
+6. Implement domain management and verification flow.
+7. Implement module contract, SDK contracts, and registry lifecycle.
+8. Implement integration-provider infrastructure (Composio-ready), credential fallback policy, and secure connection state handling.
+9. Implement event bus.
+10. Implement gateway.
+11. Integrate layout lifecycle, navigation/feature governance, and shell AI orchestration touchpoints.
+12. Implement billing enforcement.
+13. Execute acceptance matrix and dry-run audits.
+
+### 27.2 Environment Contracts
+1. Local: dev-safe auth, seed data, test billing mode.
+2. Staging: production-like RLS, webhook integration, full acceptance tests.
+3. Production: strict secrets, retention policies, audit and alerting enabled.
+4. Supabase key policy:
+   - `SUPABASE_SERVICE_ROLE_KEY` server runtime only
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY` client-safe only
+   - key rotation runbook documented and tested in staging
+
+### 27.3 v1 Backfill Policy (Shell Phase)
+1. Migrate shell-owned entities only.
+2. Do not migrate module business-domain records in shell phase.
+3. Reconstruct module installation state from valid manifests.
+4. Reuse existing Supabase Auth identities and migrate v2 `users` linkage by `auth_user_id`.
+5. Migrate white-label shell settings that map to v2 model:
+   - theme token sets
+   - branding profiles
+   - custom domain records (with re-verification workflow as needed)
+6. Migrate user/workspace memberships only when tenancy relationships pass v2 invariants; unresolved records must be quarantined for manual review.
+
+### 27.4 Go-Live Checklist
+1. Acceptance matrix fully green.
+2. Billing transition tests passing.
+3. Impersonation audit verified.
+4. Module-absent mode verified.
+5. Rollback drill completed.
+
+## 28. Master Acceptance Matrix
+| Requirement | Schema artifact | API contract | UI route | Enforcement rule | Automated test |
+|---|---|---|---|---|---|
+| User can sign in successfully and resolve workspace context | users, workspace_memberships | POST /auth/sign-in | sign-in | auth + membership resolution | e2e |
+| Super can configure own account/profile | users, audit_logs | PATCH /users/\{id\} | super account settings | self-or-super manage checks | integration |
+| Super/Agency can trigger in-scope password reset | users, audit_logs | POST /auth/password/reset | user management | scope + users.password.reset + rate limits | integration |
+| Super/Agency can update in-scope user email | users, audit_logs | PATCH /users/\{id\}/email | user management | scope + users.email.update + verification | integration |
+| Super can create Agency workspace | workspaces, memberships | POST /workspaces | super dashboard | role/capability check | integration |
+| Agency can create Business child workspace | workspaces parent model | POST /workspaces/\{id\}/children | agency dashboard | tenancy scope | integration |
+| Agency can create Business users in owned workspace | users, workspace_memberships | POST /memberships | business users management | parent-child scope + users.manage | integration |
+| RBAC is capability-based | roles, permissions, role_permissions | GET /permissions/effective | all protected shell routes | middleware + RLS | unit + integration |
+| Workspace switching works | memberships + session context | POST /workspaces/switch | workspace switcher | membership required | e2e |
+| Impersonation is controlled and auditable | audit_logs | POST /auth/impersonation/* | super tools | super scope + audit write | integration |
+| Super can impersonate Agency context | audit_logs + workspaces | POST /auth/impersonation/start | super tools | super scope + audit + target validation | integration |
+| Agency can impersonate only owned Business workspaces | workspaces parent model + audit_logs | POST /auth/impersonation/start | agency workspace tools | parent-child scope + capability + audit | integration |
+| Theme inheritance applies consistently | themes | GET/PUT /themes/current | branding settings | branding.edit + scope | integration |
+| White-label logo upload and activation works | branding_assets | POST /branding/assets/logo-upload-url | branding settings | branding.edit + upload policy checks | integration |
+| Agency/business login-screen customization works within scope | themes + branding_assets | GET/PUT /branding/login-screen | branding settings | branding.login.edit + scope + inheritance | integration |
+| Custom domain add/verify/remove lifecycle works | workspace_domains | POST /domains + POST /domains/\{id\}/verify + DELETE /domains/\{id\} | domain manager | domains.manage + host uniqueness + verification challenge | integration |
+| Layout lifecycle is governed | layout_definitions, layout_versions | POST /layouts/* | layout manager routes | layouts.edit + validators | e2e |
+| Builder component registry exposes approved shadcn components | layout registry + component metadata | GET /layouts/components | layout manager routes | builder-compatibility + role checks | e2e |
+| Layout Manager + AI can generate module draft at will | module_registry (`draft`), layout_definitions, ai_jobs | POST /ai-orchestration/jobs + POST /modules/import (draft path) | Layout Manager > Create New | ai.orchestration.manage + modules.install + validator gates | e2e |
+| Manifest-compliant module import works | module_registry | POST /modules/import | modules admin | manifest validator | contract test |
+| Module installation state is dynamic | module_installations | POST /modules/\{key\}/* | modules admin | module capability checks | integration |
+| Dynamic nav honors enabled state | module_installations state | GET /modules/available | shell nav | enabled + scope checks | e2e |
+| Sidebar/navigation overrides are policy-managed | navigation_profiles | GET/PUT /navigation/sidebar | navigation manager | navigation.manage + versioning + scope checks | integration |
+| Feature toggles are policy-managed by scope | workspace_feature_flags | GET/PUT /features | feature flags manager | features.manage + billing/permission coupling | integration |
+| Event emit/query works with contracts | events | POST/GET /events | events monitor | schema + scope + auth | integration |
+| Gateway enforcement is complete | registry + installations | ALL /gateway/\{module\}/\{path\} | module shell entry route | auth+scope+permission+billing | integration |
+| Billing state gates module access | billing_accounts, subscriptions | GET /billing/status | billing settings | entitlement policy | integration |
+| Composio provider connections are shell-governed and workspace-scoped | integration_connections | POST/GET /integrations/providers/composio/* | integrations settings | integrations.manage + workspace scope | integration |
+| Credential resolution fallback obeys ancestry and policy | credential_policies + integration_connections | POST /credentials/resolve | integrations settings | credentials.inheritance.manage + no cross-agency fallback | integration |
+| Shell AI orchestration jobs are permissioned and auditable | ai_jobs + audit_logs | POST/GET /ai-orchestration/jobs* | AI job monitor | ai.orchestration.manage + scope | integration |
+| SDK contract versions are published and compatible | sdk_contract_versions | GET /sdk/contracts | platform/system settings | super-only publication + semver compatibility rules | contract test |
+| Shell works with zero modules | module tables empty | module + gateway endpoints | modules admin + nav | module-absent mode handlers | e2e |
+| Audit coverage is complete for privileged ops | audit_logs | all privileged endpoints | audit UI | service-write immutable logs | integration |
+| No module business logic inside shell | package boundaries | n/a | all shell routes | architecture review and static checks | static + review gate |
+
+### 28.1 Supplemental Normative Traceability (Full-Coverage Controls)
+| Normative control | Primary section(s) | Verification artifact |
+|---|---|---|
+| Shell-only phase boundary is enforced | 4, 5, 29, 30 | architecture review checklist + static policy checks |
+| Module-absent mode is fully operable | 4.3, 28 | e2e module-absent test suite |
+| v1 parity decisions are explicit and auditable | 31, 34 | parity review sign-off + matrix diff |
+| Migration rollback strategy is defined | 12.6, 27 | migration dry-run report |
+| RLS and tenancy invariants are enforced | 12.3, 12.4, 14 | policy integration tests |
+| Endpoint-level contract detail is complete | 20.3 | OpenAPI lint + contract tests |
+| Event delivery + gateway semantics are explicit | 21, 22 | integration tests + failure-mode tests |
+| Billing entitlement transitions are deterministic | 23 | billing state machine tests |
+| White-label surfaces (domains, logo, login branding) are complete | 15.1, 20.3, 28 | branding/domain integration tests |
+| User lifecycle admin controls are complete | 7, 13, 20.3, 28 | identity admin test suite |
+| Credential fallback and policy controls are deterministic | 14, 23.5, 28 | credential resolution tests |
+| SDK contract publication and compatibility controls are complete | 9, 20, 28 | SDK contract compatibility tests |
+| SLO/NFRs are measurable and testable | 25 | performance test report |
+| Cutover and rollback are operationally scripted | 27, 33.1 | dry-run checklist execution report |
+| No unresolved shell-critical placeholders | 32, 33 | documentation lint check |
+
+## 29. Out of Scope (Strict)
+Not part of Shell phase:
+1. Building any business module domain workflows.
+2. Customer-facing module interfaces.
+3. Marketplace/developer portal/community trust pipeline UX.
+4. Capabilities graph and advanced orchestration systems.
+5. Future conversion pipeline internals beyond shell import contract handling.
+6. Private assistant/system-chat runtime behavior.
+
+## 30. Implementation Guardrails
+1. Shell and module business logic must not be collapsed.
+2. Multi-tenancy must not be postponed.
+3. Module routes must not be hardcoded as permanent shell pages.
+4. Shared UI/theme systems must not be bypassed with ad hoc styling.
+5. Layout editing must remain reusable system behavior, not one-off page hacks.
+6. Billing state must be part of access/activation checks.
+7. When uncertain, preserve shell/module boundary over convenience.
+8. No unresolved `TBD` is allowed in shell-critical sections.
+9. Duplicate `.jsx` and `.tsx` route implementations must not be introduced.
+10. Legacy `.old` files must not be introduced or retained in active route trees.
+11. Mock-only and placeholder shell pages for billing/reporting must not satisfy acceptance criteria.
+12. Package internals must not be imported via deep paths (for example `package/src/*`).
+
+## 31. v1 Parity Replication Matrix (Shell-Relevant)
+| v1 behavior | Disposition | Reason | v2 owner | Validation | Evidence |
+|---|---|---|---|---|---|
+| permissions role primitives | Replicate now | shell-core | packages/permissions | unit tests | `/Users/MrBobHunter-MacPro/Code/platform.sec-admn.com-2/docs/v1-audit/03a-auth-and-permissions.md` |
+| app-local route ACL hardcoding | Retire | coupling risk | packages/permissions + middleware | static checks | `/Users/MrBobHunter-MacPro/Code/platform.sec-admn.com-2/docs/v1-audit/03a-auth-and-permissions.md` |
+| manifest normalize/validate/assess | Replicate now | module infra backbone | packages/module-sdk | contract tests | `/Users/MrBobHunter-MacPro/Code/platform.sec-admn.com-2/docs/v1-audit/03b-module-manifest-system.md` |
+| hardcoded fallback app manifests | Retire | must be registry-driven | module_registry seed policy | empty-registry tests | `/Users/MrBobHunter-MacPro/Code/platform.sec-admn.com-2/docs/v1-audit/03b-module-manifest-system.md` |
+| import assessment reports | Replicate now | admin operations value | module-sdk + platform admin | integration tests | `/Users/MrBobHunter-MacPro/Code/platform.sec-admn.com-2/docs/v1-audit/03b-module-manifest-system.md` |
+| sdk manifest/schemas contracts | Replicate now (v2 package form) | future module compatibility | packages/module-sdk + packages/sdk-contracts | contract compatibility tests | `/Users/MrBobHunter-MacPro/Code/platform.sec-admn.com-2/docs/v1-audit/08-v1-complete-capability-inventory.md` |
+| sdk client contract surface | Replicate now (shell contract first) | gateway/event interoperability | packages/sdk-contracts | integration contract tests | `/Users/MrBobHunter-MacPro/Code/platform.sec-admn.com-2/docs/v1-audit/08-v1-complete-capability-inventory.md` |
+| deep internal package imports | Retire | boundary fragility | all packages | lint rule | `/Users/MrBobHunter-MacPro/Code/platform.sec-admn.com-2/docs/v1-audit/02-foundation-vs-apps.md` |
+| db browser/server/admin wrappers | Replicate now | proven reusable shell pattern | packages/db | integration tests | `/Users/MrBobHunter-MacPro/Code/platform.sec-admn.com-2/docs/v1-audit/03f-db-client-server-patterns.md` |
+| integration inheritance resolver pattern | Replicate now (genericized) | strong tenancy behavior | packages/db + theme | inheritance tests | `/Users/MrBobHunter-MacPro/Code/platform.sec-admn.com-2/docs/v1-audit/03f-db-client-server-patterns.md` and `/Users/MrBobHunter-MacPro/Code/platform.sec-admn.com-2/docs/v1-audit/07-multi-tenancy-clean-port-plan.md` |
+| fragmented theming catalogs | Retire | single source of truth required | packages/theme | token consistency tests | `/Users/MrBobHunter-MacPro/Code/platform.sec-admn.com-2/docs/v1-audit/03c-branding-and-theming.md` |
+| tenancy context + impersonation rules | Replicate now | operator-critical | permissions + db | scope/impersonation tests | `/Users/MrBobHunter-MacPro/Code/platform.sec-admn.com-2/docs/v1-audit/07-multi-tenancy-clean-port-plan.md` |
+| custom domain management | Replicate now (v2 shell form) | white-label requirement | domains + branding surfaces | domain lifecycle tests | `/Users/MrBobHunter-MacPro/Code/platform.sec-admn.com-2/docs/v1-audit/08-v1-complete-capability-inventory.md` |
+| logo/login branding controls | Replicate now (tokenized) | white-label requirement | theme + branding assets | branding inheritance tests | `/Users/MrBobHunter-MacPro/Code/platform.sec-admn.com-2/docs/v1-audit/03c-branding-and-theming.md` |
+| chat runtime behavior | Defer to modules phase | module business logic | n/a | shell code review | `/Users/MrBobHunter-MacPro/Code/platform.sec-admn.com-2/docs/v1-audit/02-foundation-vs-apps.md` |
+| kb runtime/worker behavior | Defer to modules phase | module business logic | n/a | shell code review | `/Users/MrBobHunter-MacPro/Code/platform.sec-admn.com-2/docs/v1-audit/02-foundation-vs-apps.md` |
+| plasmic host/render | Retire | out of shell principles | n/a | dependency scan | `/Users/MrBobHunter-MacPro/Code/platform.sec-admn.com-2/docs/v1-audit/08-v1-complete-capability-inventory.md` |
+| duplicate route variants/.old files | Retire | maintainability risk | repo hygiene policy | CI file checks | `/Users/MrBobHunter-MacPro/Code/platform.sec-admn.com-2/docs/v1-audit/08-v1-complete-capability-inventory.md` |
+
+### 31.1 Required v1 Capability ID Mapping (Authoritative)
+The following v1 capabilities are explicitly required parity references for Shell phase. Disposition is mandatory.
+
+| v1 capability id | v1 name (inventory) | Disposition | Shell section target |
+|---|---|---|---|
+| C-006 | Admin shell role context | Replicate now | 6, 7, 24 |
+| C-007 | Effective tenant context resolver | Replicate now | 6, 12, 14, 20 |
+| C-008 | Impersonation persistence + lifecycle | Replicate now | 6, 7, 13, 20, 28 |
+| C-009 | Authorized business scope helper | Replicate now | 7, 12, 14, 28 |
+| C-010 | Settings inheritance resolution | Replicate now | 15, 20, 28 |
+| C-011 | Agencies CRUD + onboarding | Replicate now (shell scope only) | 14, 24, 28 |
+| C-012 | Agency detail ops | Replicate now (shell scope only) | 14, 24, 28 |
+| C-013 | Businesses CRUD | Replicate now | 14, 24, 28 |
+| C-014 | Users CRUD and profile management | Replicate now | 13, 14, 24, 28 |
+| C-015 | Agency branding management | Replicate now | 15, 24, 28 |
+| C-016 | Business branding management | Replicate now | 15, 24, 28 |
+| C-017 | Platform branding controls | Replicate now | 15, 24, 28 |
+| C-018 | Dashboard theme editor | Replicate now (theme-token based) | 15, 24, 28 |
+| C-019 | Custom domain management | Replicate now (shell control plane only) | 15, 24, 28 |
+| C-021 | Platform app/module catalog browsing | Replicate now | 17, 19, 24, 28 |
+| C-022 | Module import pipeline | Replicate now | 18, 19, 20, 24, 28 |
+| C-023 | Manifest validation and compatibility assessment | Replicate now | 18, 19, 20, 28 |
+| C-024 | App availability resolution by tenant | Replicate now | 17, 19, 24, 28 |
+| C-059 | Permissions package concept | Replicate now | 7, 9, 28 |
+| C-056 | app-sdk package concept | Replicate now (v2 package form) | 9, 18, 19, 20, 28 |
+| C-064 | sdk schemas package concept | Replicate now (v2 contract form) | 9, 20, 28 |
+| C-067 | sdk manifest package concept | Replicate now (v2 module-sdk form) | 9, 18, 20, 28 |
+| C-069 | Schema baseline concept | Replicate now (re-modeled for v2 shell) | 11, 12, 28 |
+| C-070 | RLS baseline concept | Replicate now (re-modeled for v2 shell) | 12, 28 |
+| C-073 | Deployment model reference | Replicate as engineering reference | 8, 27 |
+
+Shell parity explicitly excluded even if present in v1:
+1. Chat runtime behavior.
+2. Knowledge-base runtime behavior.
+3. Lead capture, email, webhook delivery workflows.
+4. Capabilities library / n8n conversion lane.
+5. Marketplace and developer-community behaviors.
+6. Module-specific product UIs.
+
+## 32. Documentation Quality and Readiness Validation
+### 32.1 Completeness Checks
+1. Shell scope areas are fully specified: auth, tenancy, permissions, theme, layout integration, modules infra, events, gateway, billing, shared data.
+2. Known gaps are explicitly closed: scope mismatch, parity, schema/RLS, contracts, event/gateway semantics, billing semantics, NFRs, cutover, traceability.
+
+### 32.2 Consistency Checks
+1. No section contradicts phase boundaries.
+2. No shell requirement depends on module implementation to validate shell correctness.
+3. All deferred items are explicitly marked and assigned to later phases.
+
+### 32.3 Traceability Checks
+1. Every acceptance criterion maps to schema + API + enforcement + test.
+2. Every parity item has disposition and validation method.
+3. Every contract error path maps to stable error code.
+
+### 32.4 Independent Review Checks
+1. Independent reviewer can classify all capabilities as shell-owned or deferred with no ambiguity.
+2. Implementation Ready Gate is objective and binary.
+
+## 33. Implementation Ready Gate
+The shell PRD is implementation-ready only when:
+1. All completeness checks pass.
+2. All consistency checks pass.
+3. All traceability checks pass.
+4. Independent review checks pass.
+5. No unresolved `TBD` exists in shell-critical sections.
+6. This document and the Layout Manager PRD are both marked ready.
+
+### 33.1 Mandatory Blank-Repo Dry-Run Checklist
+1. Reviewer receives only this PRD + Layout Manager PRD (no verbal context).
+2. Reviewer derives monorepo/package scaffold and confirms no unresolved ownership decisions.
+3. Reviewer derives migration order and validates rollback/recovery expectations are actionable.
+4. Reviewer derives endpoint contracts and confirms each protected route has required auth claims and stable error outcomes.
+5. Reviewer derives module-absent mode behavior and confirms deterministic expected outputs.
+6. Reviewer maps all acceptance rows to concrete test artifacts and confirms no unmapped normative controls remain.
+7. Reviewer issues one of two results:
+   - `READY`: no blocking ambiguity
+   - `NOT READY`: explicit blocking gaps with section references
+8. PRD is build-authorized only after `READY` result is documented.
+
+## 34. Source References
+1. `/Users/MrBobHunter-MacPro/Code/platform.sec-admn.com-2/docs/v1-audit/02-foundation-vs-apps.md`
+2. `/Users/MrBobHunter-MacPro/Code/platform.sec-admn.com-2/docs/v1-audit/03a-auth-and-permissions.md`
+3. `/Users/MrBobHunter-MacPro/Code/platform.sec-admn.com-2/docs/v1-audit/03b-module-manifest-system.md`
+4. `/Users/MrBobHunter-MacPro/Code/platform.sec-admn.com-2/docs/v1-audit/03c-branding-and-theming.md`
+5. `/Users/MrBobHunter-MacPro/Code/platform.sec-admn.com-2/docs/v1-audit/03f-db-client-server-patterns.md`
+6. `/Users/MrBobHunter-MacPro/Code/platform.sec-admn.com-2/docs/v1-audit/07-multi-tenancy-clean-port-plan.md`
+7. `/Users/MrBobHunter-MacPro/Code/platform.sec-admn.com-2/docs/v1-audit/08-v1-complete-capability-inventory.md`
+8. aiConnected v2 Layout Manager PRD (approved)
+
+## 35. Build Authorization Checklist (One-Page)
+This checklist must be green before shell implementation starts.
+
+### 35.1 Functional Readiness
+1. Login and workspace resolution requirements are fully specified.
+2. Super account/profile management requirements are fully specified.
+3. Super can create Agency workspaces.
+4. Agency can create Business workspaces and Business users.
+5. Super-to-Agency and Agency-to-owned-Business impersonation is fully specified, permissioned, and auditable.
+6. Branding/theme management and inheritance requirements are fully specified.
+7. Layout Manager integration requirements are fully specified, including `Create New`.
+8. Approved shadcn/ui builder component visibility requirements are fully specified.
+9. AI orchestration contracts for builder-governed authoring are fully specified.
+10. Module draft creation path via Layout Manager is fully specified and gated by validation.
+11. White-label surfaces (custom domains, logo uploads, login-screen customization) are fully specified.
+12. User lifecycle admin operations (password reset, email update, scope authority) are fully specified.
+13. Navigation and feature governance are fully specified.
+14. Credential inheritance and fallback policy are fully specified.
+
+### 35.2 Platform Infrastructure Readiness
+1. Shell-owned schema and RLS policies are complete and testable.
+2. Endpoint contracts and stable error codes are complete for all required shell families.
+3. Event bus and gateway semantics are complete and testable.
+4. Billing entitlement state machine is complete and testable.
+5. Module-absent operating mode is explicitly defined and testable.
+6. Supabase security baseline and key-handling rules are explicit.
+7. Deployment domain/base URL policy is explicit and environment-bound.
+8. Dokploy and Supabase reuse policy is explicit.
+9. SDK contract strategy and version governance is explicit.
+10. Dependency validation matrix is complete and build-blocking controls are identified.
+
+### 35.3 Execution Readiness
+1. Master acceptance matrix has no unmapped shell-critical requirement.
+2. No unresolved `TBD` remains in shell-critical sections.
+3. Independent dry-run result is `READY`.
+4. Shell/module boundary review is `PASS`.
+
+## 36. Domain and URL Policy (`sec-admn.com`)
+### 36.1 Required Base URL Model
+1. Shell must not hardcode legacy hostnames.
+2. Shell must resolve all public URLs from environment variables.
+3. The canonical base domain for this program is `sec-admn.com`.
+4. Environment-specific hostnames must be explicitly configured:
+   - local: `localhost`
+   - staging: subdomain under `sec-admn.com`
+   - production: subdomain under `sec-admn.com`
+
+### 36.2 Required Environment Variables
+1. `PLATFORM_PUBLIC_BASE_URL`
+2. `PLATFORM_AUTH_CALLBACK_URL`
+3. `PLATFORM_COOKIE_DOMAIN`
+4. `PLATFORM_ALLOWED_ORIGINS`
+5. `PLATFORM_CUSTOM_DOMAIN_ROOT` (for future tenant custom domains)
+
+### 36.3 Domain and Auth Acceptance Checks
+1. Auth callback and redirect URLs must match configured environment hostnames.
+2. Session cookies must be valid for intended hostname scope and must not leak across unrelated hosts.
+3. Cross-origin requests must be denied unless explicitly whitelisted in `PLATFORM_ALLOWED_ORIGINS`.
+4. No route, API handler, or UI config may contain committed hardcoded legacy URLs.
+
+## 37. Existing Environment Reuse Plan (Dokploy + Supabase)
+### 37.1 Supabase Reuse Policy
+1. Reuse the existing Supabase project and Auth infrastructure unless a formal replacement is approved.
+2. Do not reuse v1 schema blindly; apply v2 shell migrations defined in this PRD.
+3. Migrate only shell-owned entities in Shell phase.
+4. Keep RLS deny-by-default and enforce workspace scope on all shell-owned tables.
+5. Preserve service-role secrecy and client anon-key boundaries.
+
+### 37.2 Dokploy Reuse Policy
+1. Reuse existing Dokploy infrastructure as deployment control plane.
+2. Provision v2 shell as a distinct app/service from v1 workloads.
+3. Keep environment-specific deployments isolated (local/staging/production).
+4. Use environment-bound secrets and URLs; do not share production secrets with staging/local.
+5. Maintain rollback-capable deployment configuration for shell-only launch.
+
+### 37.3 What Is Carried Forward vs Rebuilt
+Carry forward:
+1. Supabase project/auth tenancy foundation.
+2. Dokploy operational platform.
+3. DigitalOcean runtime environment model.
+
+Rebuilt or redefined:
+1. Shell schema via v2 migrations.
+2. Shell routing, permissions enforcement, and module registration infrastructure.
+3. Shell UI and theming implementation.
+
+## 38. Deployment Input Gate (Required Before Public Launch)
+The initial implementation target is local host-first. Public deployment requires the following inputs to be confirmed:
+1. Final production shell hostname under `sec-admn.com`.
+2. Final staging hostname under `sec-admn.com`.
+3. Supabase project id and callback URL allowlist entries for staging/production.
+4. Dokploy app names/projects for staging and production shell.
+5. DNS ownership and SSL issuance path for selected hostnames.
+6. Final cookie domain policy for each environment.
+
+If these inputs are not confirmed, implementation may proceed locally and in private staging, but production go-live must remain blocked.
+Gate status note: This gate is satisfied by the approved defaults in Section 39 for architecture and routing policy; environment-specific secret values (for example Supabase project identifiers and keys) are provided during deployment provisioning and do not alter product requirements.
+
+### 38.1 Approval Record
+Status: `APPROVED`  
+Approved by: Product Owner  
+Approval date: `March 27, 2026`
+
+## 39. Deployment Defaults (Authoritative)
+These defaults are approved and are now authoritative for shell implementation, staging rollout, and production preparation.
+
+### 39.1 Hostname and Base URL Defaults
+| Environment | Shell URL | Notes |
+|---|---|---|
+| local | `http://localhost:3000` | local development only |
+| staging | `https://staging.sec-admn.com` | private staging for acceptance testing |
+| production | `https://app.sec-admn.com` | public shell entrypoint |
+
+### 39.2 Environment Variable Defaults
+| Variable | local | staging | production |
+|---|---|---|---|
+| `PLATFORM_PUBLIC_BASE_URL` | `http://localhost:3000` | `https://staging.sec-admn.com` | `https://app.sec-admn.com` |
+| `PLATFORM_AUTH_CALLBACK_URL` | `http://localhost:3000/auth/callback` | `https://staging.sec-admn.com/auth/callback` | `https://app.sec-admn.com/auth/callback` |
+| `PLATFORM_COOKIE_DOMAIN` | `localhost` | `staging.sec-admn.com` | `.sec-admn.com` |
+| `PLATFORM_ALLOWED_ORIGINS` | `http://localhost:3000` | `https://staging.sec-admn.com` | `https://app.sec-admn.com` |
+| `PLATFORM_CUSTOM_DOMAIN_ROOT` | `local.sec-admn.test` | `staging-customers.sec-admn.com` | `customers.sec-admn.com` |
+
+### 39.3 Supabase Auth URL Allowlist Defaults
+1. `http://localhost:3000/auth/callback`
+2. `http://localhost:3000/auth/confirm`
+3. `https://staging.sec-admn.com/auth/callback`
+4. `https://staging.sec-admn.com/auth/confirm`
+5. `https://app.sec-admn.com/auth/callback`
+6. `https://app.sec-admn.com/auth/confirm`
+
+### 39.4 Dokploy App Naming Defaults
+1. project: `aiconnected-v2-staging`, app: `shell-staging`
+2. project: `aiconnected-v2-production`, app: `shell-production`
+3. optional local mirror app: `shell-local`
+
+## 40. Existing Environment Adoption Plan (Execution Defaults)
+### 40.1 Supabase
+1. Reuse the existing Supabase platform as the baseline infrastructure.
+2. Apply v2 shell migrations only; do not import v1 schema wholesale.
+3. Maintain separate environment targets:
+   - staging target: isolated from public production traffic
+   - production target: live customer traffic
+4. Execute migration dry-runs in staging before production apply.
+
+### 40.2 Dokploy
+1. Reuse existing Dokploy control plane and deployment workflows.
+2. Deploy v2 shell as new services (`shell-staging`, `shell-production`) rather than replacing v1 in place.
+3. Keep v1 and v2 deployments parallel until shell acceptance criteria are fully green.
+4. Cut over DNS only after staging validation and production readiness gate pass.
+
+### 40.3 Cutover Policy
+1. Local-first implementation remains the required first execution mode.
+2. Staging rollout is required before any production cutover.
+3. Production cutover requires Section 38 inputs confirmed plus Section 35 checklist fully green.
+
+## 41. SDK Strategy (v1 Carry-Forward -> v2 Shell Contracts)
+### 41.1 Why SDK Is Required in Shell Phase
+1. The shell cannot remain module-open without stable public contracts for manifests, events, gateway envelopes, and error models.
+2. Module import/validation depends on SDK-grade schema contracts, not ad hoc JSON parsing.
+3. Future module teams require a versioned contract surface before module phase starts.
+
+### 41.2 v1 to v2 SDK Carry-Forward Policy
+1. Carry forward architecture ideas from v1 `app-sdk`, `sdk/schemas`, and `sdk/manifest`.
+2. Do not copy v1 implementation style where it violates current package boundaries.
+3. Rebuild SDK contracts as first-class v2 packages:
+   - `packages/module-sdk`
+   - `packages/sdk-contracts`
+4. Expose versioned contract metadata through `/sdk/contracts`.
+
+### 41.3 SDK Minimum Deliverables in Shell Phase
+1. Manifest schema and validator with semver support.
+2. Event envelope schema and validation helpers.
+3. Gateway request/response envelope types.
+4. Stable error code enum package shared by API/gateway/module tooling.
+5. Compatibility checker for contract version negotiation.
+
+## 42. Dependency Validation Matrix (Security, Stability, Expansion)
+| Dependency Area | Required now | Validation Method | Build-Blocking if Missing |
+|---|---|---|---|
+| Supabase auth/session | yes | auth integration tests + callback allowlist checks | yes |
+| Supabase RLS | yes | policy integration tests by role/workspace | yes |
+| Stripe billing webhooks | yes | webhook replay + reconciliation tests | yes |
+| Theme/branding inheritance | yes | super->agency->business inheritance tests | yes |
+| Domain verification | yes | token challenge integration tests | yes |
+| Branding asset pipeline | yes | signed upload + MIME/size enforcement tests | yes |
+| Module SDK contracts | yes | schema compatibility tests | yes |
+| Module registry/import lifecycle | yes | manifest import/install/enable tests | yes |
+| Event bus durability | yes | retry/dead-letter/replay tests | yes |
+| Gateway trust boundary | yes | forged-claim rejection tests | yes |
+| Composio connection lifecycle | yes | connect/disconnect/scope tests | yes |
+| Credential fallback policy | yes | ancestry + fallback tests | yes |
+| Navigation governance | yes | role-scoped sidebar config tests | yes |
+| Feature flag governance | yes | scope + billing coupling tests | yes |
+| Shell AI orchestration hooks | yes | job lifecycle + permission tests | yes |
+| SDK contract publishing | yes | super-only publish + compatibility tests | yes |
+| Backup and restore readiness | yes | restore drill report + recovery metrics | yes |
+| Observability and alerting coverage | yes | metrics/log/alert validation checklist | yes |
+| Incident runbook completeness | yes | tabletop drill + runbook sign-off | yes |
+
+## 43. User and Admin Capability Coverage (Shell Phase)
+### 43.1 Super User Must Be Able To
+1. Manage all users, roles, memberships, and profile details in all workspaces.
+2. Trigger password reset links and update in-scope email addresses.
+3. Create/modify agencies and business hierarchies.
+4. Impersonate agency and business contexts with full audit trace.
+5. Manage baseline theme, branding, login-screen profiles, and domain policy.
+6. Enable/disable modules and manage feature flags by scope.
+7. Manage navigation/sidebar policy by scope.
+8. Manage integration connection policy and credential fallback policy.
+
+### 43.2 Agency Admin Must Be Able To
+1. Manage agency and owned business users within delegated scope.
+2. Trigger password reset links and email updates for in-scope users.
+3. Impersonate owned business workspaces only.
+4. Manage agency branding, login screen, and allowed business overrides.
+5. Manage agency/business modules, feature flags, and integrations within policy.
+6. Manage agency/business navigation settings within policy.
+
+### 43.3 Business Admin Must Be Able To
+1. Manage users inside their own business workspace only.
+2. Operate allowed branding and feature settings delegated by agency/super policy.
+3. Operate module access and integrations allowed by higher-scope governance.
+
+## 44. Final Readiness Determination Rule
+Shell implementation may proceed only when:
+1. Sections 35, 38, and 42 are all green.
+2. Master acceptance matrix has 100% mapped coverage and no red rows.
+3. Dependency validation matrix has no missing build-blocking area.
+4. SDK contracts are versioned and discoverable before module-phase work begins.
+
+## 45. Operational Stability and Production Reliability Requirements
+### 45.1 Backup and Restore
+1. Database backup policy must be defined for staging and production before first public launch.
+2. Restore procedures must be tested in staging with documented recovery time and data-loss windows.
+3. Branding/domain/navigation/feature configuration data must be included in backup scope.
+
+### 45.2 Observability and Alerting
+1. Structured logging must include correlation id, workspace id, actor id, and route/endpoint metadata.
+2. Metrics must be emitted for auth failures, permission denials, gateway failures, billing-gate blocks, and domain verification failures.
+3. Alerts must be configured for:
+   - repeated auth/session failures
+   - gateway target unhealthy rates
+   - billing reconciliation failures
+   - background job dead-letter growth
+4. Dashboard views for shell health must be available to super operators.
+
+### 45.3 Incident and Recovery Operations
+1. Incident runbook must define severity levels, ownership, and escalation path.
+2. Rollback execution steps for schema, deployment, and routing configuration must be documented and tested.
+3. Post-incident reviews must produce actionable remediation items tied back to acceptance controls.
+
+## 46. Documentation Adherence and Change-Control Policy
+1. Implementation must not diverge from this PRD without recorded change approval.
+2. Any proposed deviation must include:
+   - impacted sections
+   - risk assessment
+   - migration/compatibility impact
+   - test-plan updates
+3. PRD changes must be versioned and reviewed before implementation changes are considered complete.
+4. CI gates must enforce:
+   - contract compatibility checks
+   - policy test execution
+   - acceptance-matrix linkage for changed behavior
+5. Build execution order must follow Section 26 unless an approved change record explicitly reorders phases.

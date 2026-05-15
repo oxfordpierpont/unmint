@@ -1,0 +1,21 @@
+---
+title: "Introduction"
+description: "Create and manage API keys for your aiConnected instance."
+---
+API keys authenticate requests to the aiConnected REST API. Each key is scoped to specific permissions and can be revoked at any time.
+
+## Creating a key
+
+Navigate to **Settings → API Keys** and click **Create Key**. Choose a name and select the permission scope.
+
+## Key scopes
+
+| Scope | Access |
+|-------|--------|
+| `full` | Read and write across all resources |
+| `send` | Outbound messaging only |
+| `read` | Read-only access to logs and contacts |
+
+<Warning>
+  Store your API key securely. It will only be shown once at creation time.
+</Warning>

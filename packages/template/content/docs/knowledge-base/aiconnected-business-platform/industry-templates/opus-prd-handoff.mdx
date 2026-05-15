@@ -1,0 +1,1138 @@
+---
+title: "Opus PRD Handoff"
+---
+# aiConnected Platform Industry Templates - Comprehensive PRD Handoff
+
+## Project Overview
+
+**Feature Name**: aiConnected Platform Industry Templates  
+**Formal Name**: Industry Templates (displayed in UI as “Industry Templates” tab/section)  
+**Status**: Ideation/Documentation Phase  
+**Implementation Timeline**: Post-launch, after developer marketplace is proven and stable  
+**Responsible Party**: TBD developer lead (once assigned)  
+**Vision Owner**: Bob Hunter (aiConnected Founder)
+
+-----
+
+## Context & Vision Statement
+
+### The Problem Being Solved
+
+**Current State (Without Industry Templates)**:
+
+- New agencies arrive at aiConnected platform
+- They see blank slate: modules, settings, personas, workflows
+- They must configure everything from scratch
+- Configuration decisions are unclear (what goes where? what works?)
+- High setup friction; no reference for “what works in my industry”
+- Agencies often get stuck, make suboptimal choices, or leave
+
+**Desired State (With Industry Templates)**:
+
+- New agencies see “Real Estate,” “Legal,” “Med Spa,” “Insurance,” etc.
+- They click their industry, see curated configurations (“Land Sales,” “Residential Homes,” “Commercial,” “M&A,” etc.)
+- Each configuration shows: active business count, ratings, last updated, adoption trend
+- They see “1.2M active businesses using Land Sales config, 4.8 stars, updated 2 weeks ago”
+- They click “Install”
+- They immediately see all settings/modules/personas in a review screen
+- They can customize on the spot if needed
+- They apply to their agency, set access controls per client, set pricing
+- They’re productive immediately; configuration is battle-tested and maintained by community
+- Configuration improves over time as community learns and contributes
+
+**Core Value Proposition**: Eliminate setup friction through community-driven, industry-specific, pre-configured starting points. Agencies get battle-tested setups; new contributors share what works; entire ecosystem improves together.
+
+-----
+
+## Core Architectural Model: Model B
+
+### “Industry = Collection of Configurations” (NOT Hierarchy)
+
+This is a critical architectural decision. The distinction changes everything.
+
+**Model A (Rejected)**:
+
+```
+Real Estate (base template)
+├── Land Sales (specialization)
+├── Residential (specialization)
+└── Commercial (specialization)
+```
+
+- Implies hierarchical inheritance
+- Creates “base + customization” friction
+- Suggests some configurations are “more fundamental” than others
+- Creates dependency chains
+
+**Model B (Chosen)**:
+
+```
+Real Estate = { Land Sales, Residential, Commercial, M&A, Build-to-Rent, Construction }
+```
+
+- Each configuration is co-equal
+- No “base” Real Estate template
+- No hierarchy, no inheritance chains
+- Agencies pick the exact fit without base customization
+
+### Why Model B is Correct
+
+1. **Reflects Reality**: People specialize. Specializations are not secondary. A real estate agent selling land has completely different needs than one selling residential homes. Both are equally valid.
+1. **Reduces Friction**: “I sell land, here’s Land Sales config” beats “Here’s a Real Estate base template, now customize it for land sales.”
+1. **Enables Co-Evolution**: All configurations in Real Estate improve together. When one improves via community learning, all benefit.
+1. **Prevents Lock-In**: No dependency on “base” means configurations can evolve independently.
+1. **Scales Better**: New specialization emerges? Just add a new configuration. No need to modify the “base.”
+
+### What “Real Estate Industry” Actually Is
+
+The Real Estate industry **IS** a collection of configurations:
+
+- Land Sales Configuration
+- Residential Home Sales Configuration
+- Commercial Real Estate Configuration
+- Build-to-Rent Configuration
+- Real Estate M&A Configuration
+- Construction-Side Real Estate Configuration
+- (+ any others the community contributes)
+
+There is no separate “Real Estate base template.” Real Estate IS these configurations. The industry is defined by what works in practice, not by a pre-defined template.
+
+-----
+
+## Configuration Snapshot: Detailed Anatomy
+
+### What Gets Captured When an Agency Exports a Configuration
+
+When an agency creates/exports a configuration, they capture a **complete snapshot** of their current setup:
+
+```
+Configuration Snapshot {
+  
+  // Personas
+  personas: [
+    {
+      id: "paralegal-v2",
+      name: "Paralegal",
+      state: "trained",
+      skills: ["legal-research", "document-drafting", "contract-review"],
+      neurigraph_memory: "entire persona memory state"
+    },
+    {
+      id: "intake-specialist-v1",
+      name: "Intake Specialist",
+      state: "trained",
+      skills: ["intake-forms", "client-intake", "verification"]
+    }
+    // ... more personas
+  ],
+  
+  // Integrations
+  integrations: [
+    {
+      provider: "clio",
+      auth: "oauth-token-hash",
+      config: { account_id: "XXX", workspace: "YYY" }
+    },
+    {
+      provider: "westlaw",
+      auth: "api-key-hash",
+      config: { tier: "professional" }
+    },
+    {
+      provider: "zapier",
+      workflows: ["intake-to-slack", "document-alerts"]
+    }
+    // ... more integrations
+  ],
+  
+  // Workflows
+  workflows: [
+    {
+      id: "intake-workflow",
+      name: "Client Intake Process",
+      steps: [
+        { trigger: "new-client-form", action: "paralegal-review" },
+        { action: "document-generation" },
+        { action: "notification-to-slack" }
+      ],
+      enabled: true
+    }
+    // ... more workflows
+  ],
+  
+  // Modules
+  modules: {
+    "voice-ai": { enabled: true, config: {} },
+    "document-generation": { enabled: true, config: { template_library: "legal" } },
+    "knowledge-base": { enabled: true, config: { docs_count: 250 } },
+    "skip-tracing": { enabled: false },
+    "sms-automation": { enabled: true, config: {} }
+    // ... more modules
+  },
+  
+  // Settings
+  settings: {
+    ai_model: "claude-sonnet",
+    response_tone: "professional-formal",
+    max_token_length: 2000,
+    knowledge_base_upload_frequency: "daily",
+    client_timezone: "US/Eastern"
+    // ... more settings
+  },
+  
+  // Metadata
+  metadata: {
+    created_at: "2026-04-19",
+    last_updated: "2026-04-19",
+    creator_agency: "Smith & Associates Legal",
+    description: "Paralegal intake and document generation for law firm practice"
+  }
+}
+```
+
+### Data Privacy & Anonymization
+
+- **Everything is anonymized**: No PII, no specific contacts, no specific client data
+- **Only configuration mapping captured**: Which modules enabled, integration types, workflow patterns, persona types
+- **Specific values are hashed/obfuscated**: API keys, client emails, account IDs are not stored; only the fact that integration exists
+- **Knowledge base content is NOT captured**: Only the fact that a knowledge base exists and its metadata (size, update frequency, categories)
+- **Client-specific data is NOT captured**: Only agency-level configuration
+
+This is why GoHighLevel called them “Snapshots” - they’re literally a snapshot of the configuration state, not a copy of the data.
+
+### Submission & Versioning
+
+**How an agency creates a configuration**:
+
+1. Agency has been using aiConnected, has a working setup for “Land Sales”
+1. They navigate to Settings → Export Configuration
+1. They name it: “Land Sales - Full Automation”
+1. They write a description: “Complete setup for land sales agents. Includes automated property research, skip tracing, client intake, and document generation.”
+1. They tag it: `real-estate`, `land-sales`, `automation`, `full-service`
+1. They select target industry: `Real Estate`
+1. They select primary use case: `Land Sales`
+1. They submit
+
+**Submission flow**:
+
+1. Configuration is submitted to community voting/test period (30 or 90 days)
+1. It appears in Industry Templates discovery with “BETA” badge
+1. Agencies can test it, vote, provide feedback
+1. After test period, voting is tallied
+1. **If accepted**: Becomes production version, badge removed, vote count becomes “Battle-tested by X businesses”
+1. **If rejected**: Doesn’t propagate, but agencies already using it locally keep using it; feedback provided to submitter
+
+**Versioning**:
+
+- Land Sales Configuration v1.0 (original)
+- Land Sales Configuration v1.1 (community vote accepted an improvement)
+- Land Sales Configuration v2.0 (significant feature set change)
+- Agencies can stay on any version indefinitely
+- No forced upgrades
+
+-----
+
+## Core Non-Negotiable Principles
+
+### Principle 1: NO AUTO-APPLY, EVER
+
+**This is absolute.** Nothing is ever forced on users at any level.
+
+**Example 1: New Feature**
+
+- A developer contributes “skip-tracing module” for Real Estate
+- It goes through 30/90-day voting/testing
+- Once accepted, agencies get notified: “New skip-tracing module available for Real Estate. Automatically find and verify property owners and phone numbers. Enable/disable?”
+- Agency decides per-business-client
+- If enabled, pricing button appears (agency can set $0 or $49/month)
+- No forcing
+
+**Example 2: Persona Skill Improvement**
+
+- Paralegal personas across the ecosystem improve via cross-persona learning
+- They acquire “Legal Research API Integration” skill
+- All agencies using Paralegal persona get notified: “Paralegal persona now has Legal Research API Integration. Better case research. Accept/reject?”
+- NOT automatic
+- Agencies choose per-client
+- If rejected, persona doesn’t gain the skill
+- Fully reversible
+
+**Example 3: Configuration Update**
+
+- Land Sales Configuration v1.0 is improved to v1.1
+- Agencies using v1.0 get notification: “Land Sales Configuration has an update (v1.0 → v1.1). Includes new skip-tracing integration. Review/accept?”
+- Agencies can stay on v1.0 indefinitely
+- Can upgrade when ready
+- No forced updates
+
+**This applies at EVERY level**:
+
+- Features don’t auto-apply to configurations
+- Configurations don’t auto-update when features ship
+- Personas don’t auto-gain skills
+- Modules don’t auto-enable
+- Everything is notification + agency choice
+
+### Principle 2: AGENCY CONTROL OVER EVERYTHING
+
+Agencies decide:
+
+- What features are available to their business clients
+- What configurations are available to their business clients
+- Which configurations to offer to which clients (whitelist/blacklist)
+- Whether to charge for features (free or paid upsell)
+- What to charge ($0, $49/month, custom price, per-client variation)
+- Whether business clients can self-serve apply configurations OR agency applies on their behalf
+- Whether to enable test mode for specific clients
+- Whether clients can opt-in to beta features
+- What personas are available per client
+- What integrations are enabled per client
+
+**This is fundamental.** Agencies are the product owner of their client experience. aiConnected provides infrastructure; agencies control access, pricing, and experience.
+
+### Principle 3: VOLUNTARY ADOPTION AT EVERY LEVEL
+
+- Configurations are optional starting points (agencies can still build from scratch)
+- Features are optional additions (can be rejected or ignored)
+- Updates are opt-in (no forced upgrades, no sunset dates)
+- Versions can be held indefinitely (“I like v1.5, staying here”)
+- Persona skills are optional (can accept or reject each new skill)
+- All actions are reversible (remove configuration, rollback version, remove skill)
+
+**Philosophy**: We provide options. You choose. No assumptions, no forcing, no lock-in.
+
+-----
+
+## Feature Pricing Integration (CRITICAL - APPLIES EVERYWHERE)
+
+### The Requirement
+
+**For EVERY feature toggle available to agencies** (enable/disable for business clients):
+
+- Display a **Pricing button** immediately adjacent to the toggle
+- When toggle is activated, pricing UI appears
+- Agencies can set price at **$0** (free upsell) or **$X** (paid upsell), per-client
+- Pricing applies **per-feature, per-business-client** (full granularity)
+- Pricing data flows to billing system; fees are charged to client at end of month
+
+### What “Every Toggle” Means
+
+This applies to:
+
+- Individual features (e.g., “skip-tracing”)
+- Modules (e.g., “document-generation”)
+- Configurations (e.g., applying a configuration unlocks certain capabilities)
+- Personas (e.g., “Paralegal persona” access)
+- Skills/capabilities (e.g., “Legal Research Integration”)
+- Workflows (e.g., custom workflow access)
+- Any setting or capability that an agency can enable/disable for a client
+
+### Why This Matters
+
+This enables agencies to build service tiers without needing external tools:
+
+**Example**:
+
+- “Basic Legal” tier: Paralegal persona only, $0
+- “Pro Legal” tier: Paralegal persona + Legal Research Integration, $49/month
+- “Enterprise Legal”: All features + priority support, custom pricing per client
+
+Agencies can monetize granularly. They don’t have to build separate products. They configure what each tier gets, set prices, and billing is automatic.
+
+### UI Pattern
+
+**Toggle + Pricing Pattern**:
+
+```
+[Toggle Switch: OFF] "Skip Tracing Module"
+Description: "Automatically find and verify property owners..."
+
+[Button: "Pricing"] ← When clicked or toggle turned ON, pricing panel appears
+
+Pricing Panel (slides in from right):
+┌─────────────────────────────────┐
+│ Skip Tracing Module Pricing      │
+│                                 │
+│ Price per client per month:      │
+│ [$0        ▼] (dropdown, or text)│
+│                                 │
+│ ☐ Apply to all clients          │
+│ ☑ Apply to selected clients     │
+│   (select from list)            │
+│                                 │
+│ [Apply] [Cancel]                │
+└─────────────────────────────────┘
+```
+
+This pattern repeats for every toggle. Pricing is not a separate section; it’s integrated into feature management.
+
+-----
+
+## User Interface & User Experience
+
+### Primary Navigation
+
+**In main platform navigation**:
+
+```
+[Platform Logo] 
+  Dashboard
+  Clients
+  Automations
+  Knowledge Base
+  Marketplace
+  [Industry Templates] ← NEW
+  Settings
+```
+
+Clicking “Industry Templates” takes agency to the Industry Templates Hub.
+
+### Industry Templates Hub (Primary Screen)
+
+**Layout**:
+
+```
+┌─────────────────────────────────────────────────────┐
+│ INDUSTRY TEMPLATES                                   │
+│                                                     │
+│ [Search bar: "Search industries, configurations..."] │
+│                                                     │
+│ Filter options (left sidebar, optional):            │
+│ • Real Estate                                       │
+│ • Legal                                             │
+│ • Med Spa                                           │
+│ • Healthcare                                        │
+│ • Insurance                                         │
+│ • Construction                                      │
+│ • More...                                           │
+│                                                     │
+├─────────────────────────────────────────────────────┤
+│                                                     │
+│ GLOBAL INDUSTRY TEMPLATES (Featured)               │
+│                                                     │
+│ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐   │
+│ │   Real      │ │   Legal     │ │  Med Spa    │   │
+│ │  Estate     │ │             │ │             │   │
+│ │             │ │             │ │             │   │
+│ │ 3.5M        │ │ 1.2M        │ │ 560K        │   │
+│ │ businesses  │ │ businesses  │ │ businesses  │   │
+│ │             │ │             │ │             │   │
+│ │ [Install]   │ │ [Install]   │ │ [Install]   │   │
+│ └─────────────┘ └─────────────┘ └─────────────┘   │
+│                                                     │
+├─────────────────────────────────────────────────────┤
+│                                                     │
+│ REAL ESTATE CONFIGURATIONS (showing all configs    │
+│ if "Real Estate" industry is selected)             │
+│                                                     │
+│ ┌─────────────────────────────────────────────┐   │
+│ │ Land Sales Configuration                     │   │
+│ │                                              │   │
+│ │ Automated lead capture, property research,   │   │
+│ │ skip tracing, document generation. Best for  │   │
+│ │ land agents and raw land specialists.        │   │
+│ │                                              │   │
+│ │ Tags: #land-sales #automation #leads        │   │
+│ │                                              │   │
+│ │ 1.2M active businesses                       │   │
+│ │ ★★★★★ 4.8 / 5 (2,340 ratings)              │   │
+│ │ Last updated: 2 weeks ago                    │   │
+│ │ Trend: ↑ Growing                             │   │
+│ │                                              │   │
+│ │ [Install] [Details]                          │   │
+│ └─────────────────────────────────────────────┘   │
+│                                                     │
+│ ┌─────────────────────────────────────────────┐   │
+│ │ Residential Home Sales Configuration         │   │
+│ │                                              │   │
+│ │ Turnkey setup for residential home agents.   │   │
+│ │ MLS integration, buyer/seller management,    │   │
+│ │ appointment scheduling, automated follow-up. │   │
+│ │                                              │   │
+│ │ Tags: #residential #homes #mls              │   │
+│ │                                              │   │
+│ │ 850K active businesses                       │   │
+│ │ ★★★★☆ 4.6 / 5 (1,890 ratings)              │   │
+│ │ Last updated: 1 month ago                    │   │
+│ │ Trend: → Stable                              │   │
+│ │                                              │   │
+│ │ [Install] [Details]                          │   │
+│ └─────────────────────────────────────────────┘   │
+│                                                     │
+│ ┌─────────────────────────────────────────────┐   │
+│ │ Commercial Real Estate Configuration         │   │
+│ │                                              │   │
+│ │ For commercial agents and brokers. Building  │   │
+│ │ analysis, tenant management, lease tracking,│   │
+│ │ ROI calculations. Advanced features.         │   │
+│ │                                              │   │
+│ │ Tags: #commercial #analysis #advanced       │   │
+│ │                                              │   │
+│ │ 320K active businesses                       │   │
+│ │ ★★★★★ 4.7 / 5 (645 ratings)                │   │
+│ │ Last updated: 1 week ago                     │   │
+│ │ Trend: ↑ Growing                             │   │
+│ │                                              │   │
+│ │ [Install] [Details]                          │   │
+│ └─────────────────────────────────────────────┘   │
+│                                                     │
+│ [+ Show more configurations...]                    │
+│                                                     │
+└─────────────────────────────────────────────────────┘
+```
+
+**Card Elements** (for each configuration):
+
+- **Title**: Configuration name (e.g., “Land Sales Configuration”)
+- **Description**: Short paragraph (2-3 sentences) explaining what’s special, what it includes, who it’s for
+- **Tags**: 2-4 tags describing the use case (#land-sales, #automation, #leads)
+- **Trust Signals**:
+  - Active businesses count (“1.2M active businesses”)
+  - Rating (⭐ 4.8 / 5)
+  - Number of ratings in parentheses
+  - Last updated date (“2 weeks ago”)
+  - Trend indicator (↑ Growing, → Stable, ↓ Declining)
+- **Install Button**: Large, prominent button saying “[Install]”
+- **Details Button**: Secondary button “[Details]” (optional, goes to detail page)
+
+**Beta/Test Badge** (if applicable):
+
+- If configuration is in test period: Display “BETA - Help shape this” badge
+- Show upvote/downvote counts (“342 up, 28 down”)
+- Show time remaining (“12 days left in testing”)
+
+### Installing a Configuration (Step 1: Review Screen)
+
+When an agency clicks “[Install]” on a configuration, they go to a **Review & Customize** screen:
+
+```
+┌──────────────────────────────────────────────────────┐
+│ INSTALL: Land Sales Configuration                    │
+│                                                      │
+│ This will add the following to your agency:          │
+│                                                      │
+├──────────────────────────────────────────────────────┤
+│                                                      │
+│ PERSONAS (what's included):                          │
+│ ☑ Paralegal Persona                                 │
+│ ☑ Intake Specialist Persona                         │
+│ ☐ Document Reviewer Persona (opt-in, optional)      │
+│                                                      │
+│ MODULES (what will be enabled):                      │
+│ ☑ Document Generation                               │
+│ ☑ Knowledge Base                                    │
+│ ☑ Skip Tracing                                      │
+│ ☑ SMS Automation                                    │
+│ ☐ Video Recording (opt-in, optional)                │
+│                                                      │
+│ INTEGRATIONS (what will be connected):              │
+│ ☑ Westlaw (Legal Research)                          │
+│ ☑ Zapier (Workflow Automation)                      │
+│ ☑ Slack (Notifications)                             │
+│                                                      │
+│ WORKFLOWS (automation patterns):                     │
+│ ☑ Lead Intake Process                               │
+│ ☑ Document Generation Workflow                      │
+│ ☑ Client Notification System                        │
+│                                                      │
+├──────────────────────────────────────────────────────┤
+│ CUSTOMIZE (Optional)                                 │
+│                                                      │
+│ ☑ Enable customization mode to adjust settings      │
+│                                                      │
+│ [Expand Customization Panel]                        │
+│                                                      │
+│ (If expanded, shows all settings that can be        │
+│ modified before applying)                            │
+│                                                      │
+├──────────────────────────────────────────────────────┤
+│                                                      │
+│ [Cancel] [Review & Apply]                           │
+│                                                      │
+└──────────────────────────────────────────────────────┘
+```
+
+**Key Features**:
+
+- Clear checklist of what’s being installed
+- Ability to toggle optional items on/off before applying
+- Optional customization panel for advanced users
+- Agency can review the entire snapshot before committing
+
+### Installing a Configuration (Step 2: Access Control & Pricing)
+
+After clicking “[Review & Apply]”, they go to **Access Control & Pricing** screen:
+
+```
+┌──────────────────────────────────────────────────────┐
+│ CONFIGURE ACCESS: Land Sales Configuration           │
+│                                                      │
+├──────────────────────────────────────────────────────┤
+│                                                      │
+│ WHO HAS ACCESS?                                      │
+│                                                      │
+│ ○ All clients in my agency                          │
+│   (Everyone gets Land Sales setup)                   │
+│                                                      │
+│ ○ Specific clients only                             │
+│   [Select clients...]                               │
+│   Selected: Smith Realty, Jones Land Group, ...      │
+│                                                      │
+│ ○ New clients by default                            │
+│   (New clients get this setup unless they opt-out)  │
+│                                                      │
+├──────────────────────────────────────────────────────┤
+│                                                      │
+│ PRICING (Upsell or Free?)                           │
+│                                                      │
+│ Base Configuration is FREE to all clients            │
+│                                                      │
+│ Add optional upsells:                                │
+│                                                      │
+│ [+ Add Pricing Tier]                                │
+│                                                      │
+│ Tier 1: Skip Tracing + Document Generation          │
+│   Price: [$49/month        ▼]                       │
+│   Clients:                                           │
+│   ☑ Smith Realty                                    │
+│   ☐ Jones Land Group                                │
+│   ☐ (auto-apply to new clients)                    │
+│   [Edit] [Remove]                                   │
+│                                                      │
+│ Tier 2: Full Automation (all features)              │
+│   Price: [$99/month        ▼]                       │
+│   Clients:                                           │
+│   ☑ Smith Realty                                    │
+│   ☑ Jones Land Group                                │
+│   ☐ (auto-apply to new clients)                    │
+│   [Edit] [Remove]                                   │
+│                                                      │
+│ [+ Add Pricing Tier]                                │
+│                                                      │
+├──────────────────────────────────────────────────────┤
+│                                                      │
+│ [Cancel] [Apply Configuration]                      │
+│                                                      │
+└──────────────────────────────────────────────────────┘
+```
+
+**Key Features**:
+
+- Choose who gets access (all, specific, or new by default)
+- Add as many pricing tiers as needed
+- Per-tier control over which clients get what
+- Auto-apply-to-new-clients option
+- Everything is optional; can be all free
+
+### Configuration Management (After Installation)
+
+After applying, configuration appears in agency’s **Settings → Configurations** section:
+
+```
+┌──────────────────────────────────────────────────────┐
+│ CONFIGURATIONS (My Agency)                           │
+│                                                      │
+├──────────────────────────────────────────────────────┤
+│                                                      │
+│ Active Configurations:                               │
+│                                                      │
+│ Land Sales Configuration v1.0                        │
+│ ├─ Status: Active (890 clients using this)          │
+│ ├─ Adopted: March 2026                              │
+│ ├─ Version: v1.0                                    │
+│ ├─ Test Mode: ○ Disabled  ○ Enabled (for X clients)│
+│ │                                                    │
+│ │ Actions:                                           │
+│ │ [View Details] [Customize] [Manage Clients]        │
+│ │ [Enable Test Mode] [Upgrade to v1.1] [Remove]     │
+│ │                                                    │
+│ └─ [Expand to see settings breakdown]               │
+│                                                      │
+│ Residential Configuration v2.0                       │
+│ ├─ Status: Active (120 clients using this)          │
+│ ├─ Adopted: February 2026                           │
+│ ├─ Version: v2.0 (latest)                           │
+│ ├─ Test Mode: ○ Disabled  ○ Enabled (for 5 clients)│
+│ │                                                    │
+│ │ Actions:                                           │
+│ │ [View Details] [Customize] [Manage Clients]        │
+│ │ [Disable Test Mode] [Remove]                       │
+│ │                                                    │
+│ └─ [Expand to see settings breakdown]               │
+│                                                      │
+└──────────────────────────────────────────────────────┘
+```
+
+**Key Actions**:
+
+- **View Details**: See full configuration snapshot, what’s included
+- **Customize**: Modify settings, toggle modules/personas on/off, adjust integrations
+- **Manage Clients**: See which clients are using this, add/remove clients, set pricing per client
+- **Enable Test Mode**: Beta test a new version before rolling out
+- **Upgrade Version**: If newer version available, can upgrade (opt-in)
+- **Remove**: Stop using this configuration (affects affected clients)
+
+### Test Mode Interface
+
+When agency enables **Test Mode** for a configuration:
+
+**In agency settings**:
+
+```
+┌──────────────────────────────────────────────────────┐
+│ TEST MODE: Land Sales v1.1                           │
+│                                                      │
+│ Status: ✓ Active (12 days remaining)                │
+│                                                      │
+│ Clients in test:                                     │
+│ • Smith Realty (started 18 days ago)                 │
+│ • Jones Land Group (started 18 days ago)             │
+│                                                      │
+│ VOTING DATA (Live):                                  │
+│                                                      │
+│ [Graph: Upvotes vs Downvotes over time]             │
+│   ↑ 342 upvotes                                     │
+│   ↓ 28 downvotes                                    │
+│   Current sentiment: ▓▓▓▓▓░ 92% positive            │
+│                                                      │
+│ Comments Summary:                                    │
+│ • "Skip tracing integration is amazing" (34 +1s)    │
+│ • "Lag when generating documents" (12 +1s)          │
+│ • "Perfect setup for our team" (28 +1s)             │
+│                                                      │
+│ [View All Comments] [AI Sentiment Analysis]         │
+│                                                      │
+│ [Disable Test Mode] [Decision: Accept/Reject]       │
+│                                                      │
+└──────────────────────────────────────────────────────┘
+```
+
+**In Industry Templates discovery** (same config shown publicly during test):
+
+```
+┌─────────────────────────────────────────────┐
+│ Land Sales Configuration v1.1 [BETA]        │
+│                                              │
+│ What's new: Skip tracing integration,        │
+│ improved document generation...              │
+│                                              │
+│ 342 ↑ 28 ↓ (12 days left in testing)       │
+│ Trend: ▓▓▓▓▓░ 92% positive                  │
+│                                              │
+│ [Try Beta] [View Comments]                  │
+│                                              │
+└─────────────────────────────────────────────┘
+```
+
+### Voting Interface (Public)
+
+When users vote on a configuration (during test or for feature):
+
+```
+┌──────────────────────────────────────────────────────┐
+│ Land Sales Configuration v1.1                        │
+│                                                      │
+│ Still in testing? Rate your experience:             │
+│                                                      │
+│ ☺️  [Thumbs Up]   [Thumbs Down]  ☹️                 │
+│                                                      │
+│ Any feedback? (optional)                             │
+│ [Text input: "Tell us what you think..."]            │
+│                                                      │
+│ [Submit Vote]                                       │
+│                                                      │
+└──────────────────────────────────────────────────────┘
+```
+
+**Simple, clean, non-intrusive.** Just thumbs up/down with optional comment.
+
+### Configuration Detail Page
+
+When clicking “[Details]” or “[View Details]” on a configuration:
+
+```
+┌──────────────────────────────────────────────────────┐
+│ Land Sales Configuration v1.0                        │
+│                                                      │
+│ Description:                                         │
+│ Complete automation setup for land sales agents.     │
+│ Includes lead capture, property research, skip       │
+│ tracing, client intake, document generation...       │
+│                                                      │
+│ Creator: Smith & Associates (agency)                │
+│ Submitted: March 2026                               │
+│ Last Updated: 2 weeks ago                           │
+│                                                      │
+│ STATS:                                               │
+│ • 1.2M active businesses                            │
+│ • ★★★★★ 4.8 / 5 (2,340 ratings)                   │
+│ • Trend: Growing (+120K new adopters last month)    │
+│ • Version history: v1.0 (accepted 3 months ago),    │
+│   v1.1 (in test now)                                │
+│                                                      │
+│ WHAT'S INCLUDED:                                     │
+│ Personas: Paralegal, Intake Specialist              │
+│ Modules: Document Gen, KB, Skip Tracing, SMS        │
+│ Integrations: Westlaw, Zapier, Slack               │
+│ Workflows: Lead intake, Doc generation, Notify      │
+│                                                      │
+│ COMMUNITY FEEDBACK (Top Rated):                      │
+│ "Skip tracing integration is amazing" (34 reactions)│
+│ "Perfect for our team" (28 reactions)               │
+│ "Saves us 10 hours/week" (23 reactions)             │
+│                                                      │
+│ ISSUES REPORTED (Most Recent):                       │
+│ "Lag when generating documents" (12 reactions)      │
+│ "Wants Clio integration" (8 reactions)              │
+│                                                      │
+│ [Install] [Install & Customize]                     │
+│                                                      │
+└──────────────────────────────────────────────────────┘
+```
+
+-----
+
+## Configuration Snapshot: Detailed Anatomy (Continued)
+
+### How Configurations Evolve
+
+**Version 1.0** (Initial submission):
+
+- Submitted by Smith & Associates agency
+- Goes through 30-day voting
+- Receives 1,800 upvotes, 40 downvotes
+- Accepted → becomes production v1.0
+
+**Version 1.1** (Improvement proposal):
+
+- Another agency or developer proposes improvement: “Add Clio integration”
+- Submits as v1.1
+- Goes through voting
+- Receives 340 upvotes, 28 downvotes
+- Accepted → becomes production v1.1
+- Agencies on v1.0 get notification: “Update available. Adds Clio integration. Accept?”
+
+**Version 2.0** (Major change):
+
+- Complete redesign of workflows
+- Goes through voting
+- Agencies can upgrade or stay on v1.1
+- No forced migration
+
+-----
+
+## Governance & Voting System
+
+### Feature/Configuration Voting Process
+
+**Standard Flow**:
+
+1. **Submission** → Community member (developer or agency) submits feature, configuration, or enhancement
+1. **Entry to Test** → Submission automatically enters test period (30 or 90 days - to be measured)
+1. **Visibility** → During test, appears in discovery with “BETA” badge
+1. **Simple Voting** → Users vote thumbs up/down (optional comment)
+1. **AI Feedback Processing** → System AI ingests all comments, finds themes, creates summary (no human bottleneck)
+1. **Automatic Tallying** → At end of test window, votes are automatically counted
+1. **Acceptance Threshold** → TBD: What % = acceptance? (60%? 70%? Based on vote count?)
+1. **Outcome**:
+- **Accepted** → Moves to production (badge removed), vote data becomes part of history
+- **Rejected** → Doesn’t propagate globally, but submitter can keep using locally; feedback provided for improvement
+
+### Competing Configurations (Conflict Resolution)
+
+**Scenario**: Two agencies both submit “Land Sales” configurations
+
+**How it’s handled**:
+
+1. Both Land Sales configs submitted simultaneously
+1. Both enter voting
+1. Both appear in discovery with “BETA” badges
+1. Community votes on both independently
+1. Both can be accepted (they coexist as separate options)
+1. OR one might significantly out-vote the other
+1. Community decides through voting, not curation
+1. Top-voted configs sort higher in discovery
+
+**No “winner-take-all”**: Multiple “Land Sales” configurations can coexist if community votes both as acceptable.
+
+### Feature Voting
+
+When a developer proposes a new feature (e.g., “skip-tracing module”):
+
+1. Feature goes through same voting process
+1. 30/90-day test period
+1. Appears as “Available for Real Estate industry”
+1. Agencies can test it, vote
+1. If accepted → becomes available to all Real Estate configurations
+1. If rejected → feedback provided, developer can improve and resubmit
+
+-----
+
+## Cold Start / Initial Bootstrap
+
+### Timing
+
+- **When**: Post-launch, after developer marketplace is stable and proven
+- **Why then**: Configurations remix features from marketplace. Need features to exist first.
+- **Owner**: Assigned developer lead (TBD)
+
+### Initial Industries (10-20 to launch with)
+
+**Likely candidates** (based on early adoption patterns):
+
+1. Real Estate (highest demand)
+1. Legal (high-value, complex)
+1. Med Spa (growing vertical)
+1. Dentistry
+1. Insurance
+1. Construction/Remodeling
+1. Healthcare/Clinics
+1. Coaching/Consulting
+1. E-Commerce
+1. SaaS/Tech
+1. Fitness/Wellness
+1. Accounting/Finance
+1. Education/Tutoring
+1. Photography/Creative
+1. Home Services
+1. Insurance Agency
+1. Automotive Sales
+1. Travel Agency
+1. Real Estate Management
+1. Law Practice (specific to legal)
+
+### Bootstrap Process
+
+1. **Developers build initial configurations** for 10-20 industries
+1. **Agencies immediately contribute variations** (e.g., Smith & Associates submits their Land Sales config)
+1. **Community voting begins** (first collaborative contributions)
+1. **Rapid iteration** (best configurations rise, weaker ones get feedback and improve)
+
+-----
+
+## Configuration Submission & Community Contribution
+
+### How Agencies Submit Configurations
+
+**Step 1: Export**
+
+```
+Settings → Export Configuration
+┌─────────────────────────────────────┐
+│ Export Current Setup as Config       │
+│                                     │
+│ Name: [Land Sales Automation]       │
+│ Industry: [Real Estate        ▼]    │
+│ Use Case: [Land Sales         ▼]    │
+│ Description: [What's special...]    │
+│ Tags: [#automation #leads #real...]  │
+│                                     │
+│ [Privacy Notice: Anonymized...]     │
+│ [Export]                            │
+└─────────────────────────────────────┘
+```
+
+**Step 2: Submit to Community**
+
+- Configuration exported as snapshot
+- Submitted to Industry Template hub
+- Automatically enters 30-day test period
+- Appears with “BETA” badge
+- Community can vote and test
+
+**Step 3: Voting Period**
+
+- 30 days (or 90 days - to be measured)
+- Agencies test it
+- Vote thumbs up/down
+- Provide feedback
+- Agency creator can see voting data in real-time
+
+**Step 4: Outcome**
+
+- If accepted → becomes production configuration, badge removed
+- If rejected → feedback provided, can improve and resubmit
+- Existing users can keep using locally either way
+
+### Developer Contribution Model
+
+Developers can contribute:
+
+- **Features** (new modules, integrations, capabilities)
+- **Enhancements** (improvements to existing features)
+- **Personas** (new personas, persona improvements)
+- **Personas improvements** (via cross-persona learning)
+
+Same voting process applies.
+
+-----
+
+## Testing & Feedback System
+
+### Configuration Test Mode
+
+**When an agency tests a configuration before rolling out**:
+
+1. Agency enables Test Mode for configuration
+1. Selects which business clients participate in beta
+1. 30-day test period starts
+1. Clients use configuration with voting enabled
+1. Upvotes/downvotes collected
+1. Agency sees real-time voting data in settings
+1. Public sees test badge + vote count in discovery
+1. Day 30: Test period ends, votes tallied
+1. Outcome: Accept (move to production) or Reject (feedback provided)
+
+### Data Visibility During Testing
+
+**In agency settings** (testing configuration):
+
+```
+Test Mode Active (12 days remaining)
+
+Upvotes: 342  ↑
+Downvotes: 28  ↓
+
+Trend: ▓▓▓▓▓░ 92% positive
+Comments: [View all]
+- "Skip tracing is amazing" (34 reactions)
+- "Lag on document generation" (12 reactions)
+```
+
+**In public discovery** (during test):
+
+```
+Land Sales v1.1 [BETA]
+342 ↑ 28 ↓ (12 days remaining)
+Trend: 92% positive
+
+[Try Beta] [View Feedback]
+```
+
+### Voting Data Persistence
+
+When test completes and configuration moves to production:
+
+- Vote count preserved (“Battle-tested by 1.2M businesses”)
+- Vote breakdown visible in history
+- Comments accessible via “Details”
+- Becomes part of configuration’s permanent record
+
+-----
+
+## Persona Learning & Configuration Integration
+
+### How Persona Improvements Flow to Configurations
+
+**Example: Paralegal Persona Improvement**
+
+1. Paralegal personas across ecosystem improve via cross-persona learning
+1. They acquire “Legal Research API Integration” skill
+1. System detects improvement (skill was acquired)
+1. Notifications sent to all agencies using Paralegal:
+- “Paralegal persona has new skill: Legal Research API Integration. Better case research. Accept/reject per client?”
+1. Agencies decide per-business-client
+1. If accepted, client’s Paralegal gets the skill
+1. If rejected, client’s Paralegal doesn’t get it (fully reversible)
+
+### Configuration Versioning with Persona Learning
+
+**Land Sales v1.0** includes Paralegal persona
+
+- When Paralegal improves, agencies on v1.0 get notified
+- They can accept improvements per-client
+- Configuration itself doesn’t force-update
+- Agencies control what their clients get
+
+**OR they can upgrade to v1.1** which includes improved Paralegal baseline
+
+- Newer adopters get improved baseline immediately
+- Existing agencies can migrate when ready
+- No forced migration
+
+-----
+
+## Access Control & Business Client Management
+
+### Agency Control Panel
+
+Agencies control **per-client**:
+
+- What configurations they have access to
+- What specific features/modules are available
+- What pricing they pay
+- Whether test features are available
+- Whether they can self-serve apply configurations
+
+### Example Scenario
+
+**Smith & Associates uses Land Sales Configuration**:
+
+Client A (Smith Realty):
+
+- Gets full Land Sales config
+- Pricing: $0 (free)
+- Test mode: ○ Disabled
+
+Client B (Jones Land Group):
+
+- Gets Land Sales config
+- Pricing: $49/month (for skip tracing upsell)
+- Test mode: ✓ Enabled (testing v1.1)
+
+Client C (New startup):
+
+- Hasn’t chosen yet
+- Can browse configurations, apply, or agency applies
+- Depends on what agency allows
+
+-----
+
+## Open Questions & Decisions Pending
+
+❓ **Voting Threshold**: What % of votes = acceptance? 51%? 60%? 70%?  
+❓ **Test Window Duration**: Is 30 days optimal? Or 90? How to measure?  
+❓ **Module Dependencies**: If config requires a disabled module, auto-enable? Notify? Block?  
+❓ **Configuration Maintenance**: Who maintains stale configurations over time?  
+❓ **Business Client Access**: Should they search/apply themselves, or agency-managed only?  
+❓ **Featured Tier**: Should top-voted configs be “featured” by aiConnected team?  
+❓ **Deprecation Policy**: How old is too old for a configuration?  
+❓ **Configuration Size Limit**: Max size for exported snapshots? Optimize for performance?  
+❓ **Migration Tools**: If config becomes deprecated, how do agencies migrate clients?
+
+-----
+
+## Key Architectural Decisions (Locked ✅)
+
+✅ **Model B**: Industry = Collection of Configurations (not hierarchy)  
+✅ **NO AUTO-APPLY**: Opt-in at every level, everywhere  
+✅ **NO FORCED UPDATES**: Versions held indefinitely  
+✅ **NO FORKING**: Apply then customize locally  
+✅ **FEATURE PRICING EVERYWHERE**: Pricing button on every toggle  
+✅ **COMMUNITY VOTING**: Simple thumbs up/down, AI feedback processing  
+✅ **WORDPRESS PLUGIN MODEL**: Trust signals, ratings, adoption count  
+✅ **FULL REVERSIBILITY**: Everything can be undone  
+✅ **GRANULAR ACCESS CONTROL**: Agencies decide per-client  
+✅ **TEST MODE WITH LIVE VOTING**: Beta testing + transparency  
+✅ **POST-LAUNCH TIMELINE**: After marketplace thrives  
+✅ **MIXED CONTRIBUTIONS**: Developers + Agencies
+
+-----
+
+## Not in Scope (For Later Discussion)
+
+- Modules + community evolution (separate feature)
+- Exact API contracts for import/export
+- Detailed billing/pricing integration specs
+- Performance optimization (caching, CDN)
+- i18n/localization
+- Configuration versioning semantics (SemVer)
+- UI mockups (PRD defines requirements, not designs)
+
+-----
+
+## References
+
+- Task list: `aiconnected-industries-task-list.md`
+- Architecture reference: `aiconnected-industries-comprehensive-reference.md`
+- Platform overview: https://oxfordpierpont.mintlify.app/knowledge-base/aiconnected-business-platform/aiconnected-platform-overview

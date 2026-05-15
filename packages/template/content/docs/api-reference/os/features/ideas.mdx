@@ -1,0 +1,35 @@
+---
+title: "Ideas and organization"
+description: "Feature-level API contract for documenting, organizing, and promoting ideas into structured workspace objects."
+---
+## Contract status
+
+`Derived implementation contract`
+
+## Source document
+
+- [Ideas and organization](/docs/knowledge-base/aiconnected-os/aiconnected-os-15-document-and-organize-ideas)
+
+## Feature purpose
+
+Defines idea capture and structured promotion into documents, tasks, folders, or boards.
+
+## Required operations
+
+- Capture raw ideas from chat or manual input
+- Cluster and label related ideas
+- Promote ideas into tasks, docs, or boards
+- Preserve lineage from original thought to structured artifact
+
+## Suggested resources
+
+- `ideas`
+- `idea_clusters`
+- `idea_promotions`
+- `idea_activity`
+
+## Implementation notes
+
+- Keep this feature workspace-scoped and persona-aware where applicable.
+- Preserve authorship, timestamps, and auditability for all state changes.
+- Treat the source doc as the behavioral specification even where final route names remain open.

@@ -1,0 +1,24 @@
+{
+  "title": "Financial",
+  "pages": [
+    "index",
+    "bp-fin-01-revenue-model-business-platform",
+    "bp-fin-02-revenue-model-aiconnectedos",
+    "bp-fin-03-revenue-model-neurigraph-licensing",
+    "bp-fin-04-api-resale-revenue-model",
+    "bp-fin-05-customer-success-revenue",
+    "bp-fin-06-developer-ecosystem-revenue",
+    "bp-fin-07-use-of-funds",
+    "bp-fin-08-neurigraph-licensing-revenue",
+    "bp-fin-09-pricing-architecture",
+    "bp-fin-10-consolidated-5year-projections",
+    "bp-fin-11-unit-economics",
+    "bp-fin-12-break-even-analysis",
+    "bp-fin-13-consolidated-pl-model",
+    "bp-fin-14-monthly-cashflow-year1",
+    "bp-fin-15-proforma-balance-sheet",
+    "bp-fin-16-operating-cost-model",
+    "bp-fin-17-sensitivity-scenario-analysis"
+  ],
+  "defaultOpen": true
+}

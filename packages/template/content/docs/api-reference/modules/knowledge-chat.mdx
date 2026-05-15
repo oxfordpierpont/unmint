@@ -1,0 +1,127 @@
+---
+title: "Knowledge and chat"
+description: "The implementation contracts for aiConnected Knowledge and aiConnected Chat, including shared knowledge publication and lead capture behavior."
+---
+## Contract status
+
+`Canonical interface contract`
+
+The repository defines these modules in the modules overview, MVP spec, v2 port map, and legacy platform notes. Exact v2 HTTP paths are not finalized in one place, but the module responsibilities, shared resources, and event model are clear.
+
+## Source documents
+
+- [aiConnected modules overview](/docs/knowledge-base/aiconnected-apps-and-modules/modules/aiconnected-modules-overview)
+- [aiConnected Platform MVP specification](/docs/knowledge-base/aiconnected-business-platform/aiconnected-platform-v1-mvp-specification)
+- [aiConnected Platform v2 port map](/docs/knowledge-base/aiconnected-business-platform/aiconnected-platform-v2-port-map)
+- [legacy platform redesign spec](/docs/knowledge-base/aiconnected-business-platform/legacy-platform-redesign-spec)
+
+## aiConnected Knowledge
+
+### Module purpose
+
+Knowledge ingests business information and produces deployment-ready knowledge assets for AI systems. The docs describe scraping, gap research, compilation, concern mapping, starter generation, and quiz generation.
+
+### Engine components called out in the repo
+
+The v2 port map references:
+
+- `scraper`
+- `researcher`
+- `compiler`
+- `extractor`
+- `generate`
+- `ai`
+- `runtime`
+- `system-prompt`
+- `starters`
+- `concern-mapper`
+- `quiz`
+
+### Required knowledge operations
+
+- Create a knowledge project
+- Start and monitor crawl or scrape jobs
+- Review extracted content and detected gaps
+- Run structured compilation into AI-ready output
+- Publish a knowledge pack for downstream modules
+- Version published knowledge assets
+
+### Required knowledge outputs
+
+- Structured knowledge entries
+- FAQ and service summaries
+- Qualification prompts
+- Conversation starters
+- Quiz assets
+- Published knowledge version metadata
+
+## aiConnected Chat
+
+### Module purpose
+
+Chat is the customer-facing interaction layer that consumes published knowledge and drives qualification, lead capture, and CRM handoff.
+
+### Required chat operations
+
+- Start a session
+- Send and receive messages
+- Retrieve knowledge-backed answers
+- Capture lead details
+- Store session history
+- Deliver lead data through webhooks or automation connectors
+
+### Chat configuration surface
+
+The docs explicitly mention settings for:
+
+- Quiz requirements
+- Lead-capture timing
+- Session persistence
+- Conversation flow
+- AI provider and BYOK model selection
+- Webhook-based CRM delivery
+
+## Shared event model
+
+The v2 port map gives the clearest event contract:
+
+### Chat emits
+
+- `chat.session.started`
+- `chat.message.sent`
+- `chat.lead.captured`
+- `chat.lead.warmed`
+- `chat.session.ended`
+
+### Chat consumes
+
+- `kb.published`
+- `contact.updated`
+- `voice.call.completed`
+
+## Shared resources
+
+| Resource | Used by |
+|---|---|
+| `kb_projects` | Knowledge |
+| `kb_entries` | Knowledge |
+| `chat_conversations` | Chat |
+| `chat_messages` | Chat |
+| `chat_configs` | Chat |
+| `contacts` | Both |
+| `events` | Both |
+
+## Legacy route ancestry
+
+Older platform docs reference:
+
+- `/api/knowledge-base`
+- `/api/chat/[accountId]`
+- `/api/sessions`
+- `/api/leads`
+
+Use those as legacy naming signals only. The v2 platform is manifest-first and gateway-routed.
+
+## Build guidance
+
+Implement Knowledge publication before Chat answer generation. Chat depends on a clean `kb.published` flow and shared contact updates to behave like a platform module instead of a standalone widget.

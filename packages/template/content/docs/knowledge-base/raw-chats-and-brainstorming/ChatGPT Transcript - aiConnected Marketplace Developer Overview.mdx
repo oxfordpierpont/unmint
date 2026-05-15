@@ -1,0 +1,192 @@
+---
+title: "aiConnected Marketplace Overview"
+---
+
+# aiConnected Marketplace Overview
+
+**User:** Anonymous  
+**Created:** 8/15/2025 5:26:04  
+**Updated:** 10/18/2025 20:05:18  
+**Exported:** 3/21/2026 9:18:26  
+**Link:** [https://chatgpt.com/g/g-p-675dbf4267d4819194d2c4c930a21644-oxpi-aiconnected/c/689efd29-9228-8329-b8d5-d4a6ebddfd24](https://chatgpt.com/g/g-p-675dbf4267d4819194d2c4c930a21644-oxpi-aiconnected/c/689efd29-9228-8329-b8d5-d4a6ebddfd24)  
+
+## Prompt:
+Explain the aiConnected Marketplace as though you’re speaking to a developer who is completely unfamiliar with the concept.
+
+## Response:
+Thought for 27s
+
+Here’s the aiConnected Marketplace in plain, developer-friendly terms.
+
+What it is
+==========
+
+A catalog of pre-built, production-ready automations we call **ENGINES**. Each Engine is an n8n workflow template (plus metadata, tests, and a setup checklist) that runs on aiConnected’s infrastructure. Businesses browse the catalog, toggle an Engine **on**, connect their accounts (OAuth/API keys), and it starts working immediately (lead gen, billing, email follow-ups, voice agents, etc.).  
+Developers submit Engines and earn revenue per run.
+
+Key defaults:
+
+*   **Pricing:** Engines typically bill **$0.05 per run**.
+*   **Rev-share:** **80%** of revenue goes to the Engine developer.
+*   **Free tier:** Every customer gets **250 free runs/month** before billing kicks in.
+*   **Ops model:** aiConnected hosts and executes the workflows; customers only bring their credentials.
+
+Core objects (mental model)
+===========================
+
+*   **Engine** — Versioned package: n8n template + `engine.json` manifest + setup checklist + tests.
+*   **Version** — SemVer’d releases with migration notes and deprecation windows.
+*   **Connection** — Customer-scoped auth (OAuth/API keys) stored in the vault; mapped to nodes.
+*   **Run** — A single workflow execution with inputs, logs, metrics, and outcome.
+*   **Trigger** — Webhook, schedule, poller, or event subscription that starts a Run.
+*   **Usage / Meter** — Per-Engine counters (runs, errors, latency) used for billing & analytics.
+*   **Developer** — Owns Engines and payout profile.
+*   **Organization (Customer)** — Activates Engines, manages connections, sees dashboards.
+
+Developer workflow (end-to-end)
+===============================
+
+1.  **Build** your workflow in n8n (use official nodes when possible).
+2.  **Package** it with an `engine.json` manifest that declares:
+    *   name, description, category, version, owner
+    *   inputs/outputs (JSON Schema)
+    *   required permissions (scopes/connectors)
+    *   setup checklist (what the user must connect/configure)
+    *   pricing (defaults ok) and any usage caps
+    *   tests (dry-run scenarios, mock fixtures)
+    *   changelog and breaking-change notes
+3.  **Submit** in the Developer Portal.
+4.  **Automated checks** run: lints, secret scanning, dependency allowlist, test execution, perf smoke.
+5.  **Review & Publish** by aiConnected.
+6.  **Observe** metrics, respond to issues, ship updates with migration guidance.
+7.  **Get paid** monthly (80% share) once thresholds are met.
+
+### Example `engine.json` (trimmed)
+
+```
+{
+  "name": "inboxEngine",
+  "version": "1.3.0",
+  "owner": "dev-1234",
+  "description": "Auto-respond to inbound emails, follow-ups, and SLA reminders.",
+  "categories": ["communications", "sales"],
+  "pricing": {"per_run_usd": 0.05},
+  "triggers": [
+    {"type": "webhook", "path": "/inbox/webhook"},
+    {"type": "schedule", "cron": "*/5 * * * *"}
+  ],
+  "inputs_schema": {
+    "type": "object",
+    "properties": {
+      "rulesetId": {"type": "string"},
+      "fallbackReply": {"type": "string"}
+    },
+    "required": ["rulesetId"]
+  },
+  "outputs_schema": {
+    "type": "object",
+    "properties": {
+      "messagesSent": {"type": "integer"},
+      "errors": {"type": "array", "items": {"type": "string"}}
+    }
+  },
+  "connections": [
+    {"service": "gmail", "scopes": ["read", "send"]},
+    {"service": "openai", "scopes": ["chat:invoke"]}
+  ],
+  "setup_checklist": [
+    "Connect Gmail with read/send scope",
+    "Select default reply ruleset",
+    "Optionally connect LLM provider"
+  ],
+  "tests": [
+    {"name": "dry-inbound", "fixture": "fixtures/inbound.json"},
+    {"name": "fallback", "fixture": "fixtures/fallback.json"}
+  ]
+}
+```
+
+Customer flow (how Engines run in the wild)
+===========================================
+
+1.  **Discover:** Browse/search the catalog, read the README, see metrics (run count, success rate, industry usage chart).
+2.  **Activate:** Click **Enable**, connect required services via OAuth/API keys, walk the setup checklist.
+3.  **Configure:** Provide minimal inputs (e.g., ruleset ID, webhook URLs).
+4.  **Operate:** Engine fires on triggers; runs are logged with trace IDs, inputs/outputs, and step-level timings.
+5.  **Monitor & Bill:** Real-time dashboards show runs, errors, and latency. After 250 free runs/month, per-run billing starts.
+
+Runtime & architecture (nuts and bolts)
+=======================================
+
+*   **Execution:** Engines run on a managed n8n cluster with isolated workers. Secrets are injected at runtime; no secrets live in the template.
+*   **Triggers:** Webhooks (HMAC signed), CRON schedules, connector pollers, or event subscriptions (e.g., Stripe/Gmail).
+*   **Idempotency & retries:** Each Run can carry an idempotency key; exponential backoff with jitter; DLQ for poison messages.
+*   **Observability:** Structured logs, step timings, payload snapshots (PII-redacted), metrics export, alerting hooks (Slack/Webhook).
+*   **Performance guardrails:** Max concurrency per-Org/Engine, node timeouts, circuit breakers on 3rd-party flakiness.
+*   **Data handling:** Field-level PII tagging, redaction at log/trace boundaries, region pinning (US/EU), retention policies.
+*   **Security:** Secret vault, scoped tokens, rotating credentials, dependency allowlist, static and behavioral scans on submit.
+*   **Updates:** Blue/green rollout by version; customers can pin or auto-upgrade; deprecation windows enforced.
+
+Billing & payouts
+=================
+
+*   **Metering:** Atomic, write-ahead counters per Run (success/failure), with anti-double-charge on retries.
+*   **Free tier:** 250 free runs/org/month platform-wide.
+*   **Charges:** Default $0.05/run beyond free tier (Engines may request different pricing, but $0.05 is the norm).
+*   **Developer share:** 80% of net Engine revenue, paid monthly to the developer’s payout method.
+*   **Fraud controls:** Velocity limits, anomalous-usage detection, and verification before high-volume activation.
+
+What you ship as a developer
+============================
+
+*   n8n workflow export (`.json`) using supported nodes.
+*   `engine.json` manifest (as above).
+*   **Tests** with fixtures (we provide a local harness & mocks).
+*   README (what it does, limitations, expected inputs/outputs).
+*   Changelog + migration notes for every version bump.
+
+Tooling you get
+===============
+
+*   **Local test harness** (CLI) to run Engines with mocked connectors and secrets.
+*   **Schema helpers** to validate `inputs/outputs`.
+*   **Linter** for unsupported nodes, long-running steps, or secret leakage.
+*   **Portal** for submissions, staged sandboxes, error traces, usage analytics, and payout reports.
+
+UX details customers care about (you’ll see in reviews)
+=======================================================
+
+*   One-click **On/Off** toggle per Engine.
+*   Guided **checklists** to connect required services.
+*   **Logs** with human-readable context for non-technical users.
+*   **Metrics cards** on each Engine page: total runs, success %, avg run time, industries used (with a small chart).
+*   Clear **limits** (rate caps, payload sizes) and **SLA** expectations.
+
+Versioning & compatibility
+==========================
+
+*   **SemVer:** Patch = fixes; Minor = features (backwards-compatible); Major = breaking change (requires migration).
+*   **Pinning:** Orgs can stay on a version; security hotfixes can force patch upgrades.
+*   **Deprecation:** Notice period + automated checks to help customers migrate.
+
+Compliance & trust (high level)
+===============================
+
+*   Secrets never stored in templates; only in the vault.
+*   Per-step PII tags control what can be logged/exported.
+*   Region selection for data residency.
+*   Full audit trail (who enabled/edited, when, and what ran).
+
+* * *
+
+If you’re thinking “how do I get started?”, the shortest path is:
+
+1.  Build an n8n workflow that solves one painful, repeatable business task.
+2.  Wrap it with `engine.json`, fixtures, and a README.
+3.  Run the local harness until tests pass.
+4.  Submit in the Portal. We’ll run checks, publish, and you’ll have a live, monetized Engine with usage analytics and automatic payouts.
+
+
+
+---
+Powered by [ChatGPT Exporter](https://www.chatgptexporter.com)

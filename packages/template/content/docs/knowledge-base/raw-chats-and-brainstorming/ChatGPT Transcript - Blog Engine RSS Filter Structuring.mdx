@@ -1,0 +1,1021 @@
+---
+title: "Blog Engine RSS Filter"
+---
+
+~~~~text
+# Blog Engine RSS Filter
+
+**User:** Anonymous  
+**Created:** 12/8/2024 0:19:06  
+**Updated:** 12/14/2024 12:30:23  
+**Exported:** 3/21/2026 10:36:33  
+**Link:** [https://chatgpt.com/g/g-p-675dbf4267d4819194d2c4c930a21644-oxpi-aiconnected/c/67552c4a-80b8-8004-ae74-7243588daaee](https://chatgpt.com/g/g-p-675dbf4267d4819194d2c4c930a21644-oxpi-aiconnected/c/67552c4a-80b8-8004-ae74-7243588daaee)  
+
+## Prompt:
+I have an n8n powered blog generator that works by getting articles from an RSS feed and then turning the original article into a new article.
+
+However, sometimes, the content is not useful, accurate, or even related to small/medium businesses.
+
+How can I create a filter step in n8n that reviews the original content from the RSS feed and determines if that content qualifies to become an article.
+
+Here is an example of bad content from the BBC RSS feed:
+
+```json
+[
+{
+"creator": 
+"bbc.com",
+"title": 
+"Market data",
+"link": 
+"https://www.bbc.com/news/articles/cvgl0zprpjeo",
+"pubDate": 
+"Thu, 10 Oct 2024 14:56:10 GMT",
+"dc:creator": 
+"bbc.com",
+"content": 
+"<div><img src="https://static.files.bbci.co.uk/ws/simorgh-assets/public/news/images/metadata/poster-1024x576.png" style="width: 100%;" /><div>From the end of November the BBC will discontinue its market data feeds on both the website and red button (UK only) services.</div></div>",
+"contentSnippet": 
+"From the end of November the BBC will discontinue its market data feeds on both the website and red button (UK only) services.",
+"guid": 
+"ca37238b5a93f661bd54c02a7b11e73e",
+"isoDate": 
+"2024-10-10T14:56:10.000Z"
+}
+]
+```
+
+## Response:
+To create a filter step in n8n that ensures only relevant, useful, and accurate content is processed from the RSS feed, you can implement a combination of keyword filtering, content analysis, and rule-based logic. Here's how you can do it:
+
+* * *
+
+### **1\. Use a "Set" Node for Preliminary Keywords**
+
+*   Add a `Set` node to define keywords relevant to small/medium businesses. For example:
+    *   "entrepreneurship"
+    *   "small business"
+    *   "marketing"
+    *   "business growth"
+    *   "finance"
+    *   "productivity"
+
+* * *
+
+### **2\. Use an "IF" Node for Content Filtering**
+
+*   Add an `IF` node after the RSS Feed input. Configure it to:
+    *   Check if the `content` or `contentSnippet` contains any of the relevant keywords.
+    *   This can be achieved using the `contains` function.
+    *   Example:
+        *   If `content` or `contentSnippet` contains "small business," "marketing," etc., pass to the next step.
+        *   Otherwise, filter it out.
+
+* * *
+
+### **3\. Integrate OpenAI (Optional for Advanced Analysis)**
+
+*   Use the OpenAI or GPT node to analyze the relevance and quality of the content. Example prompt:
+    *   **Prompt:**
+        *   "Analyze this article content: \[content text\]. Is it related to small/medium businesses? Answer 'yes' or 'no' and explain why."
+    *   Set up a conditional step based on the response:
+        *   If the AI response contains "yes," pass it to the next step.
+        *   Otherwise, filter it out.
+
+* * *
+
+### **4\. Add a "Function" Node for Custom Rules**
+
+You can add a Function node with JavaScript to apply more advanced logic. For example:
+
+```
+return items.filter(item => {
+  const content = item.json.contentSnippet || item.json.content;
+  const keywords = ["small business", "marketing", "finance", "growth", "entrepreneurship"];
+  const isRelevant = keywords.some(keyword => content.toLowerCase().includes(keyword.toLowerCase()));
+  
+  // Additional rule: Ignore articles with short content
+  const contentLength = content ? content.length : 0;
+  return isRelevant && contentLength > 100; // Ensure content is long enough to be useful
+});
+```
+
+* * *
+
+### **5\. Set up a "Filter" Node**
+
+*   Use a `Filter` node to process the results from the Function node or IF node. This ensures only qualifying items proceed further in your workflow.
+
+* * *
+
+### Example Workflow Structure:
+
+1.  **RSS Feed Node**: Fetch articles.
+2.  **Set Node**: Define keywords for relevance.
+3.  **IF Node**: Check content for keywords.
+4.  **Function Node (Optional)**: Apply advanced filtering logic (e.g., length, keyword matches).
+5.  **GPT Node (Optional)**: Perform AI-based analysis for relevancy.
+6.  **Filter Node**: Ensure only relevant articles move forward.
+7.  **Create Article Node**: Process and publish qualified articles.
+
+* * *
+
+### Benefits of This Setup:
+
+*   Eliminates irrelevant or low-quality articles before processing.
+*   Ensures the content aligns with your target audience's interests.
+*   Allows flexibility for advanced content qualification using AI.
+
+Would you like more details on implementing any specific node or logic?
+
+## Prompt:
+I like the idea of using OpenAI. Create a prompt that reviews the content and returns a simple YES or NO output.
+
+Then I can use the output to either produce the article or wait for the next one.
+
+## Response:
+Here’s a concise and effective OpenAI prompt you can use in your n8n workflow to determine whether the content from the RSS feed qualifies for article production:
+
+* * *
+
+### **Prompt for OpenAI:**
+
+```
+Analyze the following article content for relevance to small/medium businesses. Consider topics like entrepreneurship, business growth, marketing, finance, or productivity. Return a simple "YES" if it is relevant or "NO" if it is not. 
+
+Article Content: 
+[Insert Content Here]
+```
+
+* * *
+
+### **How to Implement in n8n:**
+
+1.  **Set Up OpenAI Node:**
+    *   Add an OpenAI node in your workflow.
+    *   Use the above prompt as the input.
+    *   Replace `[Insert Content Here]` with the `content` or `contentSnippet` field from the RSS feed.
+2.  **Configure OpenAI Settings:**
+    *   Model: Use `gpt-3.5-turbo` or `gpt-4` for better contextual understanding.
+    *   Temperature: Set to `0` (to prioritize deterministic and straightforward responses).
+3.  **Process the Output:**
+    *   Extract the response from OpenAI.
+    *   Add an `IF` node to check if the response contains "YES."
+    *   If "YES," pass the content to the article generation step.
+    *   If "NO," skip to the next RSS feed item.
+
+* * *
+
+### Example OpenAI Output:
+
+#### **Input:**
+
+```
+Analyze the following article content for relevance to small/medium businesses. Consider topics like entrepreneurship, business growth, marketing, finance, or productivity. Return a simple "YES" if it is relevant or "NO" if it is not. 
+
+Article Content: 
+"From the end of November, the BBC will discontinue its market data feeds on both the website and red button (UK only) services."
+```
+
+#### **Output:**
+
+```
+NO
+```
+
+* * *
+
+This simple "YES" or "NO" structure ensures seamless integration into your workflow. Let me know if you'd like help configuring the nodes in n8n!
+
+## Prompt:
+How can I make the RSS feed trigger pull the 10 most recent articles instead of pulling the latest article?
+
+## Response:
+To configure the RSS feed trigger in n8n to pull the 10 most recent articles instead of only the latest one, you can adjust your workflow as follows:
+
+* * *
+
+### **Steps to Configure:**
+
+1.  **RSS Trigger Node Settings:**
+    *   Open your RSS Trigger node.
+    *   Look for the **"Limit Items"** or similar setting (depending on the version of n8n).
+    *   Set the limit to `10`.
+    If there is no direct limit setting:
+    *   Ensure the **Polling Interval** is configured to avoid missing articles (e.g., check every hour or day).
+2.  **Use a "Set" Node to Collect Recent Items:**
+    *   Add a **Set** node after the RSS Trigger.
+    *   Use JavaScript in a `Function` node to slice the 10 most recent items. Example:
+        ```
+        return items.slice(0, 10);
+        ```
+3.  **Ensure Deduplication:**
+    *   In the RSS Trigger settings, enable **"Only New"** or deduplication (if available).
+    *   This ensures that previously processed articles are not pulled again.
+4.  **Process Each Item Individually:**
+    *   Add a **Split in Batches** node after the Set/Function node.
+    *   Configure it to process items in batches of 1.
+    *   This allows each article to flow through the pipeline one at a time for processing.
+
+* * *
+
+### Example Workflow:
+
+1.  **RSS Trigger Node**: Fetch all new articles since the last run.
+    *   If the node lacks direct controls for limiting items, it will pull all recent articles.
+2.  **Function Node** (Limit to 10):
+    *   Add logic to filter and keep only the 10 most recent articles:
+        ```
+        return items.slice(0, 10);
+        ```
+3.  **Split in Batches Node**: Process articles one by one to maintain workflow clarity.
+4.  **Article Qualification (OpenAI, etc.)**: Use your filtering and processing logic for each item.
+5.  **Article Generation**: Generate the new article only for qualified items.
+
+* * *
+
+This approach ensures that your workflow always handles the 10 most recent articles efficiently without losing track of previous or new items. Let me know if you need help setting up a specific step!
+
+## Prompt:
+Please give me a list of relevant keywords to search for and create a robust rss feed
+
+## Response:
+Creating a robust RSS feed with relevant keywords tailored to small and medium businesses (SMBs) involves focusing on topics of interest to business owners, entrepreneurs, and professionals looking to grow or optimize their ventures. Below is a list of **relevant keywords** categorized into popular business domains, followed by guidance on how to aggregate them into a well-rounded RSS feed.
+
+* * *
+
+### **Keywords by Category**
+
+#### **1\. Entrepreneurship & Business Growth**
+
+*   Small business
+*   Business growth
+*   Entrepreneurship
+*   Business ideas
+*   Startups
+*   Scaling businesses
+*   Leadership
+*   Innovation
+
+#### **2\. Marketing & Advertising**
+
+*   Digital marketing
+*   SEO (Search Engine Optimization)
+*   Social media marketing
+*   Email marketing
+*   Content marketing
+*   Branding
+*   Marketing strategies
+*   Advertising trends
+
+#### **3\. Finance & Accounting**
+
+*   Business finance
+*   Small business loans
+*   Budgeting
+*   Tax tips
+*   Accounting tools
+*   Financial planning
+*   Cash flow management
+*   Profitability
+
+#### **4\. Operations & Productivity**
+
+*   Business tools
+*   Productivity hacks
+*   Time management
+*   Workflow optimization
+*   Project management
+*   Business automation
+*   Remote work
+
+#### **5\. Industry Trends & Technology**
+
+*   Emerging trends
+*   AI for business
+*   E-commerce
+*   Blockchain
+*   SaaS (Software as a Service)
+*   Data analytics
+*   Cybersecurity for SMBs
+
+#### **6\. Legal & Compliance**
+
+*   Business compliance
+*   Small business law
+*   Employee policies
+*   GDPR for businesses
+*   Contract negotiation
+*   Intellectual property
+
+#### **7\. Customer Experience**
+
+*   Customer service
+*   Customer satisfaction
+*   Retention strategies
+*   CRM (Customer Relationship Management)
+*   Customer feedback
+
+#### **8\. HR & Employee Management**
+
+*   Hiring tips
+*   Team building
+*   Employee engagement
+*   Leadership development
+*   Workplace culture
+
+* * *
+
+### **Steps to Create a Robust RSS Feed**
+
+1.  **Identify Reliable Sources:**  
+    Aggregate feeds from high-quality websites and blogs that cater to small and medium businesses, such as:
+    *   **Entrepreneur.com**: Articles on entrepreneurship and business ideas.
+    *   **Forbes - Small Business Section**: Insights into finance, trends, and leadership.
+    *   **HubSpot Blog**: Marketing and customer experience.
+    *   **Inc.com**: Productivity and scaling businesses.
+    *   **TechCrunch - Startups**: Emerging technology and startup news.
+2.  **Use RSS Aggregation Services:**
+    *   Use tools like **Feedly**, **Inoreader**, or **Google News RSS** to consolidate feeds.
+    *   Customize the search queries with the keywords above to tailor the results.
+3.  **Create a Custom Google News RSS Feed:**
+    *   Visit [Google News](https://news.google.com).
+    *   Search for your chosen keywords.
+    *   Copy the RSS feed link for the search query.
+    Example search query:
+    ```
+    "small business" OR entrepreneurship OR "digital marketing" site:news.google.com
+    ```
+4.  **Combine RSS Feeds with Tools:**
+    *   Use an RSS feed combiner like **RSS Mix** or an automation tool like **Zapier** or **n8n** to merge multiple sources into one feed.
+    *   Filter articles to match your keywords for relevance.
+5.  **Monitor and Adjust:**
+    *   Regularly refine the keywords based on feedback and analytics.
+    *   Add or remove feeds as needed to maintain quality.
+
+* * *
+
+### **Example Aggregated RSS Feed Sources**
+
+*   **Entrepreneur.com RSS**: `https://www.entrepreneur.com/latest/rss`
+*   **Forbes Small Business RSS**: `https://www.forbes.com/small-business/feed/`
+*   **HubSpot Marketing Blog RSS**: `https://blog.hubspot.com/marketing/rss.xml`
+*   **Inc.com RSS**: `https://www.inc.com/rss/homepage.xml`
+*   **TechCrunch Startups RSS**: `https://techcrunch.com/startups/feed/`
+
+* * *
+
+This keyword strategy and RSS feed combination should provide a steady stream of relevant, high-quality content tailored to SMBs. If you'd like help setting this up with n8n or other tools, let me know!
+
+## Prompt:
+The SerpAPI is too expensive as a research tool for my n8n nodes. What are my alternatives?
+
+## Response:
+If SerpAPI is too expensive for your needs, there are several affordable or free alternatives for implementing research capabilities within your n8n nodes. Here’s a list of viable options:
+
+* * *
+
+### **1\. Free or Freemium Search APIs**
+
+#### **Google Custom Search JSON API**
+
+*   **What it does**: Allows you to create a custom search engine tailored to your topic of interest and retrieve search results programmatically.
+*   **Pricing**: Free for the first 100 queries per day, then $5 per 1,000 queries.
+*   **Pros**: Directly tied to Google search results; customizable.
+*   **Cons**: Limited free tier.
+*   **Setup**: Use your Google API key to configure the service and integrate it into n8n.
+
+* * *
+
+#### **Bing Search API (via Microsoft Azure)**
+
+*   **What it does**: Offers access to Microsoft's Bing search engine results.
+*   **Pricing**: Free tier available (up to 1,000 requests per month).
+*   **Pros**: Affordable pricing; reliable search results.
+*   **Cons**: Not as precise as Google in some niches.
+*   **Setup**: Sign up on Azure, obtain the API key, and integrate it into n8n.
+
+* * *
+
+#### **DuckDuckGo Instant Answers API**
+
+*   **What it does**: Fetches search results and instant answers without tracking.
+*   **Pricing**: Free.
+*   **Pros**: Privacy-focused; simple integration.
+*   **Cons**: Limited search result customization.
+*   **Setup**: Direct HTTP request; no API key required.
+
+* * *
+
+#### **ContextualWeb API**
+
+*   **What it does**: Provides web search results, including ads, news, and more.
+*   **Pricing**: Free plan available with 1,000 queries/month.
+*   **Pros**: Easy to use; affordable paid tiers.
+*   **Cons**: Smaller search index compared to Google or Bing.
+*   **Setup**: Sign up, get the API key, and use it in n8n.
+
+* * *
+
+### **2\. Web Scraping**
+
+#### **Puppeteer**
+
+*   **What it does**: Automates a headless browser to scrape web pages.
+*   **Pricing**: Free, open source.
+*   **Pros**: Full control over what you scrape.
+*   **Cons**: Requires hosting and compliance with terms of service; may need proxies.
+*   **Setup**: Install Puppeteer on your server, and use n8n’s Execute Command node to call scripts.
+
+#### **Playwright**
+
+*   **What it does**: Another headless browser automation tool, similar to Puppeteer.
+*   **Pricing**: Free, open source.
+*   **Pros**: Fast and supports multiple browsers.
+*   **Cons**: Similar challenges as Puppeteer.
+*   **Setup**: Same as Puppeteer, integrated with custom scripts.
+
+#### **ScrapingBee**
+
+*   **What it does**: A proxy service for web scraping with anti-bot measures.
+*   **Pricing**: Starts at $29/month for 5,000 requests.
+*   **Pros**: Handles CAPTCHAs and JavaScript-heavy websites.
+*   **Cons**: Paid service.
+*   **Setup**: Use the API to scrape search result pages.
+
+* * *
+
+### **3\. Other Research APIs**
+
+#### **News APIs**
+
+*   **GNews API**: Free tier available; fetches news articles based on keywords.
+*   **MediaStack**: Affordable news and blog aggregation API.
+
+#### **Knowledge Graph APIs**
+
+*   **OpenAI (GPT Models)**:
+    *   Use GPT to search and synthesize information. You can query for summaries or context based on given keywords.
+    *   **Pricing**: Affordable pay-as-you-go model; around $0.002/1,000 tokens for GPT-3.5.
+*   **Wikidata API**:
+    *   Access structured data from Wikimedia projects for research tasks.
+    *   **Pricing**: Free.
+
+* * *
+
+### **4\. N8N Built-in Solutions**
+
+#### **HTTP Request Node**
+
+*   Use `HTTP Request` nodes to directly fetch search results from public APIs or scrape lightweight websites.
+*   Combine this with parsing logic (e.g., `HTML Extract` node) to extract the relevant content.
+
+#### **Custom Scrapers with n8n + Puppeteer/Playwright**
+
+*   Set up a local or remote Puppeteer/Playwright script and call it from n8n using the Execute Command node.
+
+#### **Custom Database Lookups**
+
+*   Use APIs like Supabase or Firebase to store and query pre-scraped content.
+*   This reduces API calls and helps consolidate your data for reuse.
+
+* * *
+
+### Recommendation:
+
+If you're looking for a balance of affordability and functionality, consider **Bing Search API** or **Google Custom Search API** for general web searches. For niche or customizable solutions, **OpenAI GPT Models** can help synthesize relevant research efficiently. If you’re technically inclined, **Puppeteer/Playwright** paired with `HTTP Request` nodes is an excellent cost-effective option.
+
+Let me know if you'd like assistance setting up any of these solutions in n8n!
+
+## Prompt:
+Here is more context:
+
+n8n is getting news articles from my RSS feeds. Then I am using OpenAI to further research the topic and generate an enhanced article.
+
+The search API only needs to be powerful enough to perform basic research, provide citations for the new article, and generate keywords for SEO purposes.
+
+## Response:
+Given your context, a cost-effective and powerful approach would be to use APIs or services that align with the following:
+
+1.  **Performing Basic Research**: Retrieve relevant content for the topic.
+2.  **Providing Citations**: Ensure that sources are traceable.
+3.  **Generating SEO Keywords**: Extract meaningful keywords from the topic.
+
+### Recommended Alternatives:
+
+* * *
+
+### **1\. Google Custom Search JSON API**
+
+*   **Purpose**: Perform research on the topic, fetch citations.
+*   **How It Helps**:
+    *   Tailored search results for your topic.
+    *   Extracts related articles and websites for citations.
+*   **How to Use**:
+    *   Configure a custom search engine via Google.
+    *   Use specific keywords from the RSS article as input.
+    *   Fetch relevant results for citations.
+*   **Pricing**: Free for 100 queries per day; $5 per 1,000 queries after that.
+
+* * *
+
+### **2\. Bing Search API**
+
+*   **Purpose**: Provides reliable search results and metadata for SEO.
+*   **How It Helps**:
+    *   Fetches search results with meta information.
+    *   Can be used for keyword generation by analyzing titles and descriptions.
+*   **How to Use**:
+    *   Send the article title or topic from RSS feed as a query.
+    *   Use the returned content for research and SEO keywords.
+*   **Pricing**: Free for 1,000 queries per month.
+
+* * *
+
+### **3\. OpenAI (GPT Models)**
+
+*   **Purpose**: Generate additional context, SEO keywords, and citations.
+*   **How It Helps**:
+    *   Enhance the research with AI-generated summaries.
+    *   Generate keywords based on the content and SEO strategy.
+    *   Draft citation-friendly output (e.g., “According to \[source\]”).
+*   **How to Use**:
+    *   Feed the RSS article’s content to GPT.
+    *   Prompt GPT to:
+        *   Summarize the topic.
+        *   Generate SEO keywords.
+        *   Provide citations for enhanced content.
+*   **Prompt Example**:
+    ```
+    Analyze this article: [Insert article text].
+    1. Provide a list of SEO keywords.
+    2. Suggest 3 credible sources related to the topic for citation.
+    3. Summarize the article in a more engaging tone.
+    ```
+*   **Pricing**: Pay-as-you-go ($0.002/1,000 tokens for GPT-3.5).
+
+* * *
+
+### **4\. ContextualWeb API**
+
+*   **Purpose**: Provides structured search results for keywords and topics.
+*   **How It Helps**:
+    *   Fetches content for citations.
+    *   Extracts relevant metadata for SEO purposes.
+*   **How to Use**:
+    *   Query based on RSS feed content (e.g., article title or summary).
+    *   Retrieve structured results with links, descriptions, and topics.
+*   **Pricing**: Free tier for up to 1,000 requests/month.
+
+* * *
+
+### **5\. RapidAPI Hub**
+
+*   **Purpose**: Access multiple APIs for search, research, and keyword extraction.
+*   **How It Helps**:
+    *   Offers APIs for search, SEO, and content analysis.
+    *   Allows you to switch providers if needed.
+*   **How to Use**:
+    *   Use APIs like SERPStack (affordable Google results alternative) or Web Search.
+    *   Query for citations and SEO-related information.
+*   **Pricing**: Varies per API, often more affordable than SerpAPI.
+
+* * *
+
+### **Workflow Setup in n8n:**
+
+1.  **RSS Feed Trigger**:
+    *   Pull the latest articles.
+2.  **Search API Node**:
+    *   Use Bing Search API, Google Custom Search API, or ContextualWeb API.
+    *   Query based on the RSS feed content or title.
+3.  **OpenAI Node**:
+    *   Enhance the research with OpenAI:
+        *   Summarize the article.
+        *   Generate SEO keywords.
+        *   Draft citations.
+        *   Format the final enhanced article.
+4.  **SEO Keyword Storage**:
+    *   Store generated keywords in a database (e.g., Supabase).
+    *   Use this for future SEO optimization.
+5.  **Publication**:
+    *   Send the enhanced article to the blog CMS or your publication platform.
+
+* * *
+
+### Cost-Effective Recommendation:
+
+*   **Bing Search API** for basic research and citations.
+*   **OpenAI (GPT-3.5)** for generating enhanced articles and SEO keywords.
+*   Use these in tandem for the best balance between affordability and effectiveness.
+
+Would you like help setting up this workflow or configuring these tools in n8n?
+
+## Prompt:
+Why wouldnt duck duck go work?
+
+## Response:
+DuckDuckGo **could work** for your needs, but it has limitations that might make it less effective depending on your specific requirements for research, citations, and SEO. Let’s evaluate its suitability:
+
+* * *
+
+### **Pros of Using DuckDuckGo**
+
+1.  **Free and Privacy-Focused:**
+    *   DuckDuckGo doesn’t charge for its Instant Answers API, and there’s no tracking of user queries.
+    *   Cost-effective for basic research needs.
+2.  **Basic Search Capabilities:**
+    *   Can fetch relevant results for many general queries.
+    *   Quick to integrate via HTTP requests.
+3.  **Ease of Integration:**
+    *   No need for complex authentication or paid plans.
+    *   Simple GET requests can fetch search results.
+4.  **Sufficient for Lightweight Research:**
+    *   If your content doesn’t need deep insights or highly curated sources, DuckDuckGo can fetch reasonable results.
+
+* * *
+
+### **Cons and Limitations of DuckDuckGo**
+
+1.  **Limited Depth of Results:**
+    *   DuckDuckGo focuses on privacy, so its search results aren’t as extensive or personalized as Google or Bing.
+    *   It may not surface the most authoritative or SEO-relevant results for in-depth business research.
+2.  **No Metadata for SEO Optimization:**
+    *   The Instant Answers API lacks structured metadata (e.g., domain authority, keywords, descriptions) that is crucial for SEO.
+3.  **No Advanced Features for Citations:**
+    *   It doesn’t provide citation-friendly content or sources beyond simple links.
+    *   You’d need additional processing to validate and structure the information.
+4.  **Less Tailored to Business or Professional Topics:**
+    *   DuckDuckGo isn’t specifically designed for business research or SEO. Search engines like Google or Bing might better prioritize authoritative business-related sources.
+5.  **No Native Keyword Extraction:**
+    *   DuckDuckGo doesn’t natively support extracting keywords from its results for SEO purposes.
+
+* * *
+
+### **When DuckDuckGo Could Work**
+
+DuckDuckGo is a viable option if:
+
+*   You want to minimize costs.
+*   You need only **basic research** without strict demands for high-quality citations.
+*   The focus is on **lightweight integration** rather than comprehensive analysis.
+*   You’re okay with supplementing its results with OpenAI for deeper content generation and keyword extraction.
+
+* * *
+
+### **How to Use DuckDuckGo in n8n**
+
+1.  **Set Up HTTP Request Node**:
+    *   Use DuckDuckGo’s search URL structure:
+        ```
+        https://api.duckduckgo.com/?q=[SEARCH_QUERY]&format=json&no_redirect=1&no_html=1
+        ```
+    *   Replace `[SEARCH_QUERY]` with the RSS feed content or title.
+2.  **Parse the Results**:
+    *   Extract `Abstract`, `RelatedTopics`, or `FirstURL` fields for relevant links or summaries.
+3.  **Supplement with OpenAI**:
+    *   Pass the results to an OpenAI node to refine the research, generate SEO keywords, and enhance content.
+
+* * *
+
+### **Example Workflow**
+
+1.  RSS feed triggers new content.
+2.  HTTP Request Node queries DuckDuckGo with the article’s topic.
+3.  OpenAI Node:
+    *   Enhances the results with summaries, keywords, and improved readability.
+4.  Output Node publishes the article to your blog or stores the enhanced content for review.
+
+* * *
+
+### **Verdict**
+
+DuckDuckGo is a decent free option if your research needs are basic and you can supplement its results with tools like OpenAI. However, for better citations, SEO-friendly metadata, and business-relevant content, alternatives like Bing Search API or Google Custom Search API are more robust and tailored solutions.
+
+Would you like help setting up DuckDuckGo in n8n?
+
+## Prompt:
+https://www.wired.com/feed/category/business/latest/rss
+
+https://feeds.bloomberg.com/markets/news.rss
+
+http://feeds.harvardbusiness.org/harvardbusiness
+
+https://feeds.a.dj.com/rss/RSSWorldNews.xml
+
+https://corporatesocialresponsibilityblog.com/feed
+
+https://seekingalpha.com/feed.xml
+
+https://fortune.com/feed
+
+https://blog.hubspot.com/marketing/rss.xml
+
+https://learn.g2crowd.com/rss.xml
+
+https://www.entrepreneur.com/latest.rss
+
+https://smallbusinessbonfire.com/feed
+
+https://feeds.feedburner.com/SmallBusinessTrends
+
+https://www.inc.com/rss/homepage.xml
+
+https://techcrunch.com/category/startups/feed
+
+https://www.successharbor.com/feed
+
+Above, is a list of my perferred RSS feeds for my n8n automation.
+
+Use them to replace the feeds in the sample code below.
+
+Follow the exact format of this code, as it is working code. You are only updating the list of feeds.
+
+Here is the code:
+
+```javascript
+return [
+  {
+    json: {
+      url: 'https://medium.com/feed/n8n-io',
+    }
+  },
+  {
+    json: {
+```
+      url: 'https://dev.to/feed/n8n',
+    \}
+  \}
+];
+
+## Response:
+Here is the updated code with your preferred RSS feeds incorporated:
+
+```
+return [
+  {
+    json: {
+      url: 'https://www.wired.com/feed/category/business/latest/rss',
+    }
+  },
+  {
+    json: {
+      url: 'https://feeds.bloomberg.com/markets/news.rss',
+    }
+  },
+  {
+    json: {
+      url: 'http://feeds.harvardbusiness.org/harvardbusiness',
+    }
+  },
+  {
+    json: {
+      url: 'https://feeds.a.dj.com/rss/RSSWorldNews.xml',
+    }
+  },
+  {
+    json: {
+      url: 'https://corporatesocialresponsibilityblog.com/feed',
+    }
+  },
+  {
+    json: {
+      url: 'https://seekingalpha.com/feed.xml',
+    }
+  },
+  {
+    json: {
+      url: 'https://fortune.com/feed',
+    }
+  },
+  {
+    json: {
+      url: 'https://blog.hubspot.com/marketing/rss.xml',
+    }
+  },
+  {
+    json: {
+      url: 'https://learn.g2crowd.com/rss.xml',
+    }
+  },
+  {
+    json: {
+      url: 'https://www.entrepreneur.com/latest.rss',
+    }
+  },
+  {
+    json: {
+      url: 'https://smallbusinessbonfire.com/feed',
+    }
+  },
+  {
+    json: {
+      url: 'https://feeds.feedburner.com/SmallBusinessTrends',
+    }
+  },
+  {
+    json: {
+      url: 'https://www.inc.com/rss/homepage.xml',
+    }
+  },
+  {
+    json: {
+      url: 'https://techcrunch.com/category/startups/feed',
+    }
+  },
+  {
+    json: {
+      url: 'https://www.successharbor.com/feed',
+    }
+  }
+];
+```
+
+This code maintains the exact format you provided while replacing the URLs with your preferred RSS feeds. Let me know if you need any further modifications!
+
+## Prompt:
+Repeat these Feed code blocks until you reach number 25
+
+Here is the list of potential articles and topics from the RSS Feeds:
+Feed 1:
+\{\{ $json.allData[0].title \}\}
+\{\{ $json.allData[0].link \}\}
+\{\{ $json.allData[0].content \}\}
+\{\{ $json.allData[0].contentSnippet \}\}
+
+Feed 2:
+\{\{ $json.allData[1].title \}\}
+\{\{ $json.allData[1].link \}\}
+\{\{ $json.allData[1].content \}\}
+\{\{ $json.allData[1].contentSnippet \}\}
+
+Feed 3:
+\{\{ $json.allData[2].title \}\}
+\{\{ $json.allData[2].link \}\}
+\{\{ $json.allData[2].content \}\}
+\{\{ $json.allData[2].contentSnippet \}\}
+
+## Response:
+Here is the repeated code structure you requested for 25 feeds:
+
+```
+Here is the list of potential articles and topics from the RSS Feeds:
+
+Feed 1:
+\{\{ $json.allData[0].title \}\}
+\{\{ $json.allData[0].link \}\}
+\{\{ $json.allData[0].content \}\}
+\{\{ $json.allData[0].contentSnippet \}\}
+
+Feed 2:
+\{\{ $json.allData[1].title \}\}
+\{\{ $json.allData[1].link \}\}
+\{\{ $json.allData[1].content \}\}
+\{\{ $json.allData[1].contentSnippet \}\}
+
+Feed 3:
+\{\{ $json.allData[2].title \}\}
+\{\{ $json.allData[2].link \}\}
+\{\{ $json.allData[2].content \}\}
+\{\{ $json.allData[2].contentSnippet \}\}
+
+Feed 4:
+\{\{ $json.allData[3].title \}\}
+\{\{ $json.allData[3].link \}\}
+\{\{ $json.allData[3].content \}\}
+\{\{ $json.allData[3].contentSnippet \}\}
+
+Feed 5:
+\{\{ $json.allData[4].title \}\}
+\{\{ $json.allData[4].link \}\}
+\{\{ $json.allData[4].content \}\}
+\{\{ $json.allData[4].contentSnippet \}\}
+
+Feed 6:
+\{\{ $json.allData[5].title \}\}
+\{\{ $json.allData[5].link \}\}
+\{\{ $json.allData[5].content \}\}
+\{\{ $json.allData[5].contentSnippet \}\}
+
+Feed 7:
+\{\{ $json.allData[6].title \}\}
+\{\{ $json.allData[6].link \}\}
+\{\{ $json.allData[6].content \}\}
+\{\{ $json.allData[6].contentSnippet \}\}
+
+Feed 8:
+\{\{ $json.allData[7].title \}\}
+\{\{ $json.allData[7].link \}\}
+\{\{ $json.allData[7].content \}\}
+\{\{ $json.allData[7].contentSnippet \}\}
+
+Feed 9:
+\{\{ $json.allData[8].title \}\}
+\{\{ $json.allData[8].link \}\}
+\{\{ $json.allData[8].content \}\}
+\{\{ $json.allData[8].contentSnippet \}\}
+
+Feed 10:
+\{\{ $json.allData[9].title \}\}
+\{\{ $json.allData[9].link \}\}
+\{\{ $json.allData[9].content \}\}
+\{\{ $json.allData[9].contentSnippet \}\}
+
+Feed 11:
+\{\{ $json.allData[10].title \}\}
+\{\{ $json.allData[10].link \}\}
+\{\{ $json.allData[10].content \}\}
+\{\{ $json.allData[10].contentSnippet \}\}
+
+Feed 12:
+\{\{ $json.allData[11].title \}\}
+\{\{ $json.allData[11].link \}\}
+\{\{ $json.allData[11].content \}\}
+\{\{ $json.allData[11].contentSnippet \}\}
+
+Feed 13:
+\{\{ $json.allData[12].title \}\}
+\{\{ $json.allData[12].link \}\}
+\{\{ $json.allData[12].content \}\}
+\{\{ $json.allData[12].contentSnippet \}\}
+
+Feed 14:
+\{\{ $json.allData[13].title \}\}
+\{\{ $json.allData[13].link \}\}
+\{\{ $json.allData[13].content \}\}
+\{\{ $json.allData[13].contentSnippet \}\}
+
+Feed 15:
+\{\{ $json.allData[14].title \}\}
+\{\{ $json.allData[14].link \}\}
+\{\{ $json.allData[14].content \}\}
+\{\{ $json.allData[14].contentSnippet \}\}
+
+Feed 16:
+\{\{ $json.allData[15].title \}\}
+\{\{ $json.allData[15].link \}\}
+\{\{ $json.allData[15].content \}\}
+\{\{ $json.allData[15].contentSnippet \}\}
+
+Feed 17:
+\{\{ $json.allData[16].title \}\}
+\{\{ $json.allData[16].link \}\}
+\{\{ $json.allData[16].content \}\}
+\{\{ $json.allData[16].contentSnippet \}\}
+
+Feed 18:
+\{\{ $json.allData[17].title \}\}
+\{\{ $json.allData[17].link \}\}
+\{\{ $json.allData[17].content \}\}
+\{\{ $json.allData[17].contentSnippet \}\}
+
+Feed 19:
+\{\{ $json.allData[18].title \}\}
+\{\{ $json.allData[18].link \}\}
+\{\{ $json.allData[18].content \}\}
+\{\{ $json.allData[18].contentSnippet \}\}
+
+Feed 20:
+\{\{ $json.allData[19].title \}\}
+\{\{ $json.allData[19].link \}\}
+\{\{ $json.allData[19].content \}\}
+\{\{ $json.allData[19].contentSnippet \}\}
+
+Feed 21:
+\{\{ $json.allData[20].title \}\}
+\{\{ $json.allData[20].link \}\}
+\{\{ $json.allData[20].content \}\}
+\{\{ $json.allData[20].contentSnippet \}\}
+
+Feed 22:
+\{\{ $json.allData[21].title \}\}
+\{\{ $json.allData[21].link \}\}
+\{\{ $json.allData[21].content \}\}
+\{\{ $json.allData[21].contentSnippet \}\}
+
+Feed 23:
+\{\{ $json.allData[22].title \}\}
+\{\{ $json.allData[22].link \}\}
+\{\{ $json.allData[22].content \}\}
+\{\{ $json.allData[22].contentSnippet \}\}
+
+Feed 24:
+\{\{ $json.allData[23].title \}\}
+\{\{ $json.allData[23].link \}\}
+\{\{ $json.allData[23].content \}\}
+\{\{ $json.allData[23].contentSnippet \}\}
+
+Feed 25:
+\{\{ $json.allData[24].title \}\}
+\{\{ $json.allData[24].link \}\}
+\{\{ $json.allData[24].content \}\}
+\{\{ $json.allData[24].contentSnippet \}\}
+```
+
+This repeats the structure you provided until it reaches Feed 25. Let me know if you need any further modifications!
+
+
+
+---
+Powered by [ChatGPT Exporter](https://www.chatgptexporter.com)
+~~~~

@@ -1,0 +1,219 @@
+---
+title: "Knowledge Base Generator — Onboarding Screen Plan"
+---
+
+# Knowledge Base Generator — Onboarding Screen Plan
+
+The first-time user experience after login. This flow collects only the inputs the automated generation pipeline needs to build the knowledge base. The user does not wait for generation to finish — once it starts, they land in their dashboard. All review and editing of the generated output (services, AI knowledge, brand voice, conversation starters, etc.) happens later inside the dashboard.
+
+---
+
+## Design Principles
+
+1. **Collect inputs, not reviews** — onboarding gathers what the pipeline needs to run; the user reviews the output from the dashboard after generation completes
+2. **Don't make them wait** — generation runs in the background; get them to their dashboard fast
+3. **One thing per screen** — each screen has a single clear purpose and a single primary action
+4. **As few questions as possible** — only ask what the system cannot figure out on its own
+
+---
+
+## Flow Summary
+
+```
+Screen 1: Business Identity
+    ↓
+Screen 2: Website URL
+    ↓
+Screen 3: Additional Knowledge Sources
+    ↓
+Screen 4: Launch → Dashboard
+```
+
+The entire onboarding is 4 screens. Screens 1–3 collect input. Screen 4 kicks off the generation pipeline and sends the user straight to their dashboard.
+
+---
+
+## Screen 1 — Business Identity
+
+**Purpose:** Capture the core facts the generation pipeline needs as seed data — the business name, its physical location (used by the AI for accuracy and local context), and the industry category (used to select the right extraction prompts, concern maps, and industry-specific enhancements).
+
+### Content
+
+- Headline: "Let's set up your AI"
+- Subhead: "Tell us a bit about your business so we can build the smartest assistant possible."
+- Form fields (see table below)
+- Primary button: "Continue"
+
+### Fields
+
+| Field | Input Type | Required | Notes |
+|---|---|---|---|
+| `business.name` | Text input | Yes | Business name |
+| `business.type` | Dropdown / segmented selector | Yes | Industry category. Options: `med_spa`, `salon`, `dental`, `fitness`, `restaurant`, `retail`, `professional_services`, `other`. This drives industry-specific prompting throughout the pipeline (extraction templates, concern map presets, brand voice defaults) |
+| `business.location.address` | Text input | Yes | Street address |
+| `business.location.city` | Text input | Yes | |
+| `business.location.state` | Dropdown | Yes | |
+| `business.location.zip` | Text input | Yes | |
+
+### Behavior
+
+- No async work starts yet — this is pure data collection.
+- Validation on "Continue": all required fields must be filled.
+- Selecting `other` for business type could optionally reveal a free-text field for the user to describe their industry.
+
+---
+
+## Screen 2 — Website URL
+
+**Purpose:** Collect the website that the pipeline will crawl to extract services, pricing, descriptions, contact info, and brand signals.
+
+### Content
+
+- Headline: "What's your website?"
+- Subhead: "We'll scan your site to find your services, pricing, and brand voice — then use AI to build a complete knowledge base."
+- Single input field: URL (prefilled with `https://`)
+- Helper text: "We'll crawl your entire site. This works best with a live, public-facing website."
+- Primary button: "Continue"
+- Secondary link: "I don't have a website" — skips this screen (the pipeline will rely entirely on the additional sources from Screen 3 and manual entry from the dashboard)
+
+### Fields
+
+| Field | Input Type | Required | Notes |
+|---|---|---|---|
+| `training.sourceUrl` | URL text input | No (skippable) | Validated as a well-formed URL. Does not need to be reachable at this point — the pipeline handles crawl failures gracefully |
+
+### Behavior
+
+- No crawl starts yet. The URL is saved and passed to the pipeline on Screen 4.
+- If the user skips, `training.sourceUrl` is set to `null` and the pipeline adjusts accordingly (heavier reliance on uploaded documents + manual dashboard entry).
+
+---
+
+## Screen 3 — Additional Knowledge Sources
+
+**Purpose:** Let the user supplement the website with internal documents and external sources the crawler can't reach — pricing sheets, SOPs, training manuals, brand guides, employee handbooks, menus, etc. This is especially important if the website is thin or missing key information.
+
+### Content
+
+- Headline: "Add extra knowledge"
+- Subhead: "Got documents your website doesn't cover? Upload them here so your AI knows everything. You can always add more later from the dashboard."
+- Three source options, displayed as a tabbed or segmented control:
+
+#### Tab A — File Upload
+- Drag-and-drop zone + file picker button
+- Accepted formats: PDF, DOCX, TXT, MD, CSV
+- Max file size: 25 MB per file
+
+#### Tab B — Google Drive
+- "Connect Google Drive" button (OAuth flow)
+- After connecting: file/folder picker showing the user's Drive
+- Selected items appear as removable chips below the picker
+
+#### Tab C — GitHub
+- "Connect GitHub" button (OAuth flow)
+- After connecting: repo/file browser
+- Selected items appear as removable chips below the picker
+
+### Shared Constraint
+
+- A **shared counter** is visible at all times: **"X / 10 sources added"**
+- The limit of 10 is pooled across all three source types (any combination). This cap keeps generation time reasonable and reduces the chance of pipeline failure.
+- When 10 sources are reached, all add/upload controls disable with the message: "You've hit the 10-source limit. Remove a source to add a different one."
+- All added sources are listed below the tabs in a unified list showing: source icon (file/Drive/GitHub), name, size, and a remove button.
+
+### Fields
+
+| Field | Input Type | Required | Notes |
+|---|---|---|---|
+| `training.additionalSources[]` | File upload / OAuth picker | No | Array of up to 10 items. Each records: `type` (`file` / `gdrive` / `github`), `name`, `reference` (file path, Drive ID, or GitHub path), `sizeBytes` |
+
+### Behavior
+
+- This screen is **entirely optional** — the user can skip it.
+- Primary button: "Continue" (always active, whether or not sources are added)
+- Secondary link: "Skip — I'll add these later"
+
+---
+
+## Screen 4 — Launch
+
+**Purpose:** Confirm everything, kick off the generation pipeline, and transition the user to their dashboard without waiting.
+
+### Content
+
+- Headline: "Ready to build your AI"
+- Quick summary card showing what was collected:
+  - Business name + location + industry
+  - Website URL (or "No website provided")
+  - Number of additional sources (or "None added")
+- Primary button: "Build My AI"
+- Microcopy below button: "This usually takes 5–10 minutes. We'll let you know when it's ready."
+
+### Fields
+
+None. This is a review/confirmation screen.
+
+### Behavior
+
+- Pressing "Build My AI" triggers the full automated pipeline:
+  1. Website crawl (Firecrawl)
+  2. Entity extraction (business info, services, brand signals)
+  3. Additional source ingestion and extraction
+  4. Service enhancement (education, concern mapping, self-ID triggers, FAQs, differentiators — per service)
+  5. Concern → service relationship mapping
+  6. Conversation starter generation
+  7. System prompt generation
+  8. Assessment quiz generation
+  9. Service guide compilation
+- The user is **immediately redirected to their dashboard** — they do not wait.
+- On the dashboard, a persistent **status card** shows real-time generation progress and updates to "Ready" with a CTA to review and test the AI when done.
+- An **in-app notification** (toast/banner) fires when generation completes.
+- An **email** is also sent: "Your AI assistant is ready."
+
+---
+
+## Screen Map at a Glance
+
+| # | Screen | User Does | Fields Collected |
+|---|---|---|---|
+| 1 | Business Identity | Enters name, location, selects industry | `business.name`, `business.type`, `business.location.*` |
+| 2 | Website URL | Enters URL (or skips) | `training.sourceUrl` |
+| 3 | Additional Sources | Uploads files / connects Drive or GitHub (or skips) | `training.additionalSources[]` |
+| 4 | Launch | Reviews summary, clicks "Build My AI" | None — triggers pipeline and redirects to dashboard |
+
+**Total user inputs: 7 fields + 1 optional URL + up to 10 optional source uploads.**
+
+---
+
+## What Happens After Onboarding
+
+Everything the previous spec described as onboarding review screens (service list review, AI knowledge editing, brand voice tuning, conversation starter customization) becomes available **inside the dashboard** once generation completes. The dashboard surfaces these through a guided "Review Your AI" experience attached to the status card — same content, but the user engages with it on their own time, not as a gate before they can use the platform.
+
+---
+
+## Data Model Addition
+
+The new `additionalSources` field to be added to the knowledge base schema:
+
+```javascript
+training: {
+  sourceUrl: "https://example.com",   // or null if skipped
+  crawledAt: "2026-03-10T...",
+  pagesAnalyzed: 24,
+  lastUpdated: "2026-03-10T...",
+  version: 1,
+
+  // NEW
+  additionalSources: [
+    {
+      type: "file",          // "file" | "gdrive" | "github"
+      name: "pricing-sheet-2026.pdf",
+      reference: "/uploads/abc123.pdf",   // internal path, Drive file ID, or GitHub path
+      sizeBytes: 245000,
+      status: "processed",   // "pending" | "processing" | "processed" | "failed"
+      addedAt: "2026-03-10T..."
+    }
+    // ... up to 10 items total
+  ]
+}
+```

@@ -2,12 +2,23 @@
   "title": "Documentation",
   "pages": [
     "index",
+    "introduction",
+    "aiConnectedOS",
+    "api-reference",
+    "business-planning",
+    "knowledge-base",
+    "learn",
     "quickstart",
-    "---Getting Started---",
-    "components",
-    "theming",
-    "---Guides---",
-    "deployment",
-    "customization"
+    "webhooks",
+    "Claude Chat Export - AutobiographyBased Seed Personalities For Neurigraph - Incomplete",
+    "context-window-architecture-rotating-and-infinite",
+    "fundamentals",
+    "infinite-context-window",
+    "infinite-spatial-data-rotation",
+    "luna-bella",
+    "rotating-context-window",
+    "the-four-dimensional-computing-system",
+    "the-stateless-user-interface",
+    "user-onboarding-flow"
   ]
 }

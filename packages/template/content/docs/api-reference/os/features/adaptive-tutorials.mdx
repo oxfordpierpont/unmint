@@ -1,0 +1,35 @@
+---
+title: "Adaptive UI tutorials"
+description: "Feature-level API contract for adaptive tutorials, contextual onboarding, and user-progress tracking."
+---
+## Contract status
+
+`Derived implementation contract`
+
+## Source document
+
+- [Adaptive UI tutorials](/docs/knowledge-base/aiconnected-os/aiconnected-os-13-adaptive-ui-tutorials)
+
+## Feature purpose
+
+Defines context-aware tutorial delivery that responds to user state and platform activity.
+
+## Required operations
+
+- Select the right tutorial flow for the current user context
+- Record progress and dismissal state
+- Re-surface help based on confusion or inactivity signals
+- Bind tutorials to features, roles, or milestones
+
+## Suggested resources
+
+- `tutorial_flows`
+- `tutorial_steps`
+- `tutorial_progress`
+- `tutorial_triggers`
+
+## Implementation notes
+
+- Keep this feature workspace-scoped and persona-aware where applicable.
+- Preserve authorship, timestamps, and auditability for all state changes.
+- Treat the source doc as the behavioral specification even where final route names remain open.

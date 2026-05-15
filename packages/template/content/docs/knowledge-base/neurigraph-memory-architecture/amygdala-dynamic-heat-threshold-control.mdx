@@ -1,0 +1,66 @@
+---
+title: "Amygdala — Extended Function: Dynamic Heat Threshold Control"
+description: "Neurigraph Architecture Update Overview During architectural review of the Object Deconstruction Graph (ODG) and its interaction with the Graph Search Model,..."
+---
+<Info>
+Normalized for Mintlify from `knowledge-base/neurigraph-memory-architecture/amygdala-dynamic-heat-threshold-control.mdx`.
+</Info>
+# Amygdala — Extended Function: Dynamic Heat Threshold Control
+## Neurigraph Architecture Update
+
+---
+
+### Overview
+
+During architectural review of the Object Deconstruction Graph (ODG) and its interaction with the Graph Search Model, a second function of the Amygdala region was identified and confirmed. This document captures that function for inclusion in the master Neurigraph architecture documentation.
+
+---
+
+### Original Amygdala Function (Unchanged)
+
+The Amygdala's primary job is to measure the emotional weight and significance of what is happening in the live conversation. It runs quietly in the background, flagging moments that matter and passing that signal to the Hippocampus so that meaningful experiences can be formed into episodic memories.
+
+---
+
+### New Function: Dynamic Heat Threshold Control
+
+The Amygdala also serves as the dynamic controller for the heat threshold used by the Graph Search Model during active conversation.
+
+**The problem it solves:**
+
+The Graph Search Model runs continuously during active conversation, surfacing relevant terms and components from the Neurigraph. It uses a heat-based system to filter results — hot nodes surface immediately, warm nodes surface as candidates, cold nodes are ignored. But if the heat threshold is static, the system is either too broad in routine conversations or too narrow in meaningful ones.
+
+A fixed threshold cannot adapt to context. The Amygdala can.
+
+**How it works:**
+
+The Amygdala is already producing a continuous significance signal during every active conversation. That signal measures how emotionally and contextually weighted the current moment is. That same signal maps directly onto what the heat threshold needs to do.
+
+- When the Amygdala signal is **high** — the conversation is significant, emotionally weighted, or complex — the heat threshold **drops**. This allows warm and moderately cool memories to surface, casting a wider net because the moment demands deeper context.
+
+- When the Amygdala signal is **low** — the conversation is routine, transactional, or low stakes — the heat threshold **rises**. Only the hottest, most directly relevant memories surface. The system stays fast and focused because depth is not needed.
+
+**One signal. Two uses.**
+
+The Amygdala does not require any new inputs or outputs to perform this function. It is already producing the significance measurement. The Graph Search Model simply uses that measurement as its threshold calibration in real time.
+
+No new region is required. No new model is required. An existing architectural piece is performing an additional function that it is naturally suited for.
+
+---
+
+### Behavior During Sleep Cycle
+
+When the Amygdala is not measuring live conversation — during the sleep cycle — the heat threshold defaults to a baseline value. That baseline is set and refined during the sleep cycle itself, based on the patterns and experiences accumulated during the day's interactions. This means the threshold is never static and never unanchored. It is always informed by real experience.
+
+---
+
+### Architectural Significance
+
+This refinement demonstrates a core principle of the Neurigraph design philosophy: purpose-built regions should be examined not just for what they were designed to do, but for what they are naturally capable of doing given their position and function in the system.
+
+The Amygdala was designed to measure significance. Significance measurement and threshold calibration are functionally identical operations. The extension of this function required no new components — only a clearer understanding of what the existing component already was.
+
+---
+
+*Discovered and documented during ODG architecture session — April 2026*
+*To be integrated into master Neurigraph architecture documentation*

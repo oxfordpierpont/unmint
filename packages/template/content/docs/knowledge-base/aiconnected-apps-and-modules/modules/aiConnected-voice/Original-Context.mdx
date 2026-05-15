@@ -1,0 +1,305 @@
+---
+title: "Voice by aiConnected — Original Context Document"
+---
+# Voice by aiConnected — Original Context Document
+
+This document captures the original prompts, ideas, reasoning, and requirements provided by Bob during the planning conversations for Voice by aiConnected. It serves as the authoritative source of intent and vision for the project.
+
+---
+
+## Table of Contents
+
+1. [Initial Vision & Problem Statement](#1-initial-vision--problem-statement)
+2. [Hypothetical Use Cases](#2-hypothetical-use-cases)
+3. [GoToConnect Environment](#3-gotoconnect-environment)
+4. [Technology Choices & Reasoning](#4-technology-choices--reasoning)
+5. [Architecture Requirements](#5-architecture-requirements)
+6. [Cost Analysis & Business Model](#6-cost-analysis--business-model)
+7. [Scalability Requirements](#7-scalability-requirements)
+8. [Key Differentiators](#8-key-differentiators)
+
+---
+
+## 1. Initial Vision & Problem Statement
+
+### The Core Question
+
+Bob's initial inquiry that started the project:
+
+"Can I build my own SIP Trunk for free and use it to connect LiveKit and GoToConnect?"
+
+This evolved into a clearer question:
+
+"Can I use LiveKit with GoToConnect (which has extensive API Documentation) for the purpose of handling inbound/outbound phone calls with my AI system?"
+
+### The Real Problem
+
+Bob articulated the fundamental challenge:
+
+"The problem is that I am already paying for unlimited calling and texting with GoToConnect, plus I have to pay for LiveKit's infrastructure to handle the speech to speech conversational AI, plus I have to pay for the Claude Sonnet API on every call. And there is probably some other stuff that I am not factoring in.
+
+I basically want a Retell AI or Vapi AI experience, but through my professional phone system.
+
+With that said, I do not want to pay for Twilio (and deal with Twilio's extra rules) when I already pay for unlimited enterprise calling."
+
+---
+
+## 2. Hypothetical Use Cases
+
+Bob provided six detailed use cases that define the product scope:
+
+### Use Case 1: Overflow to AI
+
+"Someone calls the Oxford Pierpont main line, and a human is unable to answer. Instead of passing the caller to a call queue or voicemail, the caller is directed to the AI who (very likely) resolve's the caller's needs."
+
+**Key Requirements:**
+
+- Seamless handoff from human unavailability to AI
+- AI should resolve caller needs, not just take messages
+- Integration with existing call routing
+
+### Use Case 2: After-Hours Service (Emergency Plumbing Example)
+
+"A client runs an emergency plumbing service 24/7, but they don't want the expense of paying an 8-hour standby overnight customer service employee when calls may only occupy a total of 30 minutes for the whole night. And what if the rep is taking a break? With the inbound calling AI, the calls can be handled at minimal cost with nearly guaranteed availability 24/7."
+
+**Key Requirements:**
+
+- 24/7 availability
+- Minimal cost per call
+- Handle low-volume but critical overnight calls
+- Near-guaranteed uptime
+
+### Use Case 3: Instant Lead Callback with Live Streaming
+
+"A client has a contact form on their website, and a potential customer has inquired about a high-value service. Rather than waiting for the salesperson to see the message and act, the AI calls immediately, qualifies the lead, live streams the conversation to the sales rep, and connects the call."
+
+**Key Requirements:**
+
+- Instant outbound calling triggered by form submission
+- Lead qualification by AI
+- Live streaming to human sales rep
+- Warm handoff / call connection capability
+
+### Use Case 4: Speed-to-Lead (Angie's List / Thumbtack)
+
+"A contractor gets leads from Angie's List and Thumbtack, and it is critical that the lead is called as quickly as possible. The lead is triggered to the system and the AI calls the new lead almost instantly."
+
+**Key Requirements:**
+
+- Webhook/trigger-based outbound calling
+- Sub-minute response time
+- Integration with lead sources
+
+### Use Case 5: Cold Lead Reactivation Campaign
+
+"A client has a list of 500 cold leads that they want to reactivate within 4 business days. Instead of paying an army of appointment setters to make the calls, the client uses the Voice AI system to make the outbound calls, conduct a 5-10 minute conversation, and book the appointments when possible. When a gatekeeper at a business says 'call back at 3:00', the AI reliably calls back on time. Appointments are booked autonomously at minimal cost."
+
+**Key Requirements:**
+
+- Bulk outbound calling campaigns
+- 5-10 minute conversation capability
+- Callback scheduling and execution
+- Appointment booking integration
+- Gatekeeper handling
+
+### Use Case 6: High-Volume Insurance Agency
+
+"An insurance agency has to make 100 calls every hour. The per/minutes cost of Vapi and Retell are too high for volume usage. Also, the client dislikes the slow awkward pauses the available voices have. They want something custom built with LiveKit and Chatterbox TTS, with custom background sounds. They want the unlimited calling minutes to cut costs."
+
+**Key Requirements:**
+
+- High volume (100 calls/hour)
+- Cost-effective at scale
+- Natural voice quality (no awkward pauses)
+- Custom background sounds
+- Custom TTS solution
+
+### Bob's Summary
+
+"I think you get the point. If Vapi and Retell can do it, so can I."
+
+---
+
+## 3. GoToConnect Environment
+
+### Grandfathered Plan Details
+
+Bob provided specific details about his GoToConnect subscription:
+
+"We are grandfathered into the standard GoToConnect plan at \$17/user for unlimited calling and texting, unlimited extensions, unlimited dial plans, unlimited call queues, unlimited conference bridges, ring groups, voicemail, directories, paging, forwarding, follow-me call handling, custom voicemail, custom greetings, scheduling, extension mapping, network access, outbound proxies, registration proxies, and round-robin call distribution."
+
+### Plan Capabilities
+
+"So no, we do not have GoTo's newer contact center plans or AI integrations, but we are grandfathered in with more than enough capability to build just about anything we want. And the rate limits are generous too."
+
+### API Documentation Feedback
+
+When initial research suggested GoToConnect API limitations, Bob pushed back:
+
+"The assessment of GoToConnect can't possibly be right. If I remember correctly, every single function and capability of GoToConnect has well documented API details. Am I missing something?
+
+Here is the information I was referencing:
+
+- [https://developer.goto.com/GoToConnect#tag/Call-Events-Overview/Examples/Recordings](https://developer.goto.com/GoToConnect#tag/Call-Events-Overview/Examples/Recordings)
+- [https://developer.goto.com/GoToConnect/#tag/Notification-Channel-Overview](https://developer.goto.com/GoToConnect/#tag/Notification-Channel-Overview)"
+
+This led to a deeper investigation that confirmed GoToConnect's WebRTC API capabilities for:
+
+- Device registration
+- WebRTC SDP exchange
+- Inbound/outbound call handling
+- Call events and webhooks
+- Call control operations
+
+---
+
+## 4. Technology Choices & Reasoning
+
+### LiveKit
+
+**Decision:** Use LiveKit Cloud as primary infrastructure
+
+"We will use LiveKit cloud, but the CPU-based DigitalOcean droplet with Dokploy is available if needed."
+
+### Chatterbox TTS Turbo
+
+Bob was emphatic about voice quality requirements:
+
+"I am open to options outside of Chatterbox, but they would have to deliver the same level of near perfect near human level quality of voice. The Chatterbox Turbo is so good that it is hard to tell you're talking to AI at all. And with the background office noises, the latency-silence is nearly non-existent. So any replacements would have to be just as good because the human-quality voices are a major selling point."
+
+**Key Quality Benchmarks:**
+
+- Near-perfect human-level voice quality
+- Difficult to distinguish from human
+- Background office noises mask latency
+- Near non-existent latency-silence
+
+### Latency Requirements
+
+Bob specifically called out latency concerns with existing platforms:
+
+"The client dislikes the slow awkward pauses the available voices have."
+
+This informed the architecture requirement for streaming everything and avoiding batch processing.
+
+### n8n Consideration (Rejected for Hot Path)
+
+While n8n is part of Bob's existing infrastructure, it was explicitly rejected for the real-time voice pipeline:
+
+"I think we should avoid n8n for the hot path since it would add latency."
+
+**n8n Role:** Relegated to async business logic (CRM updates, appointment booking, logging) that doesn't block the voice pipeline.
+
+---
+
+## 5. Architecture Requirements
+
+### Call Transfer Mechanics
+
+When asked about human handoff preferences:
+
+"I don't really have a preference on how the outcome is achieved. The goal is to have the AI potentially handling a call, and being able to bring a human into the call when needed or prompted. The how is less important to me as long as the customer experience is protected."
+
+### Concurrent Call Handling
+
+"Up to 100 concurrent calls per client, however, I am very much willing to build duplicate systems/instances of the infrastructure if needed. The average client would never need so many calls at once, and if they do, I am comfortable charging them a premium to deploy their own system (but still integrated with our GoTo account). The average client would probably need 10 concurrent lines on average, but the infrastructure should be built for the 10x volume. Hope this makes sense. Building it overly powerful from the start."
+
+**Capacity Requirements:**
+
+- Design for 100 concurrent calls per client
+- Average expected usage: 10 concurrent calls
+- Architecture for 10x headroom
+- Premium tier for dedicated infrastructure
+
+### Tool Calling / Integration Flexibility
+
+"For tool calling, I really just need the flexibility. Maybe something webhook based or maybe this is where we bring in n8n or python-based HTTPS requests. It just needs to be flexible because different businesses will have different needs."
+
+---
+
+## 6. Cost Analysis & Business Model
+
+### The Competitive Comparison
+
+Bob explicitly compared against Vapi and Retell:
+
+"The per/minutes cost of Vapi and Retell are too high for volume usage."
+
+**Typical Vapi/Retell pricing:** \$0.05-0.15/minute
+
+### Bob's Stack Cost Estimate
+
+The target cost structure was outlined:
+
+| Component | Cost |
+| :-- | :-- |
+| GoToConnect | \$0 (already paying unlimited) |
+| LiveKit Cloud | ~\$0.004/min participant |
+| Deepgram STT | ~\$0.005/min |
+| Claude Sonnet | ~\$0.01-0.03/min |
+| Chatterbox TTS | \$0 (self-hosted) |
+| **Total** | **~\$0.02-0.04/minute** |
+
+**Value Proposition:**
+
+- At 1,000 minutes/month: $20-40 vs $50-150
+- At 10,000 minutes/month: $200-400 vs $500-1,500
+
+---
+
+## 7. Scalability Requirements
+
+### Per-Client Capacity
+
+- **Design target:** 100 concurrent calls per client
+- **Typical usage:** 10 concurrent calls
+- **Headroom:** 10x over typical usage
+
+### Multi-Tenant Architecture
+
+Bob indicated willingness to deploy dedicated infrastructure:
+
+"I am very much willing to build duplicate systems/instances of the infrastructure if needed... if they do, I am comfortable charging them a premium to deploy their own system (but still integrated with our GoTo account)."
+
+---
+
+## 8. Key Differentiators
+
+Based on Bob's requirements, the key differentiators for Voice by aiConnected are:
+
+### 1. Cost Advantage
+
+Using existing GoToConnect unlimited calling eliminates per-minute telephony costs that competitors must pass through.
+
+### 2. Voice Quality
+
+Chatterbox Turbo TTS provides near-human voice quality that competitors struggle to match:
+
+"The Chatterbox Turbo is so good that it is hard to tell you're talking to AI at all."
+
+### 3. Natural Conversation Flow
+
+Custom background sounds and latency optimization eliminate the "awkward pauses":
+
+"With the background office noises, the latency-silence is nearly non-existent."
+
+### 4. Enterprise Phone System Integration
+
+Leverages professional phone system features (call queues, ring groups, conference bridges) that consumer-grade competitors lack.
+
+### 5. Flexibility
+
+Webhook-based tool calling and integration flexibility for diverse client needs.
+
+---
+
+## Document Metadata
+
+- **Created:** January 16, 2026
+- **Source:** Original conversation transcripts
+- **Purpose:** Preserve original intent and requirements for project continuity
+- **Usage:** Reference document for development decisions and scope validation
+
+---
+
+_This document should be referenced whenever there are questions about original intent, scope, or priorities for the Voice by aiConnected project._

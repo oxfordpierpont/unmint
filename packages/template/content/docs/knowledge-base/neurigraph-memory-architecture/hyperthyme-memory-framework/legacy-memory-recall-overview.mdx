@@ -1,0 +1,66 @@
+---
+title: "Recall: Persistent Conversational Memory System"
+description: "Overview Recall is a memory persistence layer for the AI brain that solves two fundamental limitations in current AI systems: 1. Context window limits — Conv..."
+---
+<Info>
+Normalized for Mintlify from `knowledge-base/neurigraph-memory-architecture/hyperthyme-memory-framework/legacy-memory-recall-overview.mdx`.
+</Info>
+# Recall: Persistent Conversational Memory System
+
+## Overview
+
+Recall is a memory persistence layer for the AI brain that solves two fundamental limitations in current AI systems:
+
+1. **Context window limits** — Conversations eventually exceed what the AI can "see" at once
+2. **Session persistence** — Information is lost when a chat ends or a new session begins
+
+## How It Works
+
+Recall continuously captures conversation content into simple markdown files at configurable intervals (e.g., every N tokens or based on other metrics). These files serve as a searchable memory archive that exists outside any single conversation.
+
+### The Flow
+
+```
+Conversation happens
+       ↓
+Every [configured interval], save conversation chunk to .md file
+       ↓
+Files accumulate over time as persistent memory
+       ↓
+Later: "Do you remember X?"
+       ↓
+AI checks current context → Not found
+       ↓
+AI searches recall files → Finds relevant file
+       ↓
+AI reads file → Now has full context
+       ↓
+AI responds with remembered information
+```
+
+### Key Characteristics
+
+- **Format**: Plain markdown files (simple, readable, portable)
+- **Trigger**: Configurable intervals (token count, time, or custom metric)
+- **Scope**: Works across any chat session—not tied to a single conversation
+- **Retrieval**: Search-based lookup when current context lacks needed information
+
+## Why This Works
+
+Traditional AI memory approaches often involve:
+- Complex vector databases
+- Embedding-based semantic search
+- Summarization that loses detail
+
+Recall takes a simpler path: just keep the actual text. When you need it, read it. The AI can process natural language natively, so there's no need to transform the memory into a different format—markdown files are already in the language the AI understands.
+
+## Use Cases
+
+- Recalling project decisions made weeks ago
+- Picking up a topic from a previous session
+- Cross-referencing information discussed in different chats
+- Building continuity in long-running projects
+
+---
+
+*Part of the AI Brain architecture*

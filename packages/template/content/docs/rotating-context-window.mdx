@@ -1,0 +1,137 @@
+---
+title: "Rotating Context Window"
+---
+**Concept Author:** Bob Hunter\
+**Date:** March 12, 2026\
+**Status:** Defined — Pending Implementation\
+**Classification:** aiConnected OS — Memory Architecture Layer 1
+
+---
+
+## What It Is
+
+The Rotating Context Window is an intra-conversation memory architecture that eliminates the hard tradeoff between RAG's information loss and long-context's cost inefficiency. Rather than treating the context window as a passive container and RAG as a separate retrieval pipeline, the Rotating Context Window unifies them into a single active memory surface that manages itself in real time.
+
+It is designed specifically as an integration workaround for platforms where the developer does not control the context ceiling — such as Claude, GPT, or other third-party model APIs. On those platforms a token limit is imposed externally. The Rotating Context Window is how aiConnected operates intelligently within that imposed constraint.
+
+---
+
+## The Problem It Solves
+
+Existing approaches present a forced tradeoff:
+
+- **RAG** — Chunks documents for efficient retrieval but loses information at chunk boundaries, severs semantic continuity, and retrieves fragments that may be slightly off-target or misleading.
+- **Long Context** — Preserves full document fidelity by loading everything into the context window but forces the model to re-read the entire document on every conversation turn, making it economically unviable at scale.
+
+The video-era conventional wisdom was: use RAG for small scale, use RAG for enterprise, and use long context only for a fuzzy middle ground. No one was asking why the tradeoff had to exist at all.
+
+The Rotating Context Window rejects the tradeoff entirely.
+
+---
+
+## How It Works
+
+### Window Division
+
+The total available context window is divided into two zones:
+
+| Zone | Size | Purpose |
+| --- | --- | --- |
+| **Live Window** | 50% of total context | Active conversation memory — always in context, no retrieval needed |
+| **RAG Layer** | Unlimited | Conversation history that has been chunked, enriched, and stored — retrieved on demand |
+
+_Example with a 1M token window: 500K tokens live, unlimited RAG storage._
+
+The 50% live limit is not arbitrary — models demonstrably degrade in performance past the halfway point of their context window. Working within 50% means working with the model at full capacity at all times.
+
+---
+
+### The Chunking Threshold
+
+Content does not get pushed to RAG reactively. Chunking begins **proactively** at **80% of the live window capacity** — giving the system enough runway to:
+
+- Complete the current conversation turn without interruption
+- Chunk clean, complete exchanges rather than cutting mid-thought
+- Run the entire process as a **background operation** with no conversation pause
+
+_Example: In a 500K live window, chunking begins at 400K tokens. The conversation never feels it._
+
+The 80% threshold is a tunable parameter — the exact value matters less than the principle: protect turn integrity and never interrupt the user.
+
+---
+
+### Background Chunking Process
+
+When content crosses the chunking threshold, a background process:
+
+1. **Segments** the oldest content into clean chunks at natural turn boundaries
+2. **Enriches** each chunk with keywords, a short summary, and a timestamp
+3. **Stores** enriched chunks in the conversation's micro-database
+4. **Frees** the live window space for the continuing conversation
+
+This process runs **continuously and silently** — like a streaming process, not a scheduled job. The threshold is a trigger, not a pause point.
+
+---
+
+### Retrieval — Every Turn
+
+On every conversation turn, a **lightweight semantic search** runs against the RAG layer automatically. This is not triggered by the user referencing something old — it runs regardless, because:
+
+- The model doesn't always know what it doesn't know
+- Relevant stored context may connect to the current turn in ways that aren't linguistically obvious
+- Waiting for an explicit reference means sometimes missing relevant context entirely
+
+**What gets retrieved** is ranked by relevance and recency and brought into the live window, displacing the least relevant current content if space requires it. The most relevant information is always what occupies live memory.
+
+---
+
+### Conflict Resolution — Version History
+
+When retrieved content conflicts with something already in the live window (e.g. an earlier design decision surfacing against a newer one):
+
+- **Timestamps** resolve priority automatically — newer content takes precedence by default
+- **Both versions are preserved** — nothing is deleted
+- **Conflicts are surfaced to the user** when relevant — "I have two versions of this, here's the current one and here's the prior one"
+- This mechanism creates **implicit version history** as a natural byproduct of the architecture
+
+---
+
+### Micro-Database Model
+
+Every conversation is its own isolated micro-database. The entire history of a conversation lives in that database. Starting a new conversation means a clean micro-database with its own fresh Rotating Context Window.
+
+In **project or collaborative contexts**, permissions govern whether a conversation's RAG layer can search across sibling conversation databases. This is a permissions decision, not an architectural one. The search logic remains the same — it simply has authorized access to a broader pool.
+
+---
+
+## Relationship to Neurigraph
+
+The Rotating Context Window is **Layer 1** of the aiConnected memory architecture — intra-conversation memory.
+
+Neurigraph is **Layer 2** — inter-conversation, cross-project, long-term memory organized as a hierarchical 3D knowledge graph.
+
+Over time, conversation micro-databases feed into Neurigraph as knowledge matures. The Rotating Context Window does not need to know anything about Neurigraph. It manages its own micro-database and passes upward. The boundary is clean.
+
+---
+
+## Key Principles
+
+1. **No hard stop** — chunking is a background stream, never an interruption
+2. **Every turn is searched** — retrieval is constant, not reactive
+3. **Time and tokens govern everything** — no complex intent-detection or semantic scoring pipelines making judgment calls
+4. **Nothing is deleted** — version history is implicit and automatic
+5. **The live window stays at 50%** — always working with the model at full capacity
+6. **RAG storage is unlimited** — storage is cheap; there is no reason to cap it
+7. **Chunks are enriched** — keywords, summaries, and timestamps travel with every chunk
+
+---
+
+## What This Is Not
+
+- This is **not** a replacement for Neurigraph — it feeds it
+- This is **not** the final vision — it is an integration workaround for platforms with imposed token limits
+- The final vision is the **Infinite Context Window** — documented separately
+
+---
+
+_Originated by Bob Hunter, March 12, 2026. Developed through iterative conversation with Claude (Anthropic). All conceptual authorship belongs to Bob Hunter._

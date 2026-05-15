@@ -1,0 +1,1310 @@
+---
+title: "Clean Room Specification: Lightweight Fact Based AI Memory API"
+description: "Purpose of This Document This document specifies the architecture for a fact based AI memory system that automatically extracts, stores, deduplicates, and re..."
+---
+<Info>
+Normalized for Mintlify from `knowledge-base/neurigraph-memory-architecture/neurigraph-tool-references/10-Lightweight-Fact-Based-AI-Memory-API.mdx`.
+</Info>
+# Clean-Room Specification: Lightweight Fact-Based AI Memory API
+
+## Purpose of This Document
+
+This document specifies the architecture for a **fact-based AI memory system** that automatically extracts, stores, deduplicates, and retrieves discrete factual memories from conversations. Rather than storing raw conversation transcripts, the system uses an LLM to distill conversations into atomic facts (e.g., "User prefers dark mode," "User works at Acme Corp"), stores them as vector embeddings for semantic retrieval, and maintains a full audit history of every memory operation. The system supports user/agent/session scoping, pluggable vector store backends, optional graph-based entity-relationship memory, and both synchronous and asynchronous APIs. This specification enables independent implementation from scratch.
+
+---
+
+## 1. System Overview
+
+### 1.1 Core Concept
+
+Traditional memory systems store raw conversation logs. This system takes a fundamentally different approach: it uses an LLM as a **memory curator** that reads conversations, extracts discrete facts, compares them against existing memories, and decides whether to ADD new facts, UPDATE existing ones, DELETE obsolete ones, or take NO action. The result is a clean, deduplicated factual memory store that grows smarter over time.
+
+### 1.2 High-Level Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                        Client API                           │
+│  Memory.add() / .search() / .get() / .get_all() / .update()│
+│  .delete() / .delete_all() / .history() / .reset()          │
+├─────────────────────────────────────────────────────────────┤
+│                   Memory Pipeline                           │
+│  ┌──────────┐  ┌──────────────┐  ┌─────────────────────┐   │
+│  │ Message   │→│ LLM Fact     │→│ Embed + Search       │   │
+│  │ Parser    │  │ Extraction   │  │ Existing Memories    │   │
+│  └──────────┘  └──────────────┘  └─────────┬───────────┘   │
+│                                             │               │
+│  ┌──────────────────────────────────────────▼───────────┐   │
+│  │           LLM Memory Update Decision                 │   │
+│  │  Compare new facts vs existing → ADD/UPDATE/DELETE   │   │
+│  └──────────────────────────────────────────────────────┘   │
+├─────────────────────────────────────────────────────────────┤
+│                    Storage Layer                            │
+│  ┌────────────┐  ┌────────────┐  ┌────────────────────┐    │
+│  │ Vector DB  │  │ SQLite     │  │ Neo4j (optional)   │    │
+│  │ (memories) │  │ (history)  │  │ (graph memory)     │    │
+│  └────────────┘  └────────────┘  └────────────────────┘    │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### 1.3 Data Flow Summary
+
+1. Client calls `memory.add(messages, user_id=...)` with conversation messages
+2. **Message Parser** normalizes input into a flat string
+3. **LLM Fact Extraction** sends conversation + system prompt → receives JSON array of discrete facts
+4. For each extracted fact:
+   a. Generate embedding vector
+   b. Search vector store for similar existing memories (top 5)
+   c. **LLM Memory Update Decision** compares new fact against existing memories → produces ADD/UPDATE/DELETE/NONE events
+5. Execute each event against the vector store
+6. Log every operation to SQLite history table
+7. Optionally extract entities and relationships to graph store
+8. Return list of memory events to the caller
+
+---
+
+## 2. Data Model
+
+### 2.1 MemoryItem
+
+The core data structure representing a single stored memory:
+
+```typescript
+interface MemoryItem {
+  id: string;              // UUID v4
+  memory: string;          // The fact text, e.g. "User prefers Python over JavaScript"
+  hash: string;            // MD5 hex digest of the memory text (for deduplication)
+  metadata: Record<string, any>;  // Arbitrary key-value pairs
+  score?: number;          // Similarity score (populated on search results only)
+  created_at: string;      // ISO 8601 timestamp
+  updated_at: string;      // ISO 8601 timestamp
+}
+```
+
+**Hash computation**: `hash = md5(memory_text).hexdigest()`. Used to detect exact duplicate memories before insertion.
+
+### 2.2 MemoryEvent
+
+Represents a single operation performed during an `add()` call:
+
+```typescript
+interface MemoryEvent {
+  event: "ADD" | "UPDATE" | "DELETE" | "NONE";
+  id: string;                // Memory ID affected
+  old_memory?: string;       // Previous text (for UPDATE/DELETE)
+  new_memory?: string;       // New text (for ADD/UPDATE)
+  metadata?: Record<string, any>;
+}
+```
+
+### 2.3 Message Format
+
+Input messages follow the standard chat message format:
+
+```typescript
+type Message = {
+  role: "system" | "user" | "assistant";
+  content: string;
+};
+```
+
+```text
+The `add()` method accepts either a single string or an array of `Message` objects. If a string is provided, it is wrapped as `[{ role: "user", content: str }]`.
+
+```
+### 2.4 Scoping Model
+
+Every memory operation requires at least one scope identifier. These are used as metadata filters on the vector store to isolate memories:
+
+```typescript
+interface MemoryScope {
+  user_id?: string;    // Isolate memories per end-user
+  agent_id?: string;   // Isolate memories per AI agent/persona
+  run_id?: string;     // Isolate memories per conversation/session
+}
+```
+
+**Validation rule**: At least one of `user_id`, `agent_id`, or `run_id` MUST be provided on every API call. If none are provided, raise an error: `"At least one of user_id, agent_id, or run_id must be provided"`.
+
+**Filter construction**: When scoping, build a metadata filter that matches ALL provided scope fields. For example, if both `user_id="alice"` and `agent_id="helper"` are provided, the vector store query filters for records where `metadata.user_id == "alice" AND metadata.agent_id == "helper"`.
+
+---
+
+## 3. Memory Class — Public API
+
+### 3.1 Constructor
+
+```typescript
+class Memory {
+  constructor(config?: MemoryConfig);
+}
+```
+
+The constructor initializes three subsystems:
+1. **Vector store** — configured via `config.vector_store`
+2. **LLM** — configured via `config.llm`
+3. **Embedder** — configured via `config.embedder`
+4. **History store** — SQLite database (always initialized, path configurable)
+5. **Graph store** (optional) — Neo4j, configured via `config.graph_store`
+
+If no config is provided, use sensible defaults:
+- Vector store: In-memory (e.g., a simple array with brute-force cosine similarity)
+- LLM: OpenAI `gpt-4o-mini`
+- Embedder: OpenAI `text-embedding-3-small` (dimension 1536)
+- History: SQLite at `~/.memory/history.db`
+
+### 3.2 Method: `add(messages, ...scope, metadata?, filters?)`
+
+**Purpose**: Extract facts from messages and store them as memories.
+
+**Parameters**:
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| messages | string \| Message[] | Yes | Conversation to extract facts from |
+| user_id | string | See scope rules | User scope |
+| agent_id | string | See scope rules | Agent scope |
+| run_id | string | See scope rules | Session scope |
+| metadata | Record&lt;string, any&gt; | No | Extra metadata to attach to each memory |
+| filters | FilterExpression | No | Additional filters for searching existing memories |
+| prompt | string | No | Custom system prompt override for fact extraction |
+
+```text
+**Returns**: `{ results: MemoryEvent[] }` — list of all ADD/UPDATE/DELETE/NONE events.
+
+```
+**Algorithm** (detailed in Section 4):
+1. Parse messages into a flat conversation string
+2. Call LLM with fact extraction prompt → get JSON array of facts
+3. For each fact: embed → search existing (limit 5) → call LLM update decision → execute event
+4. Log all events to history
+5. If graph store configured, extract entities/relationships
+6. Return events
+
+### 3.3 Method: `search(query, ...scope, limit?, filters?)`
+
+**Purpose**: Retrieve memories semantically similar to a query.
+
+**Parameters**:
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| query | string | Yes | Natural language search query |
+| user_id | string | See scope rules | User scope |
+| agent_id | string | See scope rules | Agent scope |
+| run_id | string | See scope rules | Session scope |
+| limit | number | No | Max results (default 100) |
+| filters | FilterExpression | No | Additional metadata filters |
+
+```text
+**Returns**: `{ results: MemoryItem[] }` — sorted by descending similarity score.
+
+```
+**Algorithm**:
+1. Generate embedding for query text
+2. Build metadata filter from scope + any additional filters
+3. Query vector store: `vectorStore.search(embedding, limit, filters)`
+4. Return results with similarity scores
+
+### 3.4 Method: `get(memory_id)`
+
+**Purpose**: Retrieve a single memory by its ID.
+
+**Returns**: `MemoryItem` or `null` if not found.
+
+### 3.5 Method: `get_all(...scope, limit?)`
+
+**Purpose**: Retrieve all memories for a given scope.
+
+**Parameters**: Same scope parameters. `limit` defaults to 100.
+
+```text
+**Returns**: `{ results: MemoryItem[] }` — all memories matching the scope filters.
+
+```
+**Algorithm**: Query vector store with scope-based metadata filter, no embedding (list all matching records).
+
+### 3.6 Method: `update(memory_id, new_text)`
+
+**Purpose**: Directly overwrite a memory's text.
+
+**Algorithm**:
+1. Retrieve existing memory by ID
+2. Generate new embedding for `new_text`
+3. Compute new hash: `md5(new_text)`
+4. Update vector store record: text, embedding, hash, updated_at
+5. Log UPDATE event to history
+
+### 3.7 Method: `delete(memory_id)`
+
+**Purpose**: Remove a single memory.
+
+**Algorithm**:
+1. Retrieve existing memory by ID (for history logging)
+2. Delete from vector store
+3. Log DELETE event to history
+
+### 3.8 Method: `delete_all(...scope)`
+
+**Purpose**: Remove all memories for a given scope.
+
+**Algorithm**:
+1. Retrieve all memories for scope via `get_all()`
+2. Delete each from vector store
+3. Log DELETE event for each to history
+
+### 3.9 Method: `history(memory_id)`
+
+**Purpose**: Retrieve the full audit trail for a specific memory.
+
+**Returns**: Array of history records, ordered by timestamp ascending:
+
+```typescript
+interface HistoryRecord {
+  id: string;           // History entry ID
+  memory_id: string;    // The memory this event relates to
+  event: "ADD" | "UPDATE" | "DELETE";
+  old_value: string | null;
+  new_value: string | null;
+  timestamp: string;    // ISO 8601
+  is_deleted: boolean;  // Whether memory was deleted in this event
+}
+```
+
+### 3.10 Method: `reset()`
+
+**Purpose**: Delete ALL memories and history. Nuclear option.
+
+**Algorithm**:
+1. Drop and recreate vector store collection
+2. Truncate history table (or drop and recreate)
+
+---
+
+## 4. LLM-Driven Memory Pipeline (Core Algorithm)
+
+This is the heart of the system. The `add()` method orchestrates a multi-step pipeline that uses LLM calls to intelligently manage memories.
+
+### 4.1 Step 1: Message Parsing
+
+Convert input to a flat string for the LLM:
+
+```
+function parseMessages(input: string | Message[]): string {
+  if (typeof input === "string") return input;
+  return input
+    .map(m => `${m.role}: ${m.content}`)
+    .join("\n");
+}
+```
+
+### 4.2 Step 2: Fact Extraction via LLM
+
+Send the conversation to the LLM with a system prompt that instructs it to extract discrete facts.
+
+**FACT_EXTRACTION_PROMPT** (system message):
+
+```
+You are an expert at extracting structured, atomic facts from conversations.
+Your task is to identify and extract key pieces of information from the given
+conversation that would be useful to remember for future interactions.
+
+Extract facts that fall into these categories:
+1. Personal preferences (likes, dislikes, habits)
+2. Biographical information (name, occupation, location, relationships)
+3. Goals and intentions
+4. Technical preferences and skills
+5. Important dates, events, or milestones
+6. Opinions and viewpoints
+7. Project details and requirements
+8. Communication preferences
+
+Rules:
+- Each fact must be a single, self-contained statement
+- Be specific and include context where necessary
+- Avoid duplicating information across facts
+- Only extract information that is clearly stated or strongly implied
+- Do not make assumptions beyond what is provided
+- Format each fact as a concise, declarative sentence
+- Use third person (e.g., "User prefers..." not "You prefer...")
+
+Return a JSON array of strings. If no meaningful facts can be extracted,
+return an empty array.
+
+Example output:
+["User's name is Alice", "User works as a software engineer at Acme Corp",
+ "User prefers Python for backend development"]
+```
+
+**User message**: The parsed conversation string.
+
+**LLM call configuration**:
+- Temperature: 0 (deterministic extraction)
+- Response format: JSON mode (if available) or parse JSON from response text
+
+**Parse result**: Extract JSON array from LLM response. If parsing fails, try to find JSON array pattern (`[...]`) in the response text. If still fails, return empty array.
+
+**Custom prompt support**: If the caller provides a `prompt` parameter to `add()`, use that as the system message instead of FACT_EXTRACTION_PROMPT. This allows domain-specific fact extraction.
+
+### 4.3 Step 3: Per-Fact Processing Loop
+
+For each extracted fact string, execute the following sub-steps:
+
+#### 4.3.1 Generate Embedding
+
+```
+embedding = embedder.embed(fact_text)
+```
+
+#### 4.3.2 Search Existing Memories
+
+Query the vector store for the top 5 most similar existing memories within the current scope:
+
+```
+existing = vectorStore.search(
+  embedding = embedding,
+  limit = 5,
+  filters = buildScopeFilter(user_id, agent_id, run_id)
+)
+```
+
+#### 4.3.3 LLM Memory Update Decision
+
+This is the critical decision-making step. Send the new fact AND the retrieved existing memories to the LLM, which decides what action to take.
+
+**UPDATE_MEMORY_PROMPT** (system message):
+
+```
+You are a memory management system. You will be given:
+1. A new piece of information (the "new fact")
+2. A list of existing memories that are potentially related
+
+Your job is to decide what memory operations to perform. For each operation,
+return a JSON object.
+
+Possible operations:
+
+1. ADD — The new fact contains genuinely new information not captured by any
+   existing memory. Create a new memory.
+   {"event": "ADD", "data": "the fact text to store"}
+
+2. UPDATE — The new fact updates, corrects, refines, or supersedes an existing
+   memory. Provide the existing memory ID and the new merged/updated text.
+   {"event": "UPDATE", "id": "<existing_memory_id>", "old_memory": "<current text>",
+    "data": "the updated fact text"}
+
+3. DELETE — The new fact contradicts or invalidates an existing memory and
+   the existing memory should be removed entirely.
+   {"event": "DELETE", "id": "<existing_memory_id>", "old_memory": "<current text>"}
+
+4. NONE — The new fact is already fully captured by existing memories and
+   no action is needed.
+   {"event": "NONE"}
+
+Important rules:
+- If the new fact contains information not present in ANY existing memory, use ADD
+- If an existing memory says something similar but the new fact has updated info,
+  use UPDATE (merge the information, keeping the more recent/accurate version)
+- If the new fact directly contradicts an existing memory (e.g., "moved from NYC
+  to SF" when existing says "lives in NYC"), UPDATE the existing memory
+- If removing info is more appropriate than updating, use DELETE
+- Only use NONE if the information is truly redundant
+- You may return multiple operations if needed (e.g., UPDATE one memory AND ADD
+  a new one)
+- Always preserve important context and nuance when merging
+
+Return a JSON array of operation objects.
+```
+
+**User message construction**:
+
+```
+New fact: {fact_text}
+
+Existing memories:
+{for each existing memory:}
+  - ID: {memory.id}, Text: {memory.memory}
+{end for}
+{if no existing memories:}
+  No existing memories found.
+{end if}
+```
+
+**LLM call configuration**:
+- Temperature: 0
+- Response format: JSON
+
+**Parse result**: Extract JSON array of event objects from the LLM response.
+
+### 4.4 Step 4: Execute Memory Events
+
+For each event returned by the update decision LLM:
+
+**ADD event**:
+1. Generate a new UUID v4 for the memory
+2. Compute embedding for the fact text
+3. Compute hash: `md5(fact_text)`
+```text
+4. Build metadata: `{ ...scope_fields, ...caller_metadata, hash: hash }`
+```
+```text
+5. Insert into vector store: `vectorStore.insert(id, embedding, { memory: fact_text, ...metadata })`
+```
+6. Log to history: `historyStore.log(memory_id, "ADD", null, fact_text)`
+
+**UPDATE event**:
+1. Get the target memory ID from the event
+2. Compute new embedding for the updated text
+3. Compute new hash
+```text
+4. Update vector store record: `vectorStore.update(id, newEmbedding, { memory: updated_text, hash, updated_at })`
+```
+5. Log to history: `historyStore.log(memory_id, "UPDATE", old_text, new_text)`
+
+**DELETE event**:
+1. Get the target memory ID
+2. Delete from vector store: `vectorStore.delete(id)`
+3. Log to history: `historyStore.log(memory_id, "DELETE", old_text, null, is_deleted=true)`
+
+**NONE event**: No action. Optionally log for analytics.
+
+### 4.5 Step 5: Graph Memory Extraction (Optional)
+
+If a graph store is configured, additionally extract entities and relationships.
+
+#### Entity Extraction
+
+Use an LLM tool call with the following tool definition:
+
+**EXTRACT_ENTITIES_TOOL**:
+```json
+{
+  "name": "extract_entities",
+  "description": "Extract entities (people, organizations, concepts, locations, events) from the conversation",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "entities": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "name": { "type": "string", "description": "Entity name (normalized, title case)" },
+            "type": { "type": "string", "enum": ["person", "organization", "concept", "location", "event", "technology", "product"] },
+            "description": { "type": "string", "description": "Brief description of the entity" }
+          },
+          "required": ["name", "type"]
+        }
+      }
+    }
+  }
+}
+```
+
+#### Relationship Extraction
+
+**EXTRACT_RELATIONS_TOOL**:
+```json
+{
+  "name": "extract_relations",
+  "description": "Extract relationships between entities",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "relations": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "source": { "type": "string", "description": "Source entity name" },
+            "relation": { "type": "string", "description": "Relationship type (e.g., works_at, located_in, uses, knows)" },
+            "target": { "type": "string", "description": "Target entity name" }
+          },
+          "required": ["source", "relation", "target"]
+        }
+      }
+    }
+  }
+}
+```
+
+#### Graph Store Operations
+
+For each extracted entity, perform an upsert in the graph database:
+```
+MERGE (e:Entity {name: $name})
+SET e.type = $type, e.description = $description, e.updated_at = $now
+```
+
+For each extracted relationship:
+```
+MATCH (s:Entity {name: $source})
+MATCH (t:Entity {name: $target})
+MERGE (s)-[r:RELATES_TO {type: $relation}]->(t)
+SET r.updated_at = $now
+```
+
+When searching with graph memory enabled, also query the graph for entities related to the search query and merge those results with vector search results. Use BM25 reranking if the graph store supports it to score relevance of graph-retrieved memories.
+
+---
+
+## 5. History Store (SQLite)
+
+### 5.1 Schema
+
+```sql
+CREATE TABLE IF NOT EXISTS memory_history (
+    id TEXT PRIMARY KEY,           -- UUID v4
+    memory_id TEXT NOT NULL,       -- References the memory
+    event TEXT NOT NULL,           -- 'ADD', 'UPDATE', 'DELETE'
+    old_value TEXT,                -- Previous memory text (null for ADD)
+    new_value TEXT,                -- New memory text (null for DELETE)
+    timestamp TEXT NOT NULL,       -- ISO 8601
+    is_deleted INTEGER DEFAULT 0,  -- 1 if this was a DELETE event
+
+    -- Scope fields for queryability
+    user_id TEXT,
+    agent_id TEXT,
+    run_id TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_history_memory_id ON memory_history(memory_id);
+CREATE INDEX IF NOT EXISTS idx_history_timestamp ON memory_history(timestamp);
+```
+
+### 5.2 Logging Function
+
+```
+function logHistory(memoryId, event, oldValue, newValue, scope, isDeleted = false):
+    insert into memory_history values (
+        uuid4(), memoryId, event, oldValue, newValue,
+        new Date().toISOString(), isDeleted ? 1 : 0,
+        scope.user_id, scope.agent_id, scope.run_id
+    )
+```
+
+### 5.3 Query Function
+
+```
+function getHistory(memoryId):
+    SELECT * FROM memory_history
+    WHERE memory_id = ?
+    ORDER BY timestamp ASC
+```
+
+---
+
+## 6. Vector Store Abstraction
+
+### 6.1 VectorStoreBase Interface
+
+All vector store backends implement this interface:
+
+```typescript
+interface VectorStoreBase {
+  // Collection management
+  createCollection(name: string, dimension: number): Promise<void>;
+  deleteCollection(name: string): Promise<void>;
+  listCollections(): Promise<string[]>;
+  getCollectionInfo(name: string): Promise<{ name: string; count: number; dimension: number }>;
+
+  // CRUD operations
+  insert(
+    collectionName: string,
+    id: string,
+    vector: number[],
+    payload: Record<string, any>
+  ): Promise<void>;
+
+  search(
+    collectionName: string,
+    queryVector: number[],
+    limit: number,
+    filters?: FilterExpression
+  ): Promise<Array<{ id: string; score: number; payload: Record<string, any> }>>;
+
+  get(collectionName: string, id: string): Promise<{ id: string; payload: Record<string, any> } | null>;
+
+  update(
+    collectionName: string,
+    id: string,
+    vector?: number[],
+    payload?: Record<string, any>
+  ): Promise<void>;
+
+  delete(collectionName: string, id: string): Promise<void>;
+
+  list(
+    collectionName: string,
+    filters?: FilterExpression,
+    limit?: number
+  ): Promise<Array<{ id: string; payload: Record<string, any> }>>;
+
+  reset(): Promise<void>;
+}
+```
+
+### 6.2 In-Memory Vector Store (Default)
+
+For development and testing, implement a simple in-memory store:
+
+```typescript
+class InMemoryVectorStore implements VectorStoreBase {
+  private collections: Map<string, Map<string, { vector: number[]; payload: Record<string, any> }>>;
+
+  search(collectionName, queryVector, limit, filters?):
+    // For each record in collection:
+    //   1. If filters provided, check metadata matches
+    //   2. Compute cosine similarity: dot(a,b) / (norm(a) * norm(b))
+    //   3. Collect (id, score, payload)
+    // Sort by score descending, return top `limit`
+}
+```
+
+**Cosine similarity**:
+```
+function cosineSimilarity(a: number[], b: number[]): number {
+  let dot = 0, normA = 0, normB = 0;
+  for (let i = 0; i < a.length; i++) {
+    dot += a[i] * b[i];
+    normA += a[i] * a[i];
+    normB += b[i] * b[i];
+  }
+  return dot / (Math.sqrt(normA) * Math.sqrt(normB));
+}
+```
+
+### 6.3 Qdrant Backend
+
+```typescript
+class QdrantVectorStore implements VectorStoreBase {
+  constructor(config: { host: string; port: number; apiKey?: string; onDisk?: boolean });
+
+  // Uses Qdrant REST API:
+  // PUT /collections/{name} — createCollection
+  // PUT /collections/{name}/points — insert (upsert)
+  // POST /collections/{name}/points/search — search
+  // GET /collections/{name}/points/{id} — get
+  // POST /collections/{name}/points/delete — delete
+
+  // Filter translation: Convert FilterExpression to Qdrant filter format
+  // { must: [{ key: "user_id", match: { value: "alice" } }] }
+}
+```
+
+### 6.4 PostgreSQL/pgvector Backend
+
+```typescript
+class PgVectorStore implements VectorStoreBase {
+  constructor(config: { connectionString: string; schema?: string });
+
+  createCollection(name, dimension):
+    // CREATE TABLE {name} (
+    //   id TEXT PRIMARY KEY,
+    //   vector vector({dimension}),
+    //   payload JSONB,
+    //   created_at TIMESTAMP DEFAULT NOW()
+    // );
+    // CREATE INDEX ON {name} USING ivfflat (vector vector_cosine_ops);
+
+  search(collectionName, queryVector, limit, filters?):
+    // SELECT id, payload, 1 - (vector <=> $1::vector) as score
+    // FROM {collection}
+    // WHERE {filter_clauses}
+    // ORDER BY vector <=> $1::vector
+    // LIMIT $2
+
+  // Filter translation: Convert FilterExpression to SQL WHERE clauses
+  // { field: "user_id", op: "eq", value: "alice" }
+  //   → payload->>'user_id' = 'alice'
+}
+```
+
+### 6.5 ChromaDB Backend
+
+```typescript
+class ChromaVectorStore implements VectorStoreBase {
+  constructor(config: { host: string; port: number; path?: string });
+
+  // Uses ChromaDB client:
+  // client.createCollection(name) / getCollection(name)
+  // collection.add(ids, embeddings, metadatas, documents)
+  // collection.query(queryEmbeddings, nResults, where)
+  // collection.update(ids, embeddings, metadatas, documents)
+  // collection.delete(ids)
+
+  // Filter translation: Convert FilterExpression to ChromaDB where format
+  // { "$and": [{ "user_id": { "$eq": "alice" } }] }
+}
+```
+
+### 6.6 Additional Backend Targets
+
+The interface should support these backends (implementation details vary but all implement VectorStoreBase):
+
+- **Pinecone**: REST API with namespaces for scoping
+- **Weaviate**: GraphQL-based queries with class schemas
+- **Milvus**: gRPC client with collection/partition model
+- **FAISS**: Local file-based index with separate metadata store
+- **Elasticsearch**: kNN search with dense_vector field type
+- **Azure AI Search**: REST API with vector search profiles
+- **Redis**: RediSearch with VECTOR field type (HNSW/FLAT)
+
+---
+
+## 7. Filter Expression System
+
+### 7.1 Filter Syntax
+
+Filters allow complex metadata queries across all vector store backends. The system defines a portable filter expression that is translated to each backend's native syntax.
+
+```typescript
+type FilterOperator = "eq" | "ne" | "gt" | "gte" | "lt" | "lte" |
+                       "in" | "nin" | "contains" | "icontains";
+
+type FilterCondition = {
+  field: string;
+  operator: FilterOperator;
+  value: any;
+};
+
+type FilterExpression =
+  | FilterCondition
+  | { AND: FilterExpression[] }
+  | { OR: FilterExpression[] }
+  | { NOT: FilterExpression };
+```
+
+### 7.2 Operator Semantics
+
+| Operator | Meaning | Example |
+|----------|---------|---------|
+```text
+| eq | Equals | `{ field: "user_id", operator: "eq", value: "alice" }` |
+```
+```text
+| ne | Not equals | `{ field: "status", operator: "ne", value: "archived" }` |
+```
+```text
+| gt | Greater than | `{ field: "score", operator: "gt", value: 0.8 }` |
+```
+```text
+| gte | Greater or equal | `{ field: "created_at", operator: "gte", value: "2024-01-01" }` |
+```
+```text
+| lt | Less than | `{ field: "priority", operator: "lt", value: 5 }` |
+```
+```text
+| lte | Less or equal | `{ field: "age", operator: "lte", value: 30 }` |
+```
+```text
+| in | Value in set | `{ field: "tag", operator: "in", value: ["work", "personal"] }` |
+```
+```text
+| nin | Value not in set | `{ field: "tag", operator: "nin", value: ["spam"] }` |
+```
+```text
+| contains | String contains (case-sensitive) | `{ field: "memory", operator: "contains", value: "Python" }` |
+```
+```text
+| icontains | String contains (case-insensitive) | `{ field: "memory", operator: "icontains", value: "python" }` |
+
+```
+### 7.3 Composition
+
+```typescript
+// Example: Find memories for user "alice" that mention either "Python" or "JavaScript"
+const filter: FilterExpression = {
+  AND: [
+    { field: "user_id", operator: "eq", value: "alice" },
+    { OR: [
+      { field: "memory", operator: "icontains", value: "Python" },
+      { field: "memory", operator: "icontains", value: "JavaScript" }
+    ]}
+  ]
+};
+```
+
+### 7.4 Backend Translation
+
+Each vector store backend implements a `translateFilter(expr: FilterExpression)` method that converts the portable expression to the backend's native format. For example:
+
+```text
+- **Qdrant**: `{ must: [{ key: "field", match: { value: "x" } }] }`
+```
+```text
+- **ChromaDB**: `{ "$and": [{ "field": { "$eq": "x" } }] }`
+```
+- **pgvector**: `WHERE payload->>'field' = 'x'`
+```text
+- **Pinecone**: `{ "field": { "$eq": "x" } }`
+
+```
+---
+
+## 8. Configuration System
+
+### 8.1 MemoryConfig
+
+```typescript
+interface MemoryConfig {
+  // Vector store backend configuration
+  vector_store?: {
+    provider: "memory" | "qdrant" | "chroma" | "pgvector" | "pinecone" |
+              "weaviate" | "milvus" | "faiss" | "elasticsearch" | "redis";
+    config: Record<string, any>;  // Provider-specific connection config
+    collection_name?: string;     // Default: "memories"
+  };
+
+  // LLM configuration (for fact extraction and update decisions)
+  llm?: {
+    provider: "openai" | "anthropic" | "google" | "ollama" | "azure_openai";
+    config: {
+      model: string;
+      api_key?: string;        // Falls back to env var (OPENAI_API_KEY, etc.)
+      temperature?: number;    // Default: 0
+      max_tokens?: number;     // Default: 2000
+      base_url?: string;       // For custom endpoints
+    };
+  };
+
+  // Embedding model configuration
+  embedder?: {
+    provider: "openai" | "ollama" | "huggingface" | "azure_openai" | "google";
+    config: {
+      model: string;           // e.g., "text-embedding-3-small"
+      api_key?: string;
+      dimensions?: number;     // Output dimension (default: 1536 for OpenAI)
+    };
+  };
+
+  // Graph memory (optional)
+  graph_store?: {
+    provider: "neo4j";
+    config: {
+      url: string;             // bolt://localhost:7687
+      username: string;
+      password: string;
+    };
+  };
+
+  // History store
+  history?: {
+    db_path?: string;          // SQLite path, default: ~/.memory/history.db
+  };
+
+  // Custom prompts (override defaults)
+  custom_prompts?: {
+    fact_extraction?: string;  // Override FACT_EXTRACTION_PROMPT
+    update_decision?: string;  // Override UPDATE_MEMORY_PROMPT
+  };
+
+  // Versioning
+  version?: "v1.0" | "v1.1";  // API version, affects behavior
+}
+```
+
+### 8.2 Environment Variable Fallbacks
+
+The system checks environment variables as fallbacks for API keys and configuration:
+
+| Env Variable | Purpose |
+|-------------|---------|
+| `OPENAI_API_KEY` | OpenAI LLM and embedder |
+| `ANTHROPIC_API_KEY` | Anthropic LLM |
+| `GOOGLE_API_KEY` | Google LLM and embedder |
+| `QDRANT_HOST`, `QDRANT_PORT`, `QDRANT_API_KEY` | Qdrant connection |
+| `CHROMA_HOST`, `CHROMA_PORT` | ChromaDB connection |
+| `DATABASE_URL` | PostgreSQL/pgvector connection |
+| `NEO4J_URL`, `NEO4J_USER`, `NEO4J_PASSWORD` | Neo4j graph store |
+| `REDIS_URL` | Redis vector store |
+
+---
+
+## 9. Embedder Abstraction
+
+### 9.1 EmbedderBase Interface
+
+```typescript
+interface EmbedderBase {
+  embed(text: string): Promise<number[]>;
+  embedBatch(texts: string[]): Promise<number[][]>;
+  getDimension(): number;
+}
+```
+
+### 9.2 OpenAI Embedder
+
+```typescript
+class OpenAIEmbedder implements EmbedderBase {
+  constructor(config: { model: string; apiKey: string; dimensions?: number });
+
+  async embed(text: string): Promise<number[]> {
+    // POST https://api.openai.com/v1/embeddings
+    // { model: this.model, input: text, dimensions: this.dimensions }
+    // Return response.data[0].embedding
+  }
+
+  async embedBatch(texts: string[]): Promise<number[][]> {
+    // Same endpoint accepts array input
+    // Return response.data.map(d => d.embedding)
+  }
+}
+```
+
+### 9.3 Ollama Embedder (Local)
+
+```typescript
+class OllamaEmbedder implements EmbedderBase {
+  constructor(config: { model: string; baseUrl?: string });
+
+  async embed(text: string): Promise<number[]> {
+    // POST http://localhost:11434/api/embeddings
+    // { model: this.model, prompt: text }
+    // Return response.embedding
+  }
+}
+```
+
+---
+
+## 10. LLM Abstraction
+
+### 10.1 LLMBase Interface
+
+```typescript
+interface LLMBase {
+  generate(
+    systemPrompt: string,
+    userMessage: string,
+    options?: { temperature?: number; maxTokens?: number; responseFormat?: "json" | "text"; tools?: ToolDef[] }
+  ): Promise<string>;
+
+  generateWithToolCalls(
+    systemPrompt: string,
+    userMessage: string,
+    tools: ToolDef[],
+    options?: { temperature?: number }
+  ): Promise<{ content?: string; toolCalls?: Array<{ name: string; arguments: Record<string, any> }> }>;
+}
+```
+
+### 10.2 Provider Implementations
+
+Each LLM provider maps to its respective API:
+
+```text
+- **OpenAI**: `POST /v1/chat/completions` with `response_format: { type: "json_object" }` when JSON mode requested
+```
+- **Anthropic**: `POST /v1/messages` with tool use for structured extraction
+- **Google**: Gemini API with JSON schema in `generationConfig`
+- **Ollama**: `POST /api/chat` with local models
+
+---
+
+## 11. Async API
+
+### 11.1 AsyncMemory Class
+
+Provide an async variant that wraps the synchronous Memory class (or implements natively with async I/O):
+
+```typescript
+class AsyncMemory {
+  constructor(config?: MemoryConfig);
+
+  async add(messages, ...scope): Promise<{ results: MemoryEvent[] }>;
+  async search(query, ...scope): Promise<{ results: MemoryItem[] }>;
+  async get(memoryId): Promise<MemoryItem | null>;
+  async getAll(...scope): Promise<{ results: MemoryItem[] }>;
+  async update(memoryId, newText): Promise<void>;
+  async delete(memoryId): Promise<void>;
+  async deleteAll(...scope): Promise<void>;
+  async history(memoryId): Promise<HistoryRecord[]>;
+  async reset(): Promise<void>;
+}
+```
+
+In languages with native async (Python asyncio, JavaScript), the async class should use async HTTP clients (aiohttp, fetch) for LLM and vector store calls rather than blocking.
+
+---
+
+## 12. REST API Wrapper (Optional Server Mode)
+
+For serving memory as a standalone service:
+
+### 12.1 Endpoints
+
+```
+POST   /v1/memories/          — Add memories (body: { messages, user_id?, agent_id?, run_id?, metadata? })
+GET    /v1/memories/search/   — Search (query: q, user_id, limit)
+GET    /v1/memories/:id/      — Get single memory
+GET    /v1/memories/           — Get all memories (query: user_id, agent_id, run_id, limit)
+PUT    /v1/memories/:id/      — Update memory (body: { text })
+DELETE /v1/memories/:id/      — Delete memory
+DELETE /v1/memories/           — Delete all (query: user_id, agent_id, run_id)
+GET    /v1/memories/:id/history/ — Get history
+POST   /v1/reset/             — Reset all
+
+POST   /v1/entities/          — Get graph entities for scope
+GET    /v1/entities/:name/relations/ — Get entity relationships
+```
+
+### 12.2 Authentication
+
+Bearer token authentication via `Authorization: Bearer <token>` header. Tokens can be project-scoped API keys.
+
+---
+
+## 13. Usage Examples
+
+### 13.1 Basic Usage
+
+```typescript
+const memory = new Memory();
+
+// Add memories from a conversation
+const result = await memory.add(
+  [
+    { role: "user", content: "Hi, I'm Alice. I work at Acme Corp as a data scientist." },
+    { role: "assistant", content: "Nice to meet you, Alice! What kind of data science work do you do?" },
+    { role: "user", content: "Mostly NLP and recommendation systems. I prefer PyTorch over TensorFlow." }
+  ],
+  { user_id: "alice" }
+);
+
+console.log(result.results);
+// [
+//   { event: "ADD", id: "abc-123", new_memory: "User's name is Alice" },
+//   { event: "ADD", id: "def-456", new_memory: "User works at Acme Corp as a data scientist" },
+//   { event: "ADD", id: "ghi-789", new_memory: "User specializes in NLP and recommendation systems" },
+//   { event: "ADD", id: "jkl-012", new_memory: "User prefers PyTorch over TensorFlow" }
+// ]
+
+// Search memories
+const searchResults = await memory.search("What does Alice do?", { user_id: "alice" });
+// Returns sorted by relevance: work info, specialization, etc.
+
+// Later conversation updates a memory
+await memory.add(
+  [
+    { role: "user", content: "I just switched jobs. I'm now at BigTech Inc." }
+  ],
+  { user_id: "alice" }
+);
+// Result: { event: "UPDATE", id: "def-456",
+//           old_memory: "User works at Acme Corp as a data scientist",
+//           new_memory: "User works at BigTech Inc as a data scientist" }
+
+// Check history
+const history = await memory.history("def-456");
+// Shows ADD (original) then UPDATE (job change)
+```
+
+### 13.2 Multi-Scope Usage
+
+```typescript
+// Agent-specific memories
+await memory.add(messages, { user_id: "alice", agent_id: "code-helper" });
+
+// Session-scoped (ephemeral, per conversation)
+await memory.add(messages, { user_id: "alice", run_id: "session-20240315" });
+
+// Search across a specific agent's memories for a user
+const results = await memory.search("Python frameworks", {
+  user_id: "alice",
+  agent_id: "code-helper"
+});
+```
+
+### 13.3 Custom Configuration
+
+```typescript
+const memory = new Memory({
+  vector_store: {
+    provider: "qdrant",
+    config: { host: "localhost", port: 6333 }
+  },
+  llm: {
+    provider: "anthropic",
+    config: { model: "claude-sonnet-4-20250514", api_key: process.env.ANTHROPIC_API_KEY }
+  },
+  embedder: {
+    provider: "openai",
+    config: { model: "text-embedding-3-small", dimensions: 1536 }
+  },
+  graph_store: {
+    provider: "neo4j",
+    config: { url: "bolt://localhost:7687", username: "neo4j", password: "password" }
+  }
+});
+```
+
+### 13.4 With Filters
+
+```typescript
+// Search with metadata filters
+const results = await memory.search("project deadlines", {
+  user_id: "alice",
+  filters: {
+    AND: [
+      { field: "category", operator: "eq", value: "work" },
+      { field: "created_at", operator: "gte", value: "2024-01-01" }
+    ]
+  }
+});
+```
+
+---
+
+## 14. Error Handling
+
+### 14.1 Error Types
+
+```typescript
+class MemoryError extends Error {
+  constructor(message: string, public code: string);
+}
+
+// Specific errors
+class ScopeError extends MemoryError {}       // Missing user_id/agent_id/run_id
+class VectorStoreError extends MemoryError {}  // Backend connection/query failures
+class LLMError extends MemoryError {}          // LLM API failures
+class EmbeddingError extends MemoryError {}    // Embedding API failures
+class NotFoundError extends MemoryError {}     // Memory ID not found
+```
+
+### 14.2 Retry Logic
+
+LLM and embedding calls should implement exponential backoff retry:
+
+```
+function withRetry(fn, maxRetries = 3, baseDelay = 1000):
+  for attempt in 0..maxRetries:
+    try:
+      return await fn()
+    catch error:
+      if attempt == maxRetries: throw error
+      if error is rate_limit: delay = baseDelay * 2^attempt
+      else: throw error  // Don't retry non-transient errors
+      await sleep(delay)
+```
+
+### 14.3 Graceful Degradation
+
+- If fact extraction LLM call fails, return empty results (don't crash)
+- If embedding call fails for one fact, skip that fact and continue with others
+- If history DB is unavailable, log warning but continue with memory operations
+- If graph store is unavailable, skip graph extraction but complete vector operations
+
+---
+
+## 15. Behavioral Test Cases
+
+### Memory CRUD
+
+```text
+1. **Add single fact** — `add("My name is Bob", { user_id: "bob" })` → returns one ADD event with memory text "User's name is Bob"
+```
+```text
+2. **Add conversation** — `add([{role:"user",content:"..."},{role:"assistant",content:"..."}])` → extracts multiple facts, returns multiple ADD events
+```
+```text
+3. **Add with empty input** — `add("hello", { user_id: "x" })` → may return empty results if no extractable facts
+```
+4. **Search by semantics** — After adding "User likes Python", `search("programming languages")` → returns the Python memory with score &gt; 0.5
+```text
+5. **Search with limit** — `search(query, { limit: 3 })` → returns at most 3 results
+```
+6. **Get by ID** — After ADD, `get(returned_id)` → returns the memory item
+7. **Get nonexistent** — `get("fake-id")` → returns null
+```text
+8. **Get all for scope** — After adding 3 memories for user "alice", `get_all({ user_id: "alice" })` → returns all 3
+```
+9. **Update overwrites** — `update(id, "new text")` → `get(id).memory` equals "new text"
+10. **Update changes hash** — After update, hash should equal `md5("new text")`
+11. **Delete removes** — `delete(id)` → `get(id)` returns null
+```text
+12. **Delete all for scope** — `delete_all({ user_id: "alice" })` → `get_all({ user_id: "alice" })` returns empty
+```
+13. **Reset clears everything** — `reset()` → all collections and history are empty
+
+### Memory Update Intelligence
+
+14. **Deduplication** — Add "User likes Python" then add "User likes Python" again → second call returns NONE event
+15. **Update on contradiction** — Add "User lives in NYC" then add "User moved to San Francisco" → returns UPDATE event changing NYC to SF
+16. **Merge on refinement** — Add "User works in tech" then add "User works at Google as a senior engineer" → returns UPDATE with merged, more specific memory
+17. **Delete on negation** — Add "User is vegetarian" then add "User started eating meat again" → returns DELETE or UPDATE removing vegetarian claim
+18. **Multiple events per add** — Single conversation may produce multiple ADD + UPDATE events in one call
+
+### Scoping
+
+19. **Scope isolation** — Memories added with `user_id: "alice"` are NOT returned when searching with `user_id: "bob"`
+```text
+20. **Multi-scope filter** — Memories added with `{ user_id: "alice", agent_id: "helper" }` require BOTH fields to match in queries
+```
+21. **Missing scope error** — Calling `add(msg, {})` with no scope fields → throws ScopeError
+22. **Run ID isolation** — Memories for `run_id: "session-1"` are separate from `run_id: "session-2"`
+
+### History
+
+23. **ADD creates history** — After `add()`, `history(memory_id)` returns one record with event "ADD"
+24. **UPDATE appends history** — After `update()`, history has ADD then UPDATE records
+25. **DELETE marks in history** — After `delete()`, history shows DELETE with `is_deleted: true`
+26. **History ordered by time** — History records are returned in chronological order
+
+### Filters
+
+```text
+27. **Equals filter** — `search(query, { filters: { field: "tag", operator: "eq", value: "work" } })` → only returns memories with tag "work"
+```
+28. **In filter** — `operator: "in", value: ["a","b"]` matches records where field is "a" or "b"
+29. **AND composition** — Both conditions must match
+30. **OR composition** — Either condition matches
+31. **NOT negation** — Excludes matching records
+32. **Contains string** — `operator: "contains", value: "Python"` matches "User likes Python for ML"
+
+### Graph Memory
+
+33. **Entity extraction** — After adding conversation about "Alice at Google", graph contains entities "Alice" (person) and "Google" (organization)
+34. **Relationship extraction** — Graph contains relationship "Alice" --works_at--&gt; "Google"
+35. **Graph-enhanced search** — Search that matches a graph entity also returns related memories from connected entities
+
+### Error Handling
+
+36. **LLM failure graceful** — If LLM API is down, `add()` returns empty results (no crash)
+37. **Partial failure continues** — If embedding fails for one of 3 facts, the other 2 are still processed
+38. **Invalid scope rejected** — Empty scope object throws descriptive error
+
+### Custom Configuration
+
+39. **Custom extraction prompt** — Providing `prompt` parameter to `add()` changes the fact extraction behavior
+40. **Custom LLM provider** — Memory works with Anthropic/Google/Ollama as LLM backend
+41. **Custom vector store** — Memory works with Qdrant/pgvector/ChromaDB backends
+42. **Default config works** — `new Memory()` with no config uses in-memory store and OpenAI defaults
+
+---
+
+## 16. Implementation Priorities
+
+### Phase 1: Core (MVP)
+1. Memory class with add/search/get/get_all/update/delete
+2. In-memory vector store
+3. OpenAI LLM + embedder
+4. SQLite history
+5. Fact extraction + update decision pipeline
+
+### Phase 2: Production Backends
+6. Qdrant vector store backend
+7. pgvector backend
+8. ChromaDB backend
+9. Filter expression system with backend translation
+
+### Phase 3: Advanced Features
+10. Graph memory (Neo4j)
+11. Async API
+12. REST server wrapper
+13. Additional LLM providers (Anthropic, Google, Ollama)
+14. Additional vector store backends
+
+### Phase 4: Optimization
+15. Batch embedding for multiple facts
+16. Connection pooling for vector stores
+17. LLM response caching for identical conversations
+18. Configurable concurrency for parallel fact processing

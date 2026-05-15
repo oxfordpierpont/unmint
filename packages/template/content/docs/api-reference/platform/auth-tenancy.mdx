@@ -1,0 +1,115 @@
+---
+title: "Auth and tenancy"
+description: "Multi-tenant identity, roles, inheritance rules, and the shell-level management surface."
+---
+## Contract status
+
+`Derived implementation contract`
+
+The repo defines user layers, inheritance rules, and shell responsibilities clearly. It does not publish a final route-by-route auth spec for the rebuilt v2 shell, so this page documents the required management surface and invariants.
+
+## Source documents
+
+- [aiConnected Platform foundation PRD](/docs/knowledge-base/aiconnected-business-platform/aiconnected-platform-foundation-prd)
+- [aiConnected Platform MVP specification](/docs/knowledge-base/aiconnected-business-platform/aiconnected-platform-v1-mvp-specification)
+- [legacy platform redesign spec](/docs/knowledge-base/aiconnected-business-platform/legacy-platform-redesign-spec)
+- [aiConnectedOS developer documentation](/docs/knowledge-base/aiconnected-os/aiconnected-os-developer-documentation)
+
+## Tenant model
+
+The platform must support this hierarchy:
+
+```text
+Super Admin
+  └── Agency
+        ├── Business
+        │     └── End user (inside modules)
+        └── Developer
+Personal
+```
+
+Personal accounts are isolated and do not inherit from agency or business structures.
+
+## Role model
+
+The foundation PRD defines 13 permission types:
+
+| Layer | Roles |
+|---|---|
+| Super | Admin, Manager, User |
+| Agency | Admin, Manager, User |
+| Business | Admin, Manager, User |
+| Developer | Admin, Manager, User |
+| Personal | Single private user |
+
+## Inheritance rules
+
+- Super admins can impersonate lower layers for support and testing.
+- Agencies can configure what business admins are allowed to do.
+- Businesses can delegate within the limits agencies set.
+- No layer can grant permissions above its own level.
+- Personal workspaces must remain fully isolated.
+
+## Required auth resources
+
+| Resource | Purpose |
+|---|---|
+| `users` | Platform identities |
+| `workspaces` | Tenant records for agency, business, developer, or personal scopes |
+| `workspace_memberships` | User-to-workspace role assignments |
+| `roles` | Stable named permission bundles |
+| `permissions` | Fine-grained actions enforced at API time |
+| `impersonation_sessions` | Logged, time-limited support sessions |
+| `api_keys` | Service or module authentication where user sessions are not present |
+
+## Required management operations
+
+The shell must expose operations for:
+
+- Creating agencies, businesses, and developer workspaces
+- Inviting and removing users
+- Assigning and revoking roles
+- Retrieving effective permissions
+- Starting and ending impersonation sessions
+- Issuing, rotating, and revoking API keys
+- Auditing role grants, changes, and impersonation activity
+
+## Legacy route signals
+
+The older redesign spec references these shell endpoints:
+
+| Route | Purpose in legacy docs |
+|---|---|
+| `/api/agencies` | Agency CRUD |
+| `/api/businesses` | Business CRUD |
+| `/api/users` | User management |
+| `/api/settings` | Tenant-scoped settings |
+
+Treat these as route ancestry for the v2 shell, not as the final locked path contract.
+
+## Security requirements
+
+- Enforce permission checks at the API layer, not only in UI components.
+- Log who granted what permissions and when.
+- Limit impersonation by time and audit trail.
+- Prevent any cross-tenant access through account and workspace scoping.
+- Propagate tenant context to downstream modules through the gateway.
+
+## Recommended response context
+
+Every authenticated shell or gateway response should carry enough context for module-safe execution:
+
+```json
+{
+  "user_id": "usr_123",
+  "workspace_id": "ws_123",
+  "workspace_type": "business",
+  "role": "business_admin",
+  "permissions": ["contacts.read", "contacts.write", "events.read"],
+  "impersonating": false
+}
+```
+
+## Build notes
+
+If you need to choose between convenience and tenant isolation, pick isolation. That is consistent across every platform architecture doc in the repository.

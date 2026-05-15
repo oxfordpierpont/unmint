@@ -1,0 +1,35 @@
+---
+title: "Dynamic persona waking"
+description: "Feature-level API contract for wake-word activation, device-aware routing, and graceful persona handoff behavior."
+---
+## Contract status
+
+`Derived implementation contract`
+
+## Source document
+
+- [Dynamic persona waking](/docs/knowledge-base/aiconnected-os/dynamic-persona-waking-voice)
+
+## Feature purpose
+
+Defines which persona wakes, on which device, and with what fallback or etiquette rules.
+
+## Required operations
+
+- Register wake triggers and target personas
+- Resolve last-active-device routing
+- Handle simultaneous or conflicting wake events
+- Persist handoff and closure state across devices
+
+## Suggested resources
+
+- `wake_profiles`
+- `wake_events`
+- `device_routing_state`
+- `persona_handoffs`
+
+## Implementation notes
+
+- Keep this feature workspace-scoped and persona-aware where applicable.
+- Preserve authorship, timestamps, and auditability for all state changes.
+- Treat the source doc as the behavioral specification even where final route names remain open.

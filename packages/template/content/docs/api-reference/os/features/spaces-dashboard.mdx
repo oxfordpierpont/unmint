@@ -1,0 +1,36 @@
+---
+title: "Spaces and dashboard"
+description: "Feature-level API contract for spaces, dashboards, workspace home surfaces, and primary entry-state behavior in aiConnectedOS."
+---
+## Contract status
+
+`Derived implementation contract`
+
+## Source document
+
+- [Spaces and dashboard](/docs/knowledge-base/aiconnected-os/aiconnected-os-1-spaces-dashboard-design)
+
+## Feature purpose
+
+Defines the primary workspace container, dashboard landing surface, and space-scoped navigation model for aiConnectedOS.
+
+## Required operations
+
+- Create, update, archive, and list spaces
+- Assign personas, documents, whiteboards, and tasks to a space
+- Persist dashboard widgets, panels, and default views per space
+- Load a space home payload with recent activity, pinned items, and quick actions
+
+## Suggested resources
+
+- `spaces`
+- `space_memberships`
+- `space_dashboard_layouts`
+- `space_widgets`
+- `space_activity_feed`
+
+## Implementation notes
+
+- Keep this feature workspace-scoped and persona-aware where applicable.
+- Preserve authorship, timestamps, and auditability for all state changes.
+- Treat the source doc as the behavioral specification even where final route names remain open.

@@ -1,0 +1,374 @@
+---
+title: "aiConnected Platform v2 — Build Plan"
+---
+
+# aiConnected Platform v2 — Build Plan
+**Sequenced execution for a small development team**
+*March 2026*
+
+---
+
+## Guiding Principles
+
+1. **Foundation before features.** The shell, event bus, module registry, and manifest spec must be solid before any module is built. A module built on a shaky foundation requires rework.
+2. **Validate the pattern early.** Port one full module end-to-end (KB Studio) and confirm it works within the shell before building the others. This proves the architecture before committing to it at scale.
+3. **Packages first, apps second.** Set up all shared packages before any app is written. Apps should have nothing to build until the packages they depend on exist.
+4. **shadcn/ui is non-negotiable.** Every component in every app comes from `@aiconnected/ui`. No exceptions. Custom CSS is only written for TweakCN token overrides.
+5. **Manifest compliance is a Day 1 requirement.** Every module, including the first one built, ships with a fully compliant manifest. The manifest spec does not evolve retroactively.
+
+---
+
+## Phase 0 — Environment Setup
+**Estimated: 1 day | Owner: Lead developer**
+
+- [ ] Initialize new Turborepo monorepo (`platform-v2`)
+- [ ] Configure `turbo.json` with correct pipeline (build, dev, lint, test)
+- [ ] Configure `package.json` workspaces for `apps/*` and `packages/*`
+- [ ] Set up ESLint, Prettier, TypeScript config shared packages
+- [ ] Initialize Git repo, connect to GitHub, set up main/dev branch protection
+- [ ] Provision fresh Supabase project (separate from v1 — do not touch v1 until v2 is live)
+- [ ] Confirm access to DigitalOcean, Dokploy, Crawl4AI, OpenRouter, Stripe
+- [ ] Copy `.env.example` from v1, document all required v2 env vars
+
+**Gate: Team can run `turbo dev` and see an empty workspace.**
+
+---
+
+## Phase 1 — Shared Packages
+**Estimated: 2–3 days | Owner: Lead developer**
+
+Set up all shared packages before any app is written. Apps should have nothing to build until their dependencies exist.
+
+### 1A — Port existing packages (no logic changes)
+
+- [ ] Copy `packages/permissions` → v2 (as-is)
+- [ ] Copy `packages/kb-engine` → v2 (as-is)
+- [ ] Copy `packages/chat-core` → v2 (as-is, flag composio.js for gateway review)
+- [ ] Copy `packages/app-sdk` → v2, then extend manifests with `events_emitted` / `events_consumed`
+- [ ] Port `packages/branding` merge logic → v2, replace token names with TweakCN equivalents
+
+### 1B — Build new packages
+
+- [ ] Create `packages/ui` — initialize shadcn/ui, install core components (button, card, dialog, input, form, table, badge, avatar, dropdown, sheet, tabs, toast, sidebar)
+- [ ] Export all components from `packages/ui/src/index.ts`
+- [ ] Write `packages/db` client/server Supabase split (port patterns from v1)
+
+### 1C — Define v2 database schema
+
+- [ ] Write migration 001: core shared tables (`workspaces`, `users`, `contacts`, `events`, `module_registry`)
+- [ ] Write migration 002: permissions and RLS policies for all core tables
+- [ ] Write migration 003: Stripe billing fields on workspaces
+- [ ] Apply migrations to fresh Supabase project
+- [ ] Verify RLS policies enforce tenant isolation
+
+**Gate: All packages build cleanly. `packages/ui` exports all components. Core schema is live in Supabase.**
+
+---
+
+## Phase 2 — Platform Shell
+**Estimated: 4–5 days | Owner: Lead developer + 1 developer**
+
+Build the shell that all modules live inside. This is the most critical phase. Every design decision made here is inherited by every module.
+
+### 2A — Authentication
+
+- [ ] Supabase Auth integration (email/password + Google OAuth)
+- [ ] Login page (shadcn/ui)
+- [ ] Signup / invite flow
+- [ ] Password reset flow
+- [ ] Session management and protected route middleware
+- [ ] Role assignment on signup (agency_admin default for self-signup)
+
+### 2B — Shell layout
+
+- [ ] Authenticated layout: sidebar + header + main content area
+- [ ] Sidebar component — dynamic menu from `packages/permissions` role
+- [ ] Header component — user menu, workspace switcher, notifications placeholder
+- [ ] Responsive layout (desktop primary, tablet-functional)
+- [ ] Loading states and skeleton screens
+
+### 2C — Multi-tenant routing
+
+- [ ] Super admin dashboard and routes (`/admin/*`)
+- [ ] Agency dashboard and routes (`/agency/[agencyId]/*`)
+- [ ] Business dashboard and routes (`/business/[businessId]/*`)
+- [ ] Impersonation context (super admin → agency → business drill-down)
+- [ ] Tenant isolation: verify no agency can access another agency's data
+
+### 2D — Module registry integration
+
+- [ ] Module registry table in Supabase
+- [ ] API endpoint: `GET /api/modules` — returns installed modules for current workspace
+- [ ] Shell sidebar dynamically builds nav from registered modules
+- [ ] Module slot rendering — shell renders a placeholder for each installed module's routes
+
+### 2E — TweakCN theming
+
+- [ ] TweakCN installed and configured
+- [ ] CSS variable injection on workspace load (applies agency theme to entire shell)
+- [ ] Agency branding configuration page — logo, colors, typography, radius
+- [ ] Business-level theme override (inherits from agency, can be customized if permitted)
+- [ ] Preview mode — agency can preview their theme before publishing
+
+### 2F — Billing foundation
+
+- [ ] Stripe Connect setup for agency billing
+- [ ] Webhook handler for payment events
+- [ ] Platform tax calculation on transactions (10%)
+- [ ] Module activation gating — check billing status before granting module access
+- [ ] Basic billing dashboard (super admin: all revenue; agency: their clients)
+
+**Gate: An agency can sign up, configure their brand, see their dashboard, and add a business client account. Billing is wired. Theme applies correctly.**
+
+---
+
+## Phase 3 — Event Bus + API Gateway
+**Estimated: 2–3 days | Owner: Lead developer**
+
+This phase is invisible to users but essential for module interconnection. Build it before any module is built.
+
+### 3A — Event bus
+
+- [ ] `events` table schema with indexes on `workspace_id`, `event_type`, `created_at`
+- [ ] `platform.emit(eventName, payload, workspaceId)` — writes to events table, triggers Supabase Realtime
+- [ ] `platform.subscribe(eventName, handler, workspaceId)` — subscribes module to event type
+- [ ] Event schema validation — emitted events must match the module's declared `events_emitted` contract
+- [ ] Event delivery logging and retry logic for failed handlers
+
+### 3B — API gateway
+
+- [ ] Request routing layer — routes `/api/modules/[moduleId]/*` to correct module container
+- [ ] Permission enforcement — validates module has declared permission before allowing data access
+- [ ] Rate limiting per module per workspace
+- [ ] `platform.call(moduleId, capability, params)` — cross-module capability invocation
+- [ ] Gateway health check — returns status of each registered module
+
+**Gate: Two modules can communicate via events. The gateway routes correctly. A module that hasn't declared a permission cannot access data it didn't claim.**
+
+---
+
+## Phase 4 — KB Studio Module (Validation Phase)
+**Estimated: 3–4 days | Owners: 1–2 developers**
+
+Build KB Studio first because it is the foundation that every other module depends on. If this module's manifest, events, and API surface work correctly, the pattern is proven for all subsequent modules.
+
+### 4A — Module manifest
+
+- [ ] Write `kb-studio` manifest (extend v1 manifest with `events_emitted`: `['kb.published', 'kb.updated']`)
+- [ ] Register in module registry
+- [ ] Verify shell sidebar picks up KB Studio automatically from registry
+
+### 4B — Database
+
+- [ ] Migration: `kb_projects`, `kb_entries`, `kb_sections`, `kb_schedule`
+- [ ] RLS: business users can only access their own KB projects
+
+### 4C — Onboarding flow (shadcn/ui)
+
+- [ ] Step 1: Enter website URL
+- [ ] Step 2: Crawl progress indicator (calls `kb-engine/scraper.js`)
+- [ ] Step 3: Review extracted services (calls `kb-engine/extractor.js`)
+- [ ] Step 4: AI research in progress (calls `kb-engine/researcher.js`)
+- [ ] Step 5: Review + edit generated KB content (calls `kb-engine/compiler.js`)
+- [ ] Step 6: Publish — emits `kb.published` event
+
+### 4D — KB Editor (shadcn/ui)
+
+- [ ] Service cards with edit capability
+- [ ] FAQ section management
+- [ ] Add/remove KB sections
+- [ ] Schedule configuration (re-crawl frequency)
+- [ ] Publish / unpublish toggle
+
+### 4E — API surface
+
+- [ ] `POST /api/kb/generate` — triggers full pipeline
+- [ ] `GET /api/kb/[projectId]` — returns compiled KB
+- [ ] `POST /api/kb/[projectId]/publish` — publishes and emits event
+- [ ] Capability: `knowledge-base.search` — responds to cross-module search queries
+
+**Gate: A business user can run the KB generator against their website, review and edit the output, publish it, and have the `kb.published` event appear in the event log. Another module subscribed to that event receives it.**
+
+---
+
+## Phase 5 — Chat Interface Module
+**Estimated: 4–5 days | Owners: 2 developers**
+
+### 5A — Module manifest
+
+- [ ] Write `chat` manifest (extend v1 with full `events_emitted` / `events_consumed`)
+- [ ] Register in module registry
+
+### 5B — Database
+
+- [ ] Migration: `chat_configs`, `chat_conversations`, `chat_messages`, `chat_leads`
+- [ ] RLS policies
+
+### 5C — Chat configuration UI (shadcn/ui)
+
+- [ ] Design tab: colors, fonts, radius, layout (via TweakCN)
+- [ ] Experience tab: conversation starters, greeting, service cards, voice mode toggle
+- [ ] Lead capture tab: form fields, delivery settings
+- [ ] Floating save button (sticky)
+- [ ] Live preview panel
+
+### 5D — Chat runtime (shadcn/ui)
+
+- [ ] Full-screen chat interface (`/chat/[businessId]`)
+- [ ] Chat bubble widget (`/widget/[businessId]`)
+- [ ] AI response endpoint (uses `chat-core/ai-config.js`, queries KB via `platform.call`)
+- [ ] Service card rendering
+- [ ] Voice mode toggle (placeholder for Voice AI Hub integration)
+- [ ] Lead form trigger and submission
+
+### 5E — Embed system
+
+- [ ] `widget.js` embed script (injected via `<script>` tag)
+- [ ] Full-screen embed code generator
+- [ ] Custom domain support for chat deployment
+
+### 5F — Chat Monitor
+
+- [ ] Lead warmth scoring (from `chat-core`)
+- [ ] Business-facing monitor view (real-time conversation list)
+- [ ] Warmth threshold notifications
+- [ ] Agent takeover interface
+
+**Gate: A business client can configure and deploy their chat. A website visitor can have a full conversation powered by the KB. A lead captured in chat appears in the business dashboard.**
+
+---
+
+## Phase 6 — Voice AI Hub Module
+**Estimated: 3–4 days | Owners: 1–2 developers**
+
+### 6A — Module manifest
+
+- [ ] Write `voice-hub` manifest with full event contracts
+- [ ] Register in module registry
+
+### 6B — LiveKit integration
+
+- [ ] LiveKit room provisioning
+- [ ] Inbound call handler (webhook → LiveKit room)
+- [ ] Outbound call initiation
+- [ ] Real-time transcript capture
+
+### 6C — Voice UI (shadcn/ui)
+
+- [ ] Phone number management
+- [ ] Call log view
+- [ ] Voice configuration (personality, greeting, escalation rules)
+- [ ] Transcript viewer
+
+### 6D — Chat voice mode integration
+
+- [ ] Voice mode activation in chat interface (connects to Voice AI Hub via platform.call)
+- [ ] In-chat voice session management
+
+**Gate: A business can receive and make AI voice calls. Voice mode works inside the chat interface. Call records appear in the contacts timeline.**
+
+---
+
+## Phase 7 — Contact Forms Module
+**Estimated: 2–3 days | Owner: 1 developer**
+
+### 7A — Module manifest + database
+
+- [ ] Manifest with `events_emitted`: `['contact.form_submitted', 'contact.qualified', 'contact.warm']`
+- [ ] Migration: `contact_forms`, `contact_submissions`
+
+### 7B — Form builder UI (shadcn/ui)
+
+- [ ] Drag-and-drop field ordering
+- [ ] Field type configuration
+- [ ] AI routing rules (intent → response path)
+- [ ] Embed code generator
+
+### 7C — Submission processing
+
+- [ ] Spam/bot validation
+- [ ] Intent classification (AI)
+- [ ] Response routing (chat, appointment, answer, escalate)
+- [ ] Lead record creation in contacts
+
+**Gate: A form submission triggers an AI-driven follow-up interaction. The resulting lead appears in the contact record with full submission history.**
+
+---
+
+## Phase 8 — Co-Browser Add-on Module
+**Estimated: 2–3 days | Owner: 1 developer**
+
+### 8A — Module manifest + database
+
+- [ ] Manifest — marks itself as add-on, extends chat module
+- [ ] Migration: `cobrowser_sessions`, `cobrowser_page_events`
+
+### 8B — Floating overlay
+
+- [ ] Floating input bar (injected via separate embed script)
+- [ ] Page context detection (reads current URL + page title)
+- [ ] Context-aware AI queries (page content passed as system context)
+- [ ] Voice mode default
+
+### 8C — Page intelligence
+
+- [ ] Page visit recording per session
+- [ ] Session timeline in business dashboard
+- [ ] Pre-call intelligence summary for sales team
+
+**Gate: A website visitor can have a contextual AI conversation while browsing any page of the business's site. The business can view the visitor's full browse and conversation history before a sales call.**
+
+---
+
+## Phase 9 — Integration Testing + MVP Completion
+**Estimated: 2–3 days | All developers**
+
+- [ ] End-to-end test: agency signs up → configures brand → adds business client → business runs KB generator → chat goes live → visitor has conversation → lead captured → business notified
+- [ ] Cross-module event verification: `kb.published` received by chat, `chat.lead.captured` received by contacts
+- [ ] Impersonation flow: super admin → agency → business works correctly at every level
+- [ ] Billing flow: simulated charge → platform tax deducted → module remains active
+- [ ] Theme inheritance: agency theme → business override → chat widget inherits correct theme
+- [ ] Mobile: chat interface and widget render correctly on mobile
+- [ ] Load test: 10 concurrent chat sessions per business, verify stability
+- [ ] Security review: confirm no tenant can access another tenant's data at any layer
+
+**Gate: MVP definition-of-done from the spec is fully met.**
+
+---
+
+## Build Sequence Summary
+
+| Phase | What gets built | Duration |
+|---|---|---|
+| 0 | Environment + monorepo setup | 1 day |
+| 1 | All shared packages ported and built | 2–3 days |
+| 2 | Platform shell (auth, tenancy, theming, billing) | 4–5 days |
+| 3 | Event bus + API gateway | 2–3 days |
+| 4 | KB Studio module (pattern validation) | 3–4 days |
+| 5 | Chat Interface + Chat Monitor | 4–5 days |
+| 6 | Voice AI Hub | 3–4 days |
+| 7 | Contact Forms | 2–3 days |
+| 8 | Co-Browser add-on | 2–3 days |
+| 9 | Integration testing + MVP completion | 2–3 days |
+| **Total** | | **25–34 days** |
+
+With a team of 2–3 developers working in parallel on phases where work can be split, the realistic timeline is **5–7 weeks** to a complete, tested MVP.
+
+---
+
+## What the Development Team Receives
+
+The complete handoff package for a development team consists of:
+
+1. `aiConnected-Platform-MVP-Specification.md` — what to build and why
+2. `aiConnected-Platform-Architecture-Specification.md` — architectural principles and decisions
+3. `aiConnected-Platform-V1-Audit.md` — what to keep from v1 and what to trash
+4. `aiConnected-Platform-V2-Port-Map.md` — exact file-by-file migration instructions (this doc's companion)
+5. `aiConnected-Platform-V2-Build-Plan.md` — this document
+6. Access to v1 repo (`platform.sec-admn.com-2`) for reference and package salvage
+7. Access to existing infrastructure (Supabase, DigitalOcean, Crawl4AI, OpenRouter, Stripe)
+
+---
+
+*Build Plan v1.0 — March 2026*
+*Read alongside: aiConnected-Platform-V2-Port-Map.md*

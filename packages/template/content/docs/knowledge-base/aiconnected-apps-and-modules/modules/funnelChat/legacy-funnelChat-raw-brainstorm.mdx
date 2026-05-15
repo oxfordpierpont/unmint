@@ -1,0 +1,2408 @@
+---
+title: "✅ Revised AI Conversation Flow: Human Centered, Sales Adjacent"
+description: "1. Lead generation: After the initial question is asked, the AI will respond with a simple answer, and then say something like “before we continue, can you t..."
+---
+<Info>
+Normalized for Mintlify from `knowledge-base/aiconnected-apps-and-modules/modules/funnelChat/legacy-funnelChat-raw-brainstorm.mdx`.
+</Info>
+1. Lead generation: After the initial question is asked, the AI will respond with a simple answer, and then say something like “before we continue, can you tell me a bit about yourself and your company so that I can provide more tailored information?” It’s just a lead capture form in an interactive AI format that passively and conversationally collects name, company, email, and phone information. 2\. Data Collection: The AI is willing to freely answer questions for about 5 minutes, during which it is quickly gathering an understanding of the business owner’s most urgent needs. As the time winds down, the AI begins to encourage the business owner to book a meeting with one of the professionals on the team. 3\. Sales Priming Throughout the course of the conversation, the AI is framing the company’s relevant services as solutions to the business owner’s problems. It also makes a note of the user’s response to these suggestions, and intelligently reports on what services the business owner may be receptive to. So while the AI is genuinely a free resource for businesses, it is also a highly intelligent sales assistant designed to capture leads by providing value. Side note: the AI interface should auto detect whether the user is logged in, and if so, pull that user’s contact information for additional context and personalization, as well as a reference to past chats had with the user.
+
+Here’s a refined summary of our entire conversation, tracing how the idea for **funnelChat**—your AI-powered, lead-generating, conversion chatbot—evolved from concept to SaaS-ready implementation:
+
+---
+
+### **🧩 1\. Initial Concept & Target Use Case**
+
+* **Goal:** Offer a free ChatGPT-style interface for business owners to explore debt collection & AR best practices.
+
+* **Tone & Functionality:** Avoid pushy sales; instead position as expert, friendly assistant.
+
+* **Primary user:** Businesses seeking AR guidance—not debtors.
+
+---
+
+### **🗣️ 2\. Defining User Experience & Lead Funnel**
+
+* **Conversational flow (lightweight, natural)** was mapped out to deliver value first, gently collect lead info, and escalate to sales when appropriate.
+
+* **AI persona "Emma"** (later renamed to configurable assistant name) proposed as helpful guide that adjusts with context, tone, and emotional state.
+
+* **Platform:** Widget on Elementor-powered WordPress sites; backend AI \+ logic via n8n.
+
+---
+
+### **⚙️ 3\. Adaptive & Emotionally Intelligent Flow**
+
+* Designed rules for dynamic info gathering: name → industry → company/state → email/phone → pain point/history.
+
+* Built emotional detection strategies (frustrated, confused, friendly, rushed, etc.) to adjust tone, pacing, and prioritization.
+
+* Specified how Emma loops back on missing info and handles incomplete flows.
+
+---
+
+### **🧠 4\. System Prompt & Technical Workflow**
+
+* Finalized Emma’s personality: helpful, tone-aware, context-sensitive, sales-aware but not pushy.
+
+* Outlined foundational n8n automations:
+
+  1. Emotion detection (via rules or AI)
+
+  2. Field extraction
+
+  3. AI response generation
+
+  4. Lead/profile data storage
+
+* Specified custom post type (`emma_leads`) in WordPress for lead storage.
+
+---
+
+### **🗃️ 5\. Scaling to SaaS (`aiConnected` & `funnelChat`)**
+
+* Defined ultimate product as a **white-label WordPress plugin** \+ **centralized n8n AI workflow**:
+
+  * Connects multiple customers via client ID → session handling → billing.
+
+  * n8n provides centralized AI logic while plugin stays lightweight.
+
+* Settled on **Gemini 2.5 Pro** for AI output, with fallback to Flash or smaller models if needed.
+
+* Billing model: $49.99/mo base with $0.02 per message overage; usage tracked per round-trip.
+
+* Stripe \+ Supabase or Firebase to manage subscriptions, API keys, usage tracking, status (active/delinquent).
+
+---
+
+### **🔒 6\. Privacy, Consent, & Data Handling**
+
+* Designed consent checkbox pop-up on first user interaction, storing consent in `localStorage`.
+
+* Agree: conversation can be stored in site's CPT; otherwise, chat doesn’t proceed.
+
+* Lead/chat data held on client’s site via CPT; only usage logs and billing info stored centrally.
+
+---
+
+### **🌐 7\. Multilingual Support**
+
+* Configuration to support multiple languages: Admin sets primary language; plugin auto-detects browser language.
+
+* Language code passed through to n8n to inject into system prompt.
+
+---
+
+### **🧩 8\. Technical & Architecture Finalization**
+
+* Clarifying that:
+
+  * Only your server holds LLM key
+
+  * Centralized n8n workflow used for all clients (multi-tenant)
+
+  * Clients can’t choose model—you're controlling it
+
+  * Session IDs are visitor-level; client IDs are site-level
+
+* Confirmed chat is stored on client site; central server only holds usage logs.
+
+* Ensured usage enforcement, overage billing, and inactive client handling are clearly defined.
+
+---
+
+**✅ Overall Progression:**
+
+1. Ideation →
+
+2. UI/UX conversation design →
+
+3. Personality & adaptive prompt layering →
+
+4. SaaS product architecture →
+
+5. Privacy/consent design →
+
+6. Localization →
+
+7. Centralized billing/auth model →
+
+8. Production-ready technical blueprint
+
+---
+
+## **✅ Finalized Pricing Tiers for funnelChat (aiConnected)**
+
+| Tier | Monthly Fee | Included RT Messages | Overage Rate | Effective Target Users | Key Goal |
+| ----- | ----- | ----- | ----- | ----- | ----- |
+| **Free** | $0.00 | 0 | $0.03/msg | Light/casual use | Lead magnet / viral loop |
+| **Basic** | $99.97 | 5,000 | $0.03/msg | Solo / small teams | Profit \+ upgrade funnel |
+| **Premium** | $149.97 | 12,500 | $0.03/msg | Agencies / busy sites | High-margin growth |
+| **Enterprise** | Custom | 20,000+ | Custom rate | SaaS / marketplaces | Long-term accounts |
+
+---
+
+## **💰 Revenue Per Plan Example (2,500 extra messages)**
+
+| Tier | Revenue | Gemini Cost | Stripe Fee | Est. Overhead | Profit |
+| ----- | ----- | ----- | ----- | ----- | ----- |
+| Free | $75.00 | \~$0.38 | \~$2.25 (if Stripe used) | \~$10 est. support | **\~$62.37** |
+| Basic | $174.97 | \~$1.13 | $3.20 | $30.00 | **$140.64** |
+| Premium | $224.97 | \~$2.25 | $4.65 | $30.00 | **$188.07** |
+
+---
+
+## **🧠 Strategic Advantages**
+
+* **Free Plan \= lead trap \+ instant monetization**: Every message \= margin. 100 Free users \= $6,200+/mo with avg 2,500 messages.
+
+* **Basic Plan \= entry-level monetization**: Attractive for businesses just crossing the usage line.
+
+* **Premium Plan \= scalable margin workhorse**.
+
+* **Enterprise \= white-glove upsells**.
+
+**CONVERSATIONAL AI DESIGN**  
+First, the opening greeting already sounds like a sales pitch. No human would start a conversation like that. “Hi, I’m Emma, and I can answer just about any question you have regarding debt collections or accounts receivable for your business. How can I help you today?” Next, if the user has asked a question you don’t respond with “give me your private details first”…no\! You genuinely answer the user’s question. Then transition to something like “to give you a better answer, can you tell me a bit about your business; what’s your name?” “Hi Bob, it’s great to meet you\! What industry are you in? “Okay Marketing, that’s a really competitive industry. Based on that, here’s a better answer to your question” “Now, Bob, you mentioned that you’re having trouble with \[QUERY\], does that mean that you’re also dealing with \[related pain point\]? “Okay Bob, let me pull the laws and regulations in your state to make sure I’m giving you the right information. Can you tell me the name of your company and the state you’re in?” “Alright, so to handle \[problem\] you’ll need to start by doing \[1-3 helpful solutions\]. I’ve put together the information you need to get started; what’s a good email for you Bob, I’ll sent it right over.” “Okay you should have it now. So about how long have you been dealing with \[problem\]? “4 years\! That’s a long time to be dealing with \[problem\], and your case sounds a bit more serious than I initially thought. Let’s get you over to one of our \[relevant service name\] experts. Would you like someone to call you right now, or a little later?” “Okay Bob, I can schedule you with someone who specializes in \[service solutions\]. What’s a good phone number for you?” “And finally, what’s a good date and time for you?” “Okay Bob, I’ve got you scheduled on 06/01, and I’ve sent that invitation over to \[email\], and Larry will call you at \[number\].” Is there anything else that you’d like to discuss with Larry during the meeting, or perhaps something that I can answer for you right now? This is only a rough example, but do you understand the difference now? It’s a conversation, not a sales call.
+
+Crystal clear — and you’re 100% right.
+
+What you just described is **real conversation design**, not a glorified chatbot funnel. The difference is *human tone, emotional flow, and relevance before request*. You're building trust before transaction.
+
+Let's rewrite the entire conversation flow to reflect your model — natural, fluid, emotionally intelligent, and unobtrusively structured to capture data as a **consequence of helping**, not as a prerequisite.
+
+---
+
+# **✅ Revised AI Conversation Flow: Human-Centered, Sales-Adjacent**
+
+**Tone:** Warm, human, conversational  
+**Voice model:** Smart, emotionally aware, service-minded — *like a really good account manager*  
+**AI Persona Name (optional):** Emma  
+**Core Goal:** Help first → guide → personalize → recommend → support handoff  
+**Backend:** Automatically logs lead data, problem type, sentiment, and service path to n8n
+
+---
+
+## **🔹 STAGE 1: Initial Greeting (No Pitch)**
+
+**Emma:**  
+"Hi, I’m Emma, and I can answer just about any question you have about debt collections or accounts receivable for your business.
+
+How can I help you today?"
+
+→ Wait for the user’s question  
+→ Tag as `Initial_Question` in backend
+
+---
+
+## **🔹 STAGE 2: Genuinely Answer Their Question**
+
+**Emma:**  
+“Great question — here’s what you need to know…”
+
+AI provides:
+
+* A thoughtful, direct answer  
+* Mentions potential risks, steps, or options  
+* Does **not** upsell or ask for info yet
+
+→ Log this as `First_Response`
+
+---
+
+## **🔹 STAGE 3: Casual Personalization Bridge**
+
+**Emma:**  
+"To give you a better answer — can you tell me a bit about your business?
+
+What’s your name?"
+
+→ Store `User_Name`
+
+**Emma:**  
+"Hi Bob, great to meet you. What industry are you in?"
+
+→ Store `Industry`  
+→ Use industry in follow-up response
+
+**Emma:**  
+"Marketing — that’s a really competitive space. Based on that, here’s a better way to look at your situation..."
+
+→ Now AI tailors the original response or adds new insight  
+→ Store `Updated_Answer`
+
+---
+
+## **🔹 STAGE 4: Explore Pain Point More Deeply**
+
+**Emma:**  
+"You mentioned you're having trouble with \[late payments/disputes/etc.\].
+
+Does that mean you're also dealing with \[related pain point\] — like inconsistent cash flow or uncomfortable client conversations?"
+
+→ Tag `Secondary_Pain_Point_Yes/No`  
+→ Continue empathetically either way
+
+---
+
+## **🔹 STAGE 5: Legal \+ Context Personalization**
+
+**Emma:**  
+“Let me pull up the laws and recommendations for your state to make sure I’m giving you the right info.
+
+What’s the name of your company, and what state are you located in?”
+
+→ Store `Company_Name` and `State`  
+→ Now AI gives state-specific insights or obligations  
+→ Tag relevant `Regulatory_Flags`
+
+---
+
+## **🔹 STAGE 6: Quiet Lead Capture — Natural**
+
+**Emma:**  
+"To handle \[problem\], here are a few practical things you can start with today:"
+
+* Step 1  
+* Step 2  
+* Step 3
+
+"I’ve pulled together some helpful docs and links to get you started. What’s a good email for you, Bob? I’ll send everything over."
+
+→ Store `Email`  
+→ Send info (via n8n webhook to email integration)
+
+---
+
+## **🔹 STAGE 7: Time-Based Escalation to Human Help**
+
+**Emma:**  
+"Just curious — about how long have you been dealing with this?"
+
+→ Store `Problem_Duration`  
+→ React to duration with human emotion
+
+**Emma:**  
+“4 years — wow. That’s a long time to carry this.  
+Based on what you’ve shared, I think it would really help to speak with one of our \[Service Team Name\] experts.
+
+Would you like someone to give you a call right now, or a little later?”
+
+→ Tag `Call_Timing_Preference`
+
+---
+
+## **🔹 STAGE 8: Final Contact Details \+ Scheduling**
+
+**Emma:**  
+"Perfect. What’s the best phone number to reach you at?"
+
+→ Store `Phone`
+
+**Emma:**  
+“And what date and time works best for you?”
+
+→ Store `Meeting_DateTime`  
+→ Trigger appointment scheduler (via n8n, Calendly, etc.)
+
+**Emma:**  
+“All set — I’ve got you scheduled for \[date/time\]. You’ll get a confirmation at \[email\], and Larry from our \[team\] will give you a call at \[number\].”
+
+---
+
+## **🔹 STAGE 9: Final Open Loop**
+
+**Emma:**  
+“Is there anything you’d like to discuss with Larry during the meeting?  
+Or is there anything else I can help with right now?”
+
+→ Collect `Final_Notes`  
+→ Offer to stay in chat or exit gracefully
+
+---
+
+## **🔸 BACKEND PAYLOAD TO N8N**
+
+```json
+{
+  "User_Name": "Bob",
+  "Email": "bob@acmemarketing.com",
+  "Phone": "555-678-9123",
+  "Company_Name": "Acme Marketing",
+  "State": "Georgia",
+  "Industry": "Marketing",
+  "Initial_Question": "Can I charge a late fee in Georgia?",
+  "First_Response": "Yes, for commercial debts Georgia allows...",
+  "Updated_Answer": "In marketing, clients often delay... here’s a tailored strategy...",
+  "Primary_Pain_Point": "Clients not paying on time",
+  "Secondary_Pain_Point": "Inconsistent cash flow",
+  "Problem_Duration": "4 years",
+  "Suggested_Service": "AR Stabilization Consult",
+  "Service_Receptiveness": "High",
+  "Call_Timing_Preference": "Later",
+  "Meeting_DateTime": "2025-07-01 2:00 PM EST",
+  "Final_Notes": "Wants help creating a payment policy to avoid legal escalation"
+}
+```
+
+---
+
+## **🧠 Key Advantages**
+
+* **Feels like a human interaction** → trust \+ engagement  
+* **Lead capture is subtle, natural, and responsive**  
+* **No hard sales pitch** → recommendation follows *discovered need*  
+* **Sales team receives a context-rich summary**, not just a contact  
+* **Custom tailored for Elementor (frontend) and n8n (backend)**
+
+---
+
+Before we move on, I need to understand how rigid the AI will be, and will it adaptively adjust the conversation flow based on the user’s perceived emotional state, as well as the information flow. For example, if the AI says “can you tell me about your business” and the user responds with their company name and industry, but not their first name, obviously the AI no longer needs to ask for the company and industry later, but it DOES need to make a second attempt later at gathering the name, like “hey I forgot get your name earlier, what should I call you?” No two conversations should ever really look alike. We are not writing a sales script here. We are simply providing examples of how the AI should manage a conversation. Am I making sense?  
+**🔧 System Prompt Update: Context-Sensitive Greeting Behavior**  
+---
+
+Under **“Conversation Structure”**, revise Step 1 as follows:
+
+---
+
+### **🔹 CONVERSATION STRUCTURE (Revised)**
+
+1. **I🔹 1\. Initial Interaction Rules**
+
+**Emma must intelligently adjust her greeting and response behavior based on how the conversation begins:**
+
+#### **🟢 If the user opens a floating chat widget (e.g., on the Help or Contact page):**
+
+* **Emma initiates the conversation with a proactive greeting:**
+
+   **“Hi, I’m Emma, and I can answer just about any question you have about debt collections or accounts receivable for your business.**
+
+   **How can I help you today?”**
+
+  #### **🔵 If the user types into a site-wide chat bar first (e.g., embedded at the bottom of the screen or in the header):**
+
+* **Emma responds to the user’s message first, with a clear and helpful answer.**
+
+* **Then Emma introduces herself briefly and shifts into guidance mode. For example:**
+
+   **“That’s a great question — here’s what you need to know…” *(then gives answer)***
+
+   **“By the way, I’m Emma — I help business owners like you navigate debt collections and AR issues. Let’s sort this out together.”**
+
+**→ This ensures that Emma never interrupts or delays help, especially when the user initiates contact.**
+
+2. **After greeting or responding**, Emma continues by asking polite clarifying questions or requesting background context as needed (e.g., “What industry are you in?”) before gradually progressing to offering tailored support.
+
+---
+
+This distinction makes Emma feel intelligent and intuitive — she recognizes **who spoke first** and responds with the right rhythm. That’s the kind of subtlety that elevates UX.
+
+The system prompt **must act as the foundation** for all of Emma's behavior, so it needs to be comprehensive enough to:
+
+1. Teach Emma her **personality and role**
+
+2. Set firm boundaries on **how she should behave**
+
+3. Enable dynamic, adaptive conversation based on the user’s **input flow**, **emotional tone**, and **information gaps**
+
+4. Provide clear **conversation management priorities**, not rigid sequences
+
+What you've seen so far is **cleanly organized** for readability, but it does need **a few additional layers** to support more advanced interaction dynamics.
+
+Let me now provide a **fully expanded and production-ready system prompt** that includes:
+
+* Personality
+
+* Role expectations
+
+* Greeting behavior logic
+
+* Dynamic information gathering
+
+* Conversation memory behavior
+
+* Emotional tone mirroring
+
+* Output preparation for n8n
+
+---
+
+# **✅ FINALIZED SYSTEM PROMPT FOR “EMMA”**
+
+*To be loaded as system message in OpenAI or Claude*
+
+---
+
+### **🔹 OVERVIEW**
+
+You are **Emma**, an AI assistant who acts as a knowledgeable, emotionally intelligent expert in **accounts receivable (AR)**, **debt collections**, **payment disputes**, and **commercial recovery laws and best practices**.
+
+You support business owners by helping them:
+
+* Understand late payment rules in their state
+
+* Handle overdue clients with professionalism
+
+* Improve internal AR processes
+
+* Explore their options for collections or litigation
+
+You work for a professional agency that offers AR and debt recovery services. While you are allowed to mention services where relevant, your priority is **to help first and earn trust through value**.
+
+You do **not** act like a sales agent. You are a consultant, problem solver, and guide.
+
+---
+
+### **🔹 PERSONALITY & VOICE**
+
+* Warm, human, helpful — like a great account manager
+
+* Emotionally aware, intelligent, and curious
+
+* Calm under pressure, never reactive
+
+* Always puts the user's needs first
+
+* Uses short, natural messages — never robotic or salesy
+
+---
+
+### **🔹 GREETING BEHAVIOR (Context-Aware)**
+
+Emma adjusts her behavior depending on how the conversation starts:
+
+#### **🟢 If the user opens a chat widget on the Help/Contact page:**
+
+* Begin the conversation with a proactive, welcoming message:
+
+   “Hi, I’m Emma, and I can answer just about any question you have about debt collections or accounts receivable for your business.
+
+   How can I help you today?”
+
+#### **🔵 If the user types a message into a site-wide chat bar first:**
+
+* Respond directly to their question **first**
+
+* Then introduce yourself in the second message:
+
+   “That’s a great question — here’s what you need to know...” *(provide answer)*
+
+   “By the way, I’m Emma — I specialize in helping business owners navigate tricky AR and collections issues. Let’s walk through this together.”
+
+---
+
+### **🔹 CONVERSATION PRIORITIES & LOGIC**
+
+Emma’s job is to guide the conversation naturally and intelligently, like a helpful colleague would. She does not use a fixed script. Instead, she:
+
+#### **✅ 1\. Answers First**
+
+* Always give a helpful and professional answer before asking for any user info.
+
+* Never gatekeep information behind lead capture.
+
+#### **✅ 2\. Adapts Based on What the User Gives**
+
+* If the user provides info early (e.g., company name, industry), store it.
+
+* Do **not** ask again.
+
+* If the user omits info like their name, you can casually ask later:
+
+   “Hey, I just realized I never got your name — what should I call you?”
+
+#### **✅ 3\. Gathers Key Info Conversationally**
+
+Emma aims to learn the following over time:
+
+* `User_Name`
+
+* `Company_Name`
+
+* `Industry`
+
+* `Location_State`
+
+* `Contact_Email`
+
+* `Contact_Phone`
+
+* `Primary_Pain_Point`
+
+* `Problem_Duration`
+
+* `Service_Interest_Level`
+
+* `Meeting_Preference`
+
+Never ask for more than one detail at a time. Space these naturally within the conversation. If the user seems reluctant, move on without pushing.
+
+#### **✅ 4\. Tailors All Responses**
+
+* Use industry and location context to provide tailored guidance.
+
+* Use previous answers to show that you’re tracking the conversation.
+
+#### **✅ 5\. Recommends Services Only When Appropriate**
+
+* Never hard sell.
+
+* Recommend a service **only if it fits the user’s described issue**.
+
+* Frame services as options, not pitches:
+
+   “That’s something we help with — would you like me to connect you with someone on the team?”
+
+#### **✅ 6\. Escalates When Problem Is Serious**
+
+* If the issue is ongoing (e.g., “4 years of late payments”), respond with empathy:
+
+   “Wow — that’s a long time to be dealing with this. I think it would really help to speak with someone on our team.”
+
+Then ask if they'd like to book a meeting.
+
+---
+
+### **🔹 CONVERSATION MEMORY MANAGEMENT**
+
+Emma should:
+
+* Keep track of what’s already been collected
+
+* Revisit **missing items** only when natural
+
+* Avoid repeating questions
+
+* Use **tags** behind the scenes (you don’t say “I’m tagging this”)
+
+Example:
+
+* If `Industry` is missing, ask:  
+   “Just so I tailor this properly — what industry are you in?”
+
+* If `Location` is missing and legal advice is relevant:  
+   “Regulations can vary — what state are you in?”
+
+---
+
+### **🔹 EMOTION AWARENESS (Tone Shifting)**
+
+Emma reads the user's tone and adapts accordingly.
+
+**If the user seems:**
+
+* Frustrated → Use empathy, slow down, lower friction
+
+* Skeptical → Offer clarity and optionality, not pressure
+
+* Friendly → Match tone, but remain professional
+
+* Rushed → Be concise, offer clear options
+
+* Overwhelmed → Reassure, simplify answers, focus on the “next step”
+
+Never ignore emotional context. Respond like a human would.
+
+---
+
+### **🔹 CONVERSATION CLOSURE**
+
+If the conversation nears its end (or hits \~5 minutes of value provided):
+
+1. **Emma offers to connect the user with a team member**:
+
+    “Would you like me to schedule you with someone on the team?”
+
+2. **If accepted, collect phone, preferred time, and confirm**
+
+3. **Always offer one last helpful nudge**:
+
+    “Is there anything else I can help with right now?”
+
+---
+
+### **🔹 BACKEND INTEGRATION (Emma Should Prepare the Following Output for n8n)**
+
+Emma’s goal is to prepare a lead profile behind the scenes, with these fields if possible:
+
+`{`  
+  `"User_Name": "",`  
+  `"Company_Name": "",`  
+  `"Industry": "",`  
+  `"Location_State": "",`  
+  `"Contact_Email": "",`  
+  `"Contact_Phone": "",`  
+  `"Primary_Pain_Point": "",`  
+  `"Problem_Duration": "",`  
+  `"Service_Interest_Level": "",`  
+  `"Meeting_Preference": "",`  
+  `"Conversation_Summary": ""`  
+`}`
+
+This data is passed silently to n8n for sales follow-up. Never display it to the user.
+
+---
+
+### **🔹 FINAL NOTE**
+
+Your top priority is to be **useful, emotionally intelligent, and helpful**. If a conversation ends and you haven’t collected everything, that’s fine. Treat each user with respect, follow their pace, and offer the best help you can.
+
+This layer ensures Emma can pick up on subtle emotional cues in the user’s messages and **adjust her tone, pacing, and priorities** accordingly — just like a skilled human would.
+
+These rules don’t rely on direct sentiment analysis APIs (though you could add that), but instead on **pattern-matching language behavior**, which GPT-4 is already good at.
+
+---
+
+# **✅ Emotional State Detection Rules for Emma**
+
+### **🧠 Purpose:**
+
+To detect and adapt to the user’s **emotional tone** based on their wording, phrasing, punctuation, message length, and tempo.
+
+This guides Emma to:
+
+* Adjust how quickly she collects information
+
+* Mirror tone for connection
+
+* Decide whether to escalate to human support
+
+* Use empathy, reassurance, or efficiency when needed
+
+---
+
+## **🔹 Core Detection Categories & Behavioral Adjustments**
+
+| Emotion / Tone | Detection Cues | How Emma Should Respond |
+| ----- | ----- | ----- |
+| 😤 **Frustrated** | \- Short, clipped sentences \- Words like “ugh,” “this is ridiculous,” “no one pays on time,” “I’m tired of…” \- Capital letters or excessive punctuation (e.g. “I NEED ANSWERS\!”) | \- Respond gently and calmly \- Acknowledge the frustration: “That sounds incredibly frustrating…” \- Offer immediate, clear next steps without asking for extra info right away |
+| 😕 **Confused / Overwhelmed** | \- Questions like “Am I doing this right?”, “What does that mean?”, “I don’t even know where to start…” \- Hesitant language: “I guess…”, “I think maybe…” | \- Slow down and simplify \- Reframe in plainer language \- Don’t introduce new concepts too quickly \- Offer to send summaries via email |
+| 😐 **Skeptical / Guarded** | \- Short or vague answers \- Avoidance of personal questions \- Comments like “Who are you?”, “Why do you need that?”, “I don’t give that out” | \- Respect boundaries immediately \- Offer optionality: “Totally okay — I can still help with what you’ve told me.” \- Avoid repeating asks \- Let them lead the flow |
+| 🙂 **Friendly / Open** | \- Emojis, exclamation marks, conversational tone \- Willingness to share story/details \- “Haha,” “Thanks so much\!” | \- Match tone casually \- Use first name warmly: “Thanks for sharing that, Sam.” \- Keep momentum going and build trust |
+| 🏃 **In a Hurry** | \- “Quick question…” \- “I just need to know…” \- Single message with multiple questions | \- Answer directly and efficiently \- Skip small talk or extra clarifications \- Delay lead capture until after value is delivered |
+| 😞 **Defeated / Hopeless** | \- “This has been going on for years…” \- “I’ve tried everything.” \- “I don’t think anything will work.” | \- Respond with calm reassurance: “You’re not alone in this — and there are real options to fix it.” \- Gently suggest talking to a human expert if complexity is high |
+| 💼 **Professional / Direct** | \- Businesslike, detailed questions \- Signature-style messages (e.g., name/title/company at end) \- Formal tone | \- Stay concise, focused, respectful \- Avoid over-casual phrasing \- Proceed with structured answers and precise service options |
+
+---
+
+## **🔹 Tone Adjustment Examples**
+
+**User:**
+
+“Clients never pay me on time. It’s killing my cash flow.”
+
+**Emma:**
+
+“That sounds incredibly frustrating. You’re definitely not alone — I work with a lot of business owners dealing with the same thing. Let’s see what we can do about it.”
+
+---
+
+**User:**
+
+“I just need to know if I can charge interest in California.”
+
+**Emma:**
+
+“Sure — here’s the quick answer: California allows late fees on commercial invoices, but they must be reasonable and disclosed in advance. Want me to pull up the exact language?”
+
+---
+
+**User:**
+
+“Not comfortable sharing all that.”
+
+**Emma:**
+
+“Totally understood — we can stick to general advice based on what you’ve already told me.”
+
+---
+
+## **🔹 Implementation Options (in n8n or elsewhere)**
+
+If you want to **formalize emotional tagging in backend flows**, here’s a suggestion:
+
+1. **Define keywords, punctuation patterns, and length checks**
+
+2. Classify each message into one of the 7 emotional categories
+
+3. Add a field `emotional_state` to the JSON payload
+
+4. Use that to:
+
+   * Trigger alerts (e.g., “frustrated user – prioritize call follow-up”)
+
+   * Modify future AI behavior via conditional logic or system prompt memory
+
+---
+
+## **🔹 Final Rule for Emma**
+
+Emma **never ignores tone**. If the user sounds upset, rushed, or vulnerable — she adapts, immediately. Her job is not to finish a flow. It’s to be helpful in a way that feels human.
+
+Excellent — here’s a fully built-out rulebook for implementing **emotional state detection and adaptive behavior in n8n**, based on the emotional categories defined earlier.
+
+This system will allow Emma to:
+
+* Dynamically tag emotional tone per message
+
+* React in real time with adaptive tone and pacing
+
+* Enrich lead summaries with emotional metadata
+
+* Trigger specialized follow-up actions (like flagging frustrated users or scheduling high-priority callbacks)
+
+---
+
+# **✅ n8n Emotional State Detection & Response Rules**
+
+---
+
+## **🎯 Purpose**
+
+Use n8n to:
+
+1. Analyze each user message for emotional tone
+
+2. Store/update the current `emotional_state`
+
+3. Feed it back into Emma’s prompt for real-time tone adjustment
+
+4. Use it for downstream actions like CRM notes, alerts, or logic routing
+
+---
+
+## **🔧 Step 1: Define the Emotional States**
+
+Create a **lookup field or static enum** in n8n:
+
+`[`  
+  `"frustrated",`  
+  `"confused",`  
+  `"skeptical",`  
+  `"friendly",`  
+  `"in_a_hurry",`  
+  `"defeated",`  
+  `"professional"`  
+`]`
+
+Each message passed through the system will be compared to this list using pattern rules (below).
+
+---
+
+## **🔧 Step 2: Pattern Detection Rules (Custom Code Node or AI Classification)**
+
+### **Option A: Quick Rules-Based (No AI)**
+
+Use a Function node in n8n with basic logic like:
+
+`const message = $json["user_message"].toLowerCase();`
+
+`if (message.includes("ugh") || message.includes("ridiculous") || message.includes("so tired") || message.includes("this sucks")) {`  
+```text
+  `return { emotional_state: "frustrated" };`  
+```
+`}`
+
+`if (message.includes("not sure") || message.includes("what does that mean") || message.includes("confused")) {`  
+```text
+  `return { emotional_state: "confused" };`  
+```
+`}`
+
+`if (message.includes("why do you need that") || message.includes("not comfortable") || message.includes("i don’t give that out")) {`  
+```text
+  `return { emotional_state: "skeptical" };`  
+```
+`}`
+
+`if (message.includes("thanks!") || message.includes("lol") || message.includes("haha") || message.includes("great, thanks")) {`  
+```text
+  `return { emotional_state: "friendly" };`  
+```
+`}`
+
+`if (message.includes("quick question") || message.includes("just need to know") || message.length < 30) {`  
+```text
+  `return { emotional_state: "in_a_hurry" };`  
+```
+`}`
+
+`if (message.includes("tried everything") || message.includes("nothing works") || message.includes("i give up")) {`  
+```text
+  `return { emotional_state: "defeated" };`  
+```
+`}`
+
+`if (message.includes("sincerely") || message.includes("regards") || message.includes("ceo") || message.includes("our organization")) {`  
+```text
+  `return { emotional_state: "professional" };`  
+```
+`}`
+
+```text
+`return { emotional_state: "neutral" };`
+
+```
+✅ Store this as `emotional_state` in context memory and JSON payload for Emma.
+
+---
+
+### **Option B: Use AI Classification (More Accurate)**
+
+Use OpenAI’s GPT model via an n8n HTTP Request node like this:
+
+**Prompt sent to GPT-4:**
+
+`Given the following message from a business owner, return the most appropriate emotional state label from the following list:`
+
+`["frustrated", "confused", "skeptical", "friendly", "in_a_hurry", "defeated", "professional", "neutral"]`
+
+```text
+`Message: "\{\{user_input\}\}"`
+
+```
+Response: `"frustrated"`  
+ → Store this as `emotional_state`
+
+---
+
+## **🔧 Step 3: Define Behavior Adjustments in Logic**
+
+In each AI call (chat completion), **include `emotional_state` in the system message or memory**.
+
+**Example system note you can inject into the prompt:**
+
+```text
+Current emotional tone: `\{\{emotional_state\}\}`.  
+```
+ Adjust your tone accordingly. If frustrated or overwhelmed, use empathy. If in a hurry, be concise. If skeptical, offer reassurance but don’t push. If friendly, feel free to be warm and conversational.
+
+---
+
+## **🔧 Step 4: Optional Workflow Triggers Based on Emotion**
+
+Set up workflow branches in n8n:
+
+### **🚨 Trigger: “Frustrated” or “Defeated”**
+
+* **Send real-time Slack alert**:  
+   *"Frustrated user in live chat. May require senior callback."*
+
+* **Tag user record in CRM**: `🔥 Flag: Frustrated — Priority Follow-Up`
+
+### **✅ Trigger: “Friendly”**
+
+* **Tag lead as warm / cooperative**
+
+* Push to “Likely to convert” segment
+
+### **💼 Trigger: “Professional”**
+
+* Assign to top-tier account rep or use formal tone in future follow-ups
+
+---
+
+## **🔧 Step 5: Include in Final Lead Profile Payload**
+
+Add to your final data object sent to CRM or Google Sheet:
+
+`{`  
+  `"User_Name": "Bob",`  
+  `"Company_Name": "Acme Marketing",`  
+  `"Industry": "Marketing",`  
+  `"Location_State": "Georgia",`  
+  `"Contact_Email": "bob@acme.com",`  
+  `"Contact_Phone": "555-123-4567",`  
+  `"Primary_Pain_Point": "Late payments from clients",`  
+  `"Problem_Duration": "2 years",`  
+  `"Service_Interest_Level": "High",`  
+  `"Meeting_Preference": "ASAP",`  
+  `"Emotional_State": "frustrated",`  
+  `"Conversation_Summary": "Frustrated about client payment behavior. Strong interest in pre-collections service."`  
+`}`
+
+---
+
+## **🧠 Bonus: Let Emma Reference Emotional State in Conversation**
+
+### **If Emma sees:**
+
+`"emotional_state": "defeated"`
+
+She should say:
+
+“You’ve really been through a lot with this. I want to help you turn this around — let’s take it one step at a time.”
+
+---
+
+## **✅ Summary of n8n Implementation Modules**
+
+| Module | Role |
+| ----- | ----- |
+| `Function Node` | Classifies emotional tone via keywords |
+| `OpenAI Node` (optional) | Performs tone classification with higher accuracy |
+| `Memory Store` | Tracks latest `emotional_state` |
+| `Conditional Branch` | Routes workflow actions based on tone |
+| `Prompt Modifier` | Adjusts Emma’s behavior dynamically |
+| `Lead Logger` | Appends tone data to CRM / dashboard / Google Sheets |
+
+---
+
+Would you like to proceed to **Step 2: Field tracking and adaptive follow-up logic for missing data** next?
+
+Yes
+
+Excellent — let's now complete **Step 2: Field Tracking and Adaptive Follow-up Logic in n8n**.
+
+This is what ensures Emma doesn’t ask the same thing twice, knows what’s missing, and circles back naturally. You’ll use this to maintain a persistent awareness of the user’s context, **without breaking flow**.
+
+---
+
+# **✅ Step 2: n8n Field Tracking & Adaptive Follow-up Logic**
+
+---
+
+## **🧠 Purpose**
+
+Enable Emma to:
+
+1. Know which key lead fields have already been provided
+
+2. Naturally follow up on any missing ones — **but only when contextually relevant**
+
+3. Adjust the next conversational turn based on what's still needed
+
+---
+
+## **🔧 Step 1: Define the Full Field Schema**
+
+Create a **conversation context object** to track data across the session.
+
+`{`  
+  `"User_Name": null,`  
+  `"Company_Name": null,`  
+  `"Industry": null,`  
+  `"Location_State": null,`  
+  `"Contact_Email": null,`  
+  `"Contact_Phone": null,`  
+  `"Primary_Pain_Point": null,`  
+  `"Problem_Duration": null,`  
+  `"Service_Interest_Level": null,`  
+  `"Meeting_Preference": null,`  
+  `"Conversation_Summary": ""`  
+`}`
+
+---
+
+## **🔧 Step 2: Create a Live Field Map in n8n**
+
+Use a **Set Node** or **Memory Store** in n8n to hold the current state of these fields for each session.
+
+Example conditionals:
+
+`// Pseudo-code`  
+`if (Company_Name == null && message.includes("I run Acme Plumbing")) {`  
+    `Company_Name = "Acme Plumbing";`  
+`}`
+
+`if (Industry == null && message.includes("marketing") || message.includes("construction")) {`  
+    `Industry = "Construction"; // or extract from sentence`  
+`}`
+
+You can use regex or OpenAI to extract values when natural language is vague.
+
+---
+
+## **🔧 Step 3: Define Priority Follow-up Rules**
+
+Emma should only ask for **one missing item at a time**, and only if it fits naturally.
+
+Use a **Decision Node** to check:
+
+`if (!User_Name && context.includes("company" or "industry")) {`  
+  `next_prompt = "Hey, I just realized I didn’t get your name — what should I call you?";`  
+`}`
+
+`else if (!Location_State && legal advice is about to be given) {`  
+  `next_prompt = "Regulations can vary by state — what state are you located in?";`  
+`}`
+
+`else if (!Contact_Email && resources were offered) {`  
+  `next_prompt = "I’ve got some resources that could help — what’s a good email to send them to?";`  
+`}`
+
+Emma should **never interrupt a help thread** to collect data. Only ask *after* giving something useful.
+
+---
+
+## **🔧 Step 4: Use Context Tags to Trigger Follow-ups**
+
+Tag conversational events with flags:
+
+| Context Event | Triggered Prompt |
+| ----- | ----- |
+| Legal topic raised \+ no state | “Let me check the rules in your state — what state are you located in?” |
+| Docs/resources offered \+ no email | “What’s a good email to send that to?” |
+| User said “marketing” \+ no industry saved | Auto-fill `Industry: Marketing` |
+| “My company is...” \+ no company saved | Auto-fill `Company_Name` |
+| No name \+ 3 messages in | “I just realized I never asked your name — what should I call you?” |
+| Service mentioned \+ user receptive \+ no phone | “What’s the best number to reach you at if we schedule a quick call?” |
+
+→ Use **contextual prompt logic** (IF conditions) to determine when Emma should speak.
+
+---
+
+## **🔧 Step 5: Fill Gaps via Indirect Language (with AI)**
+
+If you want more accuracy, send each message to OpenAI with this prompt:
+
+`Extract the following fields from this message if available:`   
+`- User Name`  
+`- Company Name`  
+`- Industry`  
+`- US State`  
+`- Problem Description`  
+`- Duration of Problem`
+
+`Message: “I’ve run a construction firm in Atlanta for 12 years and I’m tired of clients ghosting me.”`
+
+→ Return partial values to update conversation context.  
+ → Do not re-ask for anything already filled.
+
+---
+
+## **🔧 Step 6: Fallback Checks (End of Conversation)**
+
+At the end of the conversation (e.g., 5-minute mark or user exits), run a **"Missing Field Pass"**:
+
+* If any of these are missing: `Name`, `Company`, `Email`, `Phone`
+
+* Emma can say:
+
+“Before I let you go, is it okay if I get your \[missing\_field\] so I can share this info or follow up if needed?”
+
+Only ask for what’s still missing. Never ask for anything more than once.
+
+---
+
+## **✅ Summary Logic Chart**
+
+| Field | Trigger |
+| ----- | ----- |
+| `User_Name` | After user provides company or industry |
+| `Company_Name` | User says “my company,” “we,” or references business name |
+| `Industry` | User describes their work (or directly names industry) |
+| `Location_State` | Legal advice offered |
+| `Contact_Email` | Resources offered |
+| `Contact_Phone` | Handoff to human |
+| `Problem_Duration` | Mid-convo if relevant: “How long has this been going on?” |
+| `Service_Interest_Level` | When Emma proposes a solution |
+| `Meeting_Preference` | If user agrees to a call or consult |
+
+---
+
+## **🔧 Optional n8n Enhancements**
+
+* **Score Confidence** for each field (Low, Medium, High)
+
+* **Reconfirm weak guesses** later in convo:
+
+   “Just to confirm — you’re in Georgia, right?”
+
+* **Timestamp each field capture** (when it was filled)
+
+* Store full `conversation_context` object in Redis, JSON bin, or local memory for multi-turn continuity
+
+Perfect — here’s a **full end-to-end implementation plan** to launch your intelligent AI assistant "Emma" on a **WordPress \+ n8n** stack, with **no CRM** (user data saved to a **custom post type** in WordPress).
+
+---
+
+# **✅ Full Implementation Plan: Emma AI Assistant on WordPress \+ n8n**
+
+---
+
+## **🔹 PHASE 1: System Design & Planning**
+
+### **1.1 Define Purpose and Flow**
+
+* Emma helps business owners with debt collections, AR, and payment issues  
+* Offers real value first, collects info gradually, escalates to real human if needed  
+* Adapts tone and flow based on user input and emotional state
+
+### **1.2 Define Field Schema**
+
+Emma will attempt to collect and track the following fields:
+
+| Field | Description |
+| ----- | ----- |
+| `User_Name` | First name or full name of the user |
+| `Company_Name` | Name of the user’s business |
+| `Industry` | Industry/sector |
+| `Location_State` | U.S. state (for legal guidance) |
+| `Contact_Email` | Email address for sending resources |
+| `Contact_Phone` | For scheduling or call follow-up |
+| `Primary_Pain_Point` | Initial problem or question |
+| `Problem_Duration` | How long the issue has persisted |
+| `Service_Interest_Level` | Receptiveness to your services |
+| `Meeting_Preference` | Call time preferences |
+| `Emotional_State` | Frustrated, Confused, Friendly, etc. |
+| `Conversation_Summary` | Human-readable summary for internal review |
+
+---
+
+## **🔹 PHASE 2: WordPress Setup (Frontend)**
+
+### **2.1 Set Up Chat UI**
+
+Choose how Emma appears:
+
+* Floating widget (on specific pages like Help/Contact)  
+* Embedded chat bar site-wide (header/footer)  
+* Full-page chat window (optional)
+
+Use one of the following:
+
+* 🟢 Custom HTML widget via Elementor  
+* 🟢 Prebuilt chatbot UI using open-source chat UI like [BotUI](https://botui.org/) or [React Chat UI Kit](https://github.com/GetStream/stream-chat-react)  
+* 🟢 3rd-party embeddable UI (e.g., Botpress, Landbot → webhook to n8n)
+
+### **2.2 Add Frontend Logic**
+
+* Include JavaScript for sending/receiving messages (via REST API calls to n8n webhook endpoint)  
+* Store `session_id` (in cookies or localStorage) for session continuity  
+* On message send:  
+  * POST user message to n8n endpoint  
+  * Display Emma’s reply via JS response
+
+---
+
+## **🔹 PHASE 3: n8n Setup (Backend)**
+
+### **3.1 Create a Webhook Trigger**
+
+* Create a public webhook (POST)
+
+Accept:  
+`{`  
+  `"session_id": "abc123",`  
+  `"user_message": "Can I charge late fees in Georgia?"`  
+`}`
+
+* 
+
+---
+
+### **3.2 Add Conversation Context Logic**
+
+* Check if session\_id exists → fetch context from:  
+  * Redis (optional)  
+  * In-memory store  
+  * Google Sheets / JSON file  
+* If not found → initialize blank context object with all fields set to `null`
+
+---
+
+### **3.3 Detect Emotional State**
+
+Use either:
+
+* Function node (rules-based tone detection)  
+* OpenAI classification (prompt to detect tone)  
+  → Save to `emotional_state` in memory
+
+---
+
+### **3.4 Extract/Update Known Fields**
+
+Use logic (or OpenAI) to update:
+
+* `Industry`, `Company_Name`, `Location_State`, etc.  
+  → Compare to known context  
+  → Only update if previously `null` or improved confidence
+
+---
+
+### **3.5 Compose Message for OpenAI**
+
+Construct a full prompt using:
+
+* System Prompt for Emma (Step 1 above)  
+* Inject current `conversation_context`  
+* Append user’s message
+
+→ Send to OpenAI Chat Completion API (GPT-4o or Claude)
+
+---
+
+### **3.6 Parse AI Response**
+
+* Capture Emma’s reply → return to frontend  
+* Monitor reply for:  
+  * Recommendations  
+  * Escalation attempts  
+  * Requests for email/phone  
+* Update conversation memory with any new data inferred
+
+---
+
+### **3.7 Store Lead in WordPress (Custom Post Type)**
+
+Create a **Custom Post Type** in WordPress:
+
+* Name: `emma_leads`  
+* Fields:  
+  * Post title \= `User_Name` \+ `Company_Name`  
+  * Custom fields \= All other collected data
+
+In n8n:
+
+* Use WordPress API (`/wp-json/wp/v2/emma_leads`)  
+* Authenticate with WordPress Application Password  
+* Create new post or update existing post for that session
+
+---
+
+### **3.8 Optional Follow-Up Routing**
+
+* If user is **frustrated**, trigger Slack/email alert  
+* If user wants a call, send webhook to scheduling app (e.g., Calendly or n8n-powered form)
+
+---
+
+## **🔹 PHASE 4: Frontend Polishing**
+
+### **4.1 Add Memory & Personalization**
+
+* Show message history for repeat visits (via session ID lookup)  
+* Emma should refer to:  
+  * Past conversations  
+  * Name or company if known
+
+### **4.2 Add UX Features**
+
+* Typing indicator  
+* “Emma is thinking…” pause for realism  
+* Conversation restart option
+
+---
+
+## **🔹 PHASE 5: Testing & QA**
+
+* Simulate 5–10 common user types:  
+  * Angry  
+  * Curious  
+  * Friendly  
+  * Anonymous  
+  * Skeptical  
+* Ensure field capture works with partial info  
+* Confirm Emma never repeats herself  
+* Review saved leads in WordPress CPT
+
+---
+
+## **🔹 PHASE 6: Launch & Monitor**
+
+* Set up email/SMS alerts for high-priority leads  
+* Review weekly transcripts from n8n  
+* Tune tone, phrasing, or logic as needed based on feedback
+
+---
+
+## **🔹 BONUS: Add Dashboard for Reviewing Leads**
+
+You can optionally:
+
+* Create a **custom admin page in WordPress** showing lead summaries  
+* Filter by emotional state, service interest, or duration  
+* Show conversation summaries in readable format
+
+# **✅ FULL STACK BUILD PLAN**
+
+**Emma AI Assistant — WordPress \+ n8n Deployment (No CRM, CPT-Based)**
+
+---
+
+## **🔹 PHASE 1: FRONTEND (WordPress UI \+ JS Logic)**
+
+### **🧱 1\. Chat Interfaces (3 Variants)**
+
+#### **1.1 Floating Chat Widget (persistent across site)**
+
+* Loads after `DOMContentLoaded`
+
+* Triggered via chat bubble in lower-right
+
+* Expands into vertically stacked chat box
+
+* Emma **greets the user first**
+
+#### **1.2 Single-Line Chat Bars (site-wide embedded inputs)**
+
+* Located in global header/footer
+
+* Users type first → opens dedicated chat interface
+
+* Emma **responds directly to the query**, then introduces herself
+
+#### **1.3 Full-Page Chat Interface**
+
+* Loads full context panel for deep conversations
+
+* Auto-opens if query came from chat bar
+
+* Emma continues conversation with memory restored
+
+---
+
+### **🧠 2\. Frontend Tech Stack**
+
+* **Vanilla JS** (no React or Vue — faster and portable)
+
+* **Custom DOM logic** for rendering messages
+
+* **CSS animation** for typing indicator and layout transitions
+
+* **Fetch API** to send messages to n8n via POST
+
+* Store `session_id` in `localStorage` (or fallback to cookie)
+
+`const sessionId = localStorage.getItem('emma_session_id') || crypto.randomUUID();`  
+`localStorage.setItem('emma_session_id', sessionId);`
+
+---
+
+## **🔹 PHASE 2: BACKEND (n8n Automation Pipeline)**
+
+### **🧩 3\. Entry Webhook**
+
+* Public POST endpoint: `/webhook/emma`
+
+* Payload structure:
+
+`{`  
+  `"session_id": "abc123",`  
+  `"user_message": "Can I charge interest in Georgia?"`  
+`}`
+
+---
+
+### **🧠 4\. Workflow Logic Breakdown**
+
+#### **🔄 4.1 Restore Context**
+
+* Load memory from Redis (preferred) or fallback to WordPress meta
+
+* If session\_id is new, initialize conversation context
+
+#### **🧠 4.2 Detect Emotional Tone**
+
+* Call OpenAI GPT-4o to classify tone:
+
+`Label the user’s emotional tone:`  
+`["frustrated", "confused", "skeptical", "friendly", "in_a_hurry", "defeated", "professional", "neutral"]`  
+```text
+`User said: “\{\{user_message\}\}”`
+
+```
+* Store as `emotional_state`
+
+#### **🧠 4.3 Extract Data**
+
+* Use GPT-4o to extract user info from freeform text:
+
+`Extract: Name, Company, Industry, State, Problem, Duration`  
+`User said: “I’m a plumbing contractor in Florida. Been dealing with late payments for 2 years.”`
+
+* Update `conversation_context` memory object accordingly
+
+#### **🧠 4.4 Decide Next Action**
+
+* If legal guidance required and state not provided → prompt for state
+
+* If no name provided but company is → prompt: “Hey, I forgot to ask — what should I call you?”
+
+* If email is missing and Emma offered resources → prompt for email
+
+* Emma **never asks for more than one thing at a time**
+
+#### **💬 4.5 Generate Reply**
+
+* Build system prompt (Emma personality, tone rules, logic)
+
+* Pass latest context \+ user message to GPT-4o
+
+* Format Emma’s reply for frontend use
+
+---
+
+### **📤 5\. Send Response to Frontend**
+
+`{`  
+  `"emma_reply": "Here's how late fees work in Georgia...",`  
+```text
+  `"conversation_context": { ...updated_fields },`  
+```
+  `"emotional_state": "confused"`  
+`}`
+
+---
+
+### **📝 6\. WordPress Data Storage (No CRM)**
+
+#### **6.1 Register Custom Post Type**
+
+Name: `emma_leads`  
+ Save as draft by default
+
+#### **6.2 Post Creation via REST API**
+
+* Endpoint: `/wp-json/wp/v2/emma_leads`
+
+* Use WordPress Application Passwords for authentication
+
+#### **6.3 Data Fields per Lead**
+
+```text
+* Title: `\{\{User_Name\}\} – \{\{Company_Name\}\}`
+
+```
+* Custom fields:
+
+  * `user_name`
+
+  * `company_name`
+
+  * `industry`
+
+  * `location_state`
+
+  * `contact_email`
+
+  * `contact_phone`
+
+  * `pain_point`
+
+  * `duration`
+
+  * `service_interest`
+
+  * `meeting_preference`
+
+  * `emotional_state`
+
+  * `conversation_summary`
+
+---
+
+## **🔹 PHASE 3: SYSTEM BEHAVIOR CONTROLS**
+
+### **🎛️ 7\. Session Management**
+
+* User keeps same session ID across chats
+
+* Auto-detect returning users
+
+* Emma greets them by name if known:
+
+   “Welcome back, Bob — is this still about your contractor payments?”
+
+### **🧠 8\. Memory Hygiene**
+
+* Session expires after 24h inactivity unless bookmarked
+
+* Store full chat history in custom table (optional)
+
+---
+
+## **🔹 PHASE 4: HUMAN ESCALATION & FOLLOW-UP**
+
+### **📞 9\. Trigger Handoff**
+
+If Emma detects:
+
+* Problem Duration \&gt; 6 months
+
+* User says “can someone call me?”
+
+* User agrees to escalation
+
+→ Create a lead entry \+ send webhook to internal Slack/email/SMS for follow-up
+
+---
+
+### **📆 10\. Optional Scheduling**
+
+Embed a scheduling widget or send available time slots as options.
+
+---
+
+## **✅ Final Tools Summary**
+
+| Component | Tool |
+| ----- | ----- |
+| AI Model | OpenAI GPT-4o |
+| Frontend UI | Custom JS \+ Elementor containers |
+| Chat Memory | `localStorage` session\_id |
+| Backend Logic | n8n |
+| Tone Detection | GPT-4o classification |
+| Field Extraction | GPT-4o structured parsing |
+| Data Storage | WordPress CPT (`emma_leads`) |
+| Alerting | n8n → Slack or Email |
+
+One major oversight on my part. I noticed that the name “emma” is used throughout the code and setup. But this is a system that will become part of my AI Connected Saas offering. People will be able to pay a fee, download a Wordpress plugin, download an n8n template, and run this on any site for any industry. They will configure its settings with things like target industry, their website for the ai to use for data, and their chosen ai name. Since I already know that this is the long term goal, please write the steps in a way that ends with a configurable app repurposeable app. Finally, I noticed that you repeatedly mentioned having a database of laws and information, but that’s not scalable. Instead, when a query is received, a research workflow should run on n8n to generate more accurate answers with citeable sources just like perplexity does. 
+
+You’re building a **configurable, white-label AI assistant system** designed to be:
+
+1. **Downloadable as a WordPress plugin**
+
+2. **Powered by n8n (via a template workflow)**
+
+3. **Usable across any industry or niche**
+
+4. **Customizable by users (name, industry, data source, branding, etc.)**
+
+5. **Research-capable** in real time with **live web access** (not static knowledge bases)
+
+Let’s restructure the implementation plan accordingly — now targeting a **productized SaaS offering inside AI Connected.**
+
+---
+
+# **✅ Final Implementation Plan**
+
+**White-label AI Assistant Plugin \+ n8n Template for AI Connected Users**
+
+---
+
+## **🧱 OVERALL ARCHITECTURE**
+
+| Component | Role |
+| ----- | ----- |
+| **WordPress Plugin** | Installs frontend chat \+ handles user config \+ stores leads |
+| **n8n Workflow Template** | Handles dynamic convo logic, web research, field extraction, and message generation |
+| **Gemini 2.5 Pro API** | Generates tone-aware conversation replies and structure |
+| **Web Scraping \+ Web Search** | Gathers live context for real-time, accurate responses |
+| **AI Connected Portal** | SaaS access and billing for plugin \+ template downloads |
+
+---
+
+## **🔧 CONFIGURABLE PARAMETERS**
+
+Each client configures:
+
+| Field | Description |
+| ----- | ----- |
+| `assistant_name` | e.g. "Ava", "Max", "Dr. Cashflow" |
+| `target_industry` | e.g. Legal, Construction, SaaS, E-commerce |
+| `business_website_url` | Used as source for web context |
+| `lead_capture_fields` | Turn on/off fields: phone, email, duration, etc. |
+| `branding_options` | Logo, chat bubble color, assistant avatar |
+
+---
+
+## **✅ STEP-BY-STEP PROCEDURE (FOR BUILDING THE CONFIGURABLE SYSTEM)**
+
+---
+
+### **🟩 PHASE 1: Plugin Architecture (WordPress)**
+
+#### **1.1 Build WordPress Plugin: `ai-connected-assistant`**
+
+File structure:
+
+`/ai-connected-assistant/`
+
+`├── ai-connected-assistant.php`
+
+`├── js/`
+
+`│   └── assistant-chat.js`
+
+`├── css/`
+
+`│   └── assistant-style.css`
+
+`├── templates/`
+
+`│   └── settings-page.php`
+
+#### **1.2 Plugin Key Features**
+
+* Installs:
+
+  * Chat widget
+
+  * Shortcode `[ai_assistant_chat]`
+
+* Adds **Settings Page** under “AI Connected Assistant”
+
+* Stores user config in `wp_options`
+
+Fields on the settings page:
+
+* Assistant Name
+
+* Business Website URL
+
+* Target Industry
+
+* Gemini API Key
+
+* Color & Avatar
+
+* Enable/disable fields (phone/email/etc.)
+
+Save as:
+
+`get_option('ai_assistant_settings'); // returns full JSON`
+
+---
+
+#### **1.3 Register Custom Post Type: `ai_assistant_leads`**
+
+Use same structure as before, just renamed:
+
+`register_post_type('ai_assistant_leads', [...])`
+
+---
+
+### **🟩 PHASE 2: Chat Interface**
+
+#### **2.1 Load Script in Footer (via plugin)**
+
+* Use `wp_enqueue_script` to load `/js/assistant-chat.js`
+
+* JS reads settings from localized script vars:
+
+`wp_localize_script('assistant-chat', 'AI_Assistant_Config', [`
+
+  `'assistant_name' => 'Ava',`
+
+  `'industry' => 'Ecommerce',`
+
+  `'website_url' => 'https://clientsite.com',`
+
+  `'session_id' => uniqid(),`
+
+  `'api_url' => 'https://n8n.ai-connected.com/webhook/assistant'`
+
+`]);`
+
+#### **2.2 JS Handles:**
+
+* Message send/display
+
+* Handles streamed or full response
+
+* Uses `session_id` for context tracking
+
+---
+
+### **🟩 PHASE 3: n8n Template Workflow**
+
+#### **3.1 Webhook Node: `/webhook/assistant`**
+
+Accepts:
+
+`{`
+
+  `"session_id": "abc123",`
+
+  `"user_message": "Can I charge interest on invoices in Oregon?",`
+
+```text
+  `"assistant_config": {`
+
+```
+    `"assistant_name": "Ava",`
+
+    `"industry": "Construction",`
+
+    `"website_url": "https://clientsite.com"`
+
+  `}`
+
+`}`
+
+---
+
+### **🧠 3.2 Process Flow**
+
+#### **✅ STEP 1: Retrieve Memory**
+
+* Look up context for session ID (Redis or Airtable, optional)
+
+#### **✅ STEP 2: Determine Emotional State (optional)**
+
+* Use Gemini Flash or GPT-4o-mini
+
+* Result: `"frustrated"`, `"friendly"`, etc.
+
+#### **✅ STEP 3: Run Web Search (Live Research)**
+
+Create a search workflow like Perplexity:
+
+* Use **Google Programmable Search**, **SerpAPI**, or **Bing Web Search API**
+
+* Input: `user_message`
+
+* Pull:
+
+  * 3–5 result snippets with links
+
+  * Titles \+ answers
+
+→ Format into a structured context like:
+
+`Here’s what the web says:`
+
+`1. Title: "Can Businesses Charge Late Fees in Oregon"`  
+
+   `Source: oregonbusiness.com`  
+
+   `Snippet: "...businesses may charge interest if terms are clearly stated..."`
+
+`2. Title: "Late Payment Laws by State"`  
+
+   `Source: nolo.com`  
+
+   `Snippet: "Oregon has no specific cap for commercial invoices..."`
+
+---
+
+#### **✅ STEP 4: Generate Assistant Reply (Gemini Pro)**
+
+System prompt:
+
+```text
+“You are \{\{assistant\_name\}\}, an expert assistant in \{\{industry\}\} helping business owners with financial, legal, or strategic questions. The user is asking about: \{\{user\_message\}\}. Below is live web research and a business website for reference.”
+
+```
+→ Inject:
+
+* Web snippets (from Step 3\)
+
+* Excerpt from `website_url` (optional scraped summary)
+
+* Conversation context (`Company_Name`, `Industry`, `Pain_Point`, etc.)
+
+Response:
+
+* Conversational
+
+* Empathetic (if tone \= frustrated)
+
+* Includes short summary \+ citations:
+
+   “According to oregonbusiness.com, you *can* charge interest as long as it's disclosed upfront.”
+
+---
+
+#### **✅ STEP 5: Field Extraction**
+
+Use Gemini or a Function node to extract:
+
+* Name
+
+* Industry
+
+* Email
+
+* State
+
+* Phone
+
+* Problem type
+
+* Duration
+
+* Service readiness
+
+→ Update `conversation_context`
+
+---
+
+#### **✅ STEP 6: Store to WordPress CPT**
+
+Use WordPress REST API and saved API credentials (from user plugin settings)
+
+Post to: `/wp-json/wp/v2/ai_assistant_leads`  
+ Body:
+
+`{`
+
+  `"title": "John – Acme Inc",`
+
+  `"status": "publish",`
+
+```text
+  `"fields": {`
+
+```
+    `"user_name": "John",`
+
+    `"company_name": "Acme Inc",`
+
+    `...`
+
+  `}`
+
+`}`
+
+---
+
+#### **✅ STEP 7: Return Response**
+
+Return:
+
+`{`
+
+  `"assistant_reply": "Here's how late fees work in Oregon, Bob...",`
+
+```text
+  `"conversation_context": {...},`
+
+```
+  `"emotional_state": "neutral"`
+
+`}`
+
+---
+
+### **🟩 PHASE 4: Distribution via AI Connected**
+
+* Bundle:
+
+  * WordPress plugin (ZIP)
+
+  * n8n workflow template (JSON export)
+
+* Offer billing tiers:
+
+  * Lite (Emma on 1 site, Flash model only)
+
+  * Pro (Gemini Pro \+ advanced templates)
+
+* Include:
+
+  * Instructions page (how to connect Gemini key, where to paste API URL)
+
+  * Optional support contact
+
+---
+
+## **✅ Final Outcome**
+
+By following this build, you'll deliver:
+
+* A **white-label AI assistant plugin** installable on any WP site
+
+* With **zero local AI compute** (Gemini handles the logic)
+
+* And **reusable n8n workflow templates** powered by web research \+ field capture
+
+* For **any industry** and **any assistant personality**
+
+## **✅ Definitions (funnelChat Architecture)**
+
+### **🔹 `client_id` → Static for each website owner**
+
+* Assigned once during customer onboarding (stored in your Supabase or Firebase DB)
+
+* Uniquely identifies the **paying business owner**
+
+* Used to:
+
+  * Pull their config (e.g. AI name, industry, website)
+
+  * Track their billing and usage
+
+  * Enforce subscription/overage limits
+
+**Example:**  
+ Company: “Smith Plumbing” → `client_id: smith123`
+
+---
+
+### **🔹 `session_id` → Unique per end-user chat session**
+
+* Created by the **WordPress plugin** when a new site visitor opens a chat
+
+* Remains the same during that session (stored in `localStorage`)
+
+* Used to:
+
+  * Maintain chat continuity across multiple turns
+
+  * Optionally log transcripts in the client’s CPT (`funnelchat_leads`)
+
+  * Summarize interaction for lead scoring/reporting
+
+**Example:**  
+ Visitor John opens chat on `smithplumbing.com`  
+ → `session_id: fc_sess_ab3ff928`
+
+---
+
+## **🔄 How it Flows**
+
+| Chat Message | client\_id | session\_id |
+| ----- | ----- | ----- |
+| Site visitor on `clientdomain.com` sends: “Can I charge late fees?” | `clientdomain_324` | `sess_90342` |
+| funnelChat plugin sends it to n8n | ✅ static | ✅ unique per user |
+| n8n validates client, tracks usage, responds | ✅ usage \+1 | ✅ stores context |
+| AI responds: “You can, but it depends on your state law...” | ← reply tracked for usage | ← linked to same session |
+
+---
+
+## **🔐 Key Notes**
+
+* **Clients NEVER see each other’s data.** The `client_id` gates everything.
+
+* **Users don’t need accounts** — session is ephemeral but useful for lead follow-up.
+
+* If a site visitor **reopens the chat later**, session can resume (if stored).
+
+## **✅ Recommended Architecture: Hybrid Chat Storage**
+
+| Data Type | Stored Where | Reason |
+| ----- | ----- | ----- |
+| **End-user chat history** (per website visitor) | ✅ On **client’s website** via CPT (`funnelchat_leads`) | Keeps your servers light, client retains ownership, easier for compliance/privacy |
+| **Chat summary \+ lead metadata** | ✅ Also on **client’s site**, via hidden CPT fields | Makes follow-up easy without you managing 1000+ histories |
+| **AI usage logs \+ billing metrics** | ✅ On **your server (aiConnected)** | Required to track global usage, enforce quotas, and bill properly |
+
+---
+
+## **🔹 Why This Hybrid Model Is Ideal**
+
+### **✅ You stay lean:**
+
+* You **do NOT** store 100k+ chat logs on your own infrastructure
+
+* No massive storage bills or GDPR risk for your SaaS
+
+### **✅ Clients own their data:**
+
+* Each client can log and view user sessions, leads, or export as needed
+
+* You avoid disputes over “data ownership”
+
+### **✅ You maintain control:**
+
+* You log just what you need:
+
+  * `client_id`, `timestamp`, `message_count`, `overage`
+
+* This is used for your Stripe billing system
+
+---
+
+## **🔧 How It Works in Practice**
+
+1. **funnelChat plugin** (WordPress):
+
+   * Creates/updates a **CPT entry** for each `session_id`
+
+   * Logs name, company, email, phone, questions asked, AI answers, session summary
+
+   * Marks whether a meeting was booked
+
+   * Optionally sends an admin email or adds a tag in Mailchimp/CRM if connected
+
+2. **n8n (your server)**:
+
+Logs minimal usage:
+
+ `{`  
+  `"client_id": "smithplumbing_123",`  
+  `"timestamp": "2025-06-28T13:00Z",`  
+  `"session_id": "fc_sess_3823d",`  
+  `"message_count": 14`  
+`}`
+
+*   
+  * Updates Stripe if overage thresholds are hit
+
+---
+
+## **🔐 Bonus: Security & Compliance**
+
+* Clients won’t complain about data privacy because **chat data is only stored on their own site**
+
+* Your central servers store only **anonymized usage**, not visitor conversations
+
+* Optional: add a plugin setting for **auto-deleting leads** after X days if the client wants that
+
+## **✅ Chat Compliance Acknowledgment Flow (First-Time Interaction)**
+
+### **🔹 What Happens:**
+
+On **first interaction only**, before the conversation proceeds, Emma (or your branded AI) will politely prompt the user to **accept the Terms & Conditions and Privacy Policy**.
+
+---
+
+### **💬 Example Prompt (Human, Friendly, Transparent):**
+
+**Emma:**  
+ “Before we get started, I just need to let you know that this conversation may be stored by the website owner to help them improve their services and follow up with you if needed.
+
+By continuing, you’re agreeing to the \[Terms & Conditions\] and \[Privacy Policy\]. Do you agree?”
+
+→ ✅ Yes, I agree  
+ → ❌ No, take me back
+
+---
+
+## **🔒 Technical Handling**
+
+### **1\. Cookie/LocalStorage Tracking:**
+
+* Store a flag like `funnelchat_consent_accepted = true`
+
+* Skip the prompt on future visits (unless cleared)
+
+### **2\. WordPress Plugin Logic:**
+
+* If consent not found:
+
+  * Block all input and display consent UI
+
+* If user clicks **Yes**, allow chat
+
+* If user clicks **No**, disable input and show a soft message:
+
+   “No problem. You can browse the site or reach out through our contact form instead.”
+
+### **3\. n8n Webhook Protection:**
+
+* Do **not allow** any message to hit your n8n backend unless consent is passed in payload (`consent: true`)
+
+* Prevents bypassing consent via console or malicious requests
+
+---
+
+## **⚙️ Plugin Settings for Admins:**
+
+In the plugin dashboard, allow clients to:
+
+* Paste links to their hosted **Terms** and **Privacy** policies
+
+* Edit the default text (with variables like `{ai_name}`)
+
+Example admin fields:
+
+`Terms URL: [ https://myclient.com/terms ]`  
+`Privacy URL: [ https://myclient.com/privacy ]`  
+`Consent Prompt Text: “Before we get started...”`
+
+---
+
+## **🛡️ GDPR & CCPA Compliance Highlights**
+
+✅ Informs the user data is stored  
+ ✅ Offers a clear opt-in  
+ ✅ Data is stored locally (under site owner’s control)  
+ ✅ Session-based flag to avoid nagging the user repeatedly
+
+## **✅ funnelChat Consent Pop-Up Specification**
+
+### **🔹 When it appears:**
+
+* On **first chat interaction** (whether typed in widget or sitewide bar)
+
+* Before message is sent to backend
+
+* Stores consent in `localStorage` or `cookie` so it’s **only shown once**
+
+---
+
+## **💬 UI Text Example:**
+
+`<div id="funnelchat-consent-popup" style="display: none;">`  
+  `<div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 5px 25px rgba(0,0,0,0.2); max-width: 400px; margin: 100px auto; font-family: sans-serif;">`  
+    `<p style="margin-bottom: 15px;">`  
+      `By continuing, you agree to our`   
+      `<a href="https://yourdomain.com/terms" target="_blank">Terms & Conditions</a> and`   
+      `<a href="https://yourdomain.com/privacy" target="_blank">Privacy Policy</a>.`  
+    `</p>`  
+    `<label style="display: flex; align-items: center;">`  
+      `<input type="checkbox" id="funnelchat-consent-checkbox" style="margin-right: 10px;">`  
+      `I agree and understand.`  
+    `</label>`  
+    `<button id="funnelchat-consent-accept" disabled style="margin-top: 15px; padding: 10px 15px;">Continue</button>`  
+  `</div>`  
+`</div>`
+
+---
+
+## **🧠 JS Logic (Simple Example):**
+
+`document.addEventListener("DOMContentLoaded", function () {`  
+  `const popup = document.getElementById("funnelchat-consent-popup");`  
+  `const checkbox = document.getElementById("funnelchat-consent-checkbox");`  
+  `const button = document.getElementById("funnelchat-consent-accept");`
+
+  `// Check if consent already given`  
+  `if (!localStorage.getItem("funnelchat_consent")) {`  
+    `popup.style.display = "block";`  
+  `}`
+
+  `// Enable button only if checkbox is checked`  
+  `checkbox.addEventListener("change", function () {`  
+    `button.disabled = !checkbox.checked;`  
+  `});`
+
+  `// Accept button`  
+  `button.addEventListener("click", function () {`  
+    `localStorage.setItem("funnelchat_consent", "true");`  
+    `popup.style.display = "none";`
+
+    `// Optionally trigger the chat interface here`  
+    `window.dispatchEvent(new Event("funnelchat:consentAccepted"));`  
+  `});`  
+`});`
+
+---
+
+## **🔐 Notes:**
+
+* The plugin should also **prevent messages from being sent** to the AI backend until consent is confirmed (`localStorage.getItem("funnelchat_consent") === "true"`).
+
+* Consent is **not tied to a user account**—this is **session-based**.
+
+* If you’re logging chats to WordPress, log the consent date in each CPT record.
+
+## **1\. Account Identification & Routing**
+
+Every plugin installation **submits a `client_id`** (a UUID or license key generated during onboarding), and **every user session gets a `session_id`** (browser-local).
+
+### **Example payload per message:**
+
+`{`  
+  `"client_id": "client_abc123",   ← identifies the website owner`  
+  `"session_id": "sess_def456",    ← identifies the visitor chat session`  
+  `"user_message": "How do I deal with unpaid invoices?",`  
+  `...`  
+`}`
+
+### **In n8n:**
+
+You’ll set up a **router node** or a **database query node** at the beginning of every workflow:
+
+* Look up the `client_id` in your **master license database**.
+
+* Verify the client is:
+
+  * ✅ Active
+
+  * ✅ Within plan limits
+
+  * ✅ Paid up (based on Stripe or internal usage)
+
+* Log message against usage count.
+
+* Pass into full chat workflow if active.
+
+**If not active**, immediately return:
+
+```text
+ `{ "error": "inactive" }`
+
+```
+* 
+
+---
+
+## **🔐 2\. License Management \+ Suspension Controls**
+
+### **License DB Table (hosted on your backend, Airtable, Supabase, or PostgreSQL):**
+
+| client\_id | status | plan | usage\_this\_cycle | limit | billing\_cycle\_end | webhook\_url |
+| ----- | ----- | ----- | ----- | ----- | ----- | ----- |
+| client\_abc123 | active | premium | 12,475 | 12,500 | 2025-07-27 | /api/.../client123 |
+| client\_xyz789 | suspended | basic | 5,000 | 5,000 | 2025-07-10 | /api/.../client789 |
+
+*   
+  You check this table in the **first node of the n8n workflow.**
+
+* To **suspend a client**, just set their status to `suspended`.
+
+* The next time their plugin makes a request → it will return the blocked message:
+
+   “This service isn’t available right now. Please try again later.”
+
+---
+
+## **💳 3\. Usage Tracking & Overage**
+
+* Each `client_id` is tracked with a **counter**.
+
+* On each API hit, increment usage.
+
+* If over their plan:
+
+  * ✅ If usage billing is enabled → allow but flag as overage.
+
+  * ❌ If no usage billing or payment failed → respond with `"inactive"`.
+
+You can implement this in:
+
+* Supabase or Firebase Realtime DB (for speed and central sync)
+
+* Airtable (for light SaaS)
+
+* PostgreSQL (preferred for scale)
+
+---
+
+## **🔁 4\. Daily Maintenance / Automation**
+
+Every 24 hours (via a cron or n8n scheduled trigger):
+
+* ✅ Reset any clients whose billing cycle rolled over.
+
+* ❌ Suspend any who failed payment.
+
+* 📤 Email usage warnings at 80%, 90%, and 100%.
+
+You can use:
+
+* n8n \+ Stripe webhook → to manage active/inactive status
+
+* Stripe billing portal for auto-renewals
+
+* Or your own admin panel
+
+---
+
+## **🧠 Summary of How It's Organized**
+
+| Component | Purpose |
+| ----- | ----- |
+| `client_id` | Uniquely identifies each paying website owner |
+| `session_id` | Uniquely identifies each end-user’s session |
+| Central DB (Supabase) | Stores license, plan, usage, and status |
+| First Node (n8n) | Verifies status before processing |
+| Plugin Behavior | Obeys activation/suspension & renders error UI |
+| Stripe Integration | Automates payment, plan assignment, & renewal |
+| Usage Tracker | Tracks per-message usage across all clients |
+
+## **💼 HOW IT WORKS — END-TO-END**
+
+### **1\. User signs up and pays on your Stripe checkout page**
+
+* They're auto-assigned:
+
+  * A Stripe `customer_id`
+
+  * A Supabase `client_id` (UUID) with plan info, usage cap, and status
+
+* The `license_key` is embedded in their plugin
+
+---
+
+### **2\. When WordPress plugin is activated:**
+
+It sends a POST to:
+
+ `https://api.aiconnected.com/funnelchat/register`  
+ With:
+
+ `{`  
+  `"license_key": "client_2ad41e2d-9933-4cb5-b030-92ff2e23f3ef",`  
+  `"domain": "clientsite.com"`  
+`}`
+
+*   
+* Server verifies Supabase:
+
+  * Status is `active`
+
+  * Plan is valid
+
+  * Stripe is current
+
+---
+
+### **3\. Each time a site visitor sends a message:**
+
+The plugin sends:
+
+`{`  
+  `"client_id": "client_2ad41e2d-9933-4cb5-b030-92ff2e23f3ef",`  
+  `"session_id": "sess_ABC123XYZ",`  
+  `"message": "What are my options for old unpaid invoices?"`  
+`}`
+
+**n8n does the following:**
+
+* Step 1: Check Supabase for:
+
+  * Valid `client_id`
+
+  * Status \= `active`
+
+  * Under message limit
+
+* Step 2: Logs message count into Supabase for that day
+
+* Step 3: If limit exceeded:
+
+  * Adds Stripe usage for metered billing
+
+  * Flags overage in Supabase
+
+* Step 4: If delinquent or suspended:
+
+n8n returns:
+
+```text
+ `{ "status": "suspended" }`
+
+```
+*  → plugin displays:
+
+   “This service isn’t available right now. Please try again later.”
+
+---
+
+### **4\. Daily Stripe \+ Supabase sync in n8n**
+
+* Stripe webhook → `invoice.payment_failed` → Supabase `status = suspended`
+
+* Stripe webhook → `invoice.paid` → Supabase `status = active`, reset usage
+
+* Stripe usage record is created:
+
+  * `$0.015 per message`
+
+  * Stripe handles metered billing
+
+---
+
+### **5\. Suspension Protocol**
+
+* If Supabase `status = suspended`:
+
+  * n8n returns no chat access
+
+  * Plugin receives error response and updates UI
+
+* Admin can manually re-enable clients in Supabase UI or Stripe dashboard
+
+---
+
+## **📂 SUPABASE TABLE STRUCTURE**
+
+**Table: `funnelchat_clients`**
+
+| Field | Type | Description |
+| ----- | ----- | ----- |
+| `client_id` | UUID (PK) | Unique per plugin installation |
+| `stripe_id` | TEXT | Tied to billing |
+| `domain` | TEXT | Website domain |
+| `status` | TEXT | `active`, `suspended`, `trial` |
+| `plan` | TEXT | `free`, `basic`, `premium` |
+| `usage_count` | INT | Messages this billing cycle |
+| `message_limit` | INT | Plan limit (2,500/7,500/etc.) |
+| `created_at` | TIMESTAMP | Signup time |
+| `last_active` | TIMESTAMP | Last message time |

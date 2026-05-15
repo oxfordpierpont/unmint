@@ -1,0 +1,3656 @@
+---
+title: "Hyperthyme Technical Architecture Document (TAD)"
+description: "Created: January 2026 Status: Draft Part of the Neurigraph Product Family What's Included: Section Content : : 1. Document Overview Purpose,..."
+---
+<Info>
+Normalized for Mintlify from `knowledge-base/neurigraph-memory-architecture/hyperthyme-memory-framework/hyperthyme-technical-architecture.mdx`.
+</Info>
+# **Hyperthyme Technical Architecture Document (TAD)**
+
+**Version:** 1.0  
+**Author:** Oxford Pierpont  
+**Created:** January 2026  
+**Status:** Draft
+
+**Part of the Neurigraph Product Family**
+
+---
+
+## What's Included:
+
+| Section | Content |
+| :---- | :---- |
+| 1\. Document Overview | Purpose, scope, audience, definitions |
+| 2\. System Purpose & Scope | Problem statement, solution, design philosophy, boundaries |
+| 3\. Architecture Overview | High-level diagrams, component summary, data flows |
+| 4\. Component Specifications | API Gateway, Middleware, Logger, Retriever, Injector, KG Manager, Defining Memory Detector |
+| 5\. Data Models & Schema | Complete PostgreSQL schema, Recall File structure, Python dataclasses |
+| 6\. APIs & Interfaces | REST API spec, MCP server implementation, SDK examples |
+| 7\. Retrieval Pipeline | 5-stage cascade with code, performance optimization, caching |
+| 8\. Storage Management | Hot/Warm/Cold tiers, state transitions, file layout, storage estimates |
+| 9\. Security & Privacy | Auth, encryption, data isolation, audit logging, deletion |
+| 10\. Performance Requirements | Latency/throughput targets, availability, resource budgets |
+| 11\. Deployment Architecture | Infrastructure diagrams, Docker, Kubernetes configs |
+| 12\. Integration Patterns | Direct API, LangChain, MCP, webhooks |
+| 13\. Error Handling & Recovery | Error categories, retry logic, circuit breakers, data recovery |
+| 14\. Monitoring & Observability | Prometheus metrics, structured logging, tracing, alerting |
+| 15\. Future Considerations | Roadmap, migration, scalability path |
+
+## 
+
+## Table of Contents
+
+1. [Document Overview](#1-document-overview)  
+2. [System Purpose & Scope](#2-system-purpose--scope)  
+3. [Architecture Overview](#3-architecture-overview)  
+4. [Component Specifications](#4-component-specifications)  
+5. [Data Models & Schema](#5-data-models--schema)  
+6. [APIs & Interfaces](#6-apis--interfaces)  
+7. [Retrieval Pipeline](#7-retrieval-pipeline)  
+8. [Storage Management](#8-storage-management)  
+9. [Security & Privacy](#9-security--privacy)  
+10. [Performance Requirements](#10-performance-requirements)  
+11. [Deployment Architecture](#11-deployment-architecture)  
+12. [Integration Patterns](#12-integration-patterns)  
+13. [Error Handling & Recovery](#13-error-handling--recovery)  
+14. [Monitoring & Observability](#14-monitoring--observability)  
+15. [Future Considerations](#15-future-considerations)
+
+---
+
+## 1\. Document Overview
+
+### 1.1 Purpose
+
+This Technical Architecture Document (TAD) defines the complete system design for Hyperthyme, a persistent memory layer for AI systems. It provides the technical foundation required for implementation, serving as the authoritative reference for all development decisions.
+
+### 1.2 Scope
+
+This document covers:
+
+- System architecture and component design  
+- Data models and storage strategies  
+- API specifications and integration patterns  
+- Performance, security, and operational requirements
+
+This document does NOT cover:
+
+- Business requirements (see PRD)  
+- User interface design  
+- Marketing or go-to-market strategy  
+- The broader Neurigraph ecosystem (Cognigraph, etc.)
+
+### 1.3 Audience
+
+- Software engineers implementing the system  
+- DevOps engineers deploying and operating the system  
+- Technical architects reviewing the design  
+- Integration partners building on the platform
+
+### 1.4 Definitions
+
+| Term | Definition |
+| :---- | :---- |
+| **Recall File** | A folder containing a complete conversation segment (\~50K tokens) with summary, keywords, transcript, and artifacts |
+| **Knowledge Graph** | A graph database storing relationships between topics, projects, and Recall Files |
+| **RAG** | Retrieval-Augmented Generation \- using vector similarity to find relevant content |
+| **Defining Memory** | A flagged moment representing a decision, milestone, or significant event |
+| **Hot/Warm/Cold** | Storage tiers based on access recency and retrieval speed requirements |
+| **Middleware** | The Hyperthyme layer that sits between applications and AI models |
+
+---
+
+## 2\. System Purpose & Scope
+
+### 2.1 Problem Statement
+
+Current AI systems (LLMs) operate statelessly. They have no persistent memory across sessions. Users must re-explain context repeatedly, and valuable conversation history is lost.
+
+### 2.2 Solution
+
+Hyperthyme provides a persistent memory layer that:
+
+1. **Archives** complete conversations verbatim  
+2. **Organizes** content via hierarchical knowledge graph  
+3. **Indexes** content for fast semantic and keyword retrieval  
+4. **Retrieves** relevant context and injects it into AI prompts  
+5. **Preserves** significant moments as Defining Memories
+
+### 2.3 Design Philosophy
+
+**Principle 1: Summaries are indexes, not storage**
+
+- We never discard original content in favor of summaries  
+- Summaries enable fast search; transcripts provide full context
+
+**Principle 2: Navigate first, search second**
+
+- Knowledge Graph narrows search space before vector search  
+- This maintains performance at scale (millions of Recall Files)
+
+**Principle 3: Preserve everything, retrieve selectively**
+
+- Storage is cheap; token context is expensive  
+- Store complete archives; inject only what's relevant
+
+**Principle 4: Model agnostic**
+
+- Works with any LLM (Claude, GPT, Gemini, open-source)  
+- Memory persists even when switching models
+
+### 2.4 System Boundaries
+
+**In Scope:**
+
+- Conversation logging and archival  
+- Knowledge graph management  
+- Vector and keyword indexing  
+- Memory retrieval and context injection  
+- Defining Memory detection and indexing  
+- Storage lifecycle management  
+- API for integration
+
+**Out of Scope:**
+
+- The AI model itself (Hyperthyme wraps around it)  
+- User interface (provided by integrating applications)  
+- Real-time collaboration features  
+- Training or fine-tuning AI models
+
+---
+
+## 3\. Architecture Overview
+
+### 3.1 High-Level Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                           CLIENT APPLICATIONS                            │
+│                  (Chat apps, IDEs, Voice assistants, etc.)              │
+└─────────────────────────────────┬───────────────────────────────────────┘
+                                  │
+                                  ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│                         HYPERTHYME API GATEWAY                           │
+│                                                                         │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐    │
+│  │    REST     │  │   GraphQL   │  │     MCP     │  │  WebSocket  │    │
+│  │  Endpoints  │  │  Endpoints  │  │   Server    │  │   (Stream)  │    │
+│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘    │
+└─────────────────────────────────┬───────────────────────────────────────┘
+                                  │
+                                  ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│                         HYPERTHYME CORE ENGINE                           │
+│                                                                         │
+│  ┌───────────────────────────────────────────────────────────────────┐  │
+│  │                      MIDDLEWARE ORCHESTRATOR                       │  │
+│  │                                                                   │  │
+│  │  • Request routing          • Context assembly                    │  │
+│  │  • User session management  • Token budget management             │  │
+│  │  • Logging coordination     • Response handling                   │  │
+│  └───────────────────────────────────────────────────────────────────┘  │
+│                                  │                                      │
+│         ┌────────────────────────┼────────────────────────┐            │
+│         ▼                        ▼                        ▼            │
+│  ┌─────────────┐         ┌─────────────┐         ┌─────────────┐       │
+│  │   LOGGER    │         │  RETRIEVER  │         │  INJECTOR   │       │
+│  │             │         │             │         │             │       │
+│  │ • Capture   │         │ • Search    │         │ • Build     │       │
+│  │ • Parse     │         │ • Rank      │         │ • Format    │       │
+│  │ • Store     │         │ • Expand    │         │ • Inject    │       │
+│  └─────────────┘         └─────────────┘         └─────────────┘       │
+│         │                        │                        │            │
+└─────────┼────────────────────────┼────────────────────────┼────────────┘
+          │                        │                        │
+          ▼                        ▼                        ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│                           DATA LAYER                                     │
+│                                                                         │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐    │
+│  │  Knowledge  │  │    RAG      │  │   Recall    │  │  Defining   │    │
+│  │    Graph    │  │  (Vectors)  │  │   Files     │  │  Memories   │    │
+│  │             │  │             │  │             │  │             │    │
+│  │  Neo4j /    │  │  pgvector / │  │  S3 / Local │  │ PostgreSQL  │    │
+│  │  PostgreSQL │  │  Pinecone   │  │  Filesystem │  │             │    │
+│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘    │
+│                                                                         │
+└─────────────────────────────────────────────────────────────────────────┘
+                                  │
+                                  ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│                           AI MODEL LAYER                                 │
+│                                                                         │
+│         ┌─────────┐    ┌─────────┐    ┌─────────┐    ┌─────────┐       │
+│         │ Claude  │    │   GPT   │    │ Gemini  │    │  Local  │       │
+│         │   API   │    │   API   │    │   API   │    │  (Ollama)│       │
+│         └─────────┘    └─────────┘    └─────────┘    └─────────┘       │
+│                                                                         │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+### 3.2 Component Summary
+
+| Component | Responsibility | Technology Options |
+| :---- | :---- | :---- |
+| API Gateway | Request routing, auth, rate limiting | Kong, Nginx, custom FastAPI |
+| Middleware Orchestrator | Coordinates logging, retrieval, injection | Python (FastAPI) |
+| Logger | Captures and stores conversations | Python async workers |
+| Retriever | Finds relevant memories | Python with graph/vector clients |
+| Injector | Builds context-enhanced prompts | Python |
+| Knowledge Graph | Topic/project relationships | Neo4j, PostgreSQL with ltree |
+| RAG (Vector Store) | Semantic similarity search | pgvector, Pinecone, Qdrant |
+| Recall Files | Complete conversation archives | S3, local filesystem |
+| Defining Memories | Significant moment index | PostgreSQL |
+
+### 3.3 Data Flow
+
+**Write Path (Logging):**
+
+```
+User Message → API Gateway → Middleware → Logger
+                                           │
+                    ┌──────────────────────┼──────────────────────┐
+                    ▼                      ▼                      ▼
+              Append to              Update KG with          Check for
+              active Recall          new entities            Defining Memory
+              File transcript        mentioned               triggers
+                    │                      │                      │
+                    └──────────────────────┴──────────────────────┘
+                                           │
+                                           ▼
+                              If threshold reached (50K tokens):
+                              • Finalize Recall File
+                              • Generate summary
+                              • Extract keywords
+                              • Create embeddings
+                              • Start new Recall File
+```
+
+**Read Path (Retrieval):**
+
+```
+User Query → API Gateway → Middleware → Retriever
+                                           │
+                    ┌──────────────────────┴──────────────────────┐
+                    ▼                                             ▼
+              Knowledge Graph                              Defining Memory
+              Navigation                                   Index Check
+                    │                                             │
+                    ▼                                             │
+              Keyword Search                                      │
+              on candidates                                       │
+                    │                                             │
+                    ▼                                             │
+              RAG Search on                                       │
+              summaries                                           │
+                    │                                             │
+                    ▼                                             │
+              Load transcripts                                    │
+              from top matches                                    │
+                    │                                             │
+                    └──────────────────────┬──────────────────────┘
+                                           │
+                                           ▼
+                                    Injector builds
+                                    context package
+                                           │
+                                           ▼
+                                    Send to AI Model
+                                    with injected context
+```
+
+---
+
+## 4\. Component Specifications
+
+### 4.1 API Gateway
+
+**Purpose:** Single entry point for all client requests.
+
+**Responsibilities:**
+
+- Request authentication and authorization  
+- Rate limiting per user/tenant  
+- Request routing to appropriate handlers  
+- SSL/TLS termination  
+- Request/response logging  
+- API versioning
+
+**Endpoints:**
+
+| Endpoint | Method | Purpose |
+| :---- | :---- | :---- |
+| `/v1/chat` | POST | Send message with memory-augmented context |
+| `/v1/search` | POST | Search memory without sending to AI |
+| `/v1/recall-files` | GET | List user's Recall Files |
+| `/v1/recall-files/{id}` | GET | Get specific Recall File content |
+| `/v1/defining-memories` | GET | List user's Defining Memories |
+| `/v1/graph/nodes` | GET | Query Knowledge Graph nodes |
+| `/v1/graph/nodes` | POST | Create new node |
+| `/v1/health` | GET | System health check |
+
+**Configuration:**
+
+```
+api_gateway:
+  host: 0.0.0.0
+  port: 8000
+  rate_limit:
+    requests_per_minute: 60
+    burst: 10
+  timeout_seconds: 30
+  max_request_size_mb: 10
+```
+
+### 4.2 Middleware Orchestrator
+
+**Purpose:** Coordinates all memory operations for a request.
+
+**Responsibilities:**
+
+- Session management (tracking active conversations)  
+- Routing to Logger, Retriever, Injector  
+- Token budget management  
+- Error handling and fallbacks  
+- Metrics collection
+
+**State Management:**
+
+Each user has an active session containing:
+
+```py
+@dataclass
+class UserSession:
+    user_id: str
+    active_recall_file_id: str
+    current_token_count: int
+    last_activity: datetime
+    warm_nodes: list[str]  # KG nodes currently warmed
+```
+
+**Token Budget Logic:**
+
+```py
+def allocate_token_budget(
+    model: str,
+    user_message_tokens: int,
+    system_prompt_tokens: int
+) -> dict:
+    """
+    Determine how many tokens to allocate for memory context.
+    """
+    model_limits = {
+        "claude-3-opus": 200000,
+        "claude-3-sonnet": 200000,
+        "gpt-4-turbo": 128000,
+        "gpt-4o": 128000,
+        "gemini-1.5-pro": 1000000,
+    }
+    
+    max_context = model_limits.get(model, 100000)
+    reserved_for_response = 4096
+    
+    available = max_context - user_message_tokens - system_prompt_tokens - reserved_for_response
+    
+    # Allocate up to 25% of available for memory, max 8000 tokens
+    memory_budget = min(available * 0.25, 8000)
+    
+    return {
+        "memory_budget": int(memory_budget),
+        "remaining_for_conversation": available - memory_budget
+    }
+```
+
+### 4.3 Logger Component
+
+**Purpose:** Captures, parses, and stores all conversation content.
+
+**Responsibilities:**
+
+- Append messages to active Recall File transcript  
+- Track token count for threshold detection  
+- Extract entities for Knowledge Graph updates  
+- Detect Defining Memory triggers  
+- Manage Recall File finalization
+
+**Message Processing:**
+
+```py
+async def log_message(
+    user_id: str,
+    role: str,  # "user" or "assistant"
+    content: str,
+    artifacts: list[Artifact] = None,
+    metadata: dict = None
+) -> LogResult:
+    """
+    Log a message to the user's active Recall File.
+    """
+    session = get_session(user_id)
+    
+    # Calculate tokens
+    tokens = count_tokens(content)
+    session.current_token_count += tokens
+    
+    # Append to transcript
+    await append_to_transcript(
+        recall_file_id=session.active_recall_file_id,
+        entry=TranscriptEntry(
+            timestamp=datetime.utcnow(),
+            role=role,
+            content=content,
+            tokens=tokens
+        )
+    )
+    
+    # Store artifacts if present
+    if artifacts:
+        await store_artifacts(session.active_recall_file_id, artifacts)
+    
+    # Check for Defining Memory triggers
+    if role == "user":
+        defining_memory = await detect_defining_memory(content)
+        if defining_memory:
+            await store_defining_memory(user_id, defining_memory, session.active_recall_file_id)
+    
+    # Check if threshold reached
+    if session.current_token_count >= RECALL_FILE_TOKEN_THRESHOLD:
+        await finalize_recall_file(session)
+        await start_new_recall_file(session)
+    
+    return LogResult(
+        recall_file_id=session.active_recall_file_id,
+        tokens_logged=tokens,
+        total_tokens=session.current_token_count
+    )
+```
+
+**Recall File Finalization:**
+
+```py
+async def finalize_recall_file(session: UserSession):
+    """
+    Complete a Recall File when token threshold is reached.
+    """
+    recall_file = await get_recall_file(session.active_recall_file_id)
+    
+    # Generate summary using AI
+    transcript = await load_transcript(recall_file.id)
+    summary = await generate_summary(transcript)
+    await save_summary(recall_file.id, summary)
+    
+    # Extract keywords
+    keywords = await extract_keywords(transcript, summary)
+    await save_keywords(recall_file.id, keywords)
+    
+    # Generate embedding from summary
+    embedding = await embed_text(summary)
+    await store_embedding(recall_file.id, embedding)
+    
+    # Update Knowledge Graph
+    entities = await extract_entities(transcript)
+    await update_knowledge_graph(session.user_id, recall_file.id, entities)
+    
+    # Compress artifacts
+    await compress_artifacts(recall_file.id)
+    
+    # Mark as finalized
+    recall_file.status = "finalized"
+    recall_file.finalized_at = datetime.utcnow()
+    await save_recall_file(recall_file)
+```
+
+### 4.4 Retriever Component
+
+**Purpose:** Finds relevant memories for a given query.
+
+**Responsibilities:**
+
+- Execute multi-stage retrieval cascade  
+- Rank and filter results  
+- Load transcript content as needed  
+- Manage retrieval caching
+
+**Retrieval Cascade:**
+
+```py
+async def retrieve_memories(
+    user_id: str,
+    query: str,
+    max_results: int = 5,
+    include_defining: bool = True
+) -> RetrievalResult:
+    """
+    Execute the full retrieval cascade.
+    """
+    results = []
+    
+    # Stage 1: Check Defining Memories
+    if include_defining:
+        defining = await search_defining_memories(user_id, query)
+        if defining:
+            results.extend(defining)
+    
+    # Stage 2: Knowledge Graph Navigation
+    relevant_nodes = await find_relevant_nodes(user_id, query)
+    candidate_recall_files = await get_recall_files_for_nodes(relevant_nodes)
+    
+    # Stage 3: Keyword Search
+    if candidate_recall_files:
+        keyword_matches = await keyword_search(
+            query=query,
+            recall_file_ids=[rf.id for rf in candidate_recall_files]
+        )
+        candidate_recall_files = rerank_by_keywords(candidate_recall_files, keyword_matches)
+    
+    # Stage 4: Semantic Search (RAG)
+    query_embedding = await embed_text(query)
+    semantic_matches = await vector_search(
+        embedding=query_embedding,
+        user_id=user_id,
+        candidate_ids=[rf.id for rf in candidate_recall_files] if candidate_recall_files else None,
+        limit=max_results * 2
+    )
+    
+    # Stage 5: Load and Rank
+    for match in semantic_matches[:max_results]:
+        recall_file = await get_recall_file(match.recall_file_id)
+        
+        # Load summary for quick context
+        summary = await load_summary(recall_file.id)
+        
+        # Optionally load relevant transcript section
+        if match.score > 0.85:  # High confidence
+            transcript = await load_transcript(recall_file.id)
+        else:
+            transcript = None
+        
+        results.append(MemoryResult(
+            recall_file_id=recall_file.id,
+            topic=recall_file.topic,
+            date=recall_file.created_at,
+            summary=summary,
+            transcript_excerpt=transcript,
+            relevance_score=match.score
+        ))
+    
+    # Warm the neighborhood for future queries
+    if relevant_nodes:
+        asyncio.create_task(warm_neighborhood(relevant_nodes))
+    
+    return RetrievalResult(
+        memories=results,
+        nodes_searched=len(relevant_nodes),
+        recall_files_considered=len(candidate_recall_files)
+    )
+```
+
+### 4.5 Injector Component
+
+**Purpose:** Builds context-enhanced prompts for AI models.
+
+**Responsibilities:**
+
+- Format memories for prompt injection  
+- Manage token budget  
+- Structure context for different models  
+- Handle prompt templates
+
+**Context Building:**
+
+```py
+async def build_enhanced_prompt(
+    user_message: str,
+    memories: list[MemoryResult],
+    system_prompt: str,
+    token_budget: int,
+    model: str
+) -> EnhancedPrompt:
+    """
+    Build a prompt with memory context injected.
+    """
+    # Format memories for injection
+    memory_sections = []
+    tokens_used = 0
+    
+    for memory in memories:
+        # Prefer summary if budget is tight
+        if tokens_used + count_tokens(memory.summary) <= token_budget:
+            section = format_memory_section(memory, include_transcript=False)
+            section_tokens = count_tokens(section)
+            
+            # Add transcript if we have budget and it's highly relevant
+            if memory.transcript_excerpt and memory.relevance_score > 0.85:
+                with_transcript = format_memory_section(memory, include_transcript=True)
+                transcript_tokens = count_tokens(with_transcript)
+                
+                if tokens_used + transcript_tokens <= token_budget:
+                    section = with_transcript
+                    section_tokens = transcript_tokens
+            
+            memory_sections.append(section)
+            tokens_used += section_tokens
+        else:
+            break  # Budget exhausted
+    
+    # Build final prompt
+    memory_context = "\n\n".join(memory_sections)
+    
+    enhanced_prompt = PROMPT_TEMPLATE.format(
+        system_prompt=system_prompt,
+        memory_context=memory_context,
+        user_message=user_message
+    )
+    
+    return EnhancedPrompt(
+        content=enhanced_prompt,
+        memory_tokens_used=tokens_used,
+        memories_included=len(memory_sections)
+    )
+
+PROMPT_TEMPLATE = """
+{system_prompt}
+
+## Relevant Context from Previous Conversations
+
+{memory_context}
+
+---
+
+## Current Message
+
+{user_message}
+"""
+```
+
+### 4.6 Knowledge Graph Manager
+
+**Purpose:** Maintains the hierarchical structure of user knowledge.
+
+**Responsibilities:**
+
+- Create and update nodes (projects, topics, concepts)  
+- Manage edges (relationships between nodes)  
+- Link Recall Files to nodes  
+- Support graph traversal queries
+
+**Node Types:**
+
+```py
+class NodeType(Enum):
+    PROJECT = "project"      # Major work streams
+    TOPIC = "topic"          # Subjects within projects
+    CONCEPT = "concept"      # Abstract ideas spanning projects
+    ENTITY = "entity"        # People, companies, products
+    RECALL_FILE = "recall_file"  # Leaf nodes (archives)
+```
+
+**Edge Types:**
+
+```py
+class EdgeType(Enum):
+    CONTAINS = "contains"           # Hierarchical parent-child
+    RELATES_TO = "relates_to"       # Semantic connection
+    DISCUSSED_IN = "discussed_in"   # Links to Recall Files
+    MENTIONS = "mentions"           # Entity references
+    SUPERSEDES = "supersedes"       # Temporal versioning
+```
+
+**Graph Operations:**
+
+```py
+async def find_relevant_nodes(
+    user_id: str,
+    query: str,
+    max_depth: int = 2
+) -> list[Node]:
+    """
+    Find nodes relevant to a query.
+    """
+    # Extract potential topic/entity mentions
+    mentions = await extract_mentions(query)
+    
+    # Find matching nodes
+    matching_nodes = []
+    for mention in mentions:
+        nodes = await graph_db.find_nodes(
+            user_id=user_id,
+            name_contains=mention,
+            fuzzy=True
+        )
+        matching_nodes.extend(nodes)
+    
+    # Expand to neighborhood
+    expanded = set()
+    for node in matching_nodes:
+        neighborhood = await graph_db.get_neighborhood(
+            node_id=node.id,
+            depth=max_depth
+        )
+        expanded.update(neighborhood)
+    
+    return list(expanded)
+
+async def get_recall_files_for_nodes(nodes: list[Node]) -> list[RecallFile]:
+    """
+    Get all Recall Files linked to a set of nodes.
+    """
+    recall_file_ids = set()
+    
+    for node in nodes:
+        edges = await graph_db.get_edges(
+            source_id=node.id,
+            edge_type=EdgeType.DISCUSSED_IN
+        )
+        for edge in edges:
+            recall_file_ids.add(edge.target_id)
+    
+    return await batch_get_recall_files(list(recall_file_ids))
+```
+
+### 4.7 Defining Memory Detector
+
+**Purpose:** Identifies and indexes significant moments in conversations.
+
+**Detection Triggers:**
+
+```py
+DEFINING_MEMORY_PATTERNS = {
+    "decision": [
+        r"I('ve| have) decided",
+        r"we('re| are) going with",
+        r"final decision",
+        r"I('m| am) committing to",
+        r"let's do",
+        r"I choose",
+    ],
+    "milestone": [
+        r"we launched",
+        r"it's done",
+        r"I finished",
+        r"completed",
+        r"shipped",
+        r"released",
+        r"went live",
+    ],
+    "event": [
+        r"I('m| am) starting",
+        r"got the job",
+        r"closed the deal",
+        r"signed the contract",
+        r"I('m| am) getting married",
+        r"we('re| are) having a baby",
+    ],
+    "turning_point": [
+        r"this changes everything",
+        r"I realized",
+        r"from now on",
+        r"never again",
+        r"turning point",
+    ],
+}
+
+async def detect_defining_memory(content: str) -> DefiningMemory | None:
+    """
+    Check if content contains a defining memory.
+    """
+    content_lower = content.lower()
+    
+    for memory_type, patterns in DEFINING_MEMORY_PATTERNS.items():
+        for pattern in patterns:
+            if re.search(pattern, content_lower):
+                # Extract surrounding context
+                context = extract_context_window(content, pattern)
+                
+                # Generate summary using AI
+                summary = await summarize_defining_moment(content, memory_type)
+                
+                return DefiningMemory(
+                    type=memory_type,
+                    summary=summary,
+                    context=context,
+                    detected_at=datetime.utcnow(),
+                    confidence=0.8  # Pattern-based detection
+                )
+    
+    return None
+```
+
+---
+
+## 5\. Data Models & Schema
+
+### 5.1 PostgreSQL Schema
+
+```sql
+-- Enable required extensions
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS "pgvector";
+CREATE EXTENSION IF NOT EXISTS "pg_trgm";  -- For fuzzy text search
+
+-- Users table
+CREATE TABLE users (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    external_id VARCHAR(255) UNIQUE NOT NULL,  -- ID from auth provider
+    email VARCHAR(255),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    settings JSONB DEFAULT '{}'::jsonb
+);
+
+CREATE INDEX idx_users_external_id ON users(external_id);
+
+-- Recall Files table
+CREATE TABLE recall_files (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    folder_name VARCHAR(255) NOT NULL,
+    topic VARCHAR(255),
+    status VARCHAR(50) DEFAULT 'active',  -- 'active', 'finalized', 'archived'
+    storage_state VARCHAR(50) DEFAULT 'hot',  -- 'hot', 'warm', 'cold'
+    token_count INTEGER DEFAULT 0,
+    
+    -- File paths (relative to user's storage root)
+    summary_path TEXT,
+    keywords_path TEXT,
+    transcript_path TEXT,
+    artifacts_path TEXT,
+    
+    -- Timestamps
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    finalized_at TIMESTAMP WITH TIME ZONE,
+    last_accessed_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    
+    -- Metadata
+    metadata JSONB DEFAULT '{}'::jsonb,
+    
+    CONSTRAINT unique_folder_per_user UNIQUE (user_id, folder_name)
+);
+
+CREATE INDEX idx_recall_files_user_id ON recall_files(user_id);
+CREATE INDEX idx_recall_files_status ON recall_files(status);
+CREATE INDEX idx_recall_files_storage_state ON recall_files(storage_state);
+CREATE INDEX idx_recall_files_last_accessed ON recall_files(last_accessed_at);
+CREATE INDEX idx_recall_files_topic ON recall_files USING gin(topic gin_trgm_ops);
+
+-- Knowledge Graph Nodes
+CREATE TABLE kg_nodes (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    name VARCHAR(255) NOT NULL,
+    node_type VARCHAR(50) NOT NULL,  -- 'project', 'topic', 'concept', 'entity'
+    description TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    last_accessed_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    metadata JSONB DEFAULT '{}'::jsonb,
+    
+    CONSTRAINT unique_node_name_per_user UNIQUE (user_id, name, node_type)
+);
+
+CREATE INDEX idx_kg_nodes_user_id ON kg_nodes(user_id);
+CREATE INDEX idx_kg_nodes_type ON kg_nodes(node_type);
+CREATE INDEX idx_kg_nodes_name ON kg_nodes USING gin(name gin_trgm_ops);
+
+-- Knowledge Graph Edges
+CREATE TABLE kg_edges (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    source_node_id UUID NOT NULL REFERENCES kg_nodes(id) ON DELETE CASCADE,
+    target_node_id UUID NOT NULL REFERENCES kg_nodes(id) ON DELETE CASCADE,
+    edge_type VARCHAR(50) NOT NULL,  -- 'contains', 'relates_to', 'discussed_in', etc.
+    weight FLOAT DEFAULT 1.0,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    metadata JSONB DEFAULT '{}'::jsonb,
+    
+    CONSTRAINT unique_edge UNIQUE (source_node_id, target_node_id, edge_type)
+);
+
+CREATE INDEX idx_kg_edges_source ON kg_edges(source_node_id);
+CREATE INDEX idx_kg_edges_target ON kg_edges(target_node_id);
+CREATE INDEX idx_kg_edges_type ON kg_edges(edge_type);
+
+-- Recall File to Node mapping
+CREATE TABLE recall_file_nodes (
+    recall_file_id UUID NOT NULL REFERENCES recall_files(id) ON DELETE CASCADE,
+    node_id UUID NOT NULL REFERENCES kg_nodes(id) ON DELETE CASCADE,
+    relevance_score FLOAT DEFAULT 1.0,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    
+    PRIMARY KEY (recall_file_id, node_id)
+);
+
+CREATE INDEX idx_recall_file_nodes_node ON recall_file_nodes(node_id);
+
+-- Defining Memories
+CREATE TABLE defining_memories (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    memory_type VARCHAR(50) NOT NULL,  -- 'decision', 'milestone', 'event', 'turning_point'
+    summary TEXT NOT NULL,
+    context TEXT,
+    source_recall_file_id UUID REFERENCES recall_files(id) ON DELETE SET NULL,
+    confidence FLOAT DEFAULT 1.0,
+    detected_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    occurred_at TIMESTAMP WITH TIME ZONE,  -- When the event actually happened
+    tags TEXT[] DEFAULT '{}',
+    metadata JSONB DEFAULT '{}'::jsonb
+);
+
+CREATE INDEX idx_defining_memories_user_id ON defining_memories(user_id);
+CREATE INDEX idx_defining_memories_type ON defining_memories(memory_type);
+CREATE INDEX idx_defining_memories_detected_at ON defining_memories(detected_at);
+CREATE INDEX idx_defining_memories_tags ON defining_memories USING gin(tags);
+
+-- Summary Embeddings (Vector Store)
+CREATE TABLE summary_embeddings (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    recall_file_id UUID NOT NULL REFERENCES recall_files(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    embedding vector(1536),  -- OpenAI ada-002 dimension
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    
+    CONSTRAINT unique_embedding_per_recall_file UNIQUE (recall_file_id)
+);
+
+-- Create vector index for similarity search
+CREATE INDEX idx_summary_embeddings_vector ON summary_embeddings 
+USING ivfflat (embedding vector_cosine_ops) WITH (lists = 100);
+
+CREATE INDEX idx_summary_embeddings_user_id ON summary_embeddings(user_id);
+
+-- Keywords index (for fast exact-match search)
+CREATE TABLE recall_file_keywords (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    recall_file_id UUID NOT NULL REFERENCES recall_files(id) ON DELETE CASCADE,
+    keyword VARCHAR(255) NOT NULL,
+    frequency INTEGER DEFAULT 1,
+    
+    CONSTRAINT unique_keyword_per_file UNIQUE (recall_file_id, keyword)
+);
+
+CREATE INDEX idx_keywords_recall_file ON recall_file_keywords(recall_file_id);
+CREATE INDEX idx_keywords_keyword ON recall_file_keywords(keyword);
+CREATE INDEX idx_keywords_keyword_trgm ON recall_file_keywords USING gin(keyword gin_trgm_ops);
+
+-- User Sessions (for active conversation tracking)
+CREATE TABLE user_sessions (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    active_recall_file_id UUID REFERENCES recall_files(id),
+    current_token_count INTEGER DEFAULT 0,
+    warm_node_ids UUID[] DEFAULT '{}',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    last_activity_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    expires_at TIMESTAMP WITH TIME ZONE,
+    metadata JSONB DEFAULT '{}'::jsonb
+);
+
+CREATE INDEX idx_user_sessions_user_id ON user_sessions(user_id);
+CREATE INDEX idx_user_sessions_active ON user_sessions(last_activity_at);
+
+-- Audit Log
+CREATE TABLE audit_log (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID REFERENCES users(id),
+    action VARCHAR(100) NOT NULL,
+    resource_type VARCHAR(100),
+    resource_id UUID,
+    details JSONB,
+    ip_address INET,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX idx_audit_log_user_id ON audit_log(user_id);
+CREATE INDEX idx_audit_log_action ON audit_log(action);
+CREATE INDEX idx_audit_log_created_at ON audit_log(created_at);
+```
+
+### 5.2 Recall File Structure
+
+Each Recall File is stored as a folder:
+
+```
+/storage/{user_id}/recall-files/{folder_name}/
+├── summary.md          # AI-generated summary
+├── keywords.txt        # Extracted keywords, one per line
+├── transcript.md       # Complete conversation log
+└── artifacts/          # Directory for files (or artifacts.zip when cold)
+    ├── code_snippet_001.py
+    ├── document_draft.md
+    └── image_generated.png
+```
+
+**summary.md Format:**
+
+```
+# Summary: {topic}
+
+**Date Range:** {start_date} - {end_date}
+**Token Count:** {token_count}
+
+## Overview
+
+{AI-generated 2-3 paragraph summary}
+
+## Key Points
+
+- {bullet point 1}
+- {bullet point 2}
+- {bullet point 3}
+
+## Topics Discussed
+
+- {topic 1}
+- {topic 2}
+
+## Artifacts Created
+
+- {artifact 1 with description}
+- {artifact 2 with description}
+```
+
+**keywords.txt Format:**
+
+```
+hyperthyme
+memory
+architecture
+recall file
+knowledge graph
+vector search
+defining memory
+```
+
+**transcript.md Format:**
+
+```
+# Conversation Transcript
+
+**Recall File:** {folder_name}
+**Started:** {start_timestamp}
+**Finalized:** {end_timestamp}
+
+---
+
+## 2026-01-11T08:30:00Z | User
+
+{user message content}
+
+---
+
+## 2026-01-11T08:30:45Z | Assistant
+
+{assistant response content}
+
+---
+
+## 2026-01-11T08:32:00Z | User
+
+{next user message}
+
+[... continues ...]
+```
+
+### 5.3 Object Models
+
+```py
+from dataclasses import dataclass
+from datetime import datetime
+from enum import Enum
+from typing import Optional
+from uuid import UUID
+
+
+class RecallFileStatus(Enum):
+    ACTIVE = "active"
+    FINALIZED = "finalized"
+    ARCHIVED = "archived"
+
+
+class StorageState(Enum):
+    HOT = "hot"
+    WARM = "warm"
+    COLD = "cold"
+
+
+class NodeType(Enum):
+    PROJECT = "project"
+    TOPIC = "topic"
+    CONCEPT = "concept"
+    ENTITY = "entity"
+    RECALL_FILE = "recall_file"
+
+
+class EdgeType(Enum):
+    CONTAINS = "contains"
+    RELATES_TO = "relates_to"
+    DISCUSSED_IN = "discussed_in"
+    MENTIONS = "mentions"
+    SUPERSEDES = "supersedes"
+
+
+class DefiningMemoryType(Enum):
+    DECISION = "decision"
+    MILESTONE = "milestone"
+    EVENT = "event"
+    TURNING_POINT = "turning_point"
+
+
+@dataclass
+class User:
+    id: UUID
+    external_id: str
+    email: Optional[str]
+    created_at: datetime
+    settings: dict
+
+
+@dataclass
+class RecallFile:
+    id: UUID
+    user_id: UUID
+    folder_name: str
+    topic: Optional[str]
+    status: RecallFileStatus
+    storage_state: StorageState
+    token_count: int
+    summary_path: Optional[str]
+    keywords_path: Optional[str]
+    transcript_path: Optional[str]
+    artifacts_path: Optional[str]
+    created_at: datetime
+    updated_at: datetime
+    finalized_at: Optional[datetime]
+    last_accessed_at: datetime
+    metadata: dict
+
+
+@dataclass
+class KGNode:
+    id: UUID
+    user_id: UUID
+    name: str
+    node_type: NodeType
+    description: Optional[str]
+    created_at: datetime
+    last_accessed_at: datetime
+    metadata: dict
+
+
+@dataclass
+class KGEdge:
+    id: UUID
+    source_node_id: UUID
+    target_node_id: UUID
+    edge_type: EdgeType
+    weight: float
+    created_at: datetime
+    metadata: dict
+
+
+@dataclass
+class DefiningMemory:
+    id: UUID
+    user_id: UUID
+    memory_type: DefiningMemoryType
+    summary: str
+    context: Optional[str]
+    source_recall_file_id: Optional[UUID]
+    confidence: float
+    detected_at: datetime
+    occurred_at: Optional[datetime]
+    tags: list[str]
+    metadata: dict
+
+
+@dataclass
+class SummaryEmbedding:
+    id: UUID
+    recall_file_id: UUID
+    user_id: UUID
+    embedding: list[float]  # 1536 dimensions
+    created_at: datetime
+
+
+@dataclass
+class UserSession:
+    id: UUID
+    user_id: UUID
+    active_recall_file_id: Optional[UUID]
+    current_token_count: int
+    warm_node_ids: list[UUID]
+    created_at: datetime
+    last_activity_at: datetime
+    expires_at: Optional[datetime]
+    metadata: dict
+```
+
+---
+
+## 6\. APIs & Interfaces
+
+### 6.1 REST API Specification
+
+**Base URL:** `https://api.hyperthyme.ai/v1`
+
+#### 6.1.1 Chat Endpoint
+
+**POST /chat**
+
+Send a message with memory-augmented context.
+
+**Request:**
+
+```json
+{
+  "message": "Continue working on the payment integration",
+  "model": "claude-sonnet-4-20250514",
+  "include_memories": true,
+  "memory_options": {
+    "max_memories": 5,
+    "token_budget": 4000,
+    "include_defining": true,
+    "time_range": {
+      "start": "2025-01-01T00:00:00Z",
+      "end": null
+    }
+  },
+  "system_prompt": "You are a helpful coding assistant.",
+  "stream": false
+}
+```
+
+**Response:**
+
+```json
+{
+  "id": "msg_abc123",
+  "response": "I found our previous work on the payment integration...",
+  "model": "claude-sonnet-4-20250514",
+  "memories_used": [
+    {
+      "recall_file_id": "rf_xyz789",
+      "topic": "Payment Integration - Stripe",
+      "date": "2025-01-03",
+      "relevance_score": 0.92
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 1500,
+    "completion_tokens": 350,
+    "memory_tokens": 800
+  },
+  "logged_to": "rf_current123"
+}
+```
+
+#### 6.1.2 Search Endpoint
+
+**POST /search**
+
+Search memories without sending to AI.
+
+**Request:**
+
+```json
+{
+  "query": "payment webhook implementation",
+  "max_results": 10,
+  "include_transcripts": false,
+  "filters": {
+    "date_range": {
+      "start": "2024-01-01",
+      "end": null
+    },
+    "topics": ["payments", "integration"],
+    "memory_types": ["defining", "regular"]
+  }
+}
+```
+
+**Response:**
+
+```json
+{
+  "results": [
+    {
+      "type": "recall_file",
+      "id": "rf_xyz789",
+      "topic": "Payment Integration - Stripe Webhooks",
+      "date": "2025-01-03",
+      "summary": "Implemented webhook handlers for payment events...",
+      "relevance_score": 0.94,
+      "keywords": ["stripe", "webhook", "payment", "handler"]
+    },
+    {
+      "type": "defining_memory",
+      "id": "dm_abc456",
+      "memory_type": "decision",
+      "summary": "Decided to use Stripe Connect for marketplace payments",
+      "date": "2024-12-15",
+      "relevance_score": 0.87
+    }
+  ],
+  "total_count": 2,
+  "search_stats": {
+    "nodes_searched": 5,
+    "recall_files_considered": 12,
+    "search_time_ms": 45
+  }
+}
+```
+
+#### 6.1.3 Recall Files Endpoints
+
+**GET /recall-files**
+
+List user's Recall Files.
+
+**Query Parameters:**
+
+- `status`: Filter by status (active, finalized, archived)  
+- `topic`: Filter by topic (fuzzy match)  
+- `limit`: Max results (default 20, max 100\)  
+- `offset`: Pagination offset  
+- `sort`: Sort field (created\_at, updated\_at, last\_accessed\_at)  
+- `order`: Sort order (asc, desc)
+
+**Response:**
+
+```json
+{
+  "recall_files": [
+    {
+      "id": "rf_xyz789",
+      "folder_name": "payment-integration-stripe-2025-01-03",
+      "topic": "Payment Integration - Stripe",
+      "status": "finalized",
+      "storage_state": "warm",
+      "token_count": 48500,
+      "created_at": "2025-01-03T10:00:00Z",
+      "finalized_at": "2025-01-03T14:30:00Z",
+      "last_accessed_at": "2025-01-10T08:00:00Z"
+    }
+  ],
+  "pagination": {
+    "total": 156,
+    "limit": 20,
+    "offset": 0,
+    "has_more": true
+  }
+}
+```
+
+**GET /recall-files/&#123;id&#125;**
+
+Get specific Recall File with content.
+
+**Query Parameters:**
+
+- `include`: Comma-separated list (summary, keywords, transcript, artifacts)
+
+**Response:**
+
+```json
+{
+  "id": "rf_xyz789",
+  "folder_name": "payment-integration-stripe-2025-01-03",
+  "topic": "Payment Integration - Stripe",
+  "status": "finalized",
+  "storage_state": "warm",
+  "token_count": 48500,
+  "created_at": "2025-01-03T10:00:00Z",
+  "finalized_at": "2025-01-03T14:30:00Z",
+  "summary": "## Overview\n\nImplemented Stripe webhook handlers...",
+  "keywords": ["stripe", "webhook", "payment", "handler", "checkout"],
+  "transcript": "# Conversation Transcript\n\n...",
+  "artifacts": [
+    {
+      "name": "webhook_handler.py",
+      "type": "text/x-python",
+      "size": 2500
+    }
+  ],
+  "linked_nodes": [
+    {"id": "node_123", "name": "Payments", "type": "topic"},
+    {"id": "node_456", "name": "funnelChat", "type": "project"}
+  ]
+}
+```
+
+#### 6.1.4 Defining Memories Endpoints
+
+**GET /defining-memories**
+
+List user's Defining Memories.
+
+**Query Parameters:**
+
+- `type`: Filter by type (decision, milestone, event, turning\_point)  
+- `since`: Filter by date (ISO 8601\)  
+- `limit`: Max results  
+- `offset`: Pagination offset
+
+**Response:**
+
+```json
+{
+  "defining_memories": [
+    {
+      "id": "dm_abc456",
+      "type": "decision",
+      "summary": "Decided to build Hyperthyme as the memory layer for Neurigraph",
+      "context": "After discovering Mem0 raised $24M...",
+      "detected_at": "2025-01-11T08:00:00Z",
+      "occurred_at": "2025-01-11T08:00:00Z",
+      "source_recall_file_id": "rf_xyz789",
+      "tags": ["product", "strategy", "commitment"],
+      "confidence": 0.95
+    }
+  ],
+  "pagination": {
+    "total": 23,
+    "limit": 20,
+    "offset": 0,
+    "has_more": true
+  }
+}
+```
+
+#### 6.1.5 Knowledge Graph Endpoints
+
+**GET /graph/nodes**
+
+Query Knowledge Graph nodes.
+
+**Query Parameters:**
+
+- `type`: Filter by node type  
+- `name`: Search by name (fuzzy)  
+- `related_to`: Find nodes related to a specific node ID  
+- `depth`: Traversal depth for related queries
+
+**Response:**
+
+```json
+{
+  "nodes": [
+    {
+      "id": "node_123",
+      "name": "Payments",
+      "type": "topic",
+      "description": "Payment processing and integrations",
+      "recall_file_count": 8,
+      "related_nodes": [
+        {"id": "node_456", "name": "Stripe", "relationship": "contains"},
+        {"id": "node_789", "name": "funnelChat", "relationship": "belongs_to"}
+      ]
+    }
+  ]
+}
+```
+
+**POST /graph/nodes**
+
+Create or update a node.
+
+**Request:**
+
+```json
+{
+  "name": "New Project",
+  "type": "project",
+  "description": "Description of the project",
+  "parent_id": null
+}
+```
+
+### 6.2 MCP (Model Context Protocol) Interface
+
+Hyperthyme exposes tools for MCP-compatible AI systems.
+
+**Tools Exposed:**
+
+```py
+@mcp_server.tool(
+    name="search_memory",
+    description="Search the user's conversation history for relevant memories"
+)
+async def search_memory(
+    query: str,
+    max_results: int = 5,
+    include_defining: bool = True
+) -> list[dict]:
+    """
+    Search for memories matching the query.
+    
+    Args:
+        query: Natural language search query
+        max_results: Maximum number of results to return
+        include_defining: Whether to include defining memories
+        
+    Returns:
+        List of matching memories with summaries and metadata
+    """
+    pass
+
+
+@mcp_server.tool(
+    name="get_defining_memories",
+    description="Retrieve the user's major decisions, milestones, and significant events"
+)
+async def get_defining_memories(
+    type_filter: str = None,
+    since: str = None,
+    limit: int = 10
+) -> list[dict]:
+    """
+    Get defining memories.
+    
+    Args:
+        type_filter: Filter by type (decision, milestone, event, turning_point)
+        since: Only return memories after this date (ISO 8601)
+        limit: Maximum results
+        
+    Returns:
+        List of defining memories
+    """
+    pass
+
+
+@mcp_server.tool(
+    name="get_recall_file_content",
+    description="Retrieve the full content of a specific conversation archive"
+)
+async def get_recall_file_content(
+    recall_file_id: str,
+    include: list[str] = ["summary", "transcript"]
+) -> dict:
+    """
+    Get content from a specific Recall File.
+    
+    Args:
+        recall_file_id: The ID of the Recall File
+        include: Which components to include (summary, keywords, transcript, artifacts)
+        
+    Returns:
+        Recall File content
+    """
+    pass
+
+
+@mcp_server.tool(
+    name="list_topics",
+    description="List the user's projects and topics from their knowledge graph"
+)
+async def list_topics(
+    type_filter: str = None,
+    parent_id: str = None
+) -> list[dict]:
+    """
+    List knowledge graph nodes.
+    
+    Args:
+        type_filter: Filter by type (project, topic, concept)
+        parent_id: Only show children of this node
+        
+    Returns:
+        List of nodes with metadata
+    """
+    pass
+```
+
+### 6.3 SDK Interface
+
+```py
+# Python SDK Example
+
+from hyperthyme import HyperthymeClient
+
+# Initialize client
+client = HyperthymeClient(
+    api_key="sk_...",
+    base_url="https://api.hyperthyme.ai"
+)
+
+# Chat with memory
+response = client.chat(
+    message="Continue working on the payment integration",
+    model="claude-sonnet-4-20250514",
+    memory_options={
+        "max_memories": 5,
+        "token_budget": 4000
+    }
+)
+
+print(response.content)
+print(f"Used {len(response.memories_used)} memories")
+
+# Search memories
+results = client.search(
+    query="payment webhook implementation",
+    max_results=10
+)
+
+for result in results:
+    print(f"{result.topic}: {result.summary[:100]}...")
+
+# Get defining memories
+decisions = client.get_defining_memories(
+    type_filter="decision",
+    since="2025-01-01"
+)
+
+for decision in decisions:
+    print(f"{decision.date}: {decision.summary}")
+
+# Direct Recall File access
+recall_file = client.get_recall_file(
+    "rf_xyz789",
+    include=["summary", "transcript"]
+)
+
+print(recall_file.transcript)
+```
+
+---
+
+## 7\. Retrieval Pipeline
+
+### 7.1 Pipeline Overview
+
+The retrieval pipeline executes a multi-stage cascade designed to efficiently find relevant memories while minimizing computational cost.
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                         RETRIEVAL PIPELINE                               │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                         │
+│  Query: "What was the code for handling payment webhooks?"              │
+│                                                                         │
+│  ┌─────────────────────────────────────────────────────────────────┐    │
+│  │ STAGE 1: Defining Memory Check                           ~5ms   │    │
+│  │                                                                 │    │
+│  │ Check if query relates to a decision/milestone/event           │    │
+│  │ Result: No direct match (content query, not event query)       │    │
+│  └─────────────────────────────────────────────────────────────────┘    │
+│                              │                                          │
+│                              ▼                                          │
+│  ┌─────────────────────────────────────────────────────────────────┐    │
+│  │ STAGE 2: Knowledge Graph Navigation                     ~10ms   │    │
+│  │                                                                 │    │
+│  │ Extract entities: ["payment", "webhook", "code"]               │    │
+│  │ Find matching nodes: [Payments, Webhooks, Stripe]              │    │
+│  │ Expand neighborhood (depth=2)                                  │    │
+│  │ Get linked Recall Files: 15 candidates                         │    │
+│  └─────────────────────────────────────────────────────────────────┘    │
+│                              │                                          │
+│                              ▼                                          │
+│  ┌─────────────────────────────────────────────────────────────────┐    │
+│  │ STAGE 3: Keyword Filtering                              ~15ms   │    │
+│  │                                                                 │    │
+│  │ Search keywords.txt in 15 candidates                           │    │
+│  │ Terms: ["webhook", "payment", "stripe", "handler", "code"]     │    │
+│  │ Score by keyword overlap                                       │    │
+│  │ Result: 6 Recall Files with strong overlap                     │    │
+│  └─────────────────────────────────────────────────────────────────┘    │
+│                              │                                          │
+│                              ▼                                          │
+│  ┌─────────────────────────────────────────────────────────────────┐    │
+│  │ STAGE 4: Semantic Search (RAG)                          ~30ms   │    │
+│  │                                                                 │    │
+│  │ Embed query                                                    │    │
+│  │ Vector search on 6 candidate summaries                         │    │
+│  │ Rank by cosine similarity                                      │    │
+│  │ Result: Top 3 with scores [0.94, 0.87, 0.82]                   │    │
+│  └─────────────────────────────────────────────────────────────────┘    │
+│                              │                                          │
+│                              ▼                                          │
+│  ┌─────────────────────────────────────────────────────────────────┐    │
+│  │ STAGE 5: Content Loading                                ~20ms   │    │
+│  │                                                                 │    │
+│  │ Load summaries for top 3                                       │    │
+│  │ Load transcript for #1 (score > 0.9 threshold)                 │    │
+│  │ Warm neighborhood nodes for future queries                     │    │
+│  └─────────────────────────────────────────────────────────────────┘    │
+│                              │                                          │
+│                              ▼                                          │
+│  Total Time: ~80ms                                                     │
+│  Result: 3 memories, 1 with full transcript                            │
+│                                                                         │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+### 7.2 Stage Details
+
+#### Stage 1: Defining Memory Check
+
+```py
+async def check_defining_memories(
+    user_id: str,
+    query: str
+) -> list[DefiningMemory]:
+    """
+    Quick check if query relates to defining memories.
+    
+    Uses keyword matching and optional semantic similarity
+    against the defining memories index (always in memory).
+    """
+    # Keyword extraction
+    query_keywords = extract_keywords(query)
+    
+    # Check for event-type query patterns
+    event_patterns = [
+        r"when did (I|we)",
+        r"what (did I|did we) decide",
+        r"(milestone|decision|event)",
+        r"remember when"
+    ]
+    
+    is_event_query = any(re.search(p, query.lower()) for p in event_patterns)
+    
+    if not is_event_query:
+        return []
+    
+    # Search defining memories index
+    matches = await db.query("""
+        SELECT * FROM defining_memories
+        WHERE user_id = $1
+        AND (
+            summary ILIKE ANY($2)
+            OR tags && $3
+        )
+        ORDER BY detected_at DESC
+        LIMIT 5
+    """, user_id, [f"%{kw}%" for kw in query_keywords], query_keywords)
+    
+    return [DefiningMemory(**m) for m in matches]
+```
+
+#### Stage 2: Knowledge Graph Navigation
+
+```py
+async def navigate_knowledge_graph(
+    user_id: str,
+    query: str,
+    max_depth: int = 2
+) -> tuple[list[KGNode], list[RecallFile]]:
+    """
+    Find relevant nodes and their linked Recall Files.
+    """
+    # Extract potential topic/entity mentions
+    mentions = await extract_mentions(query)  # NER + keyword extraction
+    
+    # Find matching nodes
+    matching_nodes = []
+    for mention in mentions:
+        nodes = await db.query("""
+            SELECT * FROM kg_nodes
+            WHERE user_id = $1
+            AND (
+                name ILIKE $2
+                OR description ILIKE $2
+            )
+        """, user_id, f"%{mention}%")
+        matching_nodes.extend(nodes)
+    
+    # Expand to neighborhood (BFS)
+    visited = set()
+    frontier = [n.id for n in matching_nodes]
+    depth = 0
+    
+    while frontier and depth < max_depth:
+        edges = await db.query("""
+            SELECT target_node_id FROM kg_edges
+            WHERE source_node_id = ANY($1)
+            UNION
+            SELECT source_node_id FROM kg_edges
+            WHERE target_node_id = ANY($1)
+        """, frontier)
+        
+        new_frontier = []
+        for edge in edges:
+            node_id = edge['target_node_id'] or edge['source_node_id']
+            if node_id not in visited:
+                visited.add(node_id)
+                new_frontier.append(node_id)
+        
+        frontier = new_frontier
+        depth += 1
+    
+    # Get all recall files linked to visited nodes
+    recall_files = await db.query("""
+        SELECT DISTINCT rf.* FROM recall_files rf
+        JOIN recall_file_nodes rfn ON rf.id = rfn.recall_file_id
+        WHERE rfn.node_id = ANY($1)
+        AND rf.status = 'finalized'
+    """, list(visited))
+    
+    return matching_nodes, recall_files
+```
+
+#### Stage 3: Keyword Filtering
+
+```py
+async def filter_by_keywords(
+    query: str,
+    candidate_recall_files: list[RecallFile]
+) -> list[tuple[RecallFile, float]]:
+    """
+    Score candidates by keyword overlap.
+    """
+    query_keywords = set(extract_keywords(query))
+    
+    scored_candidates = []
+    
+    for rf in candidate_recall_files:
+        # Get keywords for this recall file
+        rf_keywords = await db.query("""
+            SELECT keyword FROM recall_file_keywords
+            WHERE recall_file_id = $1
+        """, rf.id)
+        rf_keyword_set = set(k['keyword'] for k in rf_keywords)
+        
+        # Calculate overlap score
+        if rf_keyword_set:
+            overlap = len(query_keywords & rf_keyword_set)
+            score = overlap / len(query_keywords) if query_keywords else 0
+        else:
+            score = 0
+        
+        if score > 0.1:  # Minimum threshold
+            scored_candidates.append((rf, score))
+    
+    # Sort by score descending
+    scored_candidates.sort(key=lambda x: x[1], reverse=True)
+    
+    return scored_candidates
+```
+
+#### Stage 4: Semantic Search
+
+```py
+async def semantic_search(
+    query: str,
+    candidate_ids: list[str],
+    limit: int = 5
+) -> list[tuple[str, float]]:
+    """
+    Vector similarity search on candidate summaries.
+    """
+    # Generate query embedding
+    query_embedding = await embedding_model.embed(query)
+    
+    # Search with filtering
+    results = await db.query("""
+        SELECT 
+            recall_file_id,
+            1 - (embedding <=> $1) as similarity
+        FROM summary_embeddings
+        WHERE recall_file_id = ANY($2)
+        ORDER BY embedding <=> $1
+        LIMIT $3
+    """, query_embedding, candidate_ids, limit)
+    
+    return [(r['recall_file_id'], r['similarity']) for r in results]
+```
+
+#### Stage 5: Content Loading
+
+```py
+async def load_memory_content(
+    recall_file_ids: list[str],
+    scores: dict[str, float],
+    transcript_threshold: float = 0.9
+) -> list[MemoryResult]:
+    """
+    Load content from top-ranked Recall Files.
+    """
+    results = []
+    
+    for rf_id in recall_file_ids:
+        rf = await get_recall_file(rf_id)
+        score = scores[rf_id]
+        
+        # Always load summary
+        summary = await load_file(rf.summary_path)
+        
+        # Load transcript only for high-confidence matches
+        transcript = None
+        if score >= transcript_threshold:
+            transcript = await load_file(rf.transcript_path)
+        
+        results.append(MemoryResult(
+            recall_file_id=rf_id,
+            topic=rf.topic,
+            date=rf.created_at,
+            summary=summary,
+            transcript=transcript,
+            relevance_score=score
+        ))
+        
+        # Update last accessed
+        await db.execute("""
+            UPDATE recall_files
+            SET last_accessed_at = NOW()
+            WHERE id = $1
+        """, rf_id)
+    
+    return results
+```
+
+### 7.3 Performance Optimization
+
+**Caching Strategy:**
+
+```py
+class RetrievalCache:
+    """
+    Multi-level cache for retrieval operations.
+    """
+    
+    def __init__(self, redis_client):
+        self.redis = redis_client
+        self.local_cache = {}  # In-memory LRU
+    
+    async def get_embedding(self, text: str) -> list[float]:
+        """Cache embeddings to avoid recomputation."""
+        cache_key = f"emb:{hash(text)}"
+        
+        # Check local cache first
+        if cache_key in self.local_cache:
+            return self.local_cache[cache_key]
+        
+        # Check Redis
+        cached = await self.redis.get(cache_key)
+        if cached:
+            embedding = json.loads(cached)
+            self.local_cache[cache_key] = embedding
+            return embedding
+        
+        # Compute and cache
+        embedding = await embedding_model.embed(text)
+        await self.redis.setex(cache_key, 86400, json.dumps(embedding))
+        self.local_cache[cache_key] = embedding
+        return embedding
+    
+    async def get_keywords(self, recall_file_id: str) -> list[str]:
+        """Cache keywords for fast filtering."""
+        cache_key = f"kw:{recall_file_id}"
+        
+        cached = await self.redis.get(cache_key)
+        if cached:
+            return json.loads(cached)
+        
+        keywords = await load_keywords_from_file(recall_file_id)
+        await self.redis.setex(cache_key, 3600, json.dumps(keywords))
+        return keywords
+```
+
+**Batch Operations:**
+
+```py
+async def batch_get_recall_files(ids: list[str]) -> list[RecallFile]:
+    """
+    Fetch multiple Recall Files in a single query.
+    """
+    if not ids:
+        return []
+    
+    results = await db.query("""
+        SELECT * FROM recall_files
+        WHERE id = ANY($1)
+    """, ids)
+    
+    return [RecallFile(**r) for r in results]
+```
+
+---
+
+## 8\. Storage Management
+
+### 8.1 Storage Tiers
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                         STORAGE TIERS                                    │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                         │
+│  ┌─────────────────────────────────────────────────────────────────┐    │
+│  │ HOT                                                 0-1 hours   │    │
+│  │                                                                 │    │
+│  │ • Currently active Recall File                                 │    │
+│  │ • All content in memory                                        │    │
+│  │ • Instant access (<10ms)                                       │    │
+│  │ • Location: Application memory + local SSD                     │    │
+│  └─────────────────────────────────────────────────────────────────┘    │
+│                              │                                          │
+│                              ▼                                          │
+│  ┌─────────────────────────────────────────────────────────────────┐    │
+│  │ WARM                                                1h - 7 days │    │
+│  │                                                                 │    │
+│  │ • Recently accessed Recall Files                               │    │
+│  │ • Same KG neighborhood as current topic                        │    │
+│  │ • Transcript cached, artifacts uncompressed                    │    │
+│  │ • Fast access (<100ms)                                         │    │
+│  │ • Location: Local SSD / Fast object storage                    │    │
+│  └─────────────────────────────────────────────────────────────────┘    │
+│                              │                                          │
+│                              ▼                                          │
+│  ┌─────────────────────────────────────────────────────────────────┐    │
+│  │ COLD                                                   7+ days  │    │
+│  │                                                                 │    │
+│  │ • Infrequently accessed Recall Files                           │    │
+│  │ • Artifacts compressed (zip)                                   │    │
+│  │ • Transcript on disk (not cached)                              │    │
+│  │ • Keywords/summaries still indexed                             │    │
+│  │ • Slower access (<1s)                                          │    │
+│  │ • Location: Object storage (S3/GCS) with compression           │    │
+│  └─────────────────────────────────────────────────────────────────┘    │
+│                                                                         │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+### 8.2 State Transitions
+
+```py
+class StorageManager:
+    """
+    Manages storage tier transitions for Recall Files.
+    """
+    
+    WARM_THRESHOLD_HOURS = 1
+    COLD_THRESHOLD_DAYS = 7
+    
+    async def warm_recall_file(self, recall_file_id: str):
+        """
+        Transition a Recall File from cold to warm.
+        """
+        rf = await get_recall_file(recall_file_id)
+        
+        if rf.storage_state == StorageState.COLD:
+            # Decompress artifacts
+            if rf.artifacts_path and rf.artifacts_path.endswith('.zip'):
+                await decompress_artifacts(rf.id)
+            
+            # Pre-cache transcript
+            transcript = await load_file(rf.transcript_path)
+            await cache.set(f"transcript:{rf.id}", transcript, ttl=3600)
+            
+            # Update state
+            rf.storage_state = StorageState.WARM
+            await save_recall_file(rf)
+    
+    async def cool_recall_file(self, recall_file_id: str):
+        """
+        Transition a Recall File from warm to cold.
+        """
+        rf = await get_recall_file(recall_file_id)
+        
+        if rf.storage_state == StorageState.WARM:
+            # Compress artifacts
+            if rf.artifacts_path and not rf.artifacts_path.endswith('.zip'):
+                await compress_artifacts(rf.id)
+            
+            # Evict transcript cache
+            await cache.delete(f"transcript:{rf.id}")
+            
+            # Update state
+            rf.storage_state = StorageState.COLD
+            await save_recall_file(rf)
+    
+    async def warm_neighborhood(self, node_ids: list[str]):
+        """
+        Warm all Recall Files in a KG neighborhood.
+        """
+        recall_files = await get_recall_files_for_nodes(node_ids)
+        
+        tasks = [
+            self.warm_recall_file(rf.id)
+            for rf in recall_files
+            if rf.storage_state == StorageState.COLD
+        ]
+        
+        await asyncio.gather(*tasks)
+
+
+class StorageLifecycleJob:
+    """
+    Background job for storage lifecycle management.
+    """
+    
+    async def run(self):
+        """
+        Run nightly to transition warm → cold.
+        """
+        cutoff = datetime.utcnow() - timedelta(days=7)
+        
+        warm_files = await db.query("""
+            SELECT id FROM recall_files
+            WHERE storage_state = 'warm'
+            AND last_accessed_at < $1
+        """, cutoff)
+        
+        storage_manager = StorageManager()
+        
+        for rf in warm_files:
+            try:
+                await storage_manager.cool_recall_file(rf['id'])
+            except Exception as e:
+                logger.error(f"Failed to cool {rf['id']}: {e}")
+```
+
+### 8.3 File Storage Layout
+
+```
+/storage/
+├── {user_id}/
+│   ├── recall-files/
+│   │   ├── payment-integration-stripe-2025-01-03/
+│   │   │   ├── summary.md
+│   │   │   ├── keywords.txt
+│   │   │   ├── transcript.md
+│   │   │   └── artifacts/
+│   │   │       ├── webhook_handler.py
+│   │   │       └── test_coverage.png
+│   │   │
+│   │   ├── api-design-session-2025-01-05/
+│   │   │   ├── summary.md
+│   │   │   ├── keywords.txt
+│   │   │   ├── transcript.md
+│   │   │   └── artifacts.zip          # Compressed (cold)
+│   │   │
+│   │   └── current-session-2025-01-11/  # Active (hot)
+│   │       └── transcript.md           # Being written to
+│   │
+│   └── config/
+│       └── user_settings.json
+│
+└── system/
+    ├── models/
+    │   └── embedding_model/
+    └── cache/
+```
+
+### 8.4 Storage Estimates
+
+| Component | Size per Recall File | Notes |
+| :---- | :---- | :---- |
+| summary.md | \~2-5 KB | 500-1000 tokens |
+| keywords.txt | \~0.5-1 KB | 50-100 keywords |
+| transcript.md | \~150-200 KB | 50K tokens |
+| artifacts (avg) | \~50-500 KB | Varies widely |
+| **Total (uncompressed)** | **\~200-700 KB** |  |
+| **Total (compressed)** | **\~50-200 KB** | \~3:1 compression |
+
+**Scale Projections:**
+
+| Recall Files | Uncompressed | Compressed |
+| :---- | :---- | :---- |
+| 1,000 | 200-700 MB | 50-200 MB |
+| 10,000 | 2-7 GB | 0.5-2 GB |
+| 100,000 | 20-70 GB | 5-20 GB |
+| 1,000,000 | 200-700 GB | 50-200 GB |
+
+---
+
+## 9\. Security & Privacy
+
+### 9.1 Authentication & Authorization
+
+**Authentication:**
+
+- API key authentication for server-to-server  
+- OAuth 2.0 / OIDC for user-facing applications  
+- JWT tokens for session management
+
+**Authorization:**
+
+- All data is scoped by user\_id  
+- No cross-user data access  
+- Role-based access for admin functions
+
+```py
+class AuthMiddleware:
+    """
+    Authentication and authorization middleware.
+    """
+    
+    async def __call__(self, request: Request, call_next):
+        # Extract auth header
+        auth_header = request.headers.get("Authorization")
+        
+        if not auth_header:
+            raise HTTPException(401, "Missing authorization")
+        
+        # Validate token
+        if auth_header.startswith("Bearer "):
+            token = auth_header[7:]
+            user = await self.validate_jwt(token)
+        elif auth_header.startswith("sk_"):
+            user = await self.validate_api_key(auth_header)
+        else:
+            raise HTTPException(401, "Invalid authorization format")
+        
+        # Attach user to request
+        request.state.user = user
+        
+        return await call_next(request)
+    
+    async def validate_jwt(self, token: str) -> User:
+        try:
+            payload = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
+            user = await get_user(payload["sub"])
+            return user
+        except jwt.ExpiredSignatureError:
+            raise HTTPException(401, "Token expired")
+        except jwt.InvalidTokenError:
+            raise HTTPException(401, "Invalid token")
+    
+    async def validate_api_key(self, api_key: str) -> User:
+        # Hash and lookup
+        key_hash = hashlib.sha256(api_key.encode()).hexdigest()
+        user = await db.query("""
+            SELECT u.* FROM users u
+            JOIN api_keys ak ON u.id = ak.user_id
+            WHERE ak.key_hash = $1
+            AND ak.revoked_at IS NULL
+        """, key_hash)
+        
+        if not user:
+            raise HTTPException(401, "Invalid API key")
+        
+        return User(**user[0])
+```
+
+### 9.2 Data Encryption
+
+**At Rest:**
+
+- All stored files encrypted with AES-256-GCM  
+- Per-user encryption keys derived from master key  
+- Keys stored in separate key management system
+
+**In Transit:**
+
+- TLS 1.3 required for all connections  
+- Certificate pinning for mobile SDKs
+
+```py
+class EncryptionService:
+    """
+    Handles encryption/decryption of stored data.
+    """
+    
+    def __init__(self, kms_client):
+        self.kms = kms_client
+    
+    async def encrypt_file(self, user_id: str, content: bytes) -> bytes:
+        # Get or create user data key
+        data_key = await self.get_user_data_key(user_id)
+        
+        # Encrypt content
+        nonce = os.urandom(12)
+        cipher = Cipher(algorithms.AES(data_key), modes.GCM(nonce))
+        encryptor = cipher.encryptor()
+        ciphertext = encryptor.update(content) + encryptor.finalize()
+        
+        # Return nonce + tag + ciphertext
+        return nonce + encryptor.tag + ciphertext
+    
+    async def decrypt_file(self, user_id: str, encrypted: bytes) -> bytes:
+        # Extract components
+        nonce = encrypted[:12]
+        tag = encrypted[12:28]
+        ciphertext = encrypted[28:]
+        
+        # Get user data key
+        data_key = await self.get_user_data_key(user_id)
+        
+        # Decrypt
+        cipher = Cipher(algorithms.AES(data_key), modes.GCM(nonce, tag))
+        decryptor = cipher.decryptor()
+        return decryptor.update(ciphertext) + decryptor.finalize()
+    
+    async def get_user_data_key(self, user_id: str) -> bytes:
+        # Derive from master key using HKDF
+        master_key = await self.kms.get_master_key()
+        return HKDF(
+            algorithm=hashes.SHA256(),
+            length=32,
+            salt=user_id.encode(),
+            info=b"hyperthyme-data-key"
+        ).derive(master_key)
+```
+
+### 9.3 Data Isolation
+
+**Tenant Isolation:**
+
+- Logical isolation via user\_id filtering on all queries  
+- Consider physical isolation (separate databases) for enterprise tier
+
+```py
+def ensure_user_owns_resource(user_id: str, resource_user_id: str):
+    """
+    Verify user has access to a resource.
+    """
+    if user_id != resource_user_id:
+        raise HTTPException(403, "Access denied")
+
+
+# Applied to all resource access
+@app.get("/recall-files/{recall_file_id}")
+async def get_recall_file(recall_file_id: str, request: Request):
+    rf = await db.get_recall_file(recall_file_id)
+    ensure_user_owns_resource(request.state.user.id, rf.user_id)
+    return rf
+```
+
+### 9.4 Audit Logging
+
+```py
+async def audit_log(
+    user_id: str,
+    action: str,
+    resource_type: str,
+    resource_id: str,
+    details: dict = None,
+    ip_address: str = None
+):
+    """
+    Log security-relevant events.
+    """
+    await db.execute("""
+        INSERT INTO audit_log (user_id, action, resource_type, resource_id, details, ip_address)
+        VALUES ($1, $2, $3, $4, $5, $6)
+    """, user_id, action, resource_type, resource_id, json.dumps(details), ip_address)
+
+
+# Example usage
+await audit_log(
+    user_id=user.id,
+    action="recall_file.read",
+    resource_type="recall_file",
+    resource_id=rf.id,
+    details={"include_transcript": True},
+    ip_address=request.client.host
+)
+```
+
+### 9.5 Data Retention & Deletion
+
+**Retention Policy:**
+
+- Default: Indefinite (user controls)  
+- Configurable per-user retention limits  
+- GDPR/CCPA compliant deletion on request
+
+**Deletion Process:**
+
+```py
+async def delete_user_data(user_id: str, hard_delete: bool = False):
+    """
+    Delete all user data.
+    
+    Args:
+        user_id: User to delete
+        hard_delete: If True, permanently delete. If False, soft delete with 30-day recovery window.
+    """
+    if hard_delete:
+        # Delete from all tables
+        await db.execute("DELETE FROM audit_log WHERE user_id = $1", user_id)
+        await db.execute("DELETE FROM defining_memories WHERE user_id = $1", user_id)
+        await db.execute("DELETE FROM summary_embeddings WHERE user_id = $1", user_id)
+        await db.execute("DELETE FROM recall_file_keywords WHERE recall_file_id IN (SELECT id FROM recall_files WHERE user_id = $1)", user_id)
+        await db.execute("DELETE FROM recall_file_nodes WHERE recall_file_id IN (SELECT id FROM recall_files WHERE user_id = $1)", user_id)
+        await db.execute("DELETE FROM recall_files WHERE user_id = $1", user_id)
+        await db.execute("DELETE FROM kg_edges WHERE source_node_id IN (SELECT id FROM kg_nodes WHERE user_id = $1)", user_id)
+        await db.execute("DELETE FROM kg_nodes WHERE user_id = $1", user_id)
+        await db.execute("DELETE FROM user_sessions WHERE user_id = $1", user_id)
+        await db.execute("DELETE FROM users WHERE id = $1", user_id)
+        
+        # Delete files
+        await storage.delete_directory(f"/storage/{user_id}/")
+    else:
+        # Soft delete with recovery window
+        await db.execute("""
+            UPDATE users
+            SET deleted_at = NOW(),
+                deletion_scheduled_for = NOW() + INTERVAL '30 days'
+            WHERE id = $1
+        """, user_id)
+```
+
+---
+
+## 10\. Performance Requirements
+
+### 10.1 Latency Targets
+
+| Operation | Target (P50) | Target (P99) | Notes |
+| :---- | :---- | :---- | :---- |
+| Chat (with memory) | 500ms | 2000ms | Includes retrieval \+ AI response |
+| Memory search | 50ms | 200ms | Hot/warm storage |
+| Memory search (cold) | 500ms | 1000ms | Includes decompression |
+| Recall File creation | 100ms | 500ms | Async summary generation |
+| Knowledge Graph query | 20ms | 100ms | Graph traversal |
+| Vector search | 30ms | 100ms | Scoped search |
+
+### 10.2 Throughput Targets
+
+| Metric | Target | Notes |
+| :---- | :---- | :---- |
+| Requests per second (per node) | 100 RPS | Mix of read/write |
+| Concurrent users (per node) | 1,000 | Active sessions |
+| Messages logged per second | 500 | Across all users |
+| Search queries per second | 200 | Per node |
+
+### 10.3 Availability Targets
+
+| Metric | Target |
+| :---- | :---- |
+| Uptime | 99.9% (8.76 hours/year downtime) |
+| RTO (Recovery Time Objective) | \&lt; 1 hour |
+| RPO (Recovery Point Objective) | \&lt; 5 minutes |
+
+### 10.4 Scalability Requirements
+
+**Horizontal Scaling:**
+
+- API Gateway: Stateless, scale by adding instances  
+- Core Engine: Stateless workers behind load balancer  
+- PostgreSQL: Read replicas for query scaling  
+- Vector DB: Sharding by user\_id range
+
+**Vertical Scaling:**
+
+- Start with reasonable instance sizes  
+- Scale up before scaling out for simplicity  
+- Document scaling thresholds
+
+### 10.5 Resource Budgets
+
+**Per Request:**
+
+```py
+REQUEST_BUDGETS = {
+    "max_memory_mb": 512,        # Memory per request
+    "max_cpu_seconds": 10,       # CPU time
+    "max_file_reads": 20,        # File operations
+    "max_db_queries": 50,        # Database queries
+    "max_external_calls": 5,     # External API calls
+}
+```
+
+**Per User:**
+
+```py
+USER_LIMITS = {
+    "max_recall_files": 100000,          # Total recall files
+    "max_storage_gb": 50,                # Total storage
+    "max_active_sessions": 10,           # Concurrent sessions
+    "max_requests_per_minute": 60,       # Rate limit
+}
+```
+
+---
+
+## 11\. Deployment Architecture
+
+### 11.1 Infrastructure Overview
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                         PRODUCTION ENVIRONMENT                           │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                         │
+│  ┌─────────────────────────────────────────────────────────────────┐    │
+│  │                        LOAD BALANCER                             │    │
+│  │                   (AWS ALB / GCP Load Balancer)                  │    │
+│  └─────────────────────────────┬───────────────────────────────────┘    │
+│                                │                                        │
+│         ┌──────────────────────┼──────────────────────┐                │
+│         ▼                      ▼                      ▼                │
+│  ┌─────────────┐        ┌─────────────┐        ┌─────────────┐         │
+│  │ API Server  │        │ API Server  │        │ API Server  │         │
+│  │   Node 1    │        │   Node 2    │        │   Node 3    │         │
+│  │             │        │             │        │             │         │
+│  │ - FastAPI   │        │ - FastAPI   │        │ - FastAPI   │         │
+│  │ - Core      │        │ - Core      │        │ - Core      │         │
+│  │   Engine    │        │   Engine    │        │   Engine    │         │
+│  └─────────────┘        └─────────────┘        └─────────────┘         │
+│         │                      │                      │                │
+│         └──────────────────────┼──────────────────────┘                │
+│                                │                                        │
+│  ┌─────────────────────────────┼───────────────────────────────────┐   │
+│  │                        DATA LAYER                                │   │
+│  │                                                                  │   │
+│  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────────┐  │   │
+│  │  │ PostgreSQL  │  │   Redis     │  │    Object Storage       │  │   │
+│  │  │  Primary    │  │   Cluster   │  │      (S3/GCS)           │  │   │
+│  │  │             │  │             │  │                         │  │   │
+│  │  │ - Users     │  │ - Sessions  │  │ - Recall Files          │  │   │
+│  │  │ - KG        │  │ - Cache     │  │ - Transcripts           │  │   │
+│  │  │ - Vectors   │  │ - Rate      │  │ - Artifacts             │  │   │
+│  │  │ - Metadata  │  │   limiting  │  │                         │  │   │
+│  │  └──────┬──────┘  └─────────────┘  └─────────────────────────┘  │   │
+│  │         │                                                        │   │
+│  │         ▼                                                        │   │
+│  │  ┌─────────────┐                                                 │   │
+│  │  │ PostgreSQL  │                                                 │   │
+│  │  │  Replica    │                                                 │   │
+│  │  │ (Read-only) │                                                 │   │
+│  │  └─────────────┘                                                 │   │
+│  └──────────────────────────────────────────────────────────────────┘   │
+│                                                                         │
+│  ┌─────────────────────────────────────────────────────────────────┐   │
+│  │                      BACKGROUND WORKERS                          │   │
+│  │                                                                  │   │
+│  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐              │   │
+│  │  │ Summary     │  │ Embedding   │  │ Storage     │              │   │
+│  │  │ Generator   │  │ Generator   │  │ Lifecycle   │              │   │
+│  │  │             │  │             │  │             │              │   │
+│  │  │ Generates   │  │ Creates     │  │ Warm→Cold   │              │   │
+│  │  │ summaries   │  │ vectors     │  │ transitions │              │   │
+│  │  │ when RF     │  │ from        │  │ and cleanup │              │   │
+│  │  │ finalized   │  │ summaries   │  │             │              │   │
+│  │  └─────────────┘  └─────────────┘  └─────────────┘              │   │
+│  └──────────────────────────────────────────────────────────────────┘   │
+│                                                                         │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+### 11.2 Container Configuration
+
+**Dockerfile:**
+
+```
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy application
+COPY . .
+
+# Non-root user
+RUN useradd -m appuser
+USER appuser
+
+# Environment
+ENV PYTHONUNBUFFERED=1
+ENV PORT=8000
+
+EXPOSE 8000
+
+CMD ["uvicorn", "hyperthyme.main:app", "--host", "0.0.0.0", "--port", "8000"]
+```
+
+**docker-compose.yml (Development):**
+
+```
+version: '3.8'
+
+services:
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/hyperthyme
+      - REDIS_URL=redis://redis:6379
+      - STORAGE_PATH=/data/storage
+    volumes:
+      - ./:/app
+      - storage_data:/data/storage
+    depends_on:
+      - db
+      - redis
+
+  db:
+    image: pgvector/pgvector:pg16
+    environment:
+      - POSTGRES_DB=hyperthyme
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  worker:
+    build: .
+    command: celery -A hyperthyme.worker worker --loglevel=info
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/hyperthyme
+      - REDIS_URL=redis://redis:6379
+      - STORAGE_PATH=/data/storage
+    volumes:
+      - storage_data:/data/storage
+    depends_on:
+      - db
+      - redis
+
+volumes:
+  postgres_data:
+  redis_data:
+  storage_data:
+```
+
+### 11.3 Kubernetes Configuration
+
+**Deployment:**
+
+```
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hyperthyme-api
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: hyperthyme-api
+  template:
+    metadata:
+      labels:
+        app: hyperthyme-api
+    spec:
+      containers:
+        - name: api
+          image: hyperthyme/api:latest
+          ports:
+            - containerPort: 8000
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "2Gi"
+              cpu: "1000m"
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: hyperthyme-secrets
+                  key: database-url
+            - name: REDIS_URL
+              valueFrom:
+                secretKeyRef:
+                  name: hyperthyme-secrets
+                  key: redis-url
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 5
+```
+
+### 11.4 Environment Configuration
+
+```py
+# config.py
+
+from pydantic_settings import BaseSettings
+
+
+class Settings(BaseSettings):
+    # Database
+    database_url: str
+    database_pool_size: int = 20
+    database_max_overflow: int = 10
+    
+    # Redis
+    redis_url: str
+    redis_pool_size: int = 10
+    
+    # Storage
+    storage_backend: str = "local"  # "local", "s3", "gcs"
+    storage_path: str = "/data/storage"
+    s3_bucket: str = None
+    s3_region: str = "us-east-1"
+    
+    # AI Models
+    embedding_model: str = "text-embedding-ada-002"
+    summary_model: str = "gpt-4o-mini"
+    openai_api_key: str = None
+    anthropic_api_key: str = None
+    
+    # Security
+    jwt_secret: str
+    jwt_algorithm: str = "HS256"
+    jwt_expiry_hours: int = 24
+    
+    # Thresholds
+    recall_file_token_threshold: int = 50000
+    cold_storage_days: int = 7
+    
+    # Performance
+    max_concurrent_requests: int = 100
+    request_timeout_seconds: int = 30
+    
+    class Config:
+        env_file = ".env"
+
+
+settings = Settings()
+```
+
+---
+
+## 12\. Integration Patterns
+
+### 12.1 Direct API Integration
+
+```py
+# Example: Integrating Hyperthyme with a chatbot application
+
+import httpx
+from typing import AsyncGenerator
+
+
+class ChatbotWithMemory:
+    def __init__(self, hyperthyme_api_key: str, hyperthyme_url: str):
+        self.client = httpx.AsyncClient(
+            base_url=hyperthyme_url,
+            headers={"Authorization": f"Bearer {hyperthyme_api_key}"},
+            timeout=30.0
+        )
+    
+    async def chat(
+        self,
+        user_id: str,
+        message: str,
+        system_prompt: str = "You are a helpful assistant."
+    ) -> str:
+        """
+        Send a message with memory context.
+        """
+        response = await self.client.post("/v1/chat", json={
+            "message": message,
+            "model": "claude-sonnet-4-20250514",
+            "system_prompt": system_prompt,
+            "include_memories": True,
+            "memory_options": {
+                "max_memories": 5,
+                "token_budget": 4000
+            }
+        })
+        
+        response.raise_for_status()
+        return response.json()["response"]
+    
+    async def stream_chat(
+        self,
+        user_id: str,
+        message: str
+    ) -> AsyncGenerator[str, None]:
+        """
+        Stream a response with memory context.
+        """
+        async with self.client.stream("POST", "/v1/chat", json={
+            "message": message,
+            "model": "claude-sonnet-4-20250514",
+            "stream": True
+        }) as response:
+            async for chunk in response.aiter_text():
+                yield chunk
+```
+
+### 12.2 LangChain Integration
+
+```py
+from langchain.memory import BaseMemory
+from langchain.schema import BaseMessage, HumanMessage, AIMessage
+from typing import Dict, List, Any
+
+
+class HyperthymeMemory(BaseMemory):
+    """
+    LangChain memory backed by Hyperthyme.
+    """
+    
+    hyperthyme_client: Any
+    user_id: str
+    memory_key: str = "history"
+    
+    @property
+    def memory_variables(self) -> List[str]:
+        return [self.memory_key]
+    
+    def load_memory_variables(self, inputs: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Load relevant memories for the current input.
+        """
+        query = inputs.get("input", "")
+        
+        # Search Hyperthyme for relevant memories
+        results = self.hyperthyme_client.search(
+            query=query,
+            max_results=5
+        )
+        
+        # Format as conversation history
+        messages = []
+        for result in results:
+            if result.transcript:
+                # Parse transcript into messages
+                for entry in parse_transcript(result.transcript):
+                    if entry.role == "user":
+                        messages.append(HumanMessage(content=entry.content))
+                    else:
+                        messages.append(AIMessage(content=entry.content))
+        
+        return {self.memory_key: messages}
+    
+    def save_context(self, inputs: Dict[str, Any], outputs: Dict[str, str]) -> None:
+        """
+        Save the current interaction to Hyperthyme.
+        
+        Note: This is typically handled automatically by Hyperthyme middleware.
+        """
+        pass
+    
+    def clear(self) -> None:
+        """Clear memory (no-op for Hyperthyme)."""
+        pass
+```
+
+### 12.3 MCP Server Implementation
+
+```py
+from mcp import MCPServer, tool, resource
+
+
+class HyperthymeMCPServer(MCPServer):
+    """
+    MCP server exposing Hyperthyme memory capabilities.
+    """
+    
+    def __init__(self, hyperthyme_client):
+        super().__init__(name="hyperthyme", version="1.0.0")
+        self.hyperthyme = hyperthyme_client
+    
+    @tool(
+        name="search_memory",
+        description="Search the user's conversation history for relevant memories. Use this when the user references past conversations or when context would be helpful."
+    )
+    async def search_memory(
+        self,
+        query: str,
+        max_results: int = 5
+    ) -> list[dict]:
+        results = await self.hyperthyme.search(
+            query=query,
+            max_results=max_results
+        )
+        
+        return [
+            {
+                "topic": r.topic,
+                "date": r.date.isoformat(),
+                "summary": r.summary,
+                "relevance": r.relevance_score
+            }
+            for r in results
+        ]
+    
+    @tool(
+        name="get_decisions",
+        description="Retrieve the user's past decisions and major milestones. Use this when the user asks about what they decided or accomplished."
+    )
+    async def get_decisions(
+        self,
+        type_filter: str = None,
+        limit: int = 10
+    ) -> list[dict]:
+        memories = await self.hyperthyme.get_defining_memories(
+            type_filter=type_filter,
+            limit=limit
+        )
+        
+        return [
+            {
+                "type": m.memory_type,
+                "summary": m.summary,
+                "date": m.detected_at.isoformat()
+            }
+            for m in memories
+        ]
+    
+    @tool(
+        name="get_full_conversation",
+        description="Retrieve the complete transcript of a specific past conversation. Use this when detailed context is needed."
+    )
+    async def get_full_conversation(
+        self,
+        recall_file_id: str
+    ) -> dict:
+        rf = await self.hyperthyme.get_recall_file(
+            recall_file_id,
+            include=["transcript"]
+        )
+        
+        return {
+            "topic": rf.topic,
+            "date": rf.created_at.isoformat(),
+            "transcript": rf.transcript
+        }
+    
+    @resource(
+        uri="hyperthyme://topics",
+        name="User Topics",
+        description="List of topics and projects from the user's memory"
+    )
+    async def get_topics(self) -> list[dict]:
+        nodes = await self.hyperthyme.list_nodes(type_filter="topic")
+        return [{"name": n.name, "type": n.node_type} for n in nodes]
+```
+
+### 12.4 Webhook Integration
+
+```py
+# For systems that prefer push-based updates
+
+@app.post("/webhooks/register")
+async def register_webhook(
+    url: str,
+    events: list[str],  # ["memory.created", "defining_memory.detected", "recall_file.finalized"]
+    request: Request
+):
+    """
+    Register a webhook to receive events.
+    """
+    user_id = request.state.user.id
+    
+    webhook = await db.execute("""
+        INSERT INTO webhooks (user_id, url, events, secret)
+        VALUES ($1, $2, $3, $4)
+        RETURNING *
+    """, user_id, url, events, generate_secret())
+    
+    return {
+        "id": webhook["id"],
+        "secret": webhook["secret"]  # For signature verification
+    }
+
+
+async def send_webhook_event(user_id: str, event_type: str, payload: dict):
+    """
+    Send event to registered webhooks.
+    """
+    webhooks = await db.query("""
+        SELECT * FROM webhooks
+        WHERE user_id = $1
+        AND $2 = ANY(events)
+        AND active = true
+    """, user_id, event_type)
+    
+    for webhook in webhooks:
+        # Sign payload
+        signature = hmac.new(
+            webhook["secret"].encode(),
+            json.dumps(payload).encode(),
+            hashlib.sha256
+        ).hexdigest()
+        
+        # Send async
+        asyncio.create_task(
+            httpx.post(
+                webhook["url"],
+                json=payload,
+                headers={
+                    "X-Hyperthyme-Signature": signature,
+                    "X-Hyperthyme-Event": event_type
+                }
+            )
+        )
+```
+
+---
+
+## 13\. Error Handling & Recovery
+
+### 13.1 Error Categories
+
+```py
+from enum import Enum
+
+
+class ErrorCategory(Enum):
+    VALIDATION = "validation"       # Invalid input
+    AUTHENTICATION = "auth"         # Auth failures
+    AUTHORIZATION = "authz"         # Permission denied
+    NOT_FOUND = "not_found"         # Resource doesn't exist
+    RATE_LIMIT = "rate_limit"       # Too many requests
+    STORAGE = "storage"             # File/storage errors
+    DATABASE = "database"           # DB errors
+    EXTERNAL = "external"           # External service errors
+    INTERNAL = "internal"           # Unexpected errors
+
+
+class HyperthymeError(Exception):
+    def __init__(
+        self,
+        message: str,
+        category: ErrorCategory,
+        code: str,
+        details: dict = None,
+        retryable: bool = False
+    ):
+        super().__init__(message)
+        self.message = message
+        self.category = category
+        self.code = code
+        self.details = details or {}
+        self.retryable = retryable
+
+
+# Specific errors
+class ValidationError(HyperthymeError):
+    def __init__(self, message: str, field: str = None):
+        super().__init__(
+            message=message,
+            category=ErrorCategory.VALIDATION,
+            code="VALIDATION_ERROR",
+            details={"field": field}
+        )
+
+
+class RecallFileNotFoundError(HyperthymeError):
+    def __init__(self, recall_file_id: str):
+        super().__init__(
+            message=f"Recall file not found: {recall_file_id}",
+            category=ErrorCategory.NOT_FOUND,
+            code="RECALL_FILE_NOT_FOUND",
+            details={"recall_file_id": recall_file_id}
+        )
+
+
+class StorageError(HyperthymeError):
+    def __init__(self, message: str, path: str = None):
+        super().__init__(
+            message=message,
+            category=ErrorCategory.STORAGE,
+            code="STORAGE_ERROR",
+            details={"path": path},
+            retryable=True
+        )
+```
+
+### 13.2 Error Response Format
+
+```py
+@app.exception_handler(HyperthymeError)
+async def hyperthyme_error_handler(request: Request, exc: HyperthymeError):
+    status_codes = {
+        ErrorCategory.VALIDATION: 400,
+        ErrorCategory.AUTHENTICATION: 401,
+        ErrorCategory.AUTHORIZATION: 403,
+        ErrorCategory.NOT_FOUND: 404,
+        ErrorCategory.RATE_LIMIT: 429,
+        ErrorCategory.STORAGE: 503,
+        ErrorCategory.DATABASE: 503,
+        ErrorCategory.EXTERNAL: 502,
+        ErrorCategory.INTERNAL: 500,
+    }
+    
+    return JSONResponse(
+        status_code=status_codes.get(exc.category, 500),
+        content={
+            "error": {
+                "code": exc.code,
+                "message": exc.message,
+                "category": exc.category.value,
+                "details": exc.details,
+                "retryable": exc.retryable,
+                "request_id": request.state.request_id
+            }
+        }
+    )
+```
+
+### 13.3 Retry Logic
+
+```py
+from tenacity import (
+    retry,
+    stop_after_attempt,
+    wait_exponential,
+    retry_if_exception_type
+)
+
+
+class RetryableError(Exception):
+    """Base class for retryable errors."""
+    pass
+
+
+@retry(
+    stop=stop_after_attempt(3),
+    wait=wait_exponential(multiplier=1, min=1, max=10),
+    retry=retry_if_exception_type(RetryableError)
+)
+async def store_file_with_retry(path: str, content: bytes):
+    """
+    Store a file with automatic retry on transient failures.
+    """
+    try:
+        await storage.write(path, content)
+    except StorageTransientError as e:
+        raise RetryableError(str(e))
+
+
+@retry(
+    stop=stop_after_attempt(3),
+    wait=wait_exponential(multiplier=0.5, min=0.5, max=5),
+    retry=retry_if_exception_type(RetryableError)
+)
+async def generate_embedding_with_retry(text: str) -> list[float]:
+    """
+    Generate embedding with retry on API failures.
+    """
+    try:
+        return await embedding_model.embed(text)
+    except RateLimitError:
+        raise RetryableError("Rate limited, retrying...")
+    except TimeoutError:
+        raise RetryableError("Timeout, retrying...")
+```
+
+### 13.4 Circuit Breaker
+
+```py
+from circuitbreaker import circuit
+
+
+class ExternalServiceCircuitBreaker:
+    """
+    Circuit breaker for external service calls.
+    """
+    
+    def __init__(self, failure_threshold: int = 5, recovery_timeout: int = 30):
+        self.failure_count = 0
+        self.failure_threshold = failure_threshold
+        self.recovery_timeout = recovery_timeout
+        self.state = "closed"  # closed, open, half-open
+        self.last_failure_time = None
+    
+    async def call(self, func, *args, **kwargs):
+        if self.state == "open":
+            if time.time() - self.last_failure_time > self.recovery_timeout:
+                self.state = "half-open"
+            else:
+                raise CircuitOpenError("Circuit breaker is open")
+        
+        try:
+            result = await func(*args, **kwargs)
+            if self.state == "half-open":
+                self.state = "closed"
+                self.failure_count = 0
+            return result
+        except Exception as e:
+            self.failure_count += 1
+            self.last_failure_time = time.time()
+            
+            if self.failure_count >= self.failure_threshold:
+                self.state = "open"
+            
+            raise
+
+
+# Usage
+embedding_circuit = ExternalServiceCircuitBreaker()
+
+async def get_embedding_safe(text: str):
+    return await embedding_circuit.call(embedding_model.embed, text)
+```
+
+### 13.5 Data Recovery
+
+```py
+class RecoveryManager:
+    """
+    Handles data recovery scenarios.
+    """
+    
+    async def recover_corrupted_recall_file(self, recall_file_id: str):
+        """
+        Attempt to recover a corrupted Recall File.
+        """
+        rf = await get_recall_file(recall_file_id)
+        
+        # Check what's recoverable
+        summary_ok = await self.verify_file(rf.summary_path)
+        keywords_ok = await self.verify_file(rf.keywords_path)
+        transcript_ok = await self.verify_file(rf.transcript_path)
+        
+        if transcript_ok:
+            # Regenerate summary and keywords from transcript
+            transcript = await load_file(rf.transcript_path)
+            
+            if not summary_ok:
+                summary = await generate_summary(transcript)
+                await save_file(rf.summary_path, summary)
+            
+            if not keywords_ok:
+                keywords = await extract_keywords(transcript)
+                await save_file(rf.keywords_path, "\n".join(keywords))
+            
+            # Regenerate embedding
+            summary = await load_file(rf.summary_path)
+            embedding = await embed_text(summary)
+            await store_embedding(rf.id, embedding)
+            
+            return {"status": "recovered", "regenerated": ["summary", "keywords", "embedding"]}
+        
+        else:
+            # Transcript is primary data - can't fully recover
+            return {"status": "partial", "missing": "transcript", "recoverable": False}
+    
+    async def rebuild_knowledge_graph(self, user_id: str):
+        """
+        Rebuild KG from Recall Files (disaster recovery).
+        """
+        recall_files = await get_all_recall_files(user_id)
+        
+        # Clear existing graph
+        await db.execute("DELETE FROM kg_edges WHERE source_node_id IN (SELECT id FROM kg_nodes WHERE user_id = $1)", user_id)
+        await db.execute("DELETE FROM kg_nodes WHERE user_id = $1", user_id)
+        
+        # Rebuild from transcripts
+        for rf in recall_files:
+            transcript = await load_file(rf.transcript_path)
+            entities = await extract_entities(transcript)
+            await update_knowledge_graph(user_id, rf.id, entities)
+        
+        return {"status": "rebuilt", "recall_files_processed": len(recall_files)}
+```
+
+---
+
+## 14\. Monitoring & Observability
+
+### 14.1 Metrics
+
+```py
+from prometheus_client import Counter, Histogram, Gauge
+
+
+# Request metrics
+REQUEST_COUNT = Counter(
+    "hyperthyme_requests_total",
+    "Total requests",
+    ["method", "endpoint", "status"]
+)
+
+REQUEST_LATENCY = Histogram(
+    "hyperthyme_request_latency_seconds",
+    "Request latency",
+    ["method", "endpoint"],
+    buckets=[0.01, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0]
+)
+
+# Memory metrics
+RECALL_FILES_TOTAL = Gauge(
+    "hyperthyme_recall_files_total",
+    "Total recall files",
+    ["user_id", "status"]
+)
+
+STORAGE_BYTES = Gauge(
+    "hyperthyme_storage_bytes",
+    "Storage used in bytes",
+    ["user_id", "tier"]
+)
+
+# Retrieval metrics
+RETRIEVAL_LATENCY = Histogram(
+    "hyperthyme_retrieval_latency_seconds",
+    "Memory retrieval latency",
+    ["stage"],
+    buckets=[0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0]
+)
+
+RETRIEVAL_RESULTS = Histogram(
+    "hyperthyme_retrieval_results",
+    "Number of results returned",
+    buckets=[0, 1, 2, 5, 10, 20, 50]
+)
+
+# Error metrics
+ERRORS_TOTAL = Counter(
+    "hyperthyme_errors_total",
+    "Total errors",
+    ["category", "code"]
+)
+
+
+# Middleware to record metrics
+@app.middleware("http")
+async def metrics_middleware(request: Request, call_next):
+    start_time = time.time()
+    
+    response = await call_next(request)
+    
+    latency = time.time() - start_time
+    
+    REQUEST_COUNT.labels(
+        method=request.method,
+        endpoint=request.url.path,
+        status=response.status_code
+    ).inc()
+    
+    REQUEST_LATENCY.labels(
+        method=request.method,
+        endpoint=request.url.path
+    ).observe(latency)
+    
+    return response
+```
+
+### 14.2 Logging
+
+```py
+import structlog
+
+
+# Configure structured logging
+structlog.configure(
+    processors=[
+        structlog.stdlib.filter_by_level,
+        structlog.stdlib.add_logger_name,
+        structlog.stdlib.add_log_level,
+        structlog.processors.TimeStamper(fmt="iso"),
+        structlog.processors.StackInfoRenderer(),
+        structlog.processors.format_exc_info,
+        structlog.processors.JSONRenderer()
+    ],
+    wrapper_class=structlog.stdlib.BoundLogger,
+    context_class=dict,
+    logger_factory=structlog.stdlib.LoggerFactory(),
+)
+
+logger = structlog.get_logger()
+
+
+# Usage
+async def search_memory(user_id: str, query: str):
+    log = logger.bind(user_id=user_id, query=query)
+    
+    log.info("memory_search_started")
+    
+    try:
+        results = await retriever.search(query)
+        
+        log.info(
+            "memory_search_completed",
+            result_count=len(results),
+            top_score=results[0].score if results else None
+        )
+        
+        return results
+    
+    except Exception as e:
+        log.error(
+            "memory_search_failed",
+            error=str(e),
+            error_type=type(e).__name__
+        )
+        raise
+```
+
+### 14.3 Tracing
+
+```py
+from opentelemetry import trace
+from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
+
+
+# Configure tracing
+trace.set_tracer_provider(TracerProvider())
+tracer = trace.get_tracer(__name__)
+
+otlp_exporter = OTLPSpanExporter(endpoint="http://jaeger:4317")
+trace.get_tracer_provider().add_span_processor(
+    BatchSpanProcessor(otlp_exporter)
+)
+
+
+# Usage
+async def retrieve_memories(user_id: str, query: str):
+    with tracer.start_as_current_span("retrieve_memories") as span:
+        span.set_attribute("user_id", user_id)
+        span.set_attribute("query_length", len(query))
+        
+        # Stage 1: Defining memories
+        with tracer.start_as_current_span("check_defining_memories"):
+            defining = await check_defining_memories(user_id, query)
+        
+        # Stage 2: Knowledge graph
+        with tracer.start_as_current_span("navigate_knowledge_graph"):
+            nodes, candidates = await navigate_knowledge_graph(user_id, query)
+            span.set_attribute("nodes_found", len(nodes))
+            span.set_attribute("candidates_found", len(candidates))
+        
+        # Stage 3: Keyword search
+        with tracer.start_as_current_span("keyword_search"):
+            filtered = await filter_by_keywords(query, candidates)
+        
+        # Stage 4: Semantic search
+        with tracer.start_as_current_span("semantic_search"):
+            ranked = await semantic_search(query, [c.id for c in filtered])
+        
+        span.set_attribute("results_returned", len(ranked))
+        return ranked
+```
+
+### 14.4 Alerting
+
+```
+# Prometheus alerting rules
+
+groups:
+  - name: hyperthyme
+    rules:
+      - alert: HighErrorRate
+        expr: |
+          sum(rate(hyperthyme_errors_total[5m])) / 
+          sum(rate(hyperthyme_requests_total[5m])) > 0.05
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High error rate detected"
+          description: "Error rate is \{\{ $value | humanizePercentage \}\}"
+      
+      - alert: HighLatency
+        expr: |
+          histogram_quantile(0.99, 
+            rate(hyperthyme_request_latency_seconds_bucket[5m])
+          ) > 5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High request latency"
+          description: "P99 latency is \{\{ $value | humanizeDuration \}\}"
+      
+      - alert: StorageNearCapacity
+        expr: |
+          sum(hyperthyme_storage_bytes) / 
+          hyperthyme_storage_limit_bytes > 0.9
+        for: 30m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Storage capacity near limit"
+      
+      - alert: DatabaseConnectionPoolExhausted
+        expr: |
+          hyperthyme_db_connections_available == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Database connection pool exhausted"
+```
+
+### 14.5 Health Checks
+
+```py
+@app.get("/health")
+async def health_check():
+    """
+    Comprehensive health check.
+    """
+    checks = {}
+    healthy = True
+    
+    # Database
+    try:
+        await db.execute("SELECT 1")
+        checks["database"] = {"status": "healthy"}
+    except Exception as e:
+        checks["database"] = {"status": "unhealthy", "error": str(e)}
+        healthy = False
+    
+    # Redis
+    try:
+        await redis.ping()
+        checks["redis"] = {"status": "healthy"}
+    except Exception as e:
+        checks["redis"] = {"status": "unhealthy", "error": str(e)}
+        healthy = False
+    
+    # Storage
+    try:
+        await storage.check_connectivity()
+        checks["storage"] = {"status": "healthy"}
+    except Exception as e:
+        checks["storage"] = {"status": "unhealthy", "error": str(e)}
+        healthy = False
+    
+    # Embedding service
+    try:
+        await embedding_model.health_check()
+        checks["embedding"] = {"status": "healthy"}
+    except Exception as e:
+        checks["embedding"] = {"status": "degraded", "error": str(e)}
+        # Don't fail health check for embedding - can operate without
+    
+    return JSONResponse(
+        status_code=200 if healthy else 503,
+        content={
+            "status": "healthy" if healthy else "unhealthy",
+            "checks": checks,
+            "version": VERSION,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+    )
+```
+
+---
+
+## 15\. Future Considerations
+
+### 15.1 Planned Enhancements
+
+**Short-term (3-6 months):**
+
+- Multi-language support for summaries and keywords  
+- Custom embedding model fine-tuning  
+- Batch import/export functionality  
+- Advanced search filters (date ranges, sentiment, etc.)
+
+**Medium-term (6-12 months):**
+
+- Team/organization shared memories  
+- Memory sharing with privacy controls  
+- Real-time collaboration features  
+- Mobile SDK
+
+**Long-term (12+ months):**
+
+- Federated memory across multiple Hyperthyme instances  
+- On-device memory (edge deployment)  
+- Integration with Cognigraph training system  
+- Memory compression and archival strategies
+
+### 15.2 Migration Considerations
+
+**Database Schema Evolution:**
+
+- Use Alembic for schema migrations  
+- Maintain backward compatibility for 2 major versions  
+- Document breaking changes
+
+**API Versioning:**
+
+- URL-based versioning (/v1/, /v2/)  
+- Support previous version for 12 months after deprecation  
+- Provide migration guides
+
+### 15.3 Scalability Roadmap
+
+| Users | Architecture |
+| :---- | :---- |
+| 1-1,000 | Single instance, single PostgreSQL |
+| 1,000-10,000 | Multiple API instances, PostgreSQL read replicas |
+| 10,000-100,000 | Sharded PostgreSQL, dedicated vector DB |
+| 100,000+ | Regional deployment, global load balancing |
+
+---
+
+## Appendix A: Glossary
+
+| Term | Definition |
+| :---- | :---- |
+| Context Window | The maximum amount of text an AI model can process at once |
+| Defining Memory | A flagged significant moment (decision, milestone, event) |
+| Embedding | A numerical vector representation of text for similarity search |
+| Knowledge Graph | A graph database storing relationships between entities |
+| RAG | Retrieval-Augmented Generation \- enhancing AI with retrieved context |
+| Recall File | A complete conversation archive with summary, keywords, and transcript |
+
+---
+
+## Appendix B: Reference Links
+
+- [Neurigraph Product Family](https://neurigraph.ai)  
+- [Hyperthyme API Documentation](https://docs.hyperthyme.ai)  
+- [GitHub Repository](https://github.com/neurigraph/hyperthyme)
+
+---
+
+**Document Control:**
+
+| Version | Date | Author | Changes |
+| :---- | :---- | :---- | :---- |
+| 1.0 | January 2026 | Oxford Pierpont | Initial release |
+
+---
+
+*Hyperthyme is part of the Neurigraph product family.*  
+*© 2026 Oxford Pierpont. All rights reserved.*

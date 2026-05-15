@@ -1,0 +1,426 @@
+---
+title: "aiConnected Brain API"
+description: "Strategic Product Document Executive Summary Brain is a persistent memory layer that sits above all AI platforms. Users maintain continuous context across Ch..."
+---
+<Info>
+Normalized for Mintlify from `knowledge-base/neurigraph-memory-architecture/legacy-brain-api-pricing-strategy.mdx`.
+</Info>
+# aiConnected Brain API
+## Strategic Product Document
+
+---
+
+## Executive Summary
+
+Brain is a persistent memory layer that sits above all AI platforms. Users maintain continuous context across ChatGPT, Claude, Gemini, and any MCP-compatible service. Brain is the foundation of aiConnected's cognitive operating system for AI and future robotics.
+
+The name earns its meaning: **aiConnected = All AIs connected through persistent memory.**
+
+---
+
+## The Problem
+
+Every person using AI today has fragmented conversations:
+
+- ChatGPT knows about your project but Claude doesn't
+- You explained your preferences to Gemini last week, now you're starting over with GPT
+- Switch models and lose everything
+- Even within the same platform, context disappears after the conversation ends
+
+The major platforms (OpenAI, Anthropic, Google) will never build cross-platform memory. Walled gardens serve their business interests. That interoperability gap is aiConnected's entire market.
+
+---
+
+## The Solution
+
+Brain is a persistent memory layer that:
+
+- Stores conversation context across all AI platforms
+- Enables continuous memory regardless of which AI you use
+- Learns and accumulates knowledge over time
+- Creates switching costs that compound with usage
+
+---
+
+## Target Markets
+
+### Consumer Market
+
+- Power users juggling multiple AI platforms
+- Developers and creators needing continuity
+- Professionals wanting AI that learns their preferences
+- Teams needing shared context
+
+### B2B Market (via Agency Platform)
+
+- Marketing agencies deploying AI for clients
+- Service businesses using AI-powered chat and voice
+- Enterprises wanting persistent AI relationships with customers
+
+---
+
+## Pricing Structure
+
+### Consumer Tiers
+
+| Tier | Base Price | Includes | Overage |
+|------|------------|----------|---------|
+| Starter | $1/mo | 10 free actions | $0.50/action |
+| Personal | $9/mo | 100 actions | $0.25/action |
+| Pro | $19/mo | Unlimited actions | - |
+| Teams | $39/seat | Unlimited + shared memory | - |
+
+### Storage Add-On
+
+| Add-On | Price | Includes |
+|--------|-------|----------|
+| Storage expansion | $5/mo | +100,000 memories |
+
+### Included Storage by Tier
+
+| Tier | Included Memories |
+|------|-------------------|
+| Starter | 1,000 |
+| Personal | 10,000 |
+| Pro | 100,000 |
+
+---
+
+## Conversion Economics
+
+The pricing structure drives natural upgrades:
+
+| Monthly Actions | Starter Cost | Personal Cost | Pro Cost |
+|-----------------|--------------|---------------|----------|
+| 10 | $1 (free actions) | $9 | $19 |
+| 15 | $3.50 | $9 | $19 |
+| 20 | $6 | $9 | $19 |
+| 25 | $8.50 | $9 ✓ | $19 |
+| 50 | $21 | $14 | $19 ✓ |
+| 100 | $46 | $34 | $19 ✓ |
+
+- At 25 actions/month, Personal becomes the better value
+- At 50 actions/month, Pro becomes the better value
+- The $1 entry point filters out non-serious users while remaining accessible
+- The 10 free actions (a $5 value) let users experience the product before paying overage
+
+---
+
+## Revenue Projections
+
+### Distribution Assumptions
+
+| Segment | Percentage | Average Monthly Revenue |
+|---------|------------|------------------------|
+| Starter | 50% | $4 ($1 + ~6 paid actions) |
+| Personal | 30% | $11 ($9 + overage) |
+| Pro | 15% | $19 |
+| Teams | 5% | $39 |
+
+### Brain Revenue by Scale
+
+| Users | Monthly Revenue | Annual Revenue |
+|-------|-----------------|----------------|
+| 1,000 | $10,100 | $121,200 |
+| 10,000 | $101,000 | $1,212,000 |
+| 100,000 | $1,010,000 | $12,120,000 |
+| 1,000,000 | $10,100,000 | $121,200,000 |
+
+### Personas Revenue (Additional)
+
+Average 1.5 personas per user at $9/month average:
+
+| Users | Persona Revenue/Month | Persona Revenue/Year |
+|-------|----------------------|---------------------|
+| 1,000 | $13,500 | $162,000 |
+| 10,000 | $135,000 | $1,620,000 |
+| 100,000 | $1,350,000 | $16,200,000 |
+| 1,000,000 | $13,500,000 | $162,000,000 |
+
+### Storage Upsell Revenue
+
+Assuming 10% of users purchase average 2 storage add-ons:
+
+| Users | Storage Revenue/Month | Storage Revenue/Year |
+|-------|----------------------|---------------------|
+| 100,000 | $100,000 | $1,200,000 |
+| 1,000,000 | $1,000,000 | $12,000,000 |
+
+### Combined Revenue (Brain + Personas + Storage)
+
+| Users | Monthly Revenue | Annual Revenue |
+|-------|-----------------|----------------|
+| 1,000 | $23,600 | $283,200 |
+| 10,000 | $236,000 | $2,832,000 |
+| 100,000 | $2,460,000 | $29,520,000 |
+| 1,000,000 | $24,600,000 | $295,200,000 |
+
+---
+
+## Infrastructure Costs
+
+### Compute Strategy
+
+Self-hosted LLM (Ollama or similar) rather than paying per-token to third-party providers.
+
+Rationale:
+- Summarization and keyword extraction don't require frontier models
+- Chinese models (DeepSeek, Qwen) cost ~$0.01 per 1M tokens
+- Self-hosted reduces this to fixed infrastructure cost
+- Break-even vs API pricing occurs around 200-400 active businesses
+
+### Compute Costs by Scale
+
+| Users | Monthly Infrastructure |
+|-------|----------------------|
+| 1,000 | $3,000 |
+| 10,000 | $8,000 |
+| 100,000 | $50,000 |
+| 1,000,000 | $150,000 |
+
+### Storage Architecture
+
+| State | What's Stored | Size |
+|-------|---------------|------|
+| Active (recent) | Full conversation, uncompressed | ~2MB |
+| Archived (after X days) | Full conversation, compressed | ~200KB (90% compression) |
+| Search index | Summary + keywords + embeddings (internal only) | ~10KB |
+
+### Storage Costs at 100,000 Users
+
+Assuming 10,000 memories average per user, 90% archived:
+
+| Type | Size | Cost/GB/Month | Monthly Cost |
+|------|------|---------------|--------------|
+| Hot (active + index) | 210 TB | $0.02 | $4,200 |
+| Cold (archived) | 180 TB | $0.004 | $720 |
+| **Total** | 390 TB | | **$4,920** |
+
+### Storage Costs at Scale
+
+| Users | Total Storage | Monthly Cost |
+|-------|---------------|--------------|
+| 100,000 | ~400 TB | $5,000 |
+| 1,000,000 | ~4 PB | $50,000 |
+
+---
+
+## Profit Projections
+
+### At 100,000 Users
+
+| Item | Monthly |
+|------|---------|
+| Revenue (Brain + Personas + Storage) | $2,460,000 |
+| Compute | $50,000 |
+| Storage | $5,000 |
+| **Total Cost** | **$55,000** |
+| **Profit** | **$2,405,000** |
+| **Annual Profit** | **$28,860,000** |
+
+### At 1,000,000 Users
+
+| Item | Monthly |
+|------|---------|
+| Revenue (Brain + Personas + Storage) | $24,600,000 |
+| Compute | $150,000 |
+| Storage | $50,000 |
+| **Total Cost** | **$200,000** |
+| **Profit** | **$24,400,000** |
+| **Annual Profit** | **$292,800,000** |
+
+### Gross Margins
+
+| Scale | Gross Margin |
+|-------|--------------|
+| 1,000 users | ~70% |
+| 100,000 users | ~98% |
+| 1,000,000 users | ~99% |
+
+---
+
+## Technical Architecture
+
+### Integration Model
+
+Brain operates as an MCP (Model Context Protocol) server:
+
+- Integrates the same way as Google Calendar, Gmail, GitHub MCPs
+- Works with Claude natively
+- Other platforms integrate as MCP adoption grows
+- No proprietary protocol needed; uses existing standard
+
+### Memory Operations
+
+| Operation | What Happens |
+|-----------|--------------|
+| Store | Full conversation saved, compressed after X days, summary and keywords generated internally for search |
+| Search | Internal summaries and keywords searched, relevant memories identified |
+| Retrieve | Full conversation decompressed and returned to active context |
+
+### What Users See (Metadata Only)
+
+- Memory exists
+- Token count
+- Attachments
+- Timestamp
+- Source conversation
+
+### What Stays Hidden (Trade Secret)
+
+- Summaries (internal indexing only)
+- Keywords (internal indexing only)
+- Ranking/relevance algorithm
+- Compression method
+- Retrieval logic
+- Storage architecture
+
+---
+
+## Competitive Protection
+
+### Strategy: Trade Secret Over Patent
+
+| Approach | Trade-Off |
+|----------|-----------|
+| Patent | Requires full public disclosure; 20-year protection in theory |
+| Trade Secret | No disclosure; protection lasts as long as secret is kept |
+
+Patents are not pursued because:
+- Enforcement against well-funded competitors costs millions
+- International coverage is limited (China doesn't honor US patents)
+- Competitors can design around patents
+- Software patents are increasingly weak in courts
+- Filing requires disclosing exactly what we're protecting
+
+### Protection Layers
+
+| Component | Strategy |
+|-----------|----------|
+| Core memory mechanism | Trade secret |
+| Brand (aiConnected, Brain) | Trademark |
+| Code | Copyright (automatic) |
+| UI/UX innovations | Possibly patent if unique enough |
+
+### What Protects Us Over Time
+
+| Timeframe | Primary Moat |
+|-----------|--------------|
+| Year 1 | Secrecy + speed to market |
+| Year 2 | User data gravity (memories accumulate) |
+| Year 3+ | Ecosystem lock-in (personas, integrations, agencies) |
+
+### Why Competitors Can't Easily Replicate
+
+| Factor | Protection |
+|--------|------------|
+| No public spec | 6-12 months of guessing for competitors |
+| Hidden summarization logic | They build inferior version first |
+| No insight into search quality | Trial and error required |
+| Data gravity | Even if replicated, user memories don't transfer |
+
+---
+
+## Strategic Position
+
+### The Gap We Fill
+
+| Platform | Their Memory | The Limitation |
+|----------|--------------|----------------|
+| OpenAI | ChatGPT memory | Only works in ChatGPT |
+| Anthropic | Claude memory | Only works in Claude |
+| Google | Gemini memory | Only works in Gemini |
+| Microsoft | Copilot memory | Only works in Microsoft ecosystem |
+| **aiConnected** | **Brain** | **Works everywhere** |
+
+The major platforms have zero incentive to make memory portable. Their business model depends on keeping users inside their ecosystem. This interoperability gap is permanent and is our entire market.
+
+### Brain Within aiConnected
+
+Brain is not a standalone business. Brain is the foundation of the cognitive operating system.
+
+```
+aiConnected Cognitive Operating System
+    │
+    ├── Brain (memory, continuity, learning)
+    │
+    ├── Knowledge (retrieval, expertise)
+    │
+    ├── Voice (verbal communication)
+    │
+    ├── Chat (text communication)
+    │
+    ├── Personas (identity, behavior)
+    │
+    └── Future: Vision, Motor Control (robotics)
+```
+
+### Long-Term Vision
+
+aiConnected is building the cognitive operating system for the physical AI era.
+
+Today's products (Brain, Knowledge, Voice, Chat) generate revenue and establish the memory layer. Tomorrow, this same infrastructure powers robotics:
+
+| Component | Role in Robotics |
+|-----------|------------------|
+| Brain | Remembers tasks, learns from experience, maintains continuity |
+| Knowledge | Accesses manuals, procedures, domain expertise |
+| Voice | Verbal interaction with humans |
+| Chat | Text-based commands, logging, reporting |
+| Persona | Consistent personality, appropriate behavior per context |
+
+Any robotics company can build a body. Any robotics company can license an LLM. Nobody else is building the integrated cognitive stack that connects persistent memory, retrievable knowledge, multi-modal communication, and consistent identity.
+
+---
+
+## Revenue Comparison
+
+### Brain vs Agency Platform
+
+| Business | Revenue at Scale |
+|----------|------------------|
+| Agency platform (100 agencies × $500/mo) | $600,000/year |
+| Brain (100,000 users) | $29,520,000/year |
+
+Brain is 49x larger at modest scale. However, Brain remains one product within aiConnected because the long-term goal requires the complete cognitive stack.
+
+### Revenue Layers
+
+| Layer | Role |
+|-------|------|
+| Brain | Foundation, entry point, highest retention |
+| Personas | Monetization layer on top of Brain |
+| Agency Platform | Cash flow engine, funds Brain development |
+| Knowledge/Voice/Chat APIs | Developer and platform revenue |
+| Robotics Cognitive Layer | Future enterprise and manufacturer revenue |
+
+---
+
+## The Moat
+
+1. **Data Gravity**: User memories accumulate in Brain. Switching means losing them.
+
+2. **Persona Relationships**: A Writing Partner with 8 months of context on your book can't be replicated elsewhere.
+
+3. **Cross-Platform Freedom**: Ironically, Brain lets users use any LLM they want, but Brain itself becomes irreplaceable.
+
+4. **Network Effects**: Teams tier means shared memories. A company's institutional knowledge lives in Brain.
+
+5. **Ecosystem**: Agencies building on aiConnected infrastructure aren't switching because OpenAI added memory to ChatGPT.
+
+---
+
+## Summary
+
+Brain is the persistent memory layer for all AI. It solves the fragmentation problem that major platforms will never solve because doing so conflicts with their business model.
+
+At scale, Brain alone generates $290M+ annual profit. Combined with Personas and the broader aiConnected product suite, the business supports the long-term vision of becoming the cognitive operating system for AI and robotics.
+
+The protection strategy is trade secret over patent. Secrecy buys time; data gravity makes the moat permanent. By the time anyone reverse-engineers a comparable system, users have years of memories they won't abandon.
+
+**aiConnected: All AIs connected through persistent memory.**
+
+---
+
+*Document Version: 1.0*
+*Last Updated: April 2026*

@@ -1,0 +1,1306 @@
+---
+title: "Clean Room Specification: Conversational AI App Shell Framework"
+description: "Purpose of This Document This document specifies the architecture for a full stack conversational AI application framework built with React 19, Next.js (App..."
+---
+<Info>
+Normalized for Mintlify from `knowledge-base/neurigraph-memory-architecture/neurigraph-tool-references/08-Conversational-AI-App-Shell-Framework.mdx`.
+</Info>
+# Clean-Room Specification: Conversational AI App Shell Framework
+
+## Purpose of This Document
+
+This document specifies the architecture for a **full-stack conversational AI application framework** built with React 19, Next.js (App Router), and a streaming AI backend. While Spec 07 covers headless UI primitives, this specification covers the complete application shell: authentication, database persistence, real-time streaming with recovery, multi-model routing, tool execution with human approval, document artifact management, and the patterns needed to ship a production AI chat product. This specification enables independent implementation from scratch.
+
+---
+
+## 1. Technology Stack and Architecture
+
+### 1.1 Stack Overview
+
+| Layer | Technology | Purpose |
+|-------|-----------|---------|
+| Framework | Next.js 15+ (App Router) | Server components, API routes, middleware |
+| UI | React 19 | Server components, `useActionState`, `useOptimistic` |
+| Styling | Tailwind CSS 4 | Utility-first, `@theme` system |
+| Database | PostgreSQL via Drizzle ORM | Chat/message/document persistence |
+| Auth | NextAuth v5 (Auth.js) | Session management, multiple providers |
+| AI | Vercel AI SDK (`ai` package) | `streamText`, `createUIMessageStream`, tool execution |
+| Streaming | Server-Sent Events (SSE) + Redis | Resumable streams across reconnects |
+| State | `useSWR` + React Context | Client-side data fetching and cache |
+
+### 1.2 Application Architecture
+
+```
+┌───────────────────────────────────────────────────────────────────┐
+│  BROWSER                                                          │
+│  ┌─────────────────┐  ┌──────────────┐  ┌─────────────────────┐ │
+│  │  Chat Panel      │  │  Sidebar     │  │  Artifact Panel     │ │
+│  │  (useChat hook)  │  │  (history)   │  │  (document viewer)  │ │
+│  │                  │  │              │  │  text/code/image/    │ │
+│  │  Messages +      │  │  Thread list │  │  sheet editors       │ │
+│  │  Composer +      │  │  + search    │  │                     │ │
+│  │  Tool approvals  │  │              │  │  Version history     │ │
+│  └────────┬─────────┘  └──────────────┘  └─────────────────────┘ │
+│           │ SSE stream                                            │
+├───────────┼───────────────────────────────────────────────────────┤
+│  SERVER   │                                                       │
+│  ┌────────▼─────────┐                                            │
+│  │  /api/chat        │ ← POST: append message + stream response  │
+│  │  Route Handler    │                                            │
+│  │                   │                                            │
+│  │  1. Auth check    │                                            │
+│  │  2. Save user msg │                                            │
+│  │  3. streamText()  │                                            │
+│  │  4. Tool exec     │                                            │
+│  │  5. Save AI msg   │                                            │
+│  │  6. SSE response  │                                            │
+│  └────────┬──────────┘                                            │
+│           │                                                       │
+│  ┌────────▼──────────┐  ┌──────────────┐                        │
+│  │  Drizzle ORM      │  │  Redis       │                        │
+│  │  PostgreSQL        │  │  Stream buf  │                        │
+│  └───────────────────┘  └──────────────┘                        │
+└───────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 2. Database Schema (Drizzle ORM)
+
+### 2.1 Users and Authentication
+
+```typescript
+import { pgTable, varchar, timestamp, json, uuid, text, boolean, primaryKey } from "drizzle-orm/pg-core";
+
+export const user = pgTable("User", {
+  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  email: varchar("email", { length: 64 }).notNull(),
+  password: varchar("password", { length: 64 }),    // bcrypt hash, null for OAuth
+  salt: varchar("salt", { length: 64 }),             // per-user salt
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+});
+```
+
+### 2.2 Chats
+
+```typescript
+export const chat = pgTable("Chat", {
+  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  createdAt: timestamp("createdAt").notNull(),
+  updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+  title: text("title").notNull(),
+  userId: uuid("userId")
+    .notNull()
+    .references(() => user.id),
+  visibility: varchar("visibility", { enum: ["public", "private"] })
+    .notNull()
+    .default("private"),
+  model: varchar("model", { length: 128 }),          // which AI model was used
+});
+```
+
+### 2.3 Messages (Version 2 — Multimodal)
+
+```typescript
+export const message = pgTable("Message_v2", {
+  id: uuid("id").notNull(),
+  chatId: uuid("chatId")
+    .notNull()
+    .references(() => chat.id),
+  role: varchar("role", { enum: ["user", "assistant", "system", "tool"] }).notNull(),
+  parts: json("parts").notNull(),                     // ContentPart[] — matches AI SDK format
+  attachments: json("attachments").notNull().default([]),  // file references
+  createdAt: timestamp("createdAt").notNull(),
+}, (table) => [
+  primaryKey({ columns: [table.id, table.chatId] }),  // composite PK
+]);
+
+// The `parts` column stores an array matching the AI SDK UIMessage content format:
+// [
+//   { type: "text", text: "..." },
+//   { type: "tool-invocation", toolInvocationId: "...", toolName: "...", state: "result", args: {...}, result: {...} },
+//   { type: "reasoning", text: "...", signature: "..." },
+//   { type: "source", sourceType: "url", id: "...", url: "...", title: "..." },
+//   { type: "file", mimeType: "image/png", data: "base64..." },
+//   { type: "step-start" }
+// ]
+```
+
+### 2.4 Documents (Artifacts)
+
+```typescript
+export const document = pgTable("Document", {
+  id: uuid("id").notNull().defaultRandom(),
+  createdAt: timestamp("createdAt").notNull(),
+  title: text("title").notNull(),
+  content: text("content"),                           // current version content
+  kind: varchar("kind", {
+    enum: ["text", "code", "image", "sheet"],
+  }).notNull().default("text"),
+  userId: uuid("userId")
+    .notNull()
+    .references(() => user.id),
+}, (table) => [
+  primaryKey({ columns: [table.id, table.createdAt] }),  // composite PK enables versioning
+]);
+
+// VERSIONING MODEL:
+// Each (id, createdAt) pair is a unique version.
+// To get the latest version: ORDER BY createdAt DESC LIMIT 1 WHERE id = ?
+// To get version history: SELECT * WHERE id = ? ORDER BY createdAt ASC
+// Creating a new version: INSERT with same id, new createdAt, new content
+```
+
+### 2.5 Suggestions
+
+```typescript
+export const suggestion = pgTable("Suggestion", {
+  id: uuid("id").notNull().defaultRandom(),
+  documentId: uuid("documentId").notNull(),
+  documentCreatedAt: timestamp("documentCreatedAt").notNull(),
+  originalText: text("originalText").notNull(),       // text to be replaced
+  suggestedText: text("suggestedText").notNull(),     // replacement suggestion
+  description: text("description"),                    // why this change
+  isResolved: boolean("isResolved").notNull().default(false),
+  userId: uuid("userId")
+    .notNull()
+    .references(() => user.id),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+}, (table) => [
+  primaryKey({ columns: [table.id] }),
+]);
+```
+
+### 2.6 Votes (Message Feedback)
+
+```typescript
+export const vote = pgTable("Vote", {
+  chatId: uuid("chatId")
+    .notNull()
+    .references(() => chat.id),
+  messageId: uuid("messageId").notNull(),
+  isUpvoted: boolean("isUpvoted").notNull(),
+}, (table) => [
+  primaryKey({ columns: [table.chatId, table.messageId] }),
+]);
+```
+
+---
+
+## 3. Authentication System
+
+### 3.1 NextAuth v5 Configuration
+
+```typescript
+// auth.ts
+import NextAuth from "next-auth";
+import Credentials from "next-auth/providers/credentials";
+import { z } from "zod";
+
+export const { handlers, signIn, signOut, auth } = NextAuth({
+  providers: [
+    // Guest mode — auto-creates anonymous users
+    Credentials({
+      id: "guest",
+      name: "Guest",
+      credentials: {},
+      async authorize() {
+        const guestUser = await createGuestUser();
+        return { id: guestUser.id, email: `guest-${guestUser.id}@anonymous`, type: "guest" };
+      },
+    }),
+
+    // Email/password
+    Credentials({
+      id: "credentials",
+      name: "Credentials",
+      credentials: {
+        email: { type: "email" },
+        password: { type: "password" },
+      },
+      async authorize(credentials) {
+        const { email, password } = z.object({
+          email: z.string().email(),
+          password: z.string().min(6),
+        }).parse(credentials);
+
+        const user = await getUserByEmail(email);
+        if (!user?.password || !user?.salt) return null;
+
+        const hash = await hashPassword(password, user.salt);
+        if (hash !== user.password) return null;
+
+        return { id: user.id, email: user.email, type: "regular" };
+      },
+    }),
+  ],
+
+  callbacks: {
+    // Embed user ID in JWT
+    async jwt({ token, user }) {
+      if (user) token.id = user.id;
+      return token;
+    },
+    // Expose user ID in session
+    async session({ session, token }) {
+      if (token.id) session.user.id = token.id as string;
+      return session;
+    },
+    // Authorization middleware — protect routes
+    async authorized({ auth, request }) {
+      const isLoggedIn = !!auth?.user;
+      const isAuthPage = request.nextUrl.pathname.startsWith("/login");
+
+      if (isAuthPage) {
+        return isLoggedIn ? Response.redirect(new URL("/", request.url)) : true;
+      }
+
+      return isLoggedIn;  // redirect to /login if not authenticated
+    },
+  },
+
+  pages: {
+    signIn: "/login",
+  },
+});
+```
+
+### 3.2 Middleware
+
+```typescript
+// middleware.ts
+export { auth as middleware } from "./auth";
+
+export const config = {
+  // Apply auth middleware to all routes except static assets and API
+  matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
+};
+```
+
+### 3.3 Password Hashing
+
+```typescript
+import { createHash, randomBytes } from "crypto";
+
+export function generateSalt(): string {
+  return randomBytes(16).toString("hex");
+}
+
+export async function hashPassword(password: string, salt: string): string {
+  return createHash("sha256")
+    .update(`${password}:${salt}`)
+    .digest("hex");
+}
+```
+
+---
+
+## 4. AI Chat Route Handler
+
+### 4.1 Main Chat Endpoint
+
+```typescript
+// app/api/chat/route.ts
+import { streamText, UIMessage, appendResponseMessages, createUIMessageStream } from "ai";
+import { auth } from "@/auth";
+
+export async function POST(request: Request) {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return new Response("Unauthorized", { status: 401 });
+  }
+
+  const {
+    id: chatId,           // chat thread ID
+    messages,             // UIMessage[] from client
+    selectedModelId,      // e.g., "gpt-4o", "claude-sonnet-4-20250514"
+  }: {
+    id: string;
+    messages: UIMessage[];
+    selectedModelId: string;
+  } = await request.json();
+
+  // 1. Get or create chat
+  const existingChat = await getChatById(chatId);
+  if (!existingChat) {
+    // Auto-generate title from first user message
+    const title = await generateTitleFromUserMessage(messages[0]);
+    await saveChat({ id: chatId, userId: session.user.id, title });
+  } else {
+    // Verify ownership
+    if (existingChat.userId !== session.user.id) {
+      return new Response("Forbidden", { status: 403 });
+    }
+  }
+
+  // 2. Save the new user message to DB
+  const userMessage = messages[messages.length - 1];
+  await saveMessages([{
+    id: userMessage.id,
+    chatId,
+    role: "user",
+    parts: userMessage.parts,
+    attachments: userMessage.experimental_attachments ?? [],
+    createdAt: new Date(),
+  }]);
+
+  // 3. Stream AI response
+  return createUIMessageStreamResponse({
+    chatId,
+    messages,
+    model: getModelInstance(selectedModelId),
+    session,
+  });
+}
+```
+
+### 4.2 Streaming with createUIMessageStream
+
+```typescript
+async function createUIMessageStreamResponse({
+  chatId, messages, model, session,
+}: StreamOptions): Promise<Response> {
+
+  // createUIMessageStream produces a ReadableStream<Uint8Array> of SSE events
+  const stream = createUIMessageStream({
+    execute: async ({ writer, appendMessage, sendRawEvent }) => {
+      // streamText returns a streaming result from the AI model
+      const result = streamText({
+        model,
+        system: SYSTEM_PROMPT,
+        messages: convertToModelMessages(messages),
+        tools: getAvailableTools(session),
+        maxSteps: 5,  // allow multi-step tool use
+
+        // Called when a tool is invoked
+        onToolCall: async ({ toolCall }) => {
+          // Some tools execute server-side automatically
+          // Others require client approval (see Section 5)
+        },
+
+        // Called when generation finishes
+        onFinish: async ({ response }) => {
+          // Persist the assistant message(s) to DB
+          const assistantMessages = appendResponseMessages({
+            messages,
+            responseMessages: response.messages,
+          });
+
+          await saveMessages(
+            assistantMessages.map(msg => ({
+              id: msg.id,
+              chatId,
+              role: msg.role,
+              parts: msg.parts,
+              attachments: [],
+              createdAt: new Date(),
+            }))
+          );
+        },
+      });
+
+      // Pipe the AI SDK stream through the UIMessage stream writer
+      result.mergeIntoDataStream(writer);
+    },
+
+    // Error handling
+    onError: (error) => {
+      console.error("Stream error:", error);
+      return "An error occurred while generating the response.";
+    },
+  });
+
+  // Return as SSE response with appropriate headers
+  return new Response(stream, {
+    headers: {
+      "Content-Type": "text/event-stream; charset=utf-8",
+      "Cache-Control": "no-cache, no-transform",
+      "Connection": "keep-alive",
+      "X-Vercel-AI-Data-Stream": "v1",
+    },
+  });
+}
+```
+
+### 4.3 Resumable Streams via Redis
+
+For production reliability, streams can be buffered in Redis so clients can reconnect and resume:
+
+```typescript
+import { createResumableStreamContext } from "ai";
+import { Redis } from "ioredis";
+
+const redis = new Redis(process.env.REDIS_URL);
+
+const resumableStreamContext = createResumableStreamContext({
+  // Wait for subscriber before publishing (up to 10s)
+  waitUntilReady: async (streamId: string) => {
+    // Poll Redis for subscriber readiness
+    for (let i = 0; i < 100; i++) {
+      const ready = await redis.get(`stream:${streamId}:ready`);
+      if (ready) return;
+      await new Promise(r => setTimeout(r, 100));
+    }
+  },
+
+  // Write chunks to Redis stream + SSE
+  write: async (streamId: string, chunk: string) => {
+    await redis.xadd(`stream:${streamId}`, "*", "data", chunk);
+  },
+
+  // Close the Redis stream
+  close: async (streamId: string) => {
+    await redis.xadd(`stream:${streamId}`, "*", "data", "[DONE]");
+    // Set TTL for cleanup (5 minutes)
+    await redis.expire(`stream:${streamId}`, 300);
+  },
+
+  // Resume from a specific offset
+  createResumableStream: async (streamId: string, lastEventId?: string) => {
+    // Read all chunks after lastEventId from Redis
+    const startId = lastEventId ?? "0-0";
+    const entries = await redis.xrange(`stream:${streamId}`, startId, "+");
+    // Convert to ReadableStream
+    return new ReadableStream({
+      start(controller) {
+        for (const [, fields] of entries) {
+          const data = fields[1]; // [field, value] pairs
+          if (data === "[DONE]") {
+            controller.close();
+            return;
+          }
+          controller.enqueue(new TextEncoder().encode(`data: ${data}\n\n`));
+        }
+        // If stream not closed, subscribe for real-time updates
+        subscribeToRedisStream(streamId, startId, controller);
+      },
+    });
+  },
+});
+
+// Client reconnection:
+// 1. Browser SSE connection drops
+// 2. Client reconnects with Last-Event-ID header
+// 3. Server reads missed chunks from Redis stream
+// 4. Client receives all missed data, then resumes real-time
+```
+
+---
+
+## 5. Tool System
+
+### 5.1 Tool Definition Pattern
+
+```typescript
+import { tool } from "ai";
+import { z } from "zod";
+
+// Server-side auto-executing tool
+const getWeatherTool = tool({
+  description: "Get current weather for a location",
+  parameters: z.object({
+    latitude: z.number().describe("Latitude"),
+    longitude: z.number().describe("Longitude"),
+  }),
+  execute: async ({ latitude, longitude }) => {
+    const response = await fetch(
+      `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,weathercode`
+    );
+    return await response.json();
+  },
+});
+
+// Client-approved tool (no execute — requires human approval)
+const createDocumentTool = tool({
+  description: "Create a text document artifact",
+  parameters: z.object({
+    title: z.string().describe("Document title"),
+    kind: z.enum(["text", "code", "image", "sheet"]).describe("Document type"),
+  }),
+  // NO execute function — this sends a tool-call to the client
+  // The client renders an approval UI and calls addToolResult()
+});
+```
+
+### 5.2 Tool Approval Flow
+
+```
+Client                          Server                          AI Model
+  │                               │                               │
+  │ POST /api/chat {messages}     │                               │
+  │──────────────────────────────>│                               │
+  │                               │ streamText({tools})           │
+  │                               │──────────────────────────────>│
+  │                               │     tool_call: createDocument │
+  │                               │<──────────────────────────────│
+  │  SSE: tool-call (no result)   │                               │
+  │<──────────────────────────────│                               │
+  │                               │                               │
+  │  [User sees approval UI]      │                               │
+  │  [User clicks "Allow"]        │                               │
+  │                               │                               │
+  │ POST /api/chat {messages      │                               │
+  │   + toolResult}               │                               │
+  │──────────────────────────────>│                               │
+  │                               │ streamText({messages          │
+  │                               │   + toolResult})              │
+  │                               │──────────────────────────────>│
+  │                               │     text: "I've created..."   │
+  │                               │<──────────────────────────────│
+  │  SSE: text-delta              │                               │
+  │<──────────────────────────────│                               │
+```
+
+### 5.3 Built-in Application Tools
+
+The framework provides four reference tool implementations:
+
+**Tool 1: getWeather** (auto-execute, server-side)
+```typescript
+// Demonstrates server-side tool with automatic execution
+// Parameters: latitude, longitude
+// Returns: temperature, weather code, location name
+// Rendered as: weather card with icon + temperature
+```
+
+**Tool 2: createDocument** (client-approved)
+```typescript
+// Parameters: title (string), kind ("text" | "code" | "image" | "sheet")
+// Flow:
+//   1. AI decides to create a document
+//   2. Client shows approval UI
+//   3. On approval: creates Document row in DB, opens artifact panel
+//   4. Returns document ID to AI
+//   5. AI then calls updateDocument to fill in content
+```
+
+**Tool 3: updateDocument** (client-approved)
+```typescript
+// Parameters: id (document UUID), description (what to change)
+// Flow:
+//   1. AI requests to update an existing document
+//   2. Client shows diff preview
+//   3. On approval: AI generates new content via streaming
+//   4. New version saved to DB (same id, new createdAt)
+//   5. Artifact panel shows updated content
+```
+
+**Tool 4: requestSuggestions** (auto-execute, server-side)
+```typescript
+// Parameters: documentId (UUID)
+// Flow:
+//   1. Reads current document content
+//   2. Asks AI to generate improvement suggestions
+//   3. Each suggestion: { originalText, suggestedText, description }
+//   4. Saves to Suggestion table
+//   5. Client renders inline suggestion markers in artifact panel
+```
+
+---
+
+## 6. Client-Side Chat Integration
+
+### 6.1 useChat Hook Integration
+
+```typescript
+"use client";
+import { useChat } from "@ai-sdk/react";
+
+function ChatPanel({ chatId, initialMessages }: ChatPanelProps) {
+  const {
+    messages,         // UIMessage[] — current conversation
+    input,            // string — composer text
+    setInput,         // setter for composer text
+    append,           // (message) => void — send a message
+    isLoading,        // boolean — AI is generating
+    stop,             // () => void — cancel generation
+    reload,           // () => void — regenerate last response
+    addToolResult,    // ({ toolCallId, result }) => void — resolve tool approval
+    setMessages,      // (messages) => void — replace message history
+    error,            // Error | undefined
+    data,             // unknown[] — custom stream data
+  } = useChat({
+    id: chatId,
+    api: "/api/chat",
+    initialMessages,
+    body: {
+      id: chatId,
+      selectedModelId: selectedModel,
+    },
+    maxSteps: 5,
+    experimental_throttle: 50,   // ms — throttle UI updates during streaming
+
+    // Handle custom stream events
+    onToolCall: async ({ toolCall }) => {
+      // Tools with server-side execute() are auto-handled
+      // Tools without execute() trigger the approval flow
+      // Return undefined to show approval UI
+    },
+
+    onFinish: (message) => {
+      // Optionally mutate SWR cache to update sidebar
+      mutate("/api/history");
+    },
+
+    onError: (error) => {
+      toast.error("Failed to generate response");
+    },
+  });
+
+  return (
+    <div className="flex flex-col h-full">
+      <MessageList messages={messages} />
+      <Composer
+        input={input}
+        setInput={setInput}
+        onSubmit={() => append({ role: "user", content: input })}
+        isLoading={isLoading}
+        onStop={stop}
+      />
+    </div>
+  );
+}
+```
+
+### 6.2 Data Stream Provider Pattern
+
+Custom data can be sent alongside the AI stream using a provider component:
+
+```typescript
+import { useUIMessageStream } from "@ai-sdk/react";
+
+function ChatDataProvider({ children }: { children: ReactNode }) {
+  const { data, setData } = useUIMessageStream();
+
+  // `data` receives arbitrary JSON objects streamed from server via:
+  //   sendRawEvent({ type: "data", value: { documentId: "...", kind: "text" } })
+
+  // Components in the tree access this via useUIMessageStream()
+  return <DataContext.Provider value={data}>{children}</DataContext.Provider>;
+}
+```
+
+---
+
+## 7. Application Layout and Routing
+
+### 7.1 Route Structure
+
+```
+app/
+├── layout.tsx                    # Root layout: providers, theme
+├── page.tsx                      # Redirect to /chat/new or last chat
+├── (auth)/
+│   ├── login/page.tsx            # Login form
+│   └── register/page.tsx         # Registration form
+├── (chat)/
+│   ├── layout.tsx                # Chat layout: sidebar + main + artifact panel
+│   ├── page.tsx                  # New chat (empty thread)
+│   └── chat/
+│       └── [id]/page.tsx         # Existing chat thread
+├── api/
+│   ├── chat/route.ts             # POST: send message + stream
+│   ├── history/route.ts          # GET: list user's chats
+│   ├── document/route.ts         # GET/POST/PATCH: document CRUD
+│   ├── suggestions/route.ts      # GET/POST: document suggestions
+│   └── vote/route.ts             # PATCH: message feedback
+```
+
+### 7.2 Chat Layout (Three-Panel)
+
+```typescript
+// app/(chat)/layout.tsx
+export default async function ChatLayout({ children }: { children: ReactNode }) {
+  const session = await auth();
+
+  return (
+    <ThemeProvider attribute="class" defaultTheme="system">
+      <SidebarProvider defaultOpen={true}>
+        <div className="flex h-screen w-full">
+          
+          <ChatSidebar user={session?.user} />
+
+          
+          <main className="flex-1 flex">
+            
+            <div className="flex-1 flex flex-col">
+              {children}
+            </div>
+
+            
+            <ArtifactPanel />
+          </main>
+        </div>
+      </SidebarProvider>
+    </ThemeProvider>
+  );
+}
+```
+
+### 7.3 Sidebar Component
+
+```typescript
+function ChatSidebar({ user }: { user: User }) {
+  // Fetch chat history
+  const { data: history, isLoading } = useSWR<Chat[]>("/api/history", fetcher, {
+    fallbackData: [],
+    revalidateOnFocus: false,
+  });
+
+  // Group chats by time period
+  const grouped = groupChatsByDate(history ?? []);
+  // { today: Chat[], yesterday: Chat[], thisWeek: Chat[], thisMonth: Chat[], older: Chat[] }
+
+  return (
+    <aside className="w-64 border-r flex flex-col">
+      <button onClick={startNewChat} className="m-2 p-2 border rounded">
+        New Chat
+      </button>
+
+      <div className="flex-1 overflow-y-auto">
+        {Object.entries(grouped).map(([period, chats]) => (
+          <div key={period}>
+            <h3 className="px-3 py-1 text-xs text-gray-500 uppercase">{period}</h3>
+            {chats.map(chat => (
+              <ChatHistoryItem
+                key={chat.id}
+                chat={chat}
+                isActive={chat.id === currentChatId}
+                onDelete={() => deleteChat(chat.id)}
+                onRename={(title) => renameChat(chat.id, title)}
+              />
+            ))}
+          </div>
+        ))}
+      </div>
+
+      <UserMenu user={user} />
+    </aside>
+  );
+}
+```
+
+---
+
+## 8. Document Artifact System
+
+### 8.1 Artifact Panel Architecture
+
+The artifact panel displays documents created by the AI, supporting live editing and version history:
+
+```typescript
+function ArtifactPanel() {
+  const { activeDocument, setActiveDocument } = useArtifactContext();
+
+  if (!activeDocument) return null;
+
+  return (
+    <div className="w-[480px] border-l flex flex-col">
+      
+      <ArtifactHeader
+        document={activeDocument}
+        onClose={() => setActiveDocument(null)}
+      />
+
+      
+      <div className="flex-1 overflow-hidden">
+        {activeDocument.kind === "text" && (
+          <TextEditor document={activeDocument} />
+        )}
+        {activeDocument.kind === "code" && (
+          <CodeEditor document={activeDocument} />
+        )}
+        {activeDocument.kind === "image" && (
+          <ImageViewer document={activeDocument} />
+        )}
+        {activeDocument.kind === "sheet" && (
+          <SpreadsheetEditor document={activeDocument} />
+        )}
+      </div>
+
+      
+      <ArtifactFooter document={activeDocument} />
+    </div>
+  );
+}
+```
+
+### 8.2 Document Version Navigation
+
+```typescript
+function VersionTimeline({ documentId }: { documentId: string }) {
+  const { data: versions } = useSWR(
+    `/api/document?id=${documentId}&versions=true`,
+    fetcher
+  );
+
+  // versions: Array<{ id, createdAt, title }>
+  // Ordered chronologically — each is a snapshot
+
+  return (
+    <div className="flex gap-1 items-center">
+      {versions?.map((version, idx) => (
+        <button
+          key={version.createdAt}
+          onClick={() => loadVersion(version)}
+          className={cn(
+            "w-2 h-2 rounded-full",
+            idx === currentVersionIndex ? "bg-blue-500" : "bg-gray-300"
+          )}
+          title={format(new Date(version.createdAt), "PPp")}
+        />
+      ))}
+    </div>
+  );
+}
+```
+
+### 8.3 Inline Suggestions
+
+```typescript
+function SuggestionOverlay({ document, suggestions }: SuggestionProps) {
+  // Suggestions are displayed as inline highlights over the document text
+  // Each suggestion marks a range of originalText with a colored underline
+  // Clicking a suggestion shows a popover with:
+  //   - Original text (crossed out)
+  //   - Suggested replacement
+  //   - Description of why
+  //   - Accept / Reject buttons
+
+  const handleAccept = async (suggestion: Suggestion) => {
+    // Replace originalText with suggestedText in document content
+    const newContent = document.content.replace(
+      suggestion.originalText,
+      suggestion.suggestedText
+    );
+
+    // Save as new version
+    await fetch("/api/document", {
+      method: "PATCH",
+      body: JSON.stringify({ id: document.id, content: newContent }),
+    });
+
+    // Mark suggestion as resolved
+    await fetch("/api/suggestions", {
+      method: "PATCH",
+      body: JSON.stringify({ id: suggestion.id, isResolved: true }),
+    });
+  };
+}
+```
+
+---
+
+## 9. Model Selection and Multi-Provider Routing
+
+### 9.1 Model Registry
+
+```typescript
+interface ChatModel {
+  id: string;                    // unique identifier sent to API
+  name: string;                  // display name
+  provider: string;              // "openai" | "anthropic" | "google" | etc.
+  description: string;           // shown in model picker
+  contextWindow: number;         // max tokens
+  supportsImages: boolean;
+  supportsTools: boolean;
+  supportsReasoning: boolean;
+}
+
+const chatModels: ChatModel[] = [
+  {
+    id: "gpt-4o",
+    name: "GPT-4o",
+    provider: "openai",
+    description: "Fast and capable for most tasks",
+    contextWindow: 128000,
+    supportsImages: true,
+    supportsTools: true,
+    supportsReasoning: false,
+  },
+  {
+    id: "claude-sonnet-4-20250514",
+    name: "Claude Sonnet 4",
+    provider: "anthropic",
+    description: "Balanced intelligence and speed",
+    contextWindow: 200000,
+    supportsImages: true,
+    supportsTools: true,
+    supportsReasoning: true,
+  },
+  // ... more models
+];
+```
+
+### 9.2 Model Instance Factory
+
+```typescript
+import { openai } from "@ai-sdk/openai";
+import { anthropic } from "@ai-sdk/anthropic";
+import { google } from "@ai-sdk/google";
+
+function getModelInstance(modelId: string): LanguageModelV1 {
+  const model = chatModels.find(m => m.id === modelId);
+  if (!model) throw new Error(`Unknown model: ${modelId}`);
+
+  switch (model.provider) {
+    case "openai":
+      return openai(model.id);
+    case "anthropic":
+      return anthropic(model.id);
+    case "google":
+      return google(model.id);
+    default:
+      throw new Error(`Unknown provider: ${model.provider}`);
+  }
+}
+```
+
+### 9.3 Model Picker Component
+
+```typescript
+function ModelPicker({ selectedModelId, onSelect }: ModelPickerProps) {
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button variant="ghost" className="gap-1">
+          {chatModels.find(m => m.id === selectedModelId)?.name}
+          <ChevronDown size={14} />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent>
+        {chatModels.map(model => (
+          <button
+            key={model.id}
+            onClick={() => onSelect(model.id)}
+            className={cn(
+              "w-full text-left p-2 rounded",
+              model.id === selectedModelId && "bg-blue-50"
+            )}
+          >
+            <div className="font-medium">{model.name}</div>
+            <div className="text-xs text-gray-500">{model.description}</div>
+          </button>
+        ))}
+      </PopoverContent>
+    </Popover>
+  );
+}
+```
+
+---
+
+## 10. Chat History API
+
+### 10.1 History Endpoint
+
+```typescript
+// app/api/history/route.ts
+export async function GET() {
+  const session = await auth();
+  if (!session?.user?.id) return Response.json([], { status: 401 });
+
+  const chats = await db
+    .select()
+    .from(chat)
+    .where(eq(chat.userId, session.user.id))
+    .orderBy(desc(chat.updatedAt));
+
+  return Response.json(chats);
+}
+
+export async function DELETE(request: Request) {
+  const { id } = await request.json();
+  const session = await auth();
+
+  // Verify ownership before deleting
+  const target = await getChatById(id);
+  if (!target || target.userId !== session.user.id) {
+    return new Response("Forbidden", { status: 403 });
+  }
+
+  // Cascade: delete messages, votes, then chat
+  await db.delete(vote).where(eq(vote.chatId, id));
+  await db.delete(message).where(eq(message.chatId, id));
+  await db.delete(chat).where(eq(chat.id, id));
+
+  return Response.json({ success: true });
+}
+```
+
+### 10.2 Auto-Title Generation
+
+```typescript
+async function generateTitleFromUserMessage(message: UIMessage): Promise<string> {
+  const { text } = await generateText({
+    model: openai("gpt-4o-mini"),  // cheap model for title gen
+    system: "Generate a short (max 80 chars) title for this conversation based on the user's first message. Return ONLY the title, no quotes or extra text.",
+    prompt: getTextContent(message),
+  });
+
+  return text.trim() || "New Chat";
+}
+```
+
+---
+
+## 11. Visibility and Sharing
+
+### 11.1 Chat Visibility Model
+
+Chats have two visibility levels:
+
+- **`private`** (default): Only the owner can view. All API access requires `userId` match.
+- **`public`**: Anyone with the URL can view (read-only). Only owner can send messages.
+
+```typescript
+// Middleware check for chat access
+async function validateChatAccess(chatId: string, userId: string | undefined): Promise<{
+  allowed: boolean;
+  readOnly: boolean;
+}> {
+  const chatRecord = await getChatById(chatId);
+  if (!chatRecord) return { allowed: false, readOnly: false };
+
+  if (chatRecord.userId === userId) {
+    return { allowed: true, readOnly: false };  // owner: full access
+  }
+
+  if (chatRecord.visibility === "public") {
+    return { allowed: true, readOnly: true };   // public: read-only
+  }
+
+  return { allowed: false, readOnly: false };    // private: no access
+}
+```
+
+### 11.2 Share Dialog
+
+```typescript
+function ShareDialog({ chatId }: { chatId: string }) {
+  const [visibility, setVisibility] = useState<"private" | "public">("private");
+
+  const handleShare = async () => {
+    await fetch(`/api/chat/${chatId}/visibility`, {
+      method: "PATCH",
+      body: JSON.stringify({ visibility: "public" }),
+    });
+    setVisibility("public");
+    // Copy shareable URL to clipboard
+    await navigator.clipboard.writeText(`${window.location.origin}/chat/${chatId}`);
+    toast.success("Share link copied!");
+  };
+
+  return (
+    <Dialog>
+      <DialogContent>
+        <DialogTitle>Share Chat</DialogTitle>
+        {visibility === "private" ? (
+          <Button onClick={handleShare}>Make Public & Copy Link</Button>
+        ) : (
+          <div>
+            <p>This chat is public. Anyone with the link can view it.</p>
+            <Button onClick={() => setVisibility("private")}>Make Private</Button>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+```
+
+---
+
+## 12. Message Feedback (Voting)
+
+```typescript
+// app/api/vote/route.ts
+export async function PATCH(request: Request) {
+  const { chatId, messageId, type }: {
+    chatId: string;
+    messageId: string;
+    type: "up" | "down";
+  } = await request.json();
+
+  const session = await auth();
+  if (!session?.user?.id) return new Response("Unauthorized", { status: 401 });
+
+  // Upsert vote
+  await db
+    .insert(vote)
+    .values({
+      chatId,
+      messageId,
+      isUpvoted: type === "up",
+    })
+    .onConflictDoUpdate({
+      target: [vote.chatId, vote.messageId],
+      set: { isUpvoted: type === "up" },
+    });
+
+  return Response.json({ success: true });
+}
+```
+
+---
+
+## 13. Optimistic UI Updates
+
+### 13.1 Pattern: useOptimistic for Sidebar
+
+```typescript
+function ChatHistoryItem({ chat }: { chat: Chat }) {
+  const [optimisticTitle, setOptimisticTitle] = useOptimistic(chat.title);
+  const [isDeleted, setIsDeleted] = useOptimistic(false);
+
+  if (isDeleted) return null;
+
+  const handleRename = async (newTitle: string) => {
+    setOptimisticTitle(newTitle);  // instant UI update
+    await fetch(`/api/chat/${chat.id}`, {
+      method: "PATCH",
+      body: JSON.stringify({ title: newTitle }),
+    });
+    // If fetch fails, React resets optimistic state automatically
+  };
+
+  const handleDelete = async () => {
+    setIsDeleted(true);  // instant removal from list
+    await fetch("/api/history", {
+      method: "DELETE",
+      body: JSON.stringify({ id: chat.id }),
+    });
+  };
+
+  return (
+    <div className="flex items-center gap-2 p-2 rounded hover:bg-gray-100">
+      <Link href={`/chat/${chat.id}`} className="flex-1 truncate">
+        {optimisticTitle}
+      </Link>
+      <DropdownMenu>
+        <DropdownMenuItem onClick={() => handleRename(prompt("New title") ?? chat.title)}>
+          Rename
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={handleDelete} className="text-red-500">
+          Delete
+        </DropdownMenuItem>
+      </DropdownMenu>
+    </div>
+  );
+}
+```
+
+---
+
+## 14. Environment Configuration
+
+```bash
+# .env.local
+
+# Database
+POSTGRES_URL="postgresql://user:pass@localhost:5432/chatdb"
+
+# Auth
+AUTH_SECRET="random-32-char-secret"            # NextAuth session encryption
+AUTH_URL="http://localhost:3000"
+
+# AI Providers (at least one required)
+OPENAI_API_KEY="sk-..."
+ANTHROPIC_API_KEY="sk-ant-..."
+GOOGLE_GENERATIVE_AI_API_KEY="..."
+
+# Optional: Redis for resumable streams
+REDIS_URL="redis://localhost:6379"
+
+# Optional: Blob storage for file uploads
+BLOB_READ_WRITE_TOKEN="..."
+```
+
+---
+
+## 15. Database Migrations
+
+```typescript
+// drizzle.config.ts
+import { defineConfig } from "drizzle-kit";
+
+export default defineConfig({
+  schema: "./lib/db/schema.ts",
+  out: "./lib/db/migrations",
+  dialect: "postgresql",
+  dbCredentials: {
+    url: process.env.POSTGRES_URL!,
+  },
+});
+
+// Commands:
+// npx drizzle-kit generate   — generate migration SQL from schema changes
+// npx drizzle-kit migrate    — apply pending migrations
+// npx drizzle-kit push       — push schema directly (dev only)
+```
+
+---
+
+## 16. Behavioral Test Cases
+
+### Authentication
+1. **Guest access**: Unauthenticated users can create a guest session and chat; guest sessions persist across page reloads within the same browser.
+2. **Credential login**: Valid email/password combination returns a session with user ID embedded in JWT.
+3. **Invalid credentials**: Wrong password returns 401 without leaking whether email exists.
+4. **Session expiry**: Expired JWT redirects to /login via middleware.
+5. **Route protection**: All /chat/* routes require authentication; /api/chat returns 401 without valid session.
+
+### Chat CRUD
+6. **Auto-title**: First message in a new chat triggers title generation; title appears in sidebar.
+7. **Chat ownership**: Users can only access their own private chats; accessing another user's private chat returns 403.
+8. **Delete cascade**: Deleting a chat removes all associated messages, votes, and documents.
+9. **Rename**: Renaming a chat updates the title immediately (optimistic) and persists to DB.
+10. **History ordering**: Chat history is sorted by updatedAt descending (most recent first).
+
+### Message Persistence
+11. **User message saved before streaming**: The user's message is persisted to DB before the AI stream begins.
+12. **Assistant message saved after streaming**: The complete assistant response (including tool results) is saved after stream finishes.
+13. **Multimodal parts**: Messages with mixed content types (text + tool calls + reasoning) round-trip through DB correctly.
+14. **Composite PK**: Multiple messages in the same chat have unique (id, chatId) pairs; message IDs are UUIDs.
+
+### Streaming
+15. **SSE format**: Response uses `text/event-stream` content type with chunked transfer encoding.
+16. **Text streaming**: Individual text deltas appear in the client as they're generated (throttled at 50ms).
+17. **Tool call streaming**: Tool name and arguments stream incrementally; client shows partial args during streaming.
+18. **Stream cancellation**: Clicking stop sends abort signal; AI generation halts; partial response is preserved.
+19. **Error recovery**: Network disconnect during streaming does not lose the user message; client can retry.
+20. **Resumable streams**: With Redis enabled, reconnecting with Last-Event-ID resumes from where the client left off.
+
+### Tool Execution
+21. **Auto-execute tools**: Tools with `execute` function run server-side without user approval.
+22. **Approval-required tools**: Tools without `execute` send tool-call to client; client renders approval UI.
+23. **Tool approval**: Clicking "Allow" calls addToolResult, which sends the result back to the AI for continuation.
+24. **Tool rejection**: Rejecting a tool call sends an error result; AI acknowledges and continues without the tool.
+25. **Multi-step tools**: With maxSteps=5, the AI can chain multiple tool calls in sequence within a single response.
+
+### Document Artifacts
+26. **Create document**: createDocument tool creates a new Document row and opens the artifact panel.
+27. **Update document (versioning)**: updateDocument creates a new (id, createdAt) row, preserving the previous version.
+28. **Version navigation**: Users can navigate between document versions using the timeline dots.
+29. **Document kinds**: Text, code, image, and sheet documents each render with their specialized editor.
+30. **Suggestions**: requestSuggestions generates inline suggestions that can be accepted or rejected.
+
+### Sharing and Visibility
+31. **Default private**: New chats are created with visibility="private".
+32. **Public sharing**: Setting visibility to "public" allows anyone with the URL to view (read-only).
+33. **Read-only enforcement**: Public viewers cannot send messages or modify the chat.
+34. **Share link**: Sharing copies the canonical URL; the URL works for any authenticated or unauthenticated user.
+
+### Voting
+35. **Upvote/downvote**: Users can vote on assistant messages; votes are upserted (one vote per user per message).
+36. **Vote toggle**: Voting again with a different type changes the vote (up→down or vice versa).
+37. **Vote persistence**: Votes survive page reload and are fetched alongside messages.
+
+### UI/UX
+38. **Model picker**: Users can select from available models before sending; selection persists for the chat.
+39. **Sidebar grouping**: Chats are grouped by time period (Today, Yesterday, This Week, This Month, Older).
+40. **Optimistic updates**: Rename and delete operations appear instant; failed operations revert automatically.
+41. **Empty state**: New chats show welcome message with suggested conversation starters.
+42. **Responsive layout**: Sidebar collapses on mobile; artifact panel overlays on narrow screens.
+43. **Theme support**: Light/dark mode toggle via `next-themes`; persists preference.
+44. **Keyboard shortcuts**: Enter to send, Shift+Enter for newline, Escape to close artifact panel.

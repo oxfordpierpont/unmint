@@ -1,0 +1,12 @@
+{
+  "title": "Industry Templates",
+  "pages": [
+    "index",
+    "concept-overview",
+    "concept-task-list",
+    "developer-overview",
+    "developer-quick-reference",
+    "opus-prd-handoff"
+  ],
+  "defaultOpen": false
+}

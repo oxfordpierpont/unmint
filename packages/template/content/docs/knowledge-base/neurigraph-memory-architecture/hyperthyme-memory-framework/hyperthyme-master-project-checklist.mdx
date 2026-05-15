@@ -1,0 +1,372 @@
+---
+title: "Neurigraph Hyperthyme Artificial Memory Framework by Oxford Pierpont"
+description: "Master Project Checklist Project: Hyperthyme — Persistent Memory Layer for AI Systems Goal: Build a fundable product with comprehensive documentation, workin..."
+---
+<Info>
+Normalized for Mintlify from `knowledge-base/neurigraph-memory-architecture/hyperthyme-memory-framework/hyperthyme-master-project-checklist.mdx`.
+</Info>
+# Neurigraph Hyperthyme Artificial Memory Framework by Oxford Pierpont
+
+## Master Project Checklist
+
+**Project:** Hyperthyme — Persistent Memory Layer for AI Systems  
+**Goal:** Build a fundable product with comprehensive documentation, working prototype, and investment-ready materials  
+**Created:** January 11, 2025
+
+---
+
+## Phase 0: Foundation (Week 1-2)
+
+### Project Setup
+
+- [ ] Create dedicated project repository (GitHub or GitLab)  
+- [ ] Set up project management tool (Linear, Notion, or GitHub Projects)  
+- [ ] Establish folder structure for all documentation  
+- [ ] Create README.md with project overview  
+- [ ] Set up version control and branching strategy  
+- [ ] Register domain name(s) for project
+
+### Core Documentation
+
+- [ ] **Technical Architecture Document (TAD)** — Complete system design  
+- [ ] **Product Requirements Document (PRD)** — Features, user stories, specifications  
+- [ ] **Glossary of Terms** — Define all project-specific terminology  
+- [ ] **Design Philosophy Document** — Why Recall exists, core principles
+
+---
+
+## Phase 1: Technical Documentation (Week 2-4)
+
+### System Architecture
+
+- [ ] High-level architecture diagram  
+- [ ] Data flow diagrams  
+- [ ] Component interaction maps  
+- [ ] Infrastructure requirements document
+
+### Memory System Specifications
+
+- [ ] **Recall File Structure Spec** — Folder structure, file formats, naming conventions  
+- [ ] **Token Threshold Configuration** — 50K token trigger logic  
+- [ ] **Summary Generation Spec** — How summaries are created, what they contain  
+- [ ] **Keyword Extraction Spec** — Extraction methodology, storage format  
+- [ ] **Artifact Handling Spec** — Compression, storage, retrieval of companion files
+
+### Defining Memory Specifications
+
+- [ ] **Defining Memory Detection Spec** — Trigger patterns, classification logic  
+- [ ] **Defining Memory Schema** — Data structure for milestone/event memories  
+- [ ] **Defining Memory Index Spec** — How the always-warm index is maintained
+
+### Retrieval System Specifications
+
+- [ ] **Knowledge Graph Integration Spec** — Node structure, relationships, navigation  
+- [ ] **RAG Database Spec** — Embedding strategy, vector storage, search methodology  
+- [ ] **Search Cascade Logic** — Keywords → Summary → Transcript → Artifacts  
+- [ ] **Node Warming Spec** — How nodes transition between hot/warm/cold states  
+- [ ] **Cross-Project Search Spec** — How global search differs from scoped search
+
+### Storage & Lifecycle
+
+- [ ] **Cold Storage Spec** — Compression triggers, 7-day rule, background processes  
+- [ ] **Warming Process Spec** — How related memories are pre-loaded  
+- [ ] **Storage Estimation Model** — Projected storage needs at scale
+
+### Model Agnostic Layer
+
+- [ ] **Middleware API Spec** — Endpoints, request/response formats  
+- [ ] **MCP Integration Spec** — How Recall exposes tools via Model Context Protocol  
+- [ ] **Provider Abstraction Spec** — How to swap between Claude/GPT/Gemini/etc.
+
+### Database Design
+
+- [ ] Complete database schema (PostgreSQL recommended)  
+- [ ] Entity-relationship diagrams  
+- [ ] Index strategy document  
+- [ ] Migration scripts template
+
+### API Documentation
+
+- [ ] RESTful API specification (OpenAPI/Swagger)  
+- [ ] Authentication and authorization spec  
+- [ ] Rate limiting and quota management  
+- [ ] Webhook specifications for integrations  
+- [ ] SDK design document (Python, JavaScript)
+
+---
+
+## Phase 2: Business Documentation (Week 4-6)
+
+### Market Research
+
+- [ ] **Competitive Analysis** — Mem0, Zep, Graphiti, LangChain memory, etc.  
+- [ ] **Market Size Estimation** — TAM, SAM, SOM calculations  
+- [ ] **Target Customer Profiles** — Who buys this and why  
+- [ ] **Pricing Research** — What competitors charge, willingness to pay
+
+### Business Model
+
+- [ ] **Monetization Strategy Document** — Pricing tiers, revenue model  
+- [ ] **Unit Economics Model** — CAC, LTV, margins, break-even analysis  
+- [ ] **Financial Projections** — 3-year revenue/expense model (spreadsheet)  
+- [ ] **Go-to-Market Strategy** — Launch plan, channels, partnerships
+
+### Differentiation
+
+- [ ] **Unique Value Proposition (UVP) Document** — Why Recall vs. alternatives  
+- [ ] **Positioning Statement** — One paragraph that captures the essence  
+- [ ] **Competitive Moat Analysis** — What's defensible long-term
+
+---
+
+## Phase 3: Legal & Compliance (Week 5-7)
+
+### Intellectual Property
+
+- [ ] Provisional patent application (if applicable)  
+- [ ] Trademark search for "Recall" name  
+- [ ] Trademark application filing  
+- [ ] Document all proprietary methodologies
+
+### Legal Structure
+
+- [ ] Choose business entity type (LLC, C-Corp, etc.)  
+- [ ] Incorporate the company  
+- [ ] Draft founder agreements (if multiple founders)  
+- [ ] Establish equity structure and vesting schedules  
+- [ ] Create IP assignment agreements
+
+### Compliance Documentation
+
+- [ ] **Privacy Policy** — GDPR, CCPA compliant  
+- [ ] **Terms of Service** — Platform usage terms  
+- [ ] **Data Processing Agreement (DPA)** — For enterprise customers  
+- [ ] **Security Whitepaper** — How user data is protected  
+- [ ] **SOC 2 Roadmap** — Plan for eventual compliance certification
+
+### Data Handling
+
+- [ ] Data retention policy  
+- [ ] Data deletion procedures (right to be forgotten)  
+- [ ] Encryption standards document  
+- [ ] Backup and disaster recovery plan
+
+---
+
+## Phase 4: Product Development (Week 6-14)
+
+### MVP Definition
+
+- [ ] **MVP Scope Document** — Exactly what's in v0.1, what's not  
+- [ ] **User Stories** — Detailed stories for MVP features  
+- [ ] **Acceptance Criteria** — How to know each feature is "done"
+
+### Development Milestones
+
+#### Milestone 1: Core Storage (Week 6-8)
+
+- [ ] Recall file creation (transcript \+ summary \+ keywords)  
+- [ ] Token counting and threshold triggers  
+- [ ] Basic folder structure and naming  
+- [ ] Manual search functionality
+
+#### Milestone 2: Retrieval System (Week 8-10)
+
+- [ ] Keyword search implementation  
+- [ ] Summary RAG integration  
+- [ ] Search cascade logic  
+- [ ] Basic API endpoints
+
+#### Milestone 3: Knowledge Graph (Week 10-12)
+
+- [ ] Node creation and relationship mapping  
+- [ ] Navigation/scoping logic  
+- [ ] Node warming implementation  
+- [ ] Cross-project search
+
+#### Milestone 4: Defining Memories (Week 12-13)
+
+- [ ] Detection triggers  
+- [ ] Defining memory index  
+- [ ] Timeline/milestone view  
+- [ ] Linking to source recall files
+
+#### Milestone 5: Polish & Integration (Week 13-14)
+
+- [ ] Cold storage compression  
+- [ ] MCP server implementation  
+- [ ] Multi-model testing (Claude, GPT, Gemini)  
+- [ ] Basic web dashboard
+
+### Quality Assurance
+
+- [ ] Unit test suite  
+- [ ] Integration test suite  
+- [ ] Performance benchmarks  
+- [ ] Security audit checklist  
+- [ ] Load testing plan
+
+---
+
+## Phase 5: Fundraising Materials (Week 12-16)
+
+### Pitch Deck
+
+- [ ] **Investor Pitch Deck** — 10-15 slides covering:  
+      - [ ] Problem statement  
+      - [ ] Solution overview  
+      - [ ] Market opportunity  
+      - [ ] Product demo/screenshots  
+      - [ ] Business model  
+      - [ ] Traction/validation  
+      - [ ] Competitive landscape  
+      - [ ] Team  
+      - [ ] Financial projections  
+      - [ ] Ask and use of funds
+
+### Supporting Documents
+
+- [ ] **Executive Summary** — 1-2 page overview for cold outreach  
+- [ ] **One-Pager** — Single page with key highlights  
+- [ ] **Detailed Financial Model** — Spreadsheet with assumptions  
+- [ ] **Product Demo Video** — 2-3 minute walkthrough  
+- [ ] **Technical Deep-Dive Deck** — For technical due diligence
+
+### Data Room Preparation
+
+- [ ] Organize all documents in secure data room (DocSend, Google Drive, Notion)  
+- [ ] Cap table (current and pro-forma)  
+- [ ] Incorporation documents  
+- [ ] Any existing contracts or LOIs  
+- [ ] Team bios and LinkedIn profiles  
+- [ ] Technical architecture documents  
+- [ ] Financial projections with assumptions
+
+### Fundraising Logistics
+
+- [ ] Target investor list (angels, pre-seed funds, AI-focused VCs)  
+- [ ] Warm introduction tracking spreadsheet  
+- [ ] Email templates for outreach  
+- [ ] FAQ document for common investor questions  
+- [ ] SAFE or convertible note terms prepared
+
+---
+
+## Phase 6: Launch Preparation (Week 14-18)
+
+### Marketing Materials
+
+- [ ] Landing page (coming soon / waitlist)  
+- [ ] Product marketing website  
+- [ ] Blog post: "Why We Built Recall"  
+- [ ] Technical blog post: "The Architecture Behind Recall"  
+- [ ] Social media accounts (Twitter/X, LinkedIn)  
+- [ ] Press kit with logos, screenshots, boilerplate
+
+### Community Building
+
+- [ ] Discord or Slack community setup  
+- [ ] GitHub discussions enabled  
+- [ ] Documentation site (GitBook, Docusaurus, or similar)  
+- [ ] Developer onboarding guide
+
+### Launch Strategy
+
+- [ ] Launch timeline with milestones  
+- [ ] Beta user recruitment plan  
+- [ ] Product Hunt launch preparation  
+- [ ] Hacker News launch post draft  
+- [ ] Influencer/developer outreach list
+
+### Metrics & Analytics
+
+- [ ] Define key metrics (MAU, retention, API calls, etc.)  
+- [ ] Analytics implementation plan  
+- [ ] Dashboard for tracking metrics  
+- [ ] Feedback collection system
+
+---
+
+## Phase 7: Post-Launch & Growth (Ongoing)
+
+### Operations
+
+- [ ] Customer support system  
+- [ ] Bug tracking and triage process  
+- [ ] Feature request tracking  
+- [ ] Changelog and release notes process
+
+### Iteration
+
+- [ ] User feedback synthesis process  
+- [ ] Roadmap prioritization framework  
+- [ ] A/B testing infrastructure  
+- [ ] Performance monitoring and alerting
+
+### Scaling Preparation
+
+- [ ] Hiring plan document  
+- [ ] Onboarding documentation for new team members  
+- [ ] Infrastructure scaling playbook  
+- [ ] Enterprise sales playbook (when ready)
+
+---
+
+## Key Documents Summary
+
+### Technical (Must Have for MVP)
+
+1. Technical Architecture Document  
+2. Product Requirements Document  
+3. Database Schema  
+4. API Specification  
+5. Recall File Structure Spec  
+6. Defining Memory Spec  
+7. Retrieval System Spec
+
+### Business (Must Have for Fundraising)
+
+1. Pitch Deck  
+2. Executive Summary  
+3. Financial Model  
+4. Competitive Analysis  
+5. Go-to-Market Strategy
+
+### Legal (Must Have Before Launch)
+
+1. Privacy Policy  
+2. Terms of Service  
+3. Company Incorporation  
+4. Trademark Filing
+
+---
+
+## Suggested Timeline
+
+| Phase | Duration | Focus |
+| :---- | :---- | :---- |
+| Phase 0 | Week 1-2 | Foundation & Setup |
+| Phase 1 | Week 2-4 | Technical Documentation |
+| Phase 2 | Week 4-6 | Business Documentation |
+| Phase 3 | Week 5-7 | Legal & Compliance |
+| Phase 4 | Week 6-14 | Product Development |
+| Phase 5 | Week 12-16 | Fundraising Materials |
+| Phase 6 | Week 14-18 | Launch Preparation |
+| Phase 7 | Week 18+ | Post-Launch Growth |
+
+**Total Time to Fundable State:** \~16-18 weeks (4-5 months)  
+**Total Time to Public Launch:** \~18-20 weeks (5 months)
+
+---
+
+## Next Immediate Actions
+
+- [ ] Finish Technical Architecture Document (today)  
+- [ ] Create GitHub repository (this week)  
+- [ ] Register domain name (this week)  
+- [ ] Begin MVP development (next week)  
+- [ ] Draft pitch deck outline (within 2 weeks)
+
+---
+
+*This checklist is a living document. Update as items are completed and new requirements emerge.*

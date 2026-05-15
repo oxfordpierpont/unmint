@@ -1,0 +1,24 @@
+{
+  "title": "AiConnected Voice",
+  "pages": [
+    "index",
+    "aiConnected-voice-credentials-checklist",
+    "aiConnected-voice-deep-dive",
+    "aiConnected-voice-investor-explaination",
+    "aiConnected-voice-junior-dev-prd",
+    "complete-infra-stack",
+    "dev-env-setup-guide",
+    "Developer-Introduction",
+    "Feasibility-Analysis",
+    "GoToConnect-API-Endpoints-Capabilities",
+    "GoToConnect-integration-spec",
+    "Index-and-Build-Phases",
+    "Original-Context",
+    "readme",
+    "system-architecture",
+    "Task-List",
+    "voice-pipeline-architecture",
+    "webrtc-bridge-technical-design"
+  ],
+  "defaultOpen": false
+}

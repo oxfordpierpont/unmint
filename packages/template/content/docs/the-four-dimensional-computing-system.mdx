@@ -1,0 +1,122 @@
+---
+title: "The Four-Dimensional Computing System"
+---
+**Concept Author:** Bob Hunter\
+**Date:** March 12, 2026\
+**Status:** Defined — Foundational Architecture\
+**Classification:** aiConnected OS — Infrastructure Layer 0
+
+---
+
+## What It Is
+
+The Four-Dimensional Computing System is a foundational infrastructure architecture that replaces the file system as the organizing principle of computing. Rather than storing information as files in folders addressed by location, every artifact in this system exists at a precise coordinate in four-dimensional space. The artifact is addressed by what it is and how it relates to everything else — not by where someone chose to put it.
+
+The folder was invented as a metaphor for a filing cabinet. It was never a natural property of information. This system discards the metaphor entirely and replaces it with something that reflects how meaning actually works.
+
+---
+
+## The Problem With Folders
+
+The folder system has one fundamental flaw: a thing can only live in one place.
+
+A document that belongs to two projects must pick one. A file that relates to three concepts must be filed under one. The system forces artificial hierarchy onto information that has no natural hierarchy. The user spends cognitive effort deciding where to put things, then more cognitive effort remembering where they put them. Organization becomes a continuous labor that compounds over time.
+
+The deeper problem is that folders organize by **location** rather than by **meaning**. You must remember where you put something rather than simply thinking about what it is.
+
+In the Four-Dimensional Computing System, an artifact belongs everywhere it is relevant simultaneously. It exists once, physically. It exists everywhere, relationally. The act of filing something ceases to exist as a concept.
+
+---
+
+## The Coordinate System
+
+Every artifact exists at a coordinate expressed as **(X, Y, Z, W).**
+
+### X — Relation
+
+The relational axis. Where an artifact sits in the web of connections to other artifacts. What it references. What references it. What concepts it shares. What projects it belongs to. What conversations produced it. X is not a single value but a position in relational space — close to things it is meaningfully connected to, distant from things it is not.
+
+### Y — Topic Depth
+
+The hierarchical axis. Where an artifact sits in the spectrum from broad concept to specific detail. A broad topic node sits high on Y. A granular implementation detail sits low. The same artifact can have different Y positions relative to different topic hierarchies — it finds its natural depth in each context it belongs to.
+
+### Z — Relevance Temperature
+
+The graph's measure of time. Not a clock timestamp but a decay function representing how recently this artifact was part of an active moment. An artifact called upon today has a low Z figure — it is warm, close, present. An artifact untouched for years has a high Z — it has drifted toward cold storage, compressed to minimal resource cost, waiting. Z reactivates the moment something related surfaces in the active graph. Relevance temperature is not assigned. It is earned through use and lost through disuse.
+
+### W — Artifact Weight
+
+The artifact's own internal timeline. Not the graph's experience of the artifact, but the artifact's experience of itself. W is a scrollable history of everything the artifact has ever been — every version of its content and every version of its relational universe, simultaneously accessible as a single living timeline.
+
+---
+
+## Z and W — Two Measures of Time That Do Not Conflict
+
+This is the most important distinction in the coordinate system.
+
+**Z** asks: how alive is this artifact in the graph's current awareness?\
+**W** asks: what has this artifact been across its own lifetime?
+
+A document written today and never touched again will have a low Z immediately and a drifting Z over time. Its W will show a single state — its birth — with no subsequent history.
+
+A document written three years ago that someone referenced this morning will have a low Z right now despite its age. Its W will show years of evolution — content changes, relationship changes, the entire arc of its existence.
+
+Neither axis knows anything about the other. They are genuinely orthogonal. Previous systems either conflated them or ignored one entirely. Here both exist without friction.
+
+---
+
+## Versioning Without Copies
+
+Traditional versioning stores copies. Git stores deltas — the differences between states — which is more efficient but still fundamentally a sequence of snapshots.
+
+The Four-Dimensional Computing System versions along W as a living timeline rather than a sequence of snapshots. There are not ten versions of a file. There is one artifact with a W axis that can be scrubbed forward and backward through its entire history.
+
+Crucially, W versions both **content** and **relationships** simultaneously. Version 1 of a white paper had one related artifact. Version 10 has dozens. Scrolling backward through W shows not just what the content said at each moment but what the relational universe around it looked like — which connections existed, which had not yet formed, which have since dissolved.
+
+**Storage implication:** The system is never one byte larger than the actual information requires. No duplicate files. No redundant copies. One artifact, one delta history, one W axis. Multiple W coordinates can be accessed simultaneously when needed — comparing two versions, running two instances of a software component with different style definitions — without any duplication of the underlying artifact.
+
+---
+
+## Ambient Relevance — The End of Search
+
+In a folder system, finding requires searching. You navigate, query, or remember.
+
+In the Four-Dimensional Computing System, relevance is ambient. The moment a topic surfaces in an active context, the graph already knows what is related. Those artifacts do not arrive — they are simply present, announced by the lightest possible signal of their existence. The user chooses whether to engage. Only engagement causes anything to travel.
+
+The system is never doing more work than the moment requires. Presence costs almost nothing. Engagement costs proportionally to what is actually needed.
+
+Search as a primary interaction model is not improved. It is made unnecessary.
+
+---
+
+## Software as Coordinate-Native Capability
+
+In a traditional system, software is a file that sleeps at a path and wakes as a process. Finding it, loading it, resolving its dependencies, and executing it are sequential steps that happen at run time, from scratch, every time.
+
+In the Four-Dimensional Computing System, software is a capability that lives at a coordinate. Its entire dependency graph is already mapped at write time, not resolved at run time. The act of addressing a capability is the act of invoking it. There is no loading step because nothing was ever unloaded.
+
+This redefines the relationship between software and execution. A capability does not start and stop. It exists as defined potential at its coordinate and collapses into a specific instance when addressed. When attention moves on, it returns to potential — not destroyed, not running, not consuming resources. Simply unobserved.
+
+The filepath — `/usr/bin/something` — becomes a coordinate. The path you traverse becomes a location you arrive at directly. Navigation is spatial, not sequential.
+
+---
+
+## Relationship to the Stateless User Interface
+
+The Four-Dimensional Computing System is the infrastructure layer. The Stateless User Interface is what the user experiences on top of it. The coordinate system makes the Stateless UI possible — because components live at coordinates rather than inside applications, they can be addressed, assembled, and released without any application ever existing as a persistent entity.
+
+The file cabinet is gone. The path is gone. The application as a discrete installed thing is gone.
+
+What remains is a world of meaning, addressed directly, that has always already known you were coming.
+
+---
+
+## Relationship to Neurigraph
+
+The Four-Dimensional Computing System is the storage and addressing architecture. Neurigraph is the knowledge graph that lives within it — the Layer 2 memory system that connects conversations, projects, and users across time.
+
+Neurigraph doesn't replace the coordinate system. It inhabits it. Every node in Neurigraph exists at an (X, Y, Z, W) coordinate. The graph structure is the relational map. The coordinate system is the space the map describes.
+
+---
+
+_Originated by Bob Hunter, March 12, 2026. Developed through iterative conversation with Claude (Anthropic). All conceptual authorship belongs to Bob Hunter._

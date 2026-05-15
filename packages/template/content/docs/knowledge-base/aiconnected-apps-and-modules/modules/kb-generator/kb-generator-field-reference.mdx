@@ -1,0 +1,155 @@
+---
+title: "Knowledge Base Generator — Complete Field Reference"
+---
+
+# Knowledge Base Generator — Complete Field Reference
+
+Reference for designing the interactive onboarding screens. All fields are organized by the data section they belong to in the final `knowledge-base.json` output.
+
+---
+
+## 1. BUSINESS PROFILE
+
+These fields are extracted during the initial website crawl (Step 1–2) and confirmed/edited by the admin on Screen 3.
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `business.name` | string | Yes | Business name |
+| `business.type` | enum string | Yes | `med_spa`, `salon`, `dental`, `fitness`, `restaurant`, etc. Used for industry-specific prompting |
+| `business.location.address` | string | Yes | Street address |
+| `business.location.city` | string | Yes | City |
+| `business.location.state` | string | Yes | State |
+| `business.location.zip` | string | Yes | ZIP code |
+| `business.phone` | string | Yes | Phone number |
+| `business.website` | string (URL) | Yes | Source website URL |
+| `business.bookingUrl` | string (URL) | Yes | Booking/scheduling link |
+| `business.contact.email` | string | No | Contact email |
+| `business.hours` | object | No | Operating hours (optional) |
+
+---
+
+## 2. BRAND VOICE
+
+Detected from the website tone and confirmed/adjusted on Screen 5 ("Your AI's Personality").
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `brandVoice.tone` | enum | Yes | `warm` · `professional` · `casual` — radio button selector |
+| `brandVoice.formality` | enum | Yes | `formal` · `conversational` · `friendly` — radio button selector |
+| `brandVoice.characteristics` | string[] | Yes | e.g. `["empathetic", "knowledgeable", "reassuring"]` |
+| `brandVoice.avoidWords` | string[] | No | Words the AI should never use, e.g. `["cheap", "discount", "deal"]` |
+| `brandVoice.preferredPhrases` | string[] | No | Phrases to favor, e.g. `["investment in yourself", "your skin journey"]` |
+
+---
+
+## 3. SERVICES (per service)
+
+Each service is auto-extracted from the website (Step 2), AI-enhanced (Step 3), then reviewed by the admin on Screens 3–4.
+
+### 3a. Basic Info (from website scrape)
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `id` | string (slug) | Yes | Auto-generated, e.g. `"morpheus8"` |
+| `name` | string | Yes | Service display name |
+| `category` | string | Yes | Category grouping |
+| `description` | string | Yes | Brief description from the website |
+| `price` | string | Yes | e.g. `"$800+"` or `"Starting at $225"` |
+| `duration` | string | No | e.g. `"60-90 min"` |
+
+### 3b. AI-Generated Enhancements (editable on Screen 4)
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `education.howItWorks` | string (long text) | Yes | 2–3 paragraphs in plain language |
+| `education.whatToExpect.during` | string | Yes | What the experience is like |
+| `education.whatToExpect.after` | string | Yes | Immediately after |
+| `education.whatToExpect.downtime` | string | Yes | Recovery/downtime info |
+| `education.whatToExpect.results` | string | Yes | When to expect results |
+| `chooseThisFor` | string[] | Yes | Quick decision guidance, e.g. `"Tightening loose or sagging skin"` |
+| `selfIdentification` | string[] | Yes | "Perfect for people who…" triggers, e.g. `"You notice your jawline isn't as defined"` |
+| `concerns` | string[] | Yes | Mapped concern slugs, e.g. `["aging", "skin_laxity", "acne_scars"]` |
+| `tags` | string[] | Yes | Searchable tags, e.g. `["anti-aging", "scars", "tightening"]` |
+| `differentiators` | string[] | No | What makes this different from alternatives |
+| `faqs` | array of `{ q, a }` | Yes | Common questions and answers |
+| `notRightFor` | string[] | No | Contraindications or situations where not appropriate |
+| `relatedServices` | string[] (IDs) | No | Upsell/cross-sell paths to other service IDs |
+| `requiresConsultation` | boolean | No | Whether a consultation is needed first |
+| `popular` | boolean | No | Flag for highlighting popular services |
+
+---
+
+## 4. CONCERN MAP
+
+Auto-generated in Step 4, mapping customer problems to service recommendations.
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `concernMap[concernSlug].primary` | string[] (service IDs) | Yes | Top recommended services for this concern |
+| `concernMap[concernSlug].secondary` | string[] (service IDs) | No | Alternative/supplementary services |
+| `concernMap[concernSlug].keywords` | string[] | Yes | Natural language synonyms, e.g. `["breakouts", "pimples", "blemishes"]` |
+| `concernMap[concernSlug].severity` | object | No | Severity-based routing: `{ mild: [...], moderate: [...], severe: [...] }` |
+| `concernMap[concernSlug].byArea` | object | No | Body-area routing: `{ eyes: [...], jawline: [...], fullFace: [...] }` |
+
+---
+
+## 5. CONVERSATION STARTERS
+
+Generated in Step 5 for the chat UI entry points.
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `icon` | string (emoji) | Yes | Visual icon for the card |
+| `title` | string | Yes | Short display title, e.g. `"I want glowing skin"` |
+| `subtitle` | string | Yes | Supporting text, e.g. `"Radiance treatments"` |
+| `message` | string | Yes | The actual message sent when tapped |
+| `targetConcern` | string | Yes | Links to the concern map |
+
+---
+
+## 6. SYSTEM PROMPT
+
+Generated in Step 6 — a single long-form text field.
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `systemPrompt` | string (long text) | Yes | Complete AI behavior instructions including business identity, brand voice, service knowledge injection, response formatting rules, booking guidance, and boundaries |
+
+---
+
+## 7. QUIZ CONFIGURATION
+
+Generated in Step 5 (optional feature).
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `quiz.enabled` | boolean | Yes | Whether the quiz feature is active |
+| `quiz.questions` | array | Conditional | Array of quiz question objects |
+| `quiz.scoringLogic` | object | Conditional | How answers map to service recommendations |
+
+---
+
+## 8. TRAINING METADATA
+
+Auto-populated by the system — not editable by admin, but displayed for reference.
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `training.sourceUrl` | string (URL) | Yes | The website that was crawled |
+| `training.crawledAt` | ISO datetime | Yes | When the crawl happened |
+| `training.pagesAnalyzed` | number | Yes | How many pages were processed |
+| `training.lastUpdated` | ISO datetime | Yes | Last update timestamp |
+| `training.version` | number | Yes | Knowledge base version number |
+
+---
+
+## Admin Onboarding Screen → Field Mapping
+
+| Screen | Fields Collected / Confirmed |
+|---|---|
+| **Screen 1** — Getting Started | `training.sourceUrl` (website URL input) |
+| **Screen 2** — Analysis Progress | No fields — progress display only |
+| **Screen 3** — Review Services | All **Service Basic Info** fields (name, category, price, duration, concerns). Add/remove services |
+| **Screen 4** — Review Knowledge | All **Service AI-Enhanced** fields (education, chooseThisFor, selfIdentification, faqs, differentiators, etc.) |
+| **Screen 5** — Conversation Style | `brandVoice.tone`, `brandVoice.formality` + sample response preview |
+| **Screen 6** — Test & Launch | No new fields — live chat preview, then deploy |

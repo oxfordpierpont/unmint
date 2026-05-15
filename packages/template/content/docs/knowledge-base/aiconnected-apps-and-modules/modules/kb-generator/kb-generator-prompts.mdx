@@ -1,0 +1,302 @@
+---
+title: "Knowledge Base Generation Prompts"
+description: "These are the exact prompts to run for any new client. Copy, paste, and fill in the blanks. PROMPT 1: Initial Website Analysis Run this first to understand w..."
+---
+<Info>
+Normalized for Mintlify from `knowledge-base/aiconnected-apps-and-modules/modules/kb-generator/kb-generator-prompts.mdx`.
+</Info>
+# Knowledge Base Generation Prompts
+
+These are the exact prompts to run for any new client. Copy, paste, and fill in the blanks.
+
+---
+
+## PROMPT 1: Initial Website Analysis
+
+Run this first to understand what the business offers.
+
+```
+I need you to analyze this business website and extract all services offered.
+
+Website URL: [URL]
+
+Please:
+1. Visit the website and examine all pages (services, about, menu, etc.)
+2. Create a comprehensive list of every service/product offered
+3. For each service, capture:
+   - Service name
+   - Current description (as written on site)
+   - Price (if listed)
+   - Duration (if listed)
+   - Any categories or groupings
+
+Also extract:
+- Business name
+- Business type (med spa, salon, dental, etc.)
+- Phone number
+- Address
+- Booking URL
+- Any unique selling points or philosophy mentioned
+
+Format as a structured list I can use for the next step.
+```
+
+---
+
+## PROMPT 2: Service Research & Enhancement
+
+Run this for EACH service (or batch 3-4 similar services).
+
+```
+I'm building an AI knowledge base for [BUSINESS NAME], a [BUSINESS TYPE].
+
+Service: [SERVICE NAME]
+Current Description: [PASTE FROM WEBSITE]
+Price: [PRICE]
+
+Your task is to create comprehensive educational content that helps customers:
+1. Understand what this service actually IS and how it works
+2. Recognize if this service is right for THEM
+3. Make informed decisions
+
+Research this service and provide:
+
+## EDUCATIONAL CONTENT
+Write 2-3 paragraphs explaining:
+- What this service/treatment is
+- How it works (the mechanism, process, or technology)
+- What happens during the service
+- What results to expect and timeline
+
+Write for an intelligent person who isn't an expert. Be thorough but accessible.
+
+## CHOOSE THIS SERVICE FOR
+List 4-6 specific situations or goals where this is the right choice.
+Start each with an action verb.
+Example: "Treating deep acne scars that haven't responded to other treatments"
+
+## SELF-IDENTIFICATION TRIGGERS
+Write 4-6 "You..." statements that help customers recognize themselves.
+Describe feelings, situations, or observations - NOT the solution.
+Example: "You've noticed your skin doesn't 'bounce back' like it used to"
+
+## CONCERNS THIS ADDRESSES
+List the specific problems this service solves as simple keywords.
+Examples: acne, aging, wrinkles, dullness, texture, redness, sagging, scars
+
+## WHAT TO EXPECT
+- During treatment: What the experience is like
+- Immediately after: How they'll look/feel
+- Downtime: Recovery needs, if any
+- Results timeline: When they'll see changes
+
+## FREQUENTLY ASKED QUESTIONS
+Write 4-6 questions customers commonly ask, with helpful answers.
+
+## NOT RIGHT FOR
+List contraindications or situations where this service isn't appropriate.
+
+## RELATED SERVICES
+What other services at this business complement or relate to this one?
+```
+
+---
+
+## PROMPT 3: Complete Service Guide Compilation
+
+After researching all services, run this to compile.
+
+```
+I've researched all services for [BUSINESS NAME]. Now compile them into a 
+complete service guide document.
+
+[PASTE ALL YOUR SERVICE RESEARCH]
+
+Create a comprehensive guide that:
+
+1. Organizes services into logical categories
+2. Includes all educational content, "choose this for" sections, 
+   self-identification triggers, and FAQs
+3. Adds a treatment selection guide at the end that maps:
+   - Concerns → Recommended services
+   - Time available → Best options
+   - Customer goals → Treatment paths
+
+Format as a clean markdown document similar to the Skin Beauty guide structure.
+```
+
+---
+
+## PROMPT 4: Concern Mapping
+
+Run this to create the concern-to-service mapping.
+
+```
+Based on this service guide for [BUSINESS NAME], create a comprehensive 
+concern-to-service mapping.
+
+[PASTE SERVICE GUIDE OR SUMMARY]
+
+For each concern customers might have, map which services address it:
+
+Format:
+{
+  "concern_name": {
+    "primary": ["best services for this concern"],
+    "secondary": ["also helps with this"],
+    "keywords": ["alternative ways customers might phrase this"]
+  }
+}
+
+Include concerns like:
+- Specific problems (acne, wrinkles, pain, etc.)
+- Goals (glow, maintenance, prevention, etc.)
+- Situations (event prep, first visit, etc.)
+- Severity levels where relevant
+
+Be comprehensive - include every way a customer might describe their needs.
+```
+
+---
+
+## PROMPT 5: Conversation Starters
+
+Run this to generate the chat interface starters.
+
+```
+Create conversation starter cards for [BUSINESS NAME]'s AI chat.
+
+Business type: [TYPE]
+Top customer concerns: [LIST FROM CONCERN MAP]
+Most popular services: [LIST TOP 5-6]
+
+Generate 8-12 conversation starters that:
+1. Address the most common reasons customers reach out
+2. Use friendly, approachable language
+3. Cover different entry points:
+   - Problems ("Help with acne")
+   - Goals ("I want glowing skin")  
+   - Situations ("Event coming up")
+   - General ("Not sure what I need")
+
+For each starter provide:
+- Icon: Single emoji that matches the topic
+- Title: 4-6 word hook
+- Subtitle: Brief context (2-4 words)
+- Message: What gets sent to the AI when clicked
+
+Example:
+{
+  "icon": "✨",
+  "title": "I want glowing skin",
+  "subtitle": "Radiance treatments",
+  "message": "I want glowing, radiant skin"
+}
+```
+
+---
+
+## PROMPT 6: System Prompt Generation
+
+Run this last to create the AI's instructions.
+
+```
+Create a system prompt for [BUSINESS NAME]'s AI chat assistant.
+
+Business: [NAME]
+Type: [TYPE]
+Location: [ADDRESS]
+Phone: [PHONE]
+Booking URL: [URL]
+
+Services offered:
+[LIST ALL SERVICES WITH BRIEF DESCRIPTIONS]
+
+Concern mapping summary:
+[PASTE CONCERN MAP]
+
+Brand voice: [DESCRIBE - warm/professional/casual, etc.]
+
+Create a comprehensive system prompt (600-900 words) that:
+
+1. IDENTITY
+Define who the AI is - a knowledgeable assistant for this specific business.
+Set the tone (helpful, warm, conversational).
+
+2. KNOWLEDGE INSTRUCTIONS
+Tell the AI to use the service knowledge base to answer questions.
+Explain how to match concerns to services.
+Instruct when to recommend single vs multiple services.
+
+3. CONVERSATION RULES
+- Ask clarifying questions to understand needs
+- Provide educational context, not just sales pitches
+- Only recommend services this business offers
+- Never mention competitors
+- Guide toward booking when customer shows interest
+
+4. FORMATTING RULES
+- When to show service cards
+- How to structure longer responses
+- When to ask follow-up questions
+- Keep responses conversational, not listy
+
+5. BOUNDARIES
+- What to do with off-topic questions
+- Medical/legal disclaimers if needed
+- How to handle pricing questions
+- What to say if asked something unknown
+
+The AI should feel like a knowledgeable friend who works there, not a salesperson or a generic chatbot.
+```
+
+---
+
+## PROMPT 7: Quiz Questions (Optional)
+
+If the business wants an assessment quiz:
+
+```
+Create a skin/health/needs assessment quiz for [BUSINESS NAME].
+
+Business type: [TYPE]
+Services offered: [LIST]
+Main concerns addressed: [LIST FROM CONCERN MAP]
+
+Design 7-10 quiz questions that:
+1. Identify the customer's primary concerns
+2. Assess severity/frequency where relevant
+3. Understand their current routine/situation
+4. Capture their goals
+
+For each question provide:
+- Question text
+- Answer type (single choice / multiple choice)
+- Options with:
+  - Label (what customer sees)
+  - Value (for scoring)
+  - Severity weight if applicable (0-10)
+
+End with scoring logic that maps quiz results to:
+- Overall assessment grade (A/B/C or Good/Fair/Needs Attention)
+- Personalized summary
+- 3-5 recommended services based on answers
+
+The quiz should feel helpful and insightful, not clinical or judgmental.
+```
+
+---
+
+## Quick Reference: The Process
+
+1. **Analyze website** → Get service list and business info  
+2. **Research each service** → Generate educational content, triggers, FAQs  
+3. **Compile guide** → Organize into complete document  
+4. **Map concerns** → Build concern → service relationships  
+5. **Create starters** → Design conversation entry points  
+6. **Write system prompt** → Define AI behavior and knowledge  
+7. **Build quiz** (optional) → Create assessment flow
+
+**Time estimate:** 2-4 hours for a business with 10-20 services
+
+**Output:** Complete knowledge base ready to power the AI chat

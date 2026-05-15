@@ -1,0 +1,1390 @@
+---
+title: "Clean Room Specification: AI Chat UI Component Library"
+description: "Purpose of This Document This document specifies the architecture, component hierarchy, runtime system, and implementation patterns for a headless React comp..."
+---
+<Info>
+Normalized for Mintlify from `knowledge-base/neurigraph-memory-architecture/neurigraph-tool-references/07-AI-Chat-UI-Component-Library.mdx`.
+</Info>
+# Clean-Room Specification: AI Chat UI Component Library
+
+## Purpose of This Document
+
+This document specifies the architecture, component hierarchy, runtime system, and implementation patterns for a **headless React component library purpose-built for conversational AI interfaces**. The library provides 20+ unstyled composable primitives organized around threads, messages, composers, and branching — with a protocol-driven runtime that abstracts over multiple AI provider backends. This specification enables full independent implementation from scratch.
+
+---
+
+## 1. Architecture Overview
+
+### 1.1 Three-Layer Architecture
+
+The system is organized into three distinct layers:
+
+```
+┌────────────────────────────────────────────────┐
+│  PRIMITIVES LAYER (React Components)           │
+│  ThreadPrimitive, MessagePrimitive,            │
+│  ComposerPrimitive, BranchPickerPrimitive,     │
+│  ActionBarPrimitive, ContentPartPrimitive,     │
+│  AttachmentPrimitive                           │
+├────────────────────────────────────────────────┤
+│  REACT BINDINGS LAYER (Hooks + Context)        │
+│  useThread, useMessage, useComposer,           │
+│  useContentPart, useAui, useAuiState,          │
+│  useAuiEvent, ThreadContext, MessageContext     │
+├────────────────────────────────────────────────┤
+│  CORE RUNTIME LAYER (Provider-agnostic)        │
+│  ThreadRuntime, MessageRuntime,                │
+│  ComposerRuntime, ContentPartRuntime,          │
+│  AttachmentRuntime, AssistantRuntime           │
+└────────────────────────────────────────────────┘
+```
+
+**Primitives**: Unstyled React components that render zero visual chrome — they emit bare semantic HTML elements (`<div>`, `<p>`, `<form>`, `<button>`) and rely entirely on the consumer to provide CSS/Tailwind classes. Each primitive is a namespace object containing sub-components (e.g., `ThreadPrimitive.Root`, `ThreadPrimitive.Messages`).
+
+**React Bindings**: Hooks and context providers that bridge the runtime layer to React's rendering model. These use a custom reactivity system (not React state) to minimize re-renders.
+
+**Core Runtime**: Pure TypeScript classes that manage conversation state, message trees, streaming, tool execution, and provider communication. Provider-agnostic — adapters translate between specific AI SDK protocols and the internal representation.
+
+### 1.2 Package Structure
+
+The library is organized as a monorepo with these key packages:
+
+| Package | Purpose |
+|---------|---------|
+| `@assistant-ui/react` | Core primitives, hooks, runtime classes, context providers |
+| `@assistant-ui/react-ai-sdk` | Adapter bridging Vercel AI SDK's `useChat` to the runtime |
+| `@assistant-ui/react-markdown` | Markdown renderer with LaTeX, syntax highlighting, code copy |
+| `@assistant-ui/react-syntax-highlighter` | Code block highlighting component |
+| `@assistant-ui/react-hook-form` | Form-based tool UI integration |
+| `@assistant-ui/tailwindcss` | Tailwind plugin with `aui-*` variant selectors |
+| `@assistant-ui/styles` | Default CSS theme (optional) |
+
+---
+
+## 2. Core Runtime System
+
+### 2.1 AssistantRuntime
+
+The root runtime that owns the entire conversation state tree.
+
+```typescript
+interface AssistantRuntime {
+  // Thread management
+  readonly thread: ThreadRuntime;
+  switchToNewThread(): void;
+  switchToThread(threadId: string): void;
+
+  // Registration
+  registerModelConfigProvider(provider: ModelConfigProvider): Unsubscribe;
+
+  // Reactive subscriptions
+  subscribe(callback: () => void): Unsubscribe;
+}
+
+interface ModelConfigProvider {
+  getModelConfig(): ModelConfig;
+}
+
+interface ModelConfig {
+  system?: string;
+  tools?: Record<string, Tool>;
+  callSettings?: {
+    maxTokens?: number;
+    temperature?: number;
+    topP?: number;
+  };
+  config?: Record<string, unknown>;  // arbitrary provider config
+}
+```
+
+**Construction**: Created via provider-specific factory functions. For the Vercel AI SDK adapter:
+
+```typescript
+function useVercelUseChatRuntime(chatHelpers: UseChatHelpers): AssistantRuntime;
+function useVercelRSCRuntime(rscHelpers: RSCHelpers): AssistantRuntime;
+```
+
+### 2.2 ThreadRuntime
+
+Manages a single conversation thread with message tree, branching, and streaming.
+
+```typescript
+interface ThreadRuntime {
+  // State
+  readonly path: ThreadRuntimePath;           // { ref: string; threadSelector: { type: "main" | "byId"; threadId?: string } }
+  readonly composer: ThreadComposerRuntime;
+  readonly messages: readonly ThreadMessage[];
+  readonly isDisabled: boolean;
+  readonly isRunning: boolean;
+  readonly extras: Record<string, unknown>;    // provider-specific metadata
+  readonly capabilities: ThreadCapabilities;
+  readonly speech: SpeechState | undefined;
+
+  // Message access
+  getMessageById(messageId: string): {
+    parentId: string | null;
+    message: ThreadMessage;
+  } | undefined;
+
+  // Actions
+  append(message: AppendMessage): void;
+  startRun(config?: StartRunConfig): void;
+  cancelRun(): void;
+  addToolResult(options: AddToolResultOptions): void;
+  speak(messageId: string): void;
+  stopSpeaking(): void;
+
+  // Import/Export
+  import(repository: ExportedMessageRepository): void;
+  export(): ExportedMessageRepository;
+
+  // Child runtimes
+  getMessagesRuntime(): ThreadMessagesRuntime;
+
+  // Subscriptions
+  subscribe(callback: () => void): Unsubscribe;
+  unstable_on(event: ThreadRuntimeEventType, callback: () => void): Unsubscribe;
+}
+
+interface ThreadCapabilities {
+  switchToBranch: boolean;
+  edit: boolean;
+  reload: boolean;
+  cancel: boolean;
+  unstable_copy: boolean;
+  speak: boolean;
+  attachments: boolean;
+  feedback: boolean;
+}
+```
+
+### 2.3 Message Tree (Branching Model)
+
+Messages are stored in a tree structure that supports branching (editing a user message creates a new branch, preserving the old one):
+
+```typescript
+// Internal message repository
+class MessageRepository {
+  private messages: Map<string, MessageNode> = new Map();
+  private head: MessageNode | null = null;
+  private root: MessageNode = { /* sentinel */ };
+
+  // Each node tracks parent + children for tree navigation
+  interface MessageNode {
+    id: string;
+    message: ThreadMessage;
+    parent: MessageNode | null;
+    children: MessageNode[];       // all branches from this point
+    activeChildIndex: number;      // which branch is currently selected
+  }
+
+  // Get the linear path from root to current head
+  getMessages(): ThreadMessage[] {
+    // Walk from root following activeChildIndex at each level
+    const result: ThreadMessage[] = [];
+    let current = this.root;
+    while (current.children.length > 0) {
+      const child = current.children[current.activeChildIndex];
+      result.push(child.message);
+      current = child;
+    }
+    return result;
+  }
+
+  // Branch operations
+  switchToBranch(messageId: string): void {
+    const node = this.messages.get(messageId);
+    // Walk up to find the branching parent
+    // Set parent.activeChildIndex to the index of this child
+    // Reset head to walk down this new branch
+  }
+
+  getBranchInfo(messageId: string): { branchIndex: number; branchCount: number } {
+    const node = this.messages.get(messageId);
+    const parent = node.parent;
+    return {
+      branchIndex: parent.children.indexOf(node),
+      branchCount: parent.children.length,
+    };
+  }
+
+  // Adding messages
+  addOrUpdateMessage(parentId: string | null, message: ThreadMessage): void {
+    // If message.id exists, update in place
+    // Otherwise create new node as child of parent
+    // Auto-set as active child of parent
+  }
+}
+```
+
+**Key invariant**: `getMessages()` always returns a linear sequence — the currently active path through the tree. Switching branches changes which path is active but preserves all other branches.
+
+### 2.4 ThreadMessage Types
+
+```typescript
+type ThreadMessage = ThreadUserMessage | ThreadAssistantMessage | ThreadSystemMessage;
+
+interface ThreadMessageBase {
+  id: string;
+  createdAt: Date;
+  metadata?: {
+    unstable_annotations?: unknown[];
+    unstable_data?: unknown[];
+    custom?: Record<string, unknown>;
+    steps?: StepMetadata[];          // multi-step reasoning
+    feedback?: MessageFeedback;       // thumbs up/down
+  };
+}
+
+interface ThreadUserMessage extends ThreadMessageBase {
+  role: "user";
+  content: Array<TextContentPart | ImageContentPart | FileContentPart | AudioContentPart>;
+  attachments: readonly CompleteAttachment[];
+}
+
+interface ThreadAssistantMessage extends ThreadMessageBase {
+  role: "assistant";
+  content: Array<TextContentPart | ReasoningContentPart | ToolCallContentPart | UIContentPart | FileContentPart | ImageContentPart | AudioContentPart | SourceContentPart | DataContentPart>;
+  status: MessageStatus;
+  roundtrips?: unknown[];            // deprecated, use metadata.steps
+}
+
+interface ThreadSystemMessage extends ThreadMessageBase {
+  role: "system";
+  content: [TextContentPart];
+}
+```
+
+### 2.5 Content Part Types (9 Types)
+
+```typescript
+interface TextContentPart {
+  type: "text";
+  text: string;
+}
+
+interface ReasoningContentPart {
+  type: "reasoning";
+  text: string;
+  signature?: string;        // cryptographic signature for verification
+}
+
+interface ToolCallContentPart {
+  type: "tool-call";
+  toolCallId: string;
+  toolName: string;
+  args: Record<string, unknown>;
+  result?: unknown;
+  isError?: boolean;
+  argsText: string;          // raw JSON string for streaming display
+}
+
+interface ImageContentPart {
+  type: "image";
+  image: string;             // URL or data URI
+}
+
+interface FileContentPart {
+  type: "file";
+  data: string;              // base64 encoded
+  mimeType: string;
+  name?: string;
+}
+
+interface AudioContentPart {
+  type: "audio";
+  audio: { data: string; format: "mp3" | "wav" | "pcm16" };
+}
+
+interface UIContentPart {
+  type: "ui";
+  display: ReactNode;        // arbitrary React component
+}
+
+interface SourceContentPart {
+  type: "source";
+  sourceType: "url";
+  id: string;
+  url: string;
+  title?: string;
+}
+
+interface DataContentPart {
+  type: "data";
+  data: unknown;             // arbitrary structured data
+}
+```
+
+### 2.6 Message Status
+
+```typescript
+type MessageStatus =
+  | { type: "running" }                                         // actively streaming
+  | { type: "requires-action"; reason: "tool-calls" }          // waiting for tool results
+  | { type: "complete"; reason: "stop" | "unknown" }           // finished normally
+  | { type: "incomplete"; reason: "cancelled" | "length" | "content-filter" | "other" | "error"; error?: unknown };
+```
+
+### 2.7 Streaming Protocol
+
+The runtime consumes a stream of chunks that incrementally build the assistant message:
+
+```typescript
+interface AssistantStreamChunk {
+  // Path identifies WHERE in the message tree to apply the update.
+  // Paths use numeric indices separated by dots to address nested content.
+  path: string;               // e.g., "parts.0", "parts.1.result", "status"
+  type: string;               // operation type
+  value: unknown;             // the data payload
+}
+```
+
+**Chunk Types**:
+
+| type | path pattern | value | description |
+|------|-------------|-------|-------------|
+| `"text-delta"` | `"parts.{n}"` | `string` | Append text to a TextContentPart |
+| `"reasoning-delta"` | `"parts.{n}"` | `string` | Append text to a ReasoningContentPart |
+| `"tool-call-begin"` | `"parts.{n}"` | `{ toolCallId, toolName }` | Start a new ToolCallContentPart |
+| `"tool-call-delta"` | `"parts.{n}"` | `string` | Append to argsText of ToolCallContentPart |
+| `"tool-result"` | `"parts.{n}"` | `{ result, isError? }` | Set tool call result |
+| `"data"` | `""` | `unknown` | Append to message metadata.unstable_data |
+| `"annotations"` | `""` | `unknown` | Append to message metadata.unstable_annotations |
+| `"source"` | `"parts.{n}"` | `{ sourceType, id, url, title? }` | Add a SourceContentPart |
+| `"status"` | `""` | `MessageStatus` | Set message status (sent at end) |
+| `"metadata"` | `""` | `object` | Merge into message metadata |
+| `"step-start"` | `""` | `{ stepId }` | Begin a multi-step reasoning phase |
+| `"step-finish"` | `""` | `{ stepId }` | End a multi-step reasoning phase |
+
+**Stream consumption**: The runtime maintains a mutable draft message. Each chunk mutates the draft in place, then notifies subscribers. On stream completion (when `status` chunk arrives or stream closes), the draft is finalized into an immutable ThreadMessage and added to the repository.
+
+```typescript
+class StreamProcessor {
+  private draft: Mutable<ThreadAssistantMessage>;
+  private partIndex: number = 0;
+
+  processChunk(chunk: AssistantStreamChunk): void {
+    switch (chunk.type) {
+      case "text-delta": {
+        const idx = this.resolvePartIndex(chunk.path);
+        if (!this.draft.content[idx]) {
+          this.draft.content[idx] = { type: "text", text: "" };
+        }
+        (this.draft.content[idx] as TextContentPart).text += chunk.value;
+        break;
+      }
+      case "tool-call-begin": {
+        const idx = this.resolvePartIndex(chunk.path);
+        this.draft.content[idx] = {
+          type: "tool-call",
+          toolCallId: chunk.value.toolCallId,
+          toolName: chunk.value.toolName,
+          args: {},
+          argsText: "",
+        };
+        break;
+      }
+      case "tool-call-delta": {
+        const idx = this.resolvePartIndex(chunk.path);
+        const part = this.draft.content[idx] as ToolCallContentPart;
+        part.argsText += chunk.value;
+        // Attempt incremental JSON parse of argsText into args
+        try { part.args = JSON.parse(part.argsText); } catch {}
+        break;
+      }
+      case "status": {
+        this.draft.status = chunk.value as MessageStatus;
+        break;
+      }
+      // ... etc for each type
+    }
+    this.notifySubscribers();
+  }
+}
+```
+
+---
+
+## 3. Tap-Based Micro-Reactivity System
+
+### 3.1 Problem Statement
+
+Standard React state management (useState/useReducer) causes entire component subtrees to re-render when any state changes. For chat UIs with hundreds of messages, each containing multiple content parts that stream character-by-character, this creates catastrophic re-rendering.
+
+### 3.2 Solution: Tap Subscriptions
+
+The library implements a **tap-based reactivity system** that bypasses React's state model entirely. Runtime objects are observable stores. React hooks subscribe to specific slices of state and only trigger re-renders when those specific slices change.
+
+```typescript
+// Core reactive primitive — a subscribable store
+class ReactiveStore<T> {
+  private value: T;
+  private listeners: Set<() => void> = new Set();
+
+  get(): T { return this.value; }
+
+  set(newValue: T): void {
+    if (Object.is(this.value, newValue)) return;
+    this.value = newValue;
+    this.listeners.forEach(fn => fn());
+  }
+
+  subscribe(listener: () => void): Unsubscribe {
+    this.listeners.add(listener);
+    return () => this.listeners.delete(listener);
+  }
+}
+```
+
+### 3.3 useAui / useAuiState / useAuiEvent Hooks
+
+```typescript
+// Subscribe to a computed value from a runtime — re-renders ONLY when the selector's output changes
+function useAuiState<TRuntime, TSelected>(
+  runtimeHook: () => TRuntime,
+  selector: (runtime: TRuntime) => TSelected,
+  equalityFn?: (a: TSelected, b: TSelected) => boolean,
+): TSelected {
+  const runtime = runtimeHook();
+  // useSyncExternalStore under the hood
+  return useSyncExternalStore(
+    (callback) => runtime.subscribe(callback),
+    () => selector(runtime.getState()),
+  );
+}
+
+// Subscribe to events without re-rendering
+function useAuiEvent<TRuntime>(
+  runtimeHook: () => TRuntime,
+  event: string,
+  callback: (data: unknown) => void,
+): void {
+  const runtime = runtimeHook();
+  useEffect(() => {
+    return runtime.unstable_on(event, callback);
+  }, [runtime, event, callback]);
+}
+
+// Get the raw runtime reference (no subscription)
+function useAui<TRuntime>(
+  runtimeHook: () => TRuntime,
+): TRuntime {
+  return runtimeHook();
+}
+```
+
+**Key pattern**: `useAuiState(useThreadRuntime, t => t.isRunning)` only causes a re-render when `isRunning` transitions between true/false, even though the thread's messages, status, and other properties may be changing constantly during streaming.
+
+---
+
+## 4. React Primitives
+
+### 4.1 ThreadPrimitive
+
+Namespace object for thread-level components.
+
+```typescript
+const ThreadPrimitive = {
+  Root: ThreadRoot,           // Container div, provides ThreadContext
+  Viewport: ThreadViewport,   // Scrollable container with auto-scroll behavior
+  Messages: ThreadMessages,   // Renders message list with branching support
+  ScrollToBottom: ThreadScrollToBottom,  // Button shown when scrolled up
+  Suggestion: ThreadSuggestion,          // Clickable suggestion chip
+  If: ThreadIf,               // Conditional rendering based on thread state
+  Empty: ThreadEmpty,         // Shown when thread has no messages
+};
+```
+
+**ThreadPrimitive.Viewport** — Auto-scroll behavior:
+
+```typescript
+interface ThreadViewportProps {
+  autoScroll?: boolean;        // default true — scroll to bottom on new content
+  children: ReactNode;
+}
+
+// Implementation detail: uses IntersectionObserver on a sentinel element
+// at the bottom of the scroll container. When the sentinel is visible,
+// auto-scroll is "engaged". When user scrolls up (sentinel leaves viewport),
+// auto-scroll disengages. New messages re-engage auto-scroll.
+```
+
+**ThreadPrimitive.Messages** — Renders the linear message path:
+
+```typescript
+interface ThreadMessagesProps {
+  components: {
+    UserMessage: ComponentType;            // rendered for role="user"
+    AssistantMessage: ComponentType;       // rendered for role="assistant"
+    SystemMessage?: ComponentType;         // rendered for role="system"
+    EditComposer?: ComponentType;          // rendered when editing a user message
+    AssistantEditComposer?: ComponentType; // rendered when editing an assistant message (rare)
+  };
+}
+
+// Each rendered message is automatically wrapped in a MessageContext provider
+// that gives the message's sub-components access to the specific MessageRuntime.
+```
+
+### 4.2 MessagePrimitive
+
+```typescript
+const MessagePrimitive = {
+  Root: MessageRoot,           // Container, provides MessageContext
+  Content: MessageContent,     // Renders content parts with component mapping
+  InProgress: MessageInProgress, // Shown while message is streaming
+  If: MessageIf,               // Conditional rendering based on message state
+  Attachments: MessageAttachments, // Renders user message attachments
+};
+```
+
+**MessagePrimitive.Content** — Maps content parts to components:
+
+```typescript
+interface MessageContentProps {
+  components?: {
+    Text?: ComponentType<TextContentPartProps>;
+    Reasoning?: ComponentType<ReasoningContentPartProps>;
+    Image?: ComponentType<ImageContentPartProps>;
+    File?: ComponentType<FileContentPartProps>;
+    Audio?: ComponentType<AudioContentPartProps>;
+    UI?: ComponentType<UIContentPartProps>;
+    tools?: {
+      by_name?: Record<string, ComponentType<ToolCallContentPartProps>>;
+      Fallback?: ComponentType<ToolCallContentPartProps>;
+    };
+    Source?: ComponentType<SourceContentPartProps>;
+    Data?: ComponentType<DataContentPartProps>;
+  };
+}
+
+// Rendering logic:
+// For each content part in the message:
+//   1. Look up the component by part.type in the components map
+//   2. For tool-calls, look up by_name[toolName] first, fall back to Fallback
+//   3. If no component found, use built-in defaults (Text renders <p>, etc.)
+//   4. Wrap each part in a ContentPartContext provider with its own runtime
+```
+
+### 4.3 ComposerPrimitive
+
+```typescript
+const ComposerPrimitive = {
+  Root: ComposerRoot,          // <form> element wrapping the composer
+  Input: ComposerInput,        // <textarea> with auto-resize
+  Send: ComposerSend,          // Submit button, disabled when empty or running
+  Cancel: ComposerCancel,      // Cancel ongoing generation
+  Attachments: ComposerAttachments, // Render attached files
+  AddAttachment: ComposerAddAttachment, // File picker trigger button
+  If: ComposerIf,              // Conditional rendering
+};
+```
+
+**ComposerPrimitive.Input** — Auto-resizing textarea:
+
+```typescript
+interface ComposerInputProps {
+  autoFocus?: boolean;
+  placeholder?: string;
+  submitOnEnter?: boolean;     // default true — Enter sends, Shift+Enter newline
+  rows?: number;               // minimum rows
+}
+
+// Implementation:
+// 1. Uses a hidden <div> mirror with identical styling to measure content height
+// 2. On each input event, copies text to mirror, reads scrollHeight, sets textarea height
+// 3. Caps at a configurable max-height (e.g., 200px), then switches to scroll
+// 4. On Enter (without Shift), calls composerRuntime.send()
+// 5. After send, resets height to initial rows
+```
+
+**ComposerPrimitive.Send** — Auto-disable logic:
+
+```typescript
+// Enabled when ALL of:
+// 1. composer.text.trim().length > 0 OR composer.attachments.length > 0
+// 2. thread.isRunning === false
+// 3. thread.isDisabled === false
+// Renders as <button type="submit">
+```
+
+### 4.4 BranchPickerPrimitive
+
+Allows navigating between message branches (when user edits a message, creating alternate conversation paths):
+
+```typescript
+const BranchPickerPrimitive = {
+  Root: BranchPickerRoot,      // Container div
+  Previous: BranchPickerPrevious,  // Button to switch to previous branch
+  Next: BranchPickerNext,         // Button to switch to next branch
+  Count: BranchPickerCount,       // Text showing "2 / 5" style branch indicator
+  Number: BranchPickerNumber,     // Current branch number
+  If: BranchPickerIf,             // Conditional: only render if branches > 1
+};
+```
+
+### 4.5 ActionBarPrimitive
+
+Context-sensitive action buttons for messages:
+
+```typescript
+const ActionBarPrimitive = {
+  Root: ActionBarRoot,
+  Copy: ActionBarCopy,         // Copy message text to clipboard
+  Edit: ActionBarEdit,         // Enter edit mode for user messages
+  Reload: ActionBarReload,     // Re-generate assistant response
+  Speak: ActionBarSpeak,       // Text-to-speech
+  StopSpeaking: ActionBarStopSpeaking,
+  FeedbackPositive: ActionBarFeedbackPositive,   // Thumbs up
+  FeedbackNegative: ActionBarFeedbackNegative,   // Thumbs down
+  If: ActionBarIf,             // Conditional by message role, state
+};
+```
+
+**ActionBarPrimitive.Root** — Auto-hide behavior:
+
+```typescript
+interface ActionBarRootProps {
+  hideWhenRunning?: boolean;   // default true — hide during streaming
+  autohide?: "always" | "not-last" | "never";
+  // "always": only show on hover
+  // "not-last": show for last message, hover for others
+  // "never": always visible
+  autohideFloat?: "always" | "never" | "single-branch";
+  // Controls whether the action bar floats above the message
+}
+```
+
+### 4.6 AttachmentPrimitive
+
+```typescript
+const AttachmentPrimitive = {
+  Root: AttachmentRoot,        // Container
+  Name: AttachmentName,        // File name display
+  Remove: AttachmentRemove,    // Remove from composer (only in composer context)
+  unstable_Thumb: AttachmentThumb,  // Thumbnail preview (images)
+};
+```
+
+### 4.7 Conditional Rendering with `If` Components
+
+Every primitive namespace includes an `If` component for declarative conditional rendering:
+
+```typescript
+// ThreadPrimitive.If
+interface ThreadIfProps {
+  empty?: boolean;             // render if thread has no messages
+  running?: boolean;           // render if model is generating
+  disabled?: boolean;          // render if thread is disabled
+  children: ReactNode;
+}
+
+// MessagePrimitive.If
+interface MessageIfProps {
+  user?: boolean;              // render if user message
+  assistant?: boolean;         // render if assistant message
+  system?: boolean;            // render if system message
+  hasBranches?: boolean;       // render if message has alternate branches
+  copied?: boolean;            // render if message was recently copied
+  speaking?: boolean;          // render if TTS is active
+  hasAttachments?: boolean;
+  submittedFeedback?: "positive" | "negative";
+  children: ReactNode;
+}
+```
+
+---
+
+## 5. Context System
+
+### 5.1 Context Hierarchy
+
+Contexts nest to provide scoped access to runtime instances:
+
+```
+AssistantContext (AssistantRuntime)
+  └── ThreadContext (ThreadRuntime)
+        └── MessageContext (MessageRuntime)
+              └── ContentPartContext (ContentPartRuntime)
+              └── AttachmentContext (AttachmentRuntime)
+        └── ComposerContext (ComposerRuntime)
+```
+
+### 5.2 Context Hooks
+
+```typescript
+// Get runtime instances from context
+function useAssistantRuntime(): AssistantRuntime;
+function useThreadRuntime(): ThreadRuntime;
+function useMessageRuntime(): MessageRuntime;
+function useContentPartRuntime(): ContentPartRuntime;
+function useComposerRuntime(): ComposerRuntime;
+function useAttachmentRuntime(): AttachmentRuntime;
+
+// Convenience hooks that combine context + selector
+function useThread(): ThreadState;           // shorthand for useAuiState(useThreadRuntime, ...)
+function useMessage(): MessageState;
+function useContentPart(): ContentPartState;
+function useComposer(): ComposerState;
+```
+
+### 5.3 AssistantRuntimeProvider
+
+Top-level provider that wraps the entire chat UI:
+
+```typescript
+interface AssistantRuntimeProviderProps {
+  runtime: AssistantRuntime;
+  children: ReactNode;
+}
+
+function AssistantRuntimeProvider({ runtime, children }: AssistantRuntimeProviderProps): JSX.Element {
+  return (
+    <AssistantContext.Provider value={runtime}>
+      <ThreadContext.Provider value={runtime.thread}>
+        {children}
+      </ThreadContext.Provider>
+    </AssistantContext.Provider>
+  );
+}
+```
+
+---
+
+## 6. Vercel AI SDK Adapter
+
+### 6.1 Bridge Hook
+
+The primary adapter bridges Vercel AI SDK's `useChat` hook to the runtime system:
+
+```typescript
+function useChatRuntime({
+  api,
+  adapters,
+  ...chatOptions
+}: UseChatRuntimeOptions): AssistantRuntime {
+  // 1. Calls useChat() from @ai-sdk/react internally
+  // 2. Creates a VercelUseChatRuntime that wraps the chat helpers
+  // 3. Syncs messages bidirectionally:
+  //    - Vercel's Message[] ↔ internal ThreadMessage[]
+  //    - Vercel's streaming chunks → internal AssistantStreamChunks
+  // 4. Maps Vercel tool invocations → ToolCallContentParts
+  // 5. Handles tool result submission via addToolResult
+
+  // Returns an AssistantRuntime ready for AssistantRuntimeProvider
+}
+```
+
+### 6.2 Message Format Conversion
+
+```typescript
+// Vercel AI SDK message format → Internal format
+function vercelToThreadMessage(message: VercelMessage): ThreadMessage {
+  if (message.role === "user") {
+    return {
+      id: message.id,
+      role: "user",
+      createdAt: message.createdAt ?? new Date(),
+      content: message.content
+        ? [{ type: "text", text: message.content }]
+        : [],
+      attachments: (message.experimental_attachments ?? []).map(a => ({
+        type: a.contentType?.startsWith("image/") ? "image" : "file",
+        name: a.name ?? "file",
+        contentType: a.contentType,
+        content: [/* ... */],
+      })),
+    };
+  }
+
+  if (message.role === "assistant") {
+    const content: ContentPart[] = [];
+
+    // Text content
+    if (message.content) {
+      content.push({ type: "text", text: message.content });
+    }
+
+    // Reasoning
+    if (message.reasoning) {
+      content.push({ type: "reasoning", text: message.reasoning });
+    }
+
+    // Tool invocations
+    for (const invocation of message.toolInvocations ?? []) {
+      content.push({
+        type: "tool-call",
+        toolCallId: invocation.toolCallId,
+        toolName: invocation.toolName,
+        args: invocation.args,
+        argsText: JSON.stringify(invocation.args),
+        result: invocation.state === "result" ? invocation.result : undefined,
+        isError: false,
+      });
+    }
+
+    // Sources (annotations)
+    for (const annotation of message.annotations ?? []) {
+      if (annotation?.type === "source") {
+        content.push({ type: "source", ...annotation });
+      }
+    }
+
+    return {
+      id: message.id,
+      role: "assistant",
+      createdAt: message.createdAt ?? new Date(),
+      content,
+      status: deriveStatus(message),
+    };
+  }
+}
+```
+
+---
+
+## 7. Tool Execution and Approval Flow
+
+### 7.1 Tool Definition
+
+```typescript
+interface Tool<TArgs = unknown, TResult = unknown> {
+  description: string;
+  parameters: JSONSchema7;           // JSON Schema for argument validation
+  execute?: (args: TArgs, context: ToolExecutionContext) => Promise<TResult>;
+  render?: ComponentType<ToolCallContentPartProps<TArgs, TResult>>;
+}
+
+interface ToolExecutionContext {
+  messageId: string;
+  toolCallId: string;
+  abortSignal: AbortSignal;
+}
+```
+
+### 7.2 Tool Approval (Human-in-the-Loop)
+
+When a tool call requires human approval before execution:
+
+```text
+1. **Model generates tool call** → message status becomes `{ type: "requires-action", reason: "tool-calls" }`
+```
+2. **UI renders approval component** — detected by checking `message.status.type === "requires-action"`
+3. **User approves/rejects** → calls `threadRuntime.addToolResult({ toolCallId, result })` where result is either the execution output or an error/rejection message
+4. **Runtime updates the ToolCallContentPart** with the result and continues
+
+```typescript
+// Example approval component
+function ToolApproval({ toolCall }: { toolCall: ToolCallContentPart }) {
+  const threadRuntime = useThreadRuntime();
+
+  const approve = async () => {
+    // Execute the tool client-side
+    const result = await executeToolLocally(toolCall.toolName, toolCall.args);
+    threadRuntime.addToolResult({
+      toolCallId: toolCall.toolCallId,
+      result,
+    });
+  };
+
+  const reject = () => {
+    threadRuntime.addToolResult({
+      toolCallId: toolCall.toolCallId,
+      result: "User rejected this tool call",
+      isError: true,
+    });
+  };
+
+  return (
+    <div>
+      <p>Tool: {toolCall.toolName}</p>
+      <pre>{JSON.stringify(toolCall.args, null, 2)}</pre>
+      <button onClick={approve}>Approve</button>
+      <button onClick={reject}>Reject</button>
+    </div>
+  );
+}
+```
+
+---
+
+## 8. Attachment System
+
+### 8.1 Attachment Adapters
+
+Attachments are handled via an adapter pattern that supports different upload strategies:
+
+```typescript
+interface AttachmentAdapter {
+  // Called when user selects files
+  add(state: { file: File }): Promise<PendingAttachment>;
+
+  // Called when user removes an attachment before sending
+  remove(attachment: PendingAttachment): Promise<void>;
+
+  // Called when message is sent — converts pending → complete
+  send(attachment: PendingAttachment): Promise<CompleteAttachment>;
+
+  // File type accept filter (e.g., "image/*,.pdf")
+  accept: string;
+}
+
+interface PendingAttachment {
+  id: string;
+  type: "image" | "document" | "file";
+  name: string;
+  file: File;
+  contentType: string;
+  content?: unknown;        // populated after processing
+  status: "pending" | "uploading" | "ready" | "error";
+}
+
+interface CompleteAttachment {
+  id: string;
+  type: "image" | "document" | "file";
+  name: string;
+  contentType: string;
+  content: Array<TextContentPart | ImageContentPart | FileContentPart>;
+}
+```
+
+### 8.2 Built-in Adapters
+
+```typescript
+// SimpleImageAttachmentAdapter — reads images as data URIs
+class SimpleImageAttachmentAdapter implements AttachmentAdapter {
+  accept = "image/*";
+
+  async add({ file }) {
+    return {
+      id: generateId(),
+      type: "image",
+      name: file.name,
+      file,
+      contentType: file.type,
+      status: "ready",
+    };
+  }
+
+  async send(attachment) {
+    const dataUri = await readAsDataURL(attachment.file);
+    return {
+      ...attachment,
+      content: [{ type: "image", image: dataUri }],
+    };
+  }
+}
+
+// SimpleTextAttachmentAdapter — reads text/json/code files as text
+class SimpleTextAttachmentAdapter implements AttachmentAdapter {
+  accept = "text/*,application/json,.md,.csv,.xml,.yaml,.yml";
+
+  async send(attachment) {
+    const text = await attachment.file.text();
+    return {
+      ...attachment,
+      content: [{ type: "text", text: `File: ${attachment.name}\n\n${text}` }],
+    };
+  }
+}
+
+// CompositeAttachmentAdapter — combines multiple adapters
+class CompositeAttachmentAdapter implements AttachmentAdapter {
+  constructor(private adapters: AttachmentAdapter[]) {}
+  accept = this.adapters.map(a => a.accept).join(",");
+
+  async add(state) {
+    // Find first adapter whose accept matches the file type
+    const adapter = this.adapters.find(a => matchesAccept(a.accept, state.file));
+    return adapter.add(state);
+  }
+}
+```
+
+---
+
+## 9. Markdown Rendering
+
+### 9.1 MarkdownText Component
+
+The `@assistant-ui/react-markdown` package provides a component that renders assistant text content as rich markdown:
+
+```typescript
+interface MarkdownTextProps {
+  smooth?: boolean;            // enable character-by-character smooth streaming animation
+  components?: MarkdownComponents;  // override specific element renderers
+}
+
+// Built-in rendering pipeline:
+// 1. Parse markdown with remark (remark-gfm for tables/strikethrough)
+// 2. Convert to React via rehype-react
+// 3. Apply syntax highlighting to code blocks via rehype-highlight or Shiki
+// 4. Render LaTeX via rehype-katex (inline $ and display $$)
+// 5. Apply custom component overrides
+
+// Default component map:
+const defaultComponents: MarkdownComponents = {
+  p: ({ children }) => <p>{children}</p>,
+  h1: ({ children }) => <h1>{children}</h1>,
+  // ... h2-h6
+  code: ({ className, children }) => {
+    const language = className?.replace("language-", "");
+    if (language) {
+      return <SyntaxHighlighter language={language}>{children}</SyntaxHighlighter>;
+    }
+    return <code>{children}</code>;
+  },
+  pre: ({ children }) => (
+    <div className="relative">
+      <CopyButton />
+      <pre>{children}</pre>
+    </div>
+  ),
+  a: ({ href, children }) => <a href={href} target="_blank" rel="noopener">{children}</a>,
+  table: ({ children }) => <div className="overflow-x-auto"><table>{children}</table></div>,
+  // ... th, td, tr, ul, ol, li, blockquote, hr, img
+};
+```
+
+### 9.2 Smooth Streaming Animation
+
+When `smooth` is enabled, text doesn't appear all at once — instead characters are revealed progressively:
+
+```typescript
+function useSmoothText(text: string): { displayText: string; isAnimating: boolean } {
+  const [displayText, setDisplayText] = useState("");
+  const animationRef = useRef<number>();
+  const targetRef = useRef(text);
+
+  useEffect(() => {
+    targetRef.current = text;
+
+    function animate() {
+      setDisplayText(prev => {
+        if (prev.length >= targetRef.current.length) return targetRef.current;
+        // Reveal 1-3 characters per frame depending on backlog
+        const backlog = targetRef.current.length - prev.length;
+        const charsToAdd = Math.min(Math.ceil(backlog / 10) + 1, 3);
+        return targetRef.current.slice(0, prev.length + charsToAdd);
+      });
+      animationRef.current = requestAnimationFrame(animate);
+    }
+
+    animationRef.current = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(animationRef.current!);
+  }, [text]);
+
+  return {
+    displayText,
+    isAnimating: displayText !== text,
+  };
+}
+```
+
+---
+
+## 10. Tailwind CSS Integration
+
+### 10.1 `aui-*` Variant Selectors
+
+The Tailwind plugin provides custom variants that map to component states:
+
+```javascript
+// tailwind.config.js
+module.exports = {
+  plugins: [require("@assistant-ui/tailwindcss")],
+};
+```
+
+This registers variants:
+
+| Variant | Selector | Use case |
+|---------|----------|----------|
+| `aui-user` | `[data-aui-role="user"] &` | Style user messages |
+| `aui-assistant` | `[data-aui-role="assistant"] &` | Style assistant messages |
+| `aui-running` | `[data-aui-running] &` | Style during streaming |
+| `aui-complete` | `[data-aui-complete] &` | Style completed messages |
+| `aui-error` | `[data-aui-error] &` | Style error states |
+| `aui-copied` | `[data-aui-copied] &` | Briefly active after copy |
+| `aui-has-branches` | `[data-aui-has-branches] &` | Show branch picker |
+
+Usage example:
+
+```jsx
+<MessagePrimitive.Root className="aui-user:bg-blue-50 aui-assistant:bg-gray-50 aui-error:border-red-500">
+  <MessagePrimitive.Content />
+</MessagePrimitive.Root>
+```
+
+---
+
+## 11. Speech (Text-to-Speech) Integration
+
+```typescript
+interface SpeechSynthesisAdapter {
+  speak(text: string): SpeechSubscription;
+}
+
+interface SpeechSubscription {
+  cancel(): void;
+  subscribe(callback: (state: SpeechState) => void): Unsubscribe;
+}
+
+interface SpeechState {
+  status: "speaking" | "paused" | "ended" | "error";
+}
+
+// Web Speech API adapter (built-in)
+class WebSpeechSynthesisAdapter implements SpeechSynthesisAdapter {
+  speak(text: string): SpeechSubscription {
+    const utterance = new SpeechSynthesisUtterance(text);
+    speechSynthesis.speak(utterance);
+
+    return {
+      cancel: () => speechSynthesis.cancel(),
+      subscribe: (callback) => {
+        utterance.onstart = () => callback({ status: "speaking" });
+        utterance.onend = () => callback({ status: "ended" });
+        utterance.onerror = () => callback({ status: "error" });
+        return () => {
+          utterance.onstart = null;
+          utterance.onend = null;
+          utterance.onerror = null;
+        };
+      },
+    };
+  }
+}
+```
+
+---
+
+## 12. Thread Management and Persistence
+
+### 12.1 Multi-Thread Support
+
+```typescript
+interface ThreadListRuntime {
+  // Currently active thread
+  readonly mainThread: ThreadRuntime;
+
+  // Archived/historical threads
+  readonly threads: readonly ThreadListItem[];
+  readonly archivedThreads: readonly ThreadListItem[];
+
+  // Thread switching
+  switchToThread(threadId: string): void;
+  switchToNewThread(): void;
+
+  // Thread lifecycle
+  rename(threadId: string, newTitle: string): Promise<void>;
+  archive(threadId: string): Promise<void>;
+  unarchive(threadId: string): Promise<void>;
+  delete(threadId: string): Promise<void>;
+
+  subscribe(callback: () => void): Unsubscribe;
+}
+
+interface ThreadListItem {
+  id: string;
+  title?: string;
+  status: "regular" | "archived";
+  remoteId?: string;          // server-side ID for persistence
+}
+```
+
+### 12.2 External Store Adapter
+
+For persisting threads to a backend:
+
+```typescript
+interface ExternalStoreAdapter {
+  // Thread list operations
+  threads?: {
+    list(): Promise<ThreadListItem[]>;
+    rename(threadId: string, title: string): Promise<void>;
+    archive(threadId: string): Promise<void>;
+    delete(threadId: string): Promise<void>;
+    create?(): Promise<{ threadId: string; remoteId: string }>;
+  };
+
+  // Message persistence
+  messages?: {
+    list(threadId: string): Promise<ThreadMessage[]>;
+  };
+
+  // Streaming
+  onNew(message: AppendMessage): Promise<void>;
+
+  // Converts external messages to internal format
+  convertMessage?: (message: unknown) => ThreadMessage;
+}
+
+// Usage
+function useExternalStoreRuntime(adapter: ExternalStoreAdapter): AssistantRuntime;
+```
+
+---
+
+## 13. Putting It All Together — Full Composition Example
+
+```tsx
+import {
+  AssistantRuntimeProvider,
+  ThreadPrimitive,
+  MessagePrimitive,
+  ComposerPrimitive,
+  BranchPickerPrimitive,
+  ActionBarPrimitive,
+} from "@assistant-ui/react";
+import { useChatRuntime } from "@assistant-ui/react-ai-sdk";
+import { MarkdownText } from "@assistant-ui/react-markdown";
+
+function MyChat() {
+  const runtime = useChatRuntime({ api: "/api/chat" });
+
+  return (
+    <AssistantRuntimeProvider runtime={runtime}>
+      <ThreadPrimitive.Root className="flex flex-col h-full">
+        <ThreadPrimitive.Viewport className="flex-1 overflow-y-auto p-4">
+          <ThreadPrimitive.Empty>
+            <p className="text-gray-400">How can I help you?</p>
+          </ThreadPrimitive.Empty>
+
+          <ThreadPrimitive.Messages
+            components={{
+              UserMessage: () => (
+                <MessagePrimitive.Root className="flex justify-end mb-4">
+                  <div className="bg-blue-500 text-white rounded-lg p-3 max-w-[80%]">
+                    <MessagePrimitive.Content />
+                  </div>
+                  <BranchPickerPrimitive.Root>
+                    <BranchPickerPrimitive.Previous />
+                    <BranchPickerPrimitive.Number /> / <BranchPickerPrimitive.Count />
+                    <BranchPickerPrimitive.Next />
+                  </BranchPickerPrimitive.Root>
+                </MessagePrimitive.Root>
+              ),
+              AssistantMessage: () => (
+                <MessagePrimitive.Root className="flex mb-4">
+                  <div className="bg-gray-100 rounded-lg p-3 max-w-[80%]">
+                    <MessagePrimitive.Content
+                      components={{
+                        Text: ({ text }) => <MarkdownText smooth>{text}</MarkdownText>,
+                        tools: {
+                          Fallback: ({ toolName, args, result }) => (
+                            <details>
+                              <summary>Tool: {toolName}</summary>
+                              <pre>{JSON.stringify(args, null, 2)}</pre>
+                              {result && <pre>Result: {JSON.stringify(result)}</pre>}
+                            </details>
+                          ),
+                        },
+                      }}
+                    />
+                  </div>
+                  <ActionBarPrimitive.Root autohide="not-last">
+                    <ActionBarPrimitive.Copy />
+                    <ActionBarPrimitive.Reload />
+                    <ActionBarPrimitive.FeedbackPositive />
+                    <ActionBarPrimitive.FeedbackNegative />
+                  </ActionBarPrimitive.Root>
+                </MessagePrimitive.Root>
+              ),
+            }}
+          />
+        </ThreadPrimitive.Viewport>
+
+        <div className="border-t p-4">
+          <ComposerPrimitive.Root className="flex gap-2">
+            <ComposerPrimitive.AddAttachment />
+            <ComposerPrimitive.Attachments />
+            <ComposerPrimitive.Input
+              placeholder="Type a message..."
+              className="flex-1 resize-none border rounded-lg p-2"
+            />
+            <ThreadPrimitive.If running={false}>
+              <ComposerPrimitive.Send className="bg-blue-500 text-white rounded-lg px-4" />
+            </ThreadPrimitive.If>
+            <ThreadPrimitive.If running>
+              <ComposerPrimitive.Cancel className="bg-red-500 text-white rounded-lg px-4" />
+            </ThreadPrimitive.If>
+          </ComposerPrimitive.Root>
+        </div>
+      </ThreadPrimitive.Root>
+    </AssistantRuntimeProvider>
+  );
+}
+```
+
+---
+
+## 14. Behavioral Test Cases
+
+### Thread Operations
+1. **Empty thread renders empty state**: When messages array is empty, `ThreadPrimitive.Empty` children are rendered, `ThreadPrimitive.Messages` renders nothing.
+2. **Message ordering**: Messages render in the order returned by `MessageRepository.getMessages()` (linear active path).
+3. **Auto-scroll on new content**: When user is scrolled to bottom and new streaming text arrives, viewport scrolls to keep bottom visible.
+4. **Auto-scroll disengage**: When user scrolls up manually, auto-scroll stops. New messages do NOT force scroll.
+5. **Auto-scroll re-engage**: When user scrolls back to bottom, auto-scroll re-engages for subsequent messages.
+
+### Message Branching
+6. **Edit creates branch**: Editing a user message creates a new child of the same parent, preserving the original branch.
+7. **Branch navigation**: `BranchPickerPrimitive.Previous/Next` cycle through sibling branches at the branching point.
+8. **Branch count accuracy**: `BranchPickerPrimitive.Count` shows total siblings, `Number` shows 1-indexed current.
+9. **Branch isolation**: Switching branches replaces all messages after the branching point with the alternate path.
+10. **Nested branches**: Branches can exist at multiple depths — each operates independently.
+
+### Streaming
+11. **Text delta accumulation**: Multiple `text-delta` chunks for the same part index concatenate correctly.
+12. **Tool call streaming**: `tool-call-begin` followed by `tool-call-delta` chunks produces incrementally parsed args.
+13. **Mixed content streaming**: Text, tool calls, and reasoning parts can arrive interleaved — each routed to correct part index.
+14. **Stream cancellation**: `ComposerPrimitive.Cancel` calls `threadRuntime.cancelRun()`, which aborts the stream and sets status to `incomplete/cancelled`.
+15. **Status finalization**: Stream ending with `status` chunk finalizes the message; without it, status defaults to `complete/unknown`.
+
+### Composer
+16. **Submit on Enter**: Pressing Enter (without Shift) triggers form submission when text is non-empty.
+17. **Newline on Shift+Enter**: Shift+Enter inserts a newline without submitting.
+18. **Disabled while running**: Send button is disabled when `thread.isRunning === true`.
+19. **Auto-resize**: Textarea height grows with content up to max-height, then scrolls internally.
+20. **Attachment flow**: Adding file creates PendingAttachment → displayed in composer → on send, adapter.send() converts to CompleteAttachment.
+
+### Tool Execution
+21. **Tool approval flow**: Message with status `requires-action` renders approval UI; `addToolResult` resolves it and continues generation.
+22. **Tool rejection**: Calling `addToolResult` with `isError: true` sends rejection to model.
+23. **Custom tool renderers**: `by_name` component map renders specific components for named tools.
+24. **Fallback tool renderer**: Unknown tool names render with the `Fallback` component.
+
+### Reactivity
+25. **Selective re-rendering**: Changing `thread.isRunning` does NOT re-render message components that only subscribe to message content.
+26. **Streaming efficiency**: During text streaming, only the active TextContentPart component re-renders — not sibling parts or other messages.
+27. **useAuiState equality**: Custom equality functions prevent re-renders when selector output is structurally identical.
+
+### Action Bar
+28. **Copy to clipboard**: `ActionBarPrimitive.Copy` extracts all text content parts, joins them, copies to clipboard via navigator.clipboard.writeText.
+29. **Autohide behavior**: With `autohide="not-last"`, only the last message's action bar is visible; others appear on hover.
+30. **Reload regenerates**: `ActionBarPrimitive.Reload` removes the assistant message and calls `startRun` to regenerate.
+31. **Feedback submission**: Positive/Negative feedback updates `message.metadata.feedback` and emits event.
+
+### Markdown Rendering
+32. **GFM support**: Tables, strikethrough, task lists render correctly via remark-gfm.
+33. **Code highlighting**: Fenced code blocks with language annotation get syntax highlighting.
+34. **LaTeX rendering**: Inline `$...$` and display `$$...$$` render as mathematical notation.
+35. **Smooth streaming**: With `smooth` enabled, text reveals character-by-character via requestAnimationFrame.
+36. **Link safety**: External links render with `target="_blank" rel="noopener"`.
+
+### Attachments
+37. **Image preview**: Image attachments show thumbnail in composer before sending.
+38. **Text file reading**: `.txt`, `.md`, `.json` files are read as text and included in message content.
+39. **Remove before send**: Clicking remove on a pending attachment calls adapter.remove() and removes from composer.
+40. **Accept filter**: File picker only shows files matching adapter's accept filter.
+
+### Thread Persistence
+41. **Export/Import roundtrip**: `thread.export()` produces a serializable repository; `thread.import()` restores the full tree structure including branches.
+42. **Thread switching**: `switchToThread(id)` loads messages from external store and sets as active.
+43. **New thread creation**: `switchToNewThread()` creates an empty thread and sets as active.
+
+### Provider Adapter
+44. **Vercel message conversion**: Vercel AI SDK messages with toolInvocations correctly convert to ToolCallContentParts.
+45. **Vercel stream mapping**: Vercel's streaming protocol chunks map to internal AssistantStreamChunks.
+46. **Bidirectional sync**: Adding a message via the runtime is reflected back to Vercel's useChat state.

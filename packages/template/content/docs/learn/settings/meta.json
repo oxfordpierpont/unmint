@@ -1,0 +1,8 @@
+{
+  "title": "Settings",
+  "pages": [
+    "index",
+    "introduction"
+  ],
+  "defaultOpen": true
+}

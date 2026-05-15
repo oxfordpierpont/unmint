@@ -1,0 +1,82 @@
+---
+title: "LogicLegal"
+description: "The service contract for aiConnected LogicLegal, including intake, research chat, voice, case prep, and closed-knowledge safeguards."
+---
+## Contract status
+
+`Canonical interface contract`
+
+The module overview and LogicLegal docs define the product boundaries, trust model, and interaction surface clearly, but they do not publish a final HTTP route list in the repo.
+
+## Source documents
+
+- [aiConnected modules overview](/docs/knowledge-base/aiconnected-apps-and-modules/modules/aiconnected-modules-overview)
+- [logicLegal overview](/docs/knowledge-base/aiconnected-apps-and-modules/modules/logicLegal/logicLegal-overview)
+- [logicLegal PRD outline](/docs/knowledge-base/aiconnected-apps-and-modules/modules/logicLegal/logicLegal-prd-outline)
+
+## Module purpose
+
+LogicLegal is a legal-practice automation module built around a closed knowledge base, lead qualification, voice and chat intake, and attorney-facing retrieval.
+
+## Core rule
+
+LogicLegal must operate from verified legal sources and attorney-provided materials, not open-web retrieval. That is the most important implementation constraint in the docs.
+
+## Required service domains
+
+### Prospect research chat
+
+- Accept legal-situation questions
+- Scope the conversation by jurisdiction and practice area
+- Respond only from approved legal knowledge
+- Transition prospects into intake or booking flows
+
+### Smart intake
+
+- Capture practice-area-specific intake fields
+- Assess case viability
+- Schedule consultations
+- Convert prospects into structured case leads
+
+### Voice handling
+
+- Answer calls with the same closed-knowledge constraints
+- Qualify callers
+- Route or transfer when needed
+
+### Attorney operations
+
+- Retrieve case and lead briefings
+- Answer voice-first queries over case materials
+- Surface calendar and pipeline information
+
+## Required shared resources
+
+| Resource | Purpose |
+|---|---|
+| `contacts` | Prospective and active clients |
+| `legal_intakes` | Structured intake payloads |
+| `case_records` | Case-linked metadata |
+| `knowledge_sources` | Closed legal corpus pointers |
+| `events` | Intake and engagement workflow events |
+
+## Required safeguards
+
+- Jurisdiction scoping
+- Practice-area scoping
+- Closed-source retrieval only
+- Auditability for generated answers
+- Clear transitions from informational guidance to booked legal consultation
+
+## Integration expectations
+
+The module overview calls out:
+
+- GoToConnect
+- GoHighLevel
+- Optional Clio integration
+- Marketing automation tied to the same closed knowledge base
+
+## Build note
+
+If you build LogicLegal on generic chat patterns without the closed-knowledge constraints, you are not implementing the product described in this repository.

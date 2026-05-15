@@ -1,0 +1,207 @@
+---
+title: "Knowledge Base Generator"
+description: "Transform any business website into a comprehensive AI knowledge base. What It Does This tool takes a website URL and generates everything needed to power an..."
+---
+<Info>
+Normalized for Mintlify from `knowledge-base/aiconnected-apps-and-modules/modules/kb-generator/kb-generator-readme.mdx`.
+</Info>
+# Knowledge Base Generator
+
+Transform any business website into a comprehensive AI knowledge base.
+
+## What It Does
+
+This tool takes a website URL and generates everything needed to power an intelligent AI chat assistant:
+
+1. **Scrapes the website** \- Extracts all pages and content  
+2. **Identifies services** \- Finds every service/product offered  
+3. **Researches each service** \- Generates educational content, decision guides, and FAQs  
+4. **Maps concerns to services** \- Creates relationships between customer problems and solutions  
+5. **Generates conversation starters** \- Creates engaging entry points for chat  
+6. **Writes the system prompt** \- Defines how the AI should behave  
+7. **Creates an assessment quiz** \- Builds a recommendation quiz  
+8. **Compiles a service guide** \- Human-readable markdown documentation
+
+## Quick Start
+
+```shell
+# 1. Install dependencies
+npm install
+
+# 2. Set up environment variables
+cp .env.example .env
+# Edit .env and add your API keys
+
+# 3. Generate a knowledge base
+npm run generate -- https://example.com
+```
+
+## Requirements
+
+- Node.js 18+  
+- Anthropic API key (Claude)  
+- Firecrawl API key (web scraping)
+
+Get your API keys:
+
+- Anthropic: [https://console.anthropic.com](https://console.anthropic.com)  
+- Firecrawl: [https://firecrawl.dev](https://firecrawl.dev)
+
+## Usage
+
+```shell
+# Basic usage
+node index.js <website-url> [output-directory]
+
+# Examples
+node index.js https://skinbeauty.skin
+node index.js https://example.com ./output/my-client
+
+# Help
+node index.js --help
+```
+
+## Output Files
+
+The generator creates these files in the output directory:
+
+| File | Description |
+| :---- | :---- |
+| `knowledge-base.json` | Complete knowledge base (use this in your app) |
+| `8-service-guide.md` | Human-readable service documentation |
+| `6-system-prompt.txt` | AI system prompt |
+| `5-starters.json` | Conversation starter cards |
+| `4-concern-map.json` | Concern → service mapping |
+| `7-quiz.json` | Assessment quiz configuration |
+| `3-enhanced-services.json` | All service data with research |
+| `2-extracted-data.json` | Raw extracted business/service data |
+| `1-raw-scrape.json` | Raw scraped website content |
+
+## Using the Knowledge Base
+
+### In Your Chat Application
+
+```javascript
+import knowledgeBase from './output/knowledge-base.json';
+
+// System prompt for AI
+const systemPrompt = knowledgeBase.systemPrompt;
+
+// Service data
+const services = knowledgeBase.services;
+
+// Find services for a concern
+function findServices(concern) {
+  const mapping = knowledgeBase.concernMap[concern];
+  if (!mapping) return [];
+  
+  return mapping.primary.map(id => 
+    services.find(s => s.id === id)
+  ).filter(Boolean);
+}
+
+// Conversation starters for UI
+const starters = knowledgeBase.conversationStarters;
+```
+
+### Service Data Structure
+
+Each service includes:
+
+```javascript
+{
+  id: "service-slug",
+  name: "Service Name",
+  category: "Category",
+  description: "Original description",
+  price: "$XXX",
+  duration: "XX min",
+  
+  // Generated content
+  education: {
+    whatItIs: "...",
+    howItWorks: "...",
+    duringTreatment: "...",
+    results: "..."
+  },
+  
+  chooseThisFor: ["Situation 1", "Goal 2", ...],
+  selfIdentification: ["You...", "You...", ...],
+  concerns: ["acne", "aging", ...],
+  
+  experience: {
+    during: "...",
+    immediately_after: "...",
+    downtime: "...",
+    results_timeline: "..."
+  },
+  
+  faqs: [{ question: "...", answer: "..." }],
+  notRightFor: ["Contraindication 1", ...],
+  relatedServices: ["other-service"],
+  tags: ["tag1", "tag2"]
+}
+```
+
+## Time Estimates
+
+| Business Size | Services | Generation Time |
+| :---- | :---- | :---- |
+| Small | 5-10 | 2-5 minutes |
+| Medium | 10-20 | 5-10 minutes |
+| Large | 20-50 | 10-20 minutes |
+
+## Cost Estimates
+
+Approximate API costs per generation:
+
+| Component | Tokens | Cost (Claude Sonnet) |
+| :---- | :---- | :---- |
+| Website scrape | N/A | \~$0.01 (Firecrawl) |
+| Extraction | \~10K | \~$0.03 |
+| Service research (×15) | \~60K | \~$0.20 |
+| Concern mapping | \~5K | \~$0.02 |
+| Starters | \~3K | \~$0.01 |
+| System prompt | \~5K | \~$0.02 |
+| Quiz | \~5K | \~$0.02 |
+| **Total** |  | **\~$0.30-0.50** |
+
+## Customization
+
+### Override AI Model
+
+```shell
+AI_MODEL=claude-opus-4-20250514 node index.js https://example.com
+```
+
+### Manual Review
+
+After generation, you can:
+
+1. Review `8-service-guide.md` for accuracy  
+2. Edit `3-enhanced-services.json` to correct any issues  
+3. Regenerate the final knowledge base with corrections
+
+## Troubleshooting
+
+### "Crawl failed"
+
+- Check your Firecrawl API key  
+- The website may be blocking crawlers  
+- Try reducing the page limit
+
+### "Failed to parse JSON"
+
+- The AI response was malformed  
+- Try running again (rate limits can cause issues)  
+- Check the raw output files for debugging
+
+### Services missing
+
+- The website may have services behind JavaScript  
+- Try scraping specific pages directly  
+- Add services manually to the extracted data
+
+## License
+
+MIT

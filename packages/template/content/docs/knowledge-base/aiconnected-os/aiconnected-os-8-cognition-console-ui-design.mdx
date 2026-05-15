@@ -1,0 +1,518 @@
+---
+title: "Cognition console UI design"
+description: "Prompt: I'm preparing to build the Cognigraph artificial cognition architecture, and in order to do that I need to also build a front end interactive interfa..."
+---
+<Info>
+Converted from `aiConnected OS - 8. Cognition console UI design.md`.
+</Info>
+# Cognition console UI design
+
+**User:** Oxford Pierpont  
+**Created:** 12/7/2025 12:39:13  
+**Updated:** 12/10/2025 6:50:26  
+**Exported:** 2/11/2026 7:09:19  
+**Link:** [https://chatgpt.com/g/g-p-69395d9991108191841f1dac1fd8d1a1-oxpi-aiconnected-ui-features/c/6935bbc0-3a00-8327-b73f-fe6e7bd904a2](https://chatgpt.com/g/g-p-69395d9991108191841f1dac1fd8d1a1-oxpi-aiconnected-ui-features/c/6935bbc0-3a00-8327-b73f-fe6e7bd904a2)  
+
+## Prompt:
+I'm preparing to build the Cognigraph artificial cognition architecture, and in order to do that I need to also build a front-end interactive interface that will be used to just, you know, operate and use the AI. So since I have to build one anyway, I'm going to take this opportunity to design a better version of memory, just chat history, chat memory, the way that these chat interfaces the way that a concept like projects works, and the way that memory or interconnected chats work in general. And so that's what we're here to plan out today.
+
+## Response:
+Good, this is exactly the right time to nail this, _before_ you start wiring in Cognigraph under the hood.
+
+Let’s treat today as “define the mental model + UI contract” for how people will actually _live inside_ this thing.
+
+* * *
+
+1\. What this interface actually is
+-----------------------------------
+
+Instead of “a chat app with better memory,” I’m going to assume you’re building:
+
+> A **Cognition Console**  
+> where:
+> 
+> *   you talk to one or more **Personas**
+> *   inside clearly defined **Projects**
+> *   with an explicit, inspectable **Memory System** (Cognigraph)
+> *   and all of that is visible and controllable from the UI.
+>     
+
+So the front-end is basically a **control panel over Cognigraph’s memory layers**, plus a workbench for doing real projects with the AI.
+
+* * *
+
+2\. Core objects (the data model your UI should expose)
+-------------------------------------------------------
+
+These are the “things” the user should see and manipulate. I’ll define them as conceptual types, not final code.
+
+### 2.1 Persona
+
+A Persona is not “just a chat.” It’s a semi-stable mind:
+
+*   **id**
+*   **name** – “Neuro Architect”, “Legal Analyst”, “Story Engine”, etc.
+*   **role / purpose** – What this Persona is supposed to be used for.
+*   **style** – Tone, level of detail, assumptions.
+*   **linked\_memory\_scope** – Which slice of Cognigraph it’s mainly allowed to use (global, domain, project-level).
+*   **safety/constraints profile** – Guardrails, forbidden topics, etc.
+
+**UI impact:**
+
+*   Persona picker at the top.
+*   Persona detail panel showing its purpose, strengths, and what memories it “lives inside.”
+
+* * *
+
+### 2.2 Project
+
+Projects are the backbone. Not loose chats.
+
+*   **id**
+*   **name**
+*   **description / goal statement**
+*   **status** – active / paused / archived
+*   **primary\_persona\_id** (optional)
+*   **related\_persona\_ids** (secondary minds you use for this project)
+*   **pinned\_memory\_ids** – the most relevant long-term memories for this project
+*   **artifact\_ids** – docs, specs, uploads
+*   **created\_at / updated\_at**
+
+**UI impact:**
+
+*   Left sidebar: list of projects with filters.
+*   Project dashboard: goals, tasks, last sessions, key memories.
+
+* * *
+
+### 2.3 Session (what replaces “chats”)
+
+A Session is a _conversation episode_ inside a Project. This is where the messages live.
+
+*   **id**
+*   **project\_id**
+*   **persona\_id**
+*   **title** – “Memory architecture brainstorm #1”
+*   **context\_config** – which memories/topics are attached to this session
+*   **created\_at / last\_active\_at**
+
+**UI impact:**
+
+*   Within a Project: “Sessions” tab with a timeline.
+*   Each Session opens into a chat-like view, but with visible context/memory.
+
+* * *
+
+### 2.4 Message
+
+This is the raw dialogue, but it’s not the primary memory; it’s the _evidence_ from which memory is distilled.
+
+*   **id**
+*   **session\_id**
+*   **author** – user | persona | system
+*   **content**
+*   **created\_at**
+*   **tags** – auto-suggested topics
+*   **linked\_memory\_ids** – which Memory nodes this message contributed to
+*   **“promoted” flag** – if some part was selected & promoted into long-term memory
+
+**UI impact:**
+
+*   Normal chat stream.
+*   Hover over a message → see which memories came from it, and promote/demote.
+
+* * *
+
+### 2.5 MemoryNode (Cognigraph node)
+
+This is _the_ central thing. A structured memory entry, following your Category → Concept → Topic hierarchy and Open/Closed layers.
+
+*   **id**
+*   **scope** – global | persona | project | session
+*   **layer** – Open Thinking (ephemeral notes) | Closed Thinking (committed knowledge)
+*   **category** – big domain (“Business”, “Health”, “Fiction: Rift”, “aiConnected architecture”)
+*   **concept** – sub-area (“Cognigraph memory model”, “BrowserEngine PRD”)
+*   **topic** – specific thread (“Open vs Closed Thinking Layers UI”, “Project vs Session distinction”)
+*   **type** – fact | preference | rule | plan | story | pattern | question | decision
+*   **content** – the distilled memory text
+*   **source\_message\_ids** – which messages created this
+*   **origin\_persona\_id** (optional)
+*   **importance\_score** – how central this is
+*   **stability\_score** – how “settled” vs “tentative”
+*   **last\_accessed\_at**
+*   **created\_at**
+
+**UI impact:**
+
+*   A dedicated **Memory Explorer**.
+*   “Memory drawer” on the right side of a Session.
+*   Ability to expand Category → Concept → Topic, click a node, read/edit it.
+
+* * *
+
+### 2.6 Artifact
+
+Anything that isn’t a message but is part of the work.
+
+*   **id**
+*   **project\_id**
+*   **type** – file | URL | note | spec | dataset
+*   **title**
+*   **description**
+*   **link / file\_metadata**
+*   **generated\_by\_persona\_id** (if AI wrote it)
+*   **created\_at**
+
+**UI impact:**
+
+*   Project “Assets” tab showing documents.
+*   Side panel to quickly insert artifacts into context.
+
+* * *
+
+### 2.7 Task (optional, but powerful)
+
+Even if you don’t build a full task system, the UI should support:
+
+*   **id**
+*   **project\_id**
+*   **title**
+*   **status** – idea | todo | in progress | done
+*   **linked\_memory\_ids / artifact\_ids**
+*   **created\_at / due\_date**
+
+**UI impact:**
+
+*   Lightweight checklist inside each Project.
+*   Tasks feed the memory graph: tasks completed → decisions/lessons get stored as MemoryNodes.
+
+* * *
+
+3\. Rethinking “chat history” & “projects”
+------------------------------------------
+
+### 3.1 Old world: Chat ≈ Memory
+
+*   Each chat is a silo.
+*   “Memory” is a vague hidden blob.
+*   Projects are bolted on as a folder of chats.
+
+### 3.2 New world: Memory ≈ Knowledge graph; chat is a log
+
+*   **Projects** are first-class.
+*   **Sessions** are episodic conversations inside projects.
+*   **Memory** is a graph across everything, with clear scopes.
+*   The UI lets you _see_:
+    *   what was remembered
+    *   where it’s stored (global / persona / project)
+    *   how it’s used in the current Session.
+
+From the user’s point of view:
+
+> “I’m not talking to a blank slate each time.  
+> I’m talking to a Persona that lives in a specific Project,  
+> and I can see the brain it’s using.”
+
+* * *
+
+4\. Core screens & layout
+-------------------------
+
+Think in terms of 4 primary views:
+
+1.  **Home / Persona Hub**
+2.  **Project Dashboard**
+3.  **Session View (chat + memory drawer)**
+4.  **Memory Explorer**
+
+### 4.1 Global layout (for desktop)
+
+*   **Left sidebar**
+    *   Top: Persona selector (avatar + name + status)
+    *   Mid: “Projects”, “Global Memory”, “Settings”
+    *   Bottom: Daily “New Memory Report” link
+*   **Main area**
+    *   Contextual: Projects list, Session, Memory Explorer, etc.
+*   **Right drawer (toggle)**
+    *   “Context & Memory” for current Session:
+        *   Active memory slice
+        *   Pinned nodes
+        *   Recently used nodes
+        *   Quick edit/add
+
+* * *
+
+5\. Project Dashboard UX
+------------------------
+
+When you click a Project:
+
+### Header
+
+*   Name
+*   Main Persona
+*   Key goal statement (“Build Cognigraph front-end for artificial cognition”)
+*   Status badge
+
+### Tabs
+
+1.  **Overview**
+    *   Current goal / summary.
+    *   Last 3 Sessions.
+    *   Top 5 “key memories” (pinned MemoryNodes).
+    *   Active tasks.
+2.  **Sessions**
+    *   Timeline list of Sessions.
+    *   Each with title, date, Persona, and short summary.
+    *   Button: “New Session” (with Persona picker).
+3.  **Memory**
+    *   Scoped Memory Explorer:
+        *   Only project-scoped nodes by default.
+        *   Filter by type (fact, plan, decision, etc.)
+        *   List + tree view.
+4.  **Artifacts**
+    *   Uploads, specs, notes, links.
+    *   “Use in Session” button to attach an Artifact as context.
+5.  **Settings**
+    *   Which Personas are allowed.
+    *   Default memory slice rules (e.g., “let this project use global ‘Engineering’ memories but not personal life”).
+
+* * *
+
+6\. Session View: the “chat” you’ll live in
+-------------------------------------------
+
+When you open a Session:
+
+### Left: Breadcrumbs
+
+*   Persona avatar + name
+*   Project name
+*   Session title
+
+### Center: Conversation Stream
+
+Standard chat, but each message can show:
+
+*   Tiny tags under the message:
+    *   `#Cognigraph`, `#MemoryModel`, `#UI`
+*   Indicator if memory was created/updated:
+    *   e.g. small icon “3 memories updated”
+
+On hover / click:
+
+*   “View linked memories”
+*   “Promote this to long-term memory” (if the AI suggested a candidate)
+*   “Remove from memory”
+
+### Right: Context & Memory Drawer
+
+Sections:
+
+1.  **Active Context**
+    *   List of memory nodes currently attached to this Session.
+    *   Chips or cards:
+        *   Title (topic)
+        *   Type (rule, plan, preference)
+        *   Scope icon (global / persona / project)
+    *   You can:
+        *   Pin/unpin
+        *   Temporarily disable a node for this Session.
+2.  **Suggestions**
+    *   Memory nodes the engine thinks would be useful right now.
+    *   “Add to context” button.
+3.  **Scratchpad** (Open Thinking Layer)
+    *   Ephemeral notes for this Session only.
+    *   The AI may write transient reasoning here.
+    *   You can click “Commit to closed memory” to solidify something.
+
+* * *
+
+7\. Memory Explorer: “the brain” UI
+-----------------------------------
+
+Separate full-screen view, but also accessible inside a Project.
+
+### Controls
+
+*   Filters:
+    *   Persona
+    *   Project
+    *   Scope (global / persona / project)
+    *   Type (fact, rule, preference, etc.)
+    *   Time window (created/last accessed)
+*   Views:
+    *   **Tree view** – Category → Concept → Topic → nodes
+    *   **List view** – sortable table
+    *   Later: **Graph view** – visual knowledge graph
+
+### Memory Node card
+
+When you click a node:
+
+*   Content
+*   Type, scope, layer, scores
+*   Source Sessions/Messages
+*   Links:
+    *   “Jump to source message”
+    *   “Edit & version history”
+    *   “Attach to current Session”
+    *   “Change scope” (e.g., promote from project → global)
+    *   “Mark outdated” (lowers stability & hides from default context)
+
+### Daily “New Memory Report”
+
+This is a key surface for Cognigraph:
+
+*   Grouped by Project & Persona.
+*   “New long-term memories created today”
+*   “Updated memories”
+*   “Potential conflicts or contradictions”
+
+From the report, you can:
+
+*   Approve / adjust / delete nodes.
+*   Re-scope them (“this belongs only in aiConnected, not global”).
+
+This is how the user actually _governs_ the Closed Thinking Layer.
+
+* * *
+
+8\. How messages become memories (UI side)
+------------------------------------------
+
+You’ll want a consistent flow:
+
+1.  User and Persona talk in a Session.
+2.  Behind the scenes, Cognigraph:
+    *   extracts candidate memories
+    *   links them to existing nodes or creates new ones.
+3.  UI surfaces this in two ways:
+    *   **Inline:** a subtle indicator on messages (“2 new memories extracted”).
+    *   **End-of-session summary:** “Here’s what I learned / updated.”
+4.  User has explicit control:
+    *   Accept / reject / edit these new nodes.
+    *   Or defer and handle via the Daily New Memory Report.
+
+This makes memory feel _deliberate_, not spooky.
+
+* * *
+
+9\. “Projects” as true context bundles
+--------------------------------------
+
+In the current “Project” implementations you’ve seen elsewhere, it’s often just:
+
+> Project = folder of chats + some files.
+
+You can do better:
+
+For each Project, the system should maintain:
+
+*   **Context Profile**:
+    *   Default memory scopes
+    *   Relevant categories (e.g., “Engineering: Cognition”, “Business: aiConnected”)
+    *   Style preferences (short vs long, more code vs more explanation)
+*   **Personas**:
+    *   Which Persona is the “lead” mind for this domain.
+    *   Which secondary Personas assist.
+*   **Knowledge baseline**:
+    *   Pinned MemoryNodes representing key assumptions/decisions.
+    *   The Project reads like a living spec.
+
+Then when you start a new Session, the UI can show:
+
+> “Starting Session with:
+> 
+> *   Persona: Neuro Architect
+> *   Project: Cognigraph Front-End
+> *   Context: 17 memory nodes (rules, decisions, architecture)
+> *   Artifacts: PRD v1, wireframe sketches, previous conversation summaries”
+>     
+
+And you have a “Configure context” button to fine-tune before you send the first message.
+
+* * *
+
+10\. How this ties into Cognigraph’s internal layers
+----------------------------------------------------
+
+You already defined:
+
+*   **Open Thinking Layer (OTL)** – transient reasoning.
+*   **Closed Thinking Layer (CTL)** – committed, structured memory.
+
+So in the front-end:
+
+*   The **Scratchpad** and per-Session notes map to OTL.
+*   The **Memory Explorer nodes** (with category/concept/topic) map to CTL.
+
+Key UI rules:
+
+1.  The user can always see which layer they are editing.
+2.  Promotion → “Convert this scratchpad element to a permanent memory.”
+3.  Demotion → “Move this memory back to scratch / mark as tentative.”
+
+You can visually distinguish:
+
+*   OTL: lighter, “pencil” icon, ephemeral.
+*   CTL: solid, “book” icon, durable.
+
+* * *
+
+11\. Minimal MVP vs “fancy later”
+---------------------------------
+
+To avoid trying to ship a 40-year system in v1, your MVP of the interface could be:
+
+### MVP must-haves
+
+1.  **Personas**
+    *   Persona picker + simple Persona settings.
+2.  **Projects**
+    *   Create/edit Project
+    *   Attach Personas to Projects
+3.  **Sessions**
+    *   Conversation view
+    *   Basic Session list under a Project
+4.  **Memory (CTL)**
+    *   Auto-extracted memories displayed as a list under each Project
+    *   Simple filters (by type, by time)
+    *   Ability to edit / delete / pin a memory
+5.  **Context Drawer**
+    *   Shows memory nodes currently used in the Session
+    *   Let user toggle them on/off
+6.  **Daily Memory Report**
+    *   Simple list of new/updated nodes, grouped by Project
+
+### Later enhancements
+
+*   Full Memory Explorer tree view + graph view
+*   Tasks integrated with memory
+*   Cross-project similarity suggestions (“this looks similar to X from aiConnected”)
+*   Timeline visualizations (“dashboard of what the AI learned over the last week”)
+*   Story mode / narrative of a Project’s history
+
+* * *
+
+12\. What we can do next
+------------------------
+
+For the next step, I’d suggest:
+
+1.  **Lock the object model**
+    *   I can turn the conceptual objects above into actual TypeScript interfaces or Supabase table schemas.
+2.  **Define core screens more concretely**
+    *   Screen-by-screen layout: header, sidebars, components, and what each panel shows.
+3.  **Specify the API contract with Cognigraph**
+    *   For example: what the front-end sends when it starts a Session:
+        *   `persona_id`, `project_id`, `session_id`, `active_memory_ids`, `scratchpad`, etc.
+    *   What it receives when messages are processed:
+        *   `reply`, `created_memory_nodes[]`, `updated_memory_nodes[]`, `context_suggestions[]`.
+
+If you want, I’ll start by drafting the **data schema + component tree** for the MVP version of this Cognition Console so you can immediately map it into Next.js / Supabase.
+
+
+
+---
+Powered by [ChatGPT Exporter](https://www.chatgptexporter.com)

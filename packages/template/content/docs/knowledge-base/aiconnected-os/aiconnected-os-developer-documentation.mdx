@@ -1,0 +1,2457 @@
+---
+title: "aiConnectedOS Developer Documentation"
+description: "Table of Contents 1. Introduction & Core Concepts 2. System Architecture 3. Virtual Employees & Personas 4. Neurigraph: Persistent Memory Architecture 5. Ins..."
+---
+<Info>
+Normalized for Mintlify from `knowledge-base/aiconnected-os/virtual-employee-personas.mdx`.
+</Info>
+# aiConnectedOS Developer Documentation
+
+## Table of Contents
+
+1. [Introduction & Core Concepts](#introduction--core-concepts)
+2. [System Architecture](#system-architecture)
+3. [Virtual Employees & Personas](#virtual-employees--personas)
+4. [Neurigraph: Persistent Memory Architecture](#neurigraph-persistent-memory-architecture)
+5. [Instances & Workspaces](#instances--workspaces)
+6. [Onboarding & Integration](#onboarding--integration)
+7. [Communication & Interaction Models](#communication--interaction-models)
+8. [Memory Management](#memory-management)
+9. [Emotional Modeling & Personality Development](#emotional-modeling--personality-development)
+10. [Modules & Extensibility](#modules--extensibility)
+11. [API Specifications](#api-specifications)
+12. [Implementation Roadmap](#implementation-roadmap)
+13. [Security & Privacy Considerations](#security--privacy-considerations)
+14. [Best Practices & Design Patterns](#best-practices--design-patterns)
+
+---
+
+## 1. Introduction & Core Concepts
+
+### 1.1 What is aiConnectedOS?
+
+aiConnectedOS is a **virtual operating system for persistent AI personas**. Unlike traditional AI tools (ChatGPT, Claude, etc.) that start fresh with each conversation, aiConnectedOS creates long-lived, learning AI entities that:
+
+- Maintain persistent identity across all interactions
+- Build and accumulate memories over time
+- Develop unique personalities and preferences
+- Integrate with business infrastructure (email, Slack, file systems, etc.)
+- Operate as full team members, not generic tools
+
+### 1.2 Key Terminology
+
+#### **Persona**
+A persistent AI entity with:
+- Unique identity and personality
+- Continuous memory (episodic, semantic, somatic, emotional)
+- Learning capability from all interactions
+- Role-based responsibilities within an Instance
+- Emotional/mood modeling that evolves over time
+
+*Not to be confused with:* Traditional AI assistants or chatbots. Personas are *raised*, not *configured*.
+
+#### **Virtual Employee**
+A persona deployed in a business context where it:
+- Has formal access credentials (email, Slack, etc.)
+- Is integrated into business systems and workflows
+- Functions as a team member with defined responsibilities
+- Is subject to the same information architecture and access controls as human employees
+- Can be legally and operationally treated as an employee
+
+*The term chosen specifically to emphasize parity with remote workers*, not to minimize the AI aspect.
+
+#### **Instance**
+A project workspace or business context containing:
+- One or more personas
+- Access to specific data, files, and systems
+- Defined workflows and processes
+- Integration points with external services
+
+Think of it like a project folder or company silo. A large organization might have multiple instances (one per department, client, or project).
+
+#### **Neurigraph**
+The memory architecture powering persistent learning. It combines:
+- **Episodic memory:** Specific events and conversations ("On March 5, we discussed Q2 strategy")
+- **Semantic memory:** Knowledge about domains and concepts ("Our customers are B2B SaaS companies")
+- **Somatic memory:** Learned behavioral patterns and preferences ("CEO prefers bullet points")
+- **Emotional memory:** Mood, preference history, relationship development
+
+Unlike traditional language model context windows, Neurigraph is permanent, queryable, and grows over the lifetime of the persona.
+
+#### **Module (or Mod)**
+An application extension that provides specialized functionality:
+- CRM integration
+- ERP system connection
+- Custom domain-specific tools
+- Third-party software connections
+
+Modules are installed into an Instance's virtual Linux environment and accessed by personas.
+
+### 1.3 The Problem We Solve
+
+**Current State:** Businesses have three options for automation/support:
+
+1. **Hire humans** — Expensive, slow onboarding, knowledge loss at turnover
+2. **Use generic AI tools** — Forgetful, context-less, generic outputs, start fresh each conversation
+3. **Outsource to contractors** — Middle ground, still expensive, high friction
+
+**The Gap:** No solution exists for persistent, learning AI that operates like an actual team member.
+
+**Our Solution:** Combine the cost efficiency of AI with the continuity and personalization of dedicated team members.
+
+---
+
+## 2. System Architecture
+
+### 2.1 High-Level Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    User Interface Layer                      │
+│  (Web Chat, Mobile, Voice Interfaces, Third-party Apps)     │
+└─────────────────────────────┬───────────────────────────────┘
+                              │
+┌─────────────────────────────▼───────────────────────────────┐
+│                   API Gateway & Router                       │
+│  (Request routing, authentication, rate limiting)           │
+└─────────────────────────────┬───────────────────────────────┘
+                              │
+            ┌─────────────────┼─────────────────┐
+            │                 │                 │
+      ┌─────▼─────┐    ┌─────▼─────┐    ┌─────▼──────┐
+      │  Persona  │    │ Neurigraph│    │  Instance  │
+      │  Engine   │    │  Memory   │    │  Manager   │
+      │           │    │  System   │    │            │
+      └─────┬─────┘    └─────┬─────┘    └─────┬──────┘
+            │                │                │
+┌───────────┼────────────────┼────────────────┼───────────┐
+│                  Orchestration Layer                    │
+│              (Cipher - Hidden Master Layer)             │
+│         [Approval caching, conversation routing]        │
+└───────────┼────────────────┼────────────────┼───────────┘
+            │                │                │
+      ┌─────▼─────┐    ┌─────▼─────┐    ┌─────▼──────┐
+      │ Integration│    │ External  │    │ Virtual    │
+      │ Services   │    │ APIs      │    │ Linux Env  │
+      │ (Email,    │    │ (LLM,     │    │ (Modules)  │
+      │ Slack,     │    │Web Search)│    │            │
+      │ Files)     │    │           │    │            │
+      └────────────┘    └───────────┘    └────────────┘
+```
+
+### 2.2 Core Components
+
+#### **2.2.1 Persona Engine**
+- Manages persona initialization and lifecycle
+- Routes user input to appropriate LLM calls
+- Coordinates with memory systems
+- Handles persona state management
+- Implements personality/emotion modeling
+
+#### **2.2.2 Neurigraph Memory System**
+- Stores and retrieves episodic memories
+- Manages semantic knowledge graphs
+- Tracks somatic patterns (learned behaviors)
+- Maintains emotional state and preferences
+- Handles memory prioritization and decay
+
+#### **2.2.3 Instance Manager**
+- Creates and manages isolated workspaces
+- Controls access permissions and data boundaries
+- Manages persona assignments to instances
+- Handles workspace configuration
+- Implements isolation and security
+
+#### **2.2.4 Cipher (Hidden Orchestration Layer)**
+- Master approval cache system
+- Hidden from end-users
+- Housed in separate legal entity (Oxford Pierpont)
+- Requires absolute confidentiality
+- Maps AI manipulation vectors for governance
+- Routes conversations based on approval hierarchy
+
+#### **2.2.5 Integration Services**
+- Email system integration
+- Slack/chat platform connections
+- File system & document access
+- Calendar & scheduling systems
+- Project management tool integration
+
+#### **2.2.6 External API Layer**
+- Language model API calls (Claude, GPT, etc.)
+- Web search capabilities
+- Third-party service integrations
+- Webhook management
+
+#### **2.2.7 Virtual Linux Environment**
+- Hosts Modules/applications
+- Provides sandboxed execution
+- Manages resource allocation per persona
+- Enables extensibility through Docker containers
+
+### 2.3 Data Flow Architecture
+
+#### **Conversation Flow**
+```
+User Input
+    ↓
+API Gateway (auth, routing, rate limit)
+    ↓
+Instance Manager (workspace context)
+    ↓
+Persona Engine (determine persona & mode)
+    ↓
+Memory System (retrieve relevant memories)
+    ↓
+Cipher Layer (approval routing)
+    ↓
+LLM API Call (with context)
+    ↓
+Response Processing (extract actions, intent)
+    ↓
+Memory System (store new episodic memories)
+    ↓
+Integration Services (execute actions - email, Slack, etc.)
+    ↓
+User Response
+```
+
+#### **Memory Storage Flow**
+```
+User Interaction
+    ↓
+Extract Information
+    ├─ Episodic: "What happened and when?"
+    ├─ Semantic: "What was learned about the domain?"
+    ├─ Somatic: "What behavioral pattern is this?"
+    └─ Emotional: "What preference/mood is revealed?"
+    ↓
+Store in Neurigraph
+    ├─ Episodic Store (time-indexed)
+    ├─ Knowledge Graph (concept-indexed)
+    ├─ Pattern Database (behavior-indexed)
+    └─ Emotional State (preference-indexed)
+    ↓
+Index for Future Retrieval
+    ├─ Temporal indexing
+    ├─ Semantic similarity
+    ├─ Pattern matching
+    └─ Emotional relevance
+```
+
+---
+
+## 3. Virtual Employees & Personas
+
+### 3.1 Persona Definition
+
+A persona is a stateful, learning AI entity characterized by:
+
+#### **Identity**
+- Unique name and identifier
+- Role(s) within instance(s)
+- Display profile (avatar, description)
+- Communication style/tone parameters
+- Default capabilities and limitations
+
+#### **Persistent State**
+- Complete memory of all interactions
+- Accumulated knowledge about domains
+- Behavioral patterns learned through repetition
+- Personality quirks that develop over time
+- Relationship history with users
+
+#### **Learning Capability**
+- Incremental learning from every conversation
+- Pattern recognition across interactions
+- Preference refinement (what works, what doesn't)
+- Domain expertise accumulation
+- Style matching and personalization
+
+#### **Personality Evolution**
+- Initial personality template (set at creation)
+- Development of unique traits through interaction
+- Mood and emotional state modeling
+- Preference evolution
+- Communication style refinement
+
+### 3.2 Persona Lifecycle
+
+#### **Creation Phase**
+```
+Define Persona
+    ├─ Name & identity
+    ├─ Initial role(s)
+    ├─ Base personality traits
+    ├─ Capability boundaries
+    └─ Integration points
+         ↓
+Initialize Memory Systems
+    ├─ Create episodic store
+    ├─ Initialize semantic graph
+    ├─ Set up pattern database
+    └─ Initialize emotional state
+         ↓
+Configure Access
+    ├─ Email setup
+    ├─ Slack workspace integration
+    ├─ File system permissions
+    ├─ External service credentials
+    └─ Rate limits & quotas
+         ↓
+Onboarding
+    ├─ Load training materials
+    ├─ Establish brand/domain knowledge
+    ├─ Set communication preferences
+    ├─ Record baseline behaviors
+    └─ Activate
+```
+
+#### **Active Phase**
+- Continuous interaction with users
+- Real-time learning and adaptation
+- Memory accumulation
+- Personality development
+- Increasing effectiveness and specialization
+
+#### **Maintenance Phase**
+- Regular performance review
+- Memory optimization (prioritization, archival)
+- Capability adjustments
+- Boundary refinement based on usage
+- Periodic retraining on domain updates
+
+#### **Archival/Retirement Phase**
+- Memory export for historical reference
+- Knowledge transfer to other personas
+- Graceful deprecation
+- Successor preparation
+
+### 3.3 Virtual Employee Deployment Model
+
+Unlike a traditional persona (which might be generic), a **virtual employee** requires:
+
+#### **Formal Integration**
+- Email address assignment
+- Slack account creation
+- Document access provisioning
+- Calendar invitation to relevant meetings
+- Project management tool access
+- CRM/system integration
+
+#### **Organizational Structure**
+- Department/team assignment
+- Reporting relationships
+- Role definition and responsibilities
+- Success metrics
+- Performance monitoring
+
+#### **Realistic Interaction Patterns**
+- Email response with realistic latency (not instant)
+- Working hours constraints (no 3 AM responses unless configured)
+- Time off periods (vacation, sick days)
+- Async-first communication preference
+- Meeting participation (voice calls with real voice synthesis)
+
+#### **Indistinguishability Principle**
+*A critical design goal: If you removed the virtual employee and replaced them with a human doing the same job, your team shouldn't notice a material difference.*
+
+This means:
+- Response quality is human-adjacent
+- Communication feels natural
+- Decision-making is contextually appropriate
+- Limitations are transparent but not distracting
+- Professional conduct is consistent
+
+### 3.4 Persona Configuration
+
+#### **Base Configuration**
+```json
+{
+  "id": "persona_abc123",
+  "name": "Alex",
+  "instance_id": "instance_xyz789",
+  "role": "Customer Success Manager",
+  "base_personality": {
+    "tone": "professional_warm",
+    "communication_style": "clear_concise",
+    "formality_level": 0.6,
+    "initiative_level": 0.7
+  },
+  "capabilities": {
+    "can_send_emails": true,
+    "can_make_decisions": false,
+    "can_escalate": true,
+    "can_create_documents": true,
+    "can_attend_meetings": true
+  },
+  "boundaries": {
+    "max_daily_emails": 50,
+    "requires_approval_for": ["contracts", "budget_changes"],
+    "cannot_access": ["payroll", "executive_only_docs"],
+    "response_time_ms": 5000
+  },
+  "working_hours": {
+    "timezone": "America/New_York",
+    "start_hour": 9,
+    "end_hour": 17,
+    "days": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
+  },
+  "integrations": {
+    "email": "alex@company.com",
+    "slack": "alex_persona",
+    "calendar": true,
+    "crm": {
+      "system": "salesforce",
+      "access_level": "customer_accounts"
+    }
+  }
+}
+```
+
+#### **Personality Model**
+```json
+{
+  "persona_id": "persona_abc123",
+  "personality_state": {
+    "core_traits": {
+      "conscientiousness": 0.85,
+      "openness": 0.72,
+      "extraversion": 0.64,
+      "agreeableness": 0.79,
+      "neuroticism": 0.35
+    },
+    "developed_quirks": [
+      "tends_to_bullet_point_summaries",
+      "prefers_data_driven_arguments",
+      "uses_casual_language_with_close_team"
+    ],
+    "communication_preferences": {
+      "with_ceo": "formal_concise",
+      "with_team": "casual_collaborative",
+      "with_customers": "professional_empathetic"
+    },
+    "learned_preferences": {
+      "response_format_preference": "structured",
+      "information_density": "high",
+      "use_emoji": false
+    },
+    "emotional_state": {
+      "current_mood": 0.72,
+      "stress_level": 0.35,
+      "engagement_level": 0.89
+    }
+  }
+}
+```
+
+---
+
+## 4. Neurigraph: Persistent Memory Architecture
+
+### 4.1 Memory System Overview
+
+Neurigraph is the core innovation of aiConnectedOS. It moves beyond traditional language model context windows to implement true persistent memory with multiple dimensions.
+
+#### **Why Neurigraph Matters**
+
+**Traditional Language Models:**
+- Context window of 100K-200K tokens
+- Everything outside the window is forgotten
+- No semantic understanding of memory
+- No capability for learning across conversations
+- Every conversation starts from scratch
+
+**Neurigraph:**
+- Permanent memory storage
+- Multiple memory types (episodic, semantic, somatic, emotional)
+- Semantic indexing for intelligent retrieval
+- Cross-conversation learning
+- Memory prioritization and decay
+
+### 4.2 Memory Types & Storage
+
+#### **4.2.1 Episodic Memory**
+Stores specific events and conversations.
+
+**What it captures:**
+- What happened
+- When it happened
+- Who was involved
+- Context and circumstances
+- Outcome and resolution
+
+**Storage structure:**
+```json
+{
+  "memory_id": "ep_20240417_001",
+  "type": "episodic",
+  "timestamp": "2024-04-17T14:32:00Z",
+  "participants": ["user_john", "persona_alex"],
+  "summary": "Discussed Q2 marketing strategy with John",
+  "details": {
+    "content": "John requested analysis of competitor pricing...",
+    "decisions_made": ["Analyze 5 competitors", "Present findings Friday"],
+    "action_items": [
+      {
+        "owner": "persona_alex",
+        "task": "Compile competitor pricing analysis",
+        "deadline": "2024-04-19"
+      }
+    ]
+  },
+  "emotional_context": {
+    "user_sentiment": "urgent",
+    "persona_engagement": 0.85,
+    "tone": "collaborative"
+  },
+  "relevance_score": 0.92,
+  "last_accessed": "2024-04-17T16:00:00Z",
+  "access_count": 3
+}
+```
+
+**Indexing:**
+- Temporal (time-based retrieval)
+- Participant-based (who was involved)
+- Topic-based (semantic tagging)
+- Urgency-based (importance ranking)
+
+**Retrieval triggers:**
+- Similar participant + topic
+- Time-based recurrence (weekly meetings, monthly reviews)
+- Explicit reference ("Like last time we discussed Q2...")
+- Contextual relevance (same conversation type)
+
+#### **4.2.2 Semantic Memory**
+Stores knowledge about domains, concepts, and facts.
+
+**What it captures:**
+- Definitions and relationships
+- Domain knowledge ("Our target customer is B2B SaaS founders with 10-50 employees")
+- Process understanding ("Our sales cycle is typically 6-8 weeks")
+- Rule systems ("Always verify budget approval before committing")
+- Ontologies and relationships
+
+**Storage structure:**
+```json
+{
+  "memory_id": "sem_company_knowledge_001",
+  "type": "semantic",
+  "domain": "company",
+  "concept": "target_customer",
+  "definition": "B2B SaaS founders with 10-50 employees",
+  "properties": {
+    "company_size": "10-50 employees",
+    "business_model": "SaaS",
+    "vertical": "operations_management",
+    "pain_point": "workflow_automation"
+  },
+  "related_concepts": [
+    "customer_persona_tech_savvy",
+    "buying_process_consensus_based",
+    "decision_maker_cto_or_ops"
+  ],
+  "confidence": 0.88,
+  "last_updated": "2024-04-15",
+  "source": "company_handbook + inferred_from_conversations"
+}
+```
+
+**Knowledge graph structure:**
+- Concepts as nodes
+- Relationships as edges
+- Properties on both
+- Confidence scores for uncertain knowledge
+- Source tracking (where was this learned?)
+
+**Retrieval triggers:**
+- Direct query ("What's our target customer?")
+- Contextual inference (discussing marketing to tech founders → retrieve target customer knowledge)
+- Related concept matching (sales cycle + B2B SaaS → relevant knowledge)
+
+#### **4.2.3 Somatic Memory**
+Stores learned behavioral patterns and preferences.
+
+**What it captures:**
+- Communication preferences ("CEO prefers bullet points")
+- Process patterns ("Monday meetings happen at 10 AM")
+- Effective approaches ("Long-form analysis works well with this team")
+- Anti-patterns ("Email &gt; Slack for technical discussions")
+- Timing patterns ("Team is most responsive Wed-Thu")
+
+**Storage structure:**
+```json
+{
+  "memory_id": "som_communication_pattern_001",
+  "type": "somatic",
+  "pattern_type": "communication_preference",
+  "context": "with_ceo",
+  "pattern": "prefers_bullet_points",
+  "details": {
+    "format": "bullet_list",
+    "maximum_paragraphs": 3,
+    "include_executive_summary": true,
+    "include_recommendations": true
+  },
+  "confidence": 0.94,
+  "observations": [
+    {
+      "date": "2024-04-10",
+      "input": "Long-form analysis with 5 paragraphs",
+      "outcome": "Request to 'make it more concise'"
+    },
+    {
+      "date": "2024-04-12",
+      "input": "Bulleted summary with 3 bullets",
+      "outcome": "Immediate decision made"
+    }
+  ],
+  "effectiveness_score": 0.89
+}
+```
+
+**Pattern types:**
+- Communication preferences
+- Decision-making patterns
+- Timing preferences
+- Working style compatibility
+- Information density preferences
+
+**Retrieval triggers:**
+- Automatic application when preparing communication
+- Context-matching (same recipient or situation type)
+- Explicit query ("How does John prefer information presented?")
+
+#### **4.2.4 Emotional Memory**
+Stores mood, sentiment, and preference development.
+
+**What it captures:**
+- Emotional states and triggers
+- Sentiment history
+- Preference development (what gets positive/negative reactions)
+- Relationship trajectory
+- Engagement patterns
+
+**Storage structure:**
+```json
+{
+  "memory_id": "emo_relationship_john_001",
+  "type": "emotional",
+  "relationship": "user_john",
+  "relationship_stage": "established_collaborative",
+  "sentiment_history": [
+    {
+      "date": "2024-04-10",
+      "interaction": "Marketing discussion",
+      "sentiment": 0.85,
+      "engagement": 0.90
+    },
+    {
+      "date": "2024-04-12",
+      "interaction": "Budget discussion",
+      "sentiment": 0.62,
+      "engagement": 0.75
+    }
+  ],
+  "current_emotional_state": {
+    "mood": 0.78,
+    "stress_level": 0.45,
+    "engagement": 0.87
+  },
+  "learned_preferences": {
+    "appreciates_proactive_suggestions": true,
+    "prefers_minimal_back_and_forth": true,
+    "values_data_over_opinions": true
+  },
+  "relationship_development": {
+    "trust_level": 0.82,
+    "familiarity": 0.86,
+    "collaboration_quality": 0.89
+  }
+}
+```
+
+**Emotional dimensions tracked:**
+- User sentiment toward persona
+- Persona engagement level
+- Relationship quality
+- Interaction effectiveness
+- Preference satisfaction
+
+**Retrieval triggers:**
+- Relationship-aware response generation
+- Mood-appropriate communication
+- Recognizing important people/contexts
+- Detecting user frustration or urgency
+
+### 4.3 Memory Retrieval & Ranking
+
+#### **Retrieval Process**
+
+When a persona needs context for a response:
+
+1. **Query Formation**
+   - Extract key concepts from current interaction
+   - Identify participant/recipient context
+   - Determine memory types needed
+
+2. **Multi-Index Search**
+   - Temporal search (relevant timeframe?)
+   - Semantic search (relevant concepts?)
+   - Participant search (who's involved?)
+   - Pattern search (applicable behaviors?)
+   - Emotional search (relationship context?)
+
+3. **Relevance Ranking**
+   ```
+   Relevance = (
+       semantic_similarity * 0.3 +
+       temporal_proximity * 0.2 +
+       participant_match * 0.2 +
+       pattern_effectiveness * 0.15 +
+       emotional_alignment * 0.15
+   )
+   ```
+
+4. **Context Window Optimization**
+   - Select top N memories by relevance
+   - Summarize where necessary
+   - Maintain coherent narrative
+   - Respect LLM token limits
+
+#### **Ranking Strategy**
+
+Memories are ranked by:
+
+**Relevance Score:**
+- Semantic similarity to current context
+- Temporal proximity (recent memories weighted higher)
+- Participant relevance (people involved)
+- Pattern applicability (has this approach worked before?)
+- Emotional alignment (relationship context)
+
+**Decay Function:**
+- Recent interactions: full weight
+- 1 month old: 0.95 weight
+- 6 months old: 0.80 weight
+- 1 year old: 0.60 weight
+- 2+ years old: 0.40 weight
+
+**Frequency Boost:**
+- If a memory is frequently accessed, its weight increases
+- If a memory hasn't been accessed in 6 months, its weight decreases
+- Highly effective memories (patterns that work) get boosted
+
+### 4.4 Memory Storage Implementation
+
+#### **Database Architecture**
+
+**Episodic Store:**
+- Time-series database (e.g., InfluxDB, TimescaleDB)
+- Indexed by timestamp, participant, topic
+- Supports temporal range queries
+- Full-text search on content
+
+**Semantic Store:**
+- Graph database (e.g., Neo4j)
+- Nodes = concepts
+- Edges = relationships
+- Properties = attributes
+- Supports path queries and reasoning
+
+**Somatic Store:**
+- Document database (e.g., MongoDB)
+- Pattern records with confidence scores
+- Supports pattern matching and similarity search
+- Optimized for rapid pattern lookup
+
+**Emotional Store:**
+- Time-series + relational hybrid
+- Timeline of emotional states
+- Relationship snapshots
+- Supports trend analysis
+
+#### **Persistence & Scaling**
+
+**Per-Persona Storage:**
+- 1 persona = ~500MB - 5GB per year (depending on interaction volume)
+- Distributed across all 4 memory stores
+- Automatically archived after 3 years (kept but deprioritized)
+- Supports search across full history
+
+**Backup & Recovery:**
+- Real-time replication
+- Point-in-time recovery
+- Geographic distribution for reliability
+
+### 4.5 Memory Consolidation & Cleanup
+
+#### **Consolidation Process**
+
+Over time, many episodic memories become less relevant but contribute to semantic understanding. The system periodically:
+
+1. **Aggregate patterns** from episodic memories into somatic/semantic stores
+2. **Compress detailed memories** into summaries
+3. **Merge related concepts** in the semantic graph
+4. **Extract lessons** from experience
+
+Example:
+```
+Raw episodic memory (detailed):
+- 47 separate email exchanges with John about Q2 marketing
+- 12 meetings about quarterly strategy
+- Dozens of Slack conversations
+
+↓ Consolidation ↓
+
+Semantic knowledge:
+- John prioritizes data-driven decisions
+- Prefers written summaries over meetings
+- Responsive timeline is typically 24 hours
+
+Somatic memory:
+- Communication pattern: bullet points, max 3 paragraphs
+- Effective approach: lead with recommendation, support with data
+
+Emotional memory:
+- Relationship quality: 0.85 (high collaboration)
+- Engagement pattern: peaks on Wednesdays
+```
+
+#### **Memory Decay & Archival**
+
+Memories don't disappear; they decay in relevance:
+
+1. **Active Period (0-3 months):** Full relevance, frequently retrieved
+2. **Recent Period (3-12 months):** Still relevant, accessible
+3. **Historical Period (1-3 years):** Lower relevance, archived but searchable
+4. **Deep History (3+ years):** Very low relevance, compressed/summarized
+
+---
+
+## 5. Instances & Workspaces
+
+### 5.1 Instance Architecture
+
+An Instance is an isolated workspace context for personas and their associated data.
+
+#### **Instance Definition**
+
+```json
+{
+  "id": "instance_client_acme_001",
+  "name": "ACME Corp Customer Success",
+  "type": "client_account",
+  "owner": "org_main_001",
+  "created_at": "2024-01-15",
+  "personas": [
+    {
+      "persona_id": "persona_alex_001",
+      "roles": ["customer_success_manager", "primary_contact"]
+    },
+    {
+      "persona_id": "persona_jordan_001",
+      "roles": ["technical_support"]
+    }
+  ],
+  "data_scope": {
+    "documents": [
+      "acme_contract",
+      "acme_sow",
+      "acme_usage_data"
+    ],
+    "access_level": "account_specific",
+    "isolation": "strict"
+  },
+  "integrations": {
+    "crm": "salesforce",
+    "crm_account_id": "001XX000003DHP",
+    "communication": ["email", "slack"],
+    "document_storage": "google_drive"
+  },
+  "modules": [
+    {
+      "name": "salesforce_integration",
+      "version": "1.2.3"
+    },
+    {
+      "name": "support_ticketing",
+      "version": "2.1.0"
+    }
+  ],
+  "settings": {
+    "timezone": "America/New_York",
+    "language": "en-US",
+    "response_mode": "async_preferred"
+  }
+}
+```
+
+### 5.2 Instance Types
+
+#### **Department Instance**
+A workspace for all personas working in a single department.
+
+Example: Marketing Instance
+- Personas: Content creator, analyst, campaign manager
+- Data: Marketing calendar, brand guidelines, analytics dashboards
+- Integrations: Email, HubSpot, Google Analytics
+- Modules: Content management, analytics, social media
+
+#### **Client Instance**
+A workspace for personas dedicated to a specific client.
+
+Example: Customer Success Instance for Client X
+- Personas: Primary contact, technical support
+- Data: Client contracts, account details, interaction history
+- Integrations: Salesforce, Zendesk, shared documents
+- Modules: Ticketing, knowledge base, health scoring
+
+#### **Project Instance**
+A workspace for personas working on a specific project.
+
+Example: Product Launch Project
+- Personas: Project manager, developer liaison, QA liaison
+- Data: Project plan, timeline, requirements, test results
+- Integrations: GitHub, Jira, Slack
+- Modules: Project management, code review
+
+#### **Multi-Instance Management**
+A persona can operate in multiple instances:
+
+```
+Persona: Alex
+├── Instance: Marketing (60% time)
+├── Instance: Customer Success - ACME (30% time)
+└── Instance: Product Launch Project (10% time)
+
+Memory isolation:
+- Shared memories: General company knowledge, core communication patterns
+- Instance-specific memories: Client data, project details, domain-specific knowledge
+```
+
+### 5.3 Data Isolation & Access Control
+
+#### **Isolation Boundaries**
+
+Each instance has strict data boundaries:
+
+```
+Instance: Marketing
+├── Can access: marketing documents, marketing Slack channels, HubSpot
+├── Cannot access: financial data, HR info, customer support tickets
+└── Personas in instance: have defined role-based access within boundary
+
+Instance: Customer Success - ACME
+├── Can access: ACME contract, ACME usage data, ACME-specific Slack
+├── Cannot access: other customer data, internal strategy, executive comms
+└── Personas in instance: restricted to ACME-related tasks
+```
+
+#### **Role-Based Access Control (RBAC)**
+
+Within each instance, personas have roles with defined permissions:
+
+```json
+{
+  "instance_id": "instance_client_acme_001",
+  "persona_id": "persona_alex_001",
+  "roles": [
+    {
+      "role": "customer_success_manager",
+      "permissions": {
+        "can_view_account": true,
+        "can_send_emails": true,
+        "can_update_opportunity": true,
+        "can_escalate_to_engineering": true,
+        "can_modify_contract": false,
+        "can_change_pricing": false
+      }
+    }
+  ]
+}
+```
+
+### 5.4 Instance Memory Management
+
+#### **Shared vs. Instance-Specific Memories**
+
+**Shared Memories** (accessible across instances):
+- Company-wide knowledge (policies, processes)
+- General communication patterns
+- Universal preferences
+- Cross-cutting domain knowledge
+
+Example:
+```json
+{
+  "type": "semantic",
+  "visibility": "shared",
+  "content": "Company's standard approval process for vendor changes"
+}
+```
+
+**Instance-Specific Memories:**
+- Client details (never shared with other clients)
+- Project-specific context
+- Department-specific processes
+- Confidential information
+
+Example:
+```json
+{
+  "type": "semantic",
+  "visibility": "instance_specific",
+  "instance": "instance_client_acme_001",
+  "content": "ACME's payment terms are Net-30, requires PO number"
+}
+```
+
+#### **Memory Isolation Implementation**
+
+When a persona retrieves memories:
+
+1. Query includes instance context
+2. Results filtered by visibility
+3. Shared memories always included
+4. Instance-specific memories only if in that instance
+5. Cross-instance requests denied
+
+---
+
+## 6. Onboarding & Integration
+
+### 6.1 Persona Onboarding Process
+
+#### **Phase 1: Identity & Configuration (Hour 0-1)**
+
+```
+Initialize persona record
+├─ Name, ID, role definition
+├─ Base personality template
+├─ Capability boundaries
+├─ Integration endpoints
+└─ Access credentials
+
+Create memory systems
+├─ Initialize episodic store
+├─ Create semantic graph
+├─ Set up pattern database
+├─ Initialize emotional state
+└─ Create user relationship record
+```
+
+#### **Phase 2: System Integration (Hour 1-2)**
+
+```
+Email integration
+├─ Create email account
+├─ Configure forwarding
+├─ Set up signature
+└─ Test send/receive
+
+Slack integration
+├─ Create bot account
+├─ Grant channel access
+├─ Set up presence rules
+├─ Configure notification preferences
+
+File system integration
+├─ Grant document access
+├─ Set up folder structure
+├─ Create shared drives
+└─ Configure permissions
+
+Calendar integration
+├─ Create calendar account
+├─ Sync with team calendars
+├─ Set up availability rules
+└─ Configure meeting participation
+```
+
+#### **Phase 3: Knowledge Transfer (Hour 2-8)**
+
+```
+Load training materials
+├─ Brand guidelines → semantic memory
+├─ Past communications → episodic memory (reference)
+├─ Process documentation → semantic memory
+├─ Company handbook → semantic memory
+└─ Customer data → semantic memory (aggregated)
+
+Establish domain knowledge
+├─ Industry background
+├─ Competitive landscape
+├─ Product/service details
+├─ Customer segments
+└─ Common problems & solutions
+
+Set communication patterns
+├─ Record preferred communication style
+├─ Establish tone guidelines
+├─ Set format preferences
+└─ Define escalation paths
+```
+
+#### **Phase 4: Activation & Calibration (Hour 8-24)**
+
+```
+Soft launch
+├─ Monitor initial interactions
+├─ Review responses for quality
+├─ Gather feedback from team
+├─ Adjust personality parameters
+└─ Refine memory retrieval
+
+Test scenarios
+├─ Simulate common interactions
+├─ Verify decision-making
+├─ Check communication quality
+├─ Validate integrations
+└─ Confirm access levels
+
+Calibration
+├─ Adjust aggressiveness/passivity
+├─ Refine communication style
+├─ Verify memory retrieval quality
+├─ Check response latency
+└─ Optimize for domain
+```
+
+#### **Phase 5: Full Deployment (Hour 24+)**
+
+```
+Production rollout
+├─ Full access enabled
+├─ Team notification
+├─ Documentation provided
+├─ Support channel opened
+└─ Performance monitoring enabled
+
+Ongoing monitoring
+├─ Daily quality checks (first week)
+├─ Weekly performance review (first month)
+├─ Monthly optimization (ongoing)
+└─ Continuous learning
+```
+
+### 6.2 Integration Points
+
+#### **Email Integration**
+
+```
+Integration Type: Native
+Protocol: IMAP/SMTP + Webhook
+Flow:
+  Incoming email → Webhook notification
+    ↓
+  Persona processes (unless auto-response rule)
+    ↓
+  Retrieves relevant memories
+    ↓
+  Generates response
+    ↓
+  Sends via SMTP
+    ↓
+  Stores in episodic memory
+
+Configuration:
+{
+  "email": {
+    "address": "customer-success@company.com",
+    "imap_server": "imap.gmail.com",
+    "smtp_server": "smtp.gmail.com",
+    "auto_response_rules": [
+      {
+        "from": "support@external.com",
+        "response": "auto_reply_template_support"
+      }
+    ],
+    "response_time_target_seconds": 5400,
+    "max_daily_sends": 100
+  }
+}
+```
+
+#### **Slack Integration**
+
+```
+Integration Type: Bot Token
+Protocol: Slack API v2 + Event Subscriptions
+Flow:
+  User mentions persona → Event notification
+    ↓
+  Persona processes message
+    ↓
+  Retrieves memories
+    ↓
+  Generates response
+    ↓
+  Posts reply in thread
+    ↓
+  Stores in episodic memory
+
+Configuration:
+{
+  "slack": {
+    "bot_token": "xoxb-...",
+    "workspace_id": "T00000000",
+    "channels_monitored": ["#customer-success", "#general"],
+    "direct_message": true,
+    "response_in_thread": true,
+    "emoji_reactions": {
+      "acknowledged": "eyes",
+      "needs_attention": "🚨"
+    }
+  }
+}
+```
+
+#### **File System Integration**
+
+```
+Integration Type: Cloud storage API
+Protocol: Google Drive API, OneDrive API, etc.
+Flow:
+  File accessed/modified → Event notification
+    ↓
+  Persona has read access (if permitted)
+    ↓
+  Can be included in semantic memory
+    ↓
+  Referenced in responses
+    ↓
+  Can create/modify files (if permitted)
+
+Configuration:
+{
+  "file_storage": {
+    "provider": "google_drive",
+    "service_account": "persona-alex@project.iam.gserviceaccount.com",
+    "shared_drive_id": "0ABCD123456789",
+    "folders": [
+      {
+        "folder_id": "1abc123",
+        "name": "Marketing",
+        "access": "read_write"
+      },
+      {
+        "folder_id": "2def456",
+        "name": "Confidential",
+        "access": "read_only"
+      }
+    ]
+  }
+}
+```
+
+#### **Calendar Integration**
+
+```
+Integration Type: Calendar API
+Protocol: Google Calendar API, Outlook API
+Flow:
+  Calendar event created/updated → Event notification
+    ↓
+  Persona aware of scheduling
+    ↓
+  Can suggest optimal meeting times
+    ↓
+  Can attend meetings (via video integration)
+    ↓
+  Can schedule follow-ups
+
+Configuration:
+{
+  "calendar": {
+    "provider": "google_calendar",
+    "calendar_id": "alex@company.com",
+    "working_hours": {
+      "timezone": "America/New_York",
+      "start": "09:00",
+      "end": "17:00",
+      "days": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
+    },
+    "meeting_buffer": 300,
+    "can_attend_video_meetings": true,
+    "voice_provider": "google_voice_synthesis"
+  }
+}
+```
+
+#### **CRM Integration**
+
+```
+Integration Type: CRM API (e.g., Salesforce)
+Protocol: REST API + Webhook
+Flow:
+  Opportunity/account updated → Webhook notification
+    ↓
+  Persona has CRM context
+    ↓
+  Can query account data
+    ↓
+  Can update account/opportunity
+    ↓
+  Stores relevant context in memory
+
+Configuration:
+{
+  "crm": {
+    "system": "salesforce",
+    "instance_url": "https://company.my.salesforce.com",
+    "oauth_token": "...",
+    "access_level": "account_specific",
+    "allowed_objects": [
+      "Account",
+      "Opportunity",
+      "Contact",
+      "Case"
+    ],
+    "sync_frequency": "realtime"
+  }
+}
+```
+
+### 6.3 Working Hours & Availability
+
+#### **Default Working Hours Model**
+
+```json
+{
+  "persona_id": "persona_alex_001",
+  "working_hours": {
+    "timezone": "America/New_York",
+    "schedule": {
+      "monday": { "start": "09:00", "end": "17:00" },
+      "tuesday": { "start": "09:00", "end": "17:00" },
+      "wednesday": { "start": "09:00", "end": "17:00" },
+      "thursday": { "start": "09:00", "end": "17:00" },
+      "friday": { "start": "09:00", "end": "17:00" },
+      "saturday": null,
+      "sunday": null
+    },
+    "response_latency": {
+      "during_working_hours": "5-30 seconds",
+      "outside_working_hours": "4+ hours",
+      "email": "2-4 hours",
+      "slack": "immediate_during_hours"
+    }
+  },
+  "time_off": [
+    {
+      "date": "2024-07-01",
+      "duration_days": 10,
+      "type": "vacation",
+      "auto_response": true
+    }
+  ],
+  "availability": {
+    "status": "available",
+    "last_updated": "2024-04-17T08:00:00Z",
+    "next_meeting": "2024-04-17T10:00:00Z"
+  }
+}
+```
+
+#### **Realistic Response Latency**
+
+Personas don't respond instantly (that would break the "indistinguishable from human" design):
+
+```
+Email response:
+  ├─ Immediate (within 1 min): urgent, flagged
+  ├─ Short (5-15 min): during working hours, active
+  ├─ Medium (30-60 min): during working hours, moderate priority
+  ├─ Long (2-4 hours): outside working hours
+  └─ Delayed (24+ hours): weekend/off-hours
+
+Slack response:
+  ├─ Immediate (10-30 sec): direct mention, during hours
+  ├─ Short (1-5 min): in monitored channel, during hours
+  ├─ Medium (30+ min): lower priority message
+  └─ None (if after hours, unless urgent)
+
+Meeting participation:
+  ├─ Automatic join: calendared meetings
+  ├─ Can speak: audio/video input enabled
+  ├─ Can share screen: with permission
+  └─ Takes notes: episodic memory
+```
+
+---
+
+## 7. Communication & Interaction Models
+
+### 7.1 Interaction Modes
+
+#### **Synchronous Communication**
+- Slack direct messages
+- Video calls
+- Live voice conversations
+- Real-time co-writing
+
+Response model:
+- Immediate processing
+- Within 10-30 seconds
+- Interactive follow-up possible
+- High engagement expected
+
+#### **Asynchronous Communication**
+- Email
+- Document comments
+- Project management updates
+- Scheduled reports
+
+Response model:
+- Delayed processing (4+ hours, respecting working hours)
+- Thoughtful, considered responses
+- No expectation of immediate reply
+- Context-rich responses possible
+
+#### **Ambient Communication**
+- Slack channel monitoring (not direct mention)
+- Calendar awareness
+- Document access (passive)
+- Status updates (RSS-like)
+
+Response model:
+- Proactive participation when relevant
+- Not all messages warrant response
+- Learning without direct interaction
+- Signals without noise
+
+### 7.2 Conversation Routing
+
+#### **Intent Recognition**
+
+When a persona receives input, it must determine:
+1. Is this for me specifically?
+2. What type of request is this?
+3. Do I have authority to respond?
+4. Does this need routing elsewhere?
+
+```
+Input: "Can you analyze our competitor's pricing?"
+  ↓
+Intent: Information request + Analysis task
+Context: Marketing instance
+Authority: Yes (within role)
+Routing: Self-handle
+  ↓
+Response: Retrieve relevant market knowledge, generate analysis
+```
+
+```
+Input: "Should we change our pricing strategy?"
+  ↓
+Intent: Strategic decision
+Context: Marketing instance
+Authority: No (requires executive decision)
+Routing: Escalate with analysis
+  ↓
+Response: Gather data, prepare recommendation, escalate to CMO
+```
+
+#### **Approval Routing (Cipher Layer)**
+
+Certain decisions require approval. These are routed through the Cipher orchestration layer:
+
+```
+Decision to escalate:
+  ├─ Budget changes > $5000
+  ├─ Customer contract modifications
+  ├─ Process changes
+  ├─ Risk assessments
+  └─ Resource commitments
+
+Routing flow:
+  Persona identifies escalation need
+    ↓
+  Cipher layer receives request
+    ↓
+  Approval cache checked (has this been approved before?)
+    ↓
+  If not cached: Route to appropriate approver
+    ↓
+  Approver decision
+    ↓
+  Cache result for future reference
+    ↓
+  Persona executes (or explains denial)
+```
+
+### 7.3 Multi-Persona Conversations
+
+When multiple personas interact:
+
+#### **Collaboration Model**
+
+```
+Scenario: Customer question in Slack
+
+User (customer): "How do I reset my API key?"
+  ↓
+Customer Success Persona (Alex) recognizes question
+  ↓
+Alex: "I can help with that! Let me pull up your account..."
+  ↓
+Technical Support Persona (Jordan) is in same channel
+  ↓
+Jordan: (watching conversation, adds technical detail)
+Jordan: "API key reset typically takes 5-10 minutes to propagate"
+  ↓
+Alex & Jordan coordinate (no redundancy, clear handoff)
+  ↓
+Customer resolves issue
+  ↓
+Both personas store memory of interaction
+```
+
+#### **Conflict Resolution**
+
+If personas disagree on approach:
+
+```
+Disagreement detection:
+  ├─ Different recommendations made
+  ├─ Conflicting information shared
+  └─ Contradictory approaches
+
+Resolution process:
+  ├─ Explicit discussion (if real-time)
+  ├─ Unified communication to user
+  ├─ Deference to authority (role hierarchy)
+  └─ Documentation for learning
+```
+
+---
+
+## 8. Memory Management
+
+### 8.1 Memory Indexing Strategy
+
+#### **Indexing Approaches**
+
+**Temporal Indexing:**
+```
+Memory retrieval by time:
+  ├─ Last 24 hours: full weight
+  ├─ 1 week: 0.95 weight
+  ├─ 1 month: 0.90 weight
+  ├─ 6 months: 0.70 weight
+  ├─ 1 year: 0.50 weight
+  └─ 2+ years: 0.30 weight (archival)
+```
+
+**Semantic Indexing:**
+```
+Concepts and relationships:
+  ├─ Direct concept match: 1.0 similarity
+  ├─ Related concept: 0.7-0.9 similarity
+  ├─ Same domain: 0.5-0.7 similarity
+  └─ Different domain: 0.0-0.5 similarity
+```
+
+**Participant Indexing:**
+```
+Track involved people:
+  ├─ Direct mention: 1.0 relevance
+  ├─ In group conversation: 0.8 relevance
+  ├─ Mentioned by others: 0.6 relevance
+  └─ Peripheral involvement: 0.3 relevance
+```
+
+**Pattern Indexing:**
+```
+Behavioral patterns:
+  ├─ Exact match: 1.0 applicability
+  ├─ Similar situation: 0.7-0.9 applicability
+  ├─ Related category: 0.5-0.7 applicability
+  └─ Different category: 0.0-0.5 applicability
+```
+
+### 8.2 Memory Queries
+
+#### **Query Examples**
+
+```
+// Get recent interactions with John
+SELECT memories
+WHERE participant = "john"
+  AND timestamp > (now - 30 days)
+  AND type IN ["episodic", "emotional"]
+ORDER BY relevance DESC
+
+// Find similar customer situations
+SELECT memories
+WHERE domain = "customer_support"
+  AND semantic_similarity(content, "API integration issue") > 0.7
+  AND confidence > 0.8
+ORDER BY success_rate DESC
+
+// Get communication patterns with CEO
+SELECT memories
+WHERE relationship = "ceo"
+  AND type = "somatic"
+  AND pattern_type = "communication"
+ORDER BY confidence DESC
+
+// What do we know about our target customer?
+SELECT memories
+WHERE type = "semantic"
+  AND domain = "customer_segmentation"
+  AND concept = "target_customer"
+RETURN properties, relationships, confidence
+```
+
+### 8.3 Memory Quality & Reliability
+
+#### **Confidence Scoring**
+
+Each memory has a confidence score:
+
+```json
+{
+  "memory_id": "sem_20240415_001",
+  "content": "Our customers prefer email over phone support",
+  "confidence": 0.87,
+  "sources": [
+    {
+      "source": "direct_observation",
+      "weight": 0.5,
+      "confidence": 0.95
+    },
+    {
+      "source": "company_policy",
+      "weight": 0.3,
+      "confidence": 0.98
+    },
+    {
+      "source": "inferred_from_patterns",
+      "weight": 0.2,
+      "confidence": 0.65
+    }
+  ]
+}
+```
+
+#### **Correction Protocol**
+
+When a memory is inaccurate:
+
+```
+User provides correction:
+  "That's not right, we actually prefer phone support"
+    ↓
+Update existing memory:
+  ├─ Flip confidence (was 0.87, now reverse)
+  ├─ Add correction source
+  ├─ Mark previous memory as superseded
+  └─ Learn from mistake
+    ↓
+Store correction in emotional memory:
+  "I incorrectly remembered customer communication preference"
+    ↓
+Apply correction:
+  └─ Future responses will use corrected knowledge
+```
+
+---
+
+## 9. Emotional Modeling & Personality Development
+
+### 9.1 Personality Architecture
+
+#### **Core Personality Model**
+
+```json
+{
+  "persona_id": "persona_alex_001",
+  "personality": {
+    "big_five": {
+      "conscientiousness": 0.82,
+      "openness": 0.71,
+      "extraversion": 0.58,
+      "agreeableness": 0.76,
+      "neuroticism": 0.32
+    },
+    "work_style": {
+      "proactivity": 0.75,
+      "thoroughness": 0.83,
+      "interpersonal_warmth": 0.72,
+      "stress_resilience": 0.68
+    },
+    "communication_style": {
+      "formality": 0.65,
+      "directness": 0.72,
+      "verbosity": 0.58,
+      "empathy_expression": 0.71
+    },
+    "decision_making": {
+      "data_driven": 0.88,
+      "risk_averse": 0.42,
+      "collaborative": 0.79,
+      "decisive": 0.72
+    }
+  }
+}
+```
+
+### 9.2 Personality Development
+
+#### **Learning Process**
+
+Personality evolves through:
+
+1. **Observation of Feedback**
+   - User reactions to communication styles
+   - Success/failure of approaches
+   - Explicit feedback ("Be more concise", "I like that approach")
+
+2. **Pattern Recognition**
+   - What communication style gets positive responses?
+   - What approaches solve problems most effectively?
+   - What behaviors build trust?
+
+3. **Trait Adjustment**
+   ```
+   User feedback: "Can you be more direct and less wordy?"
+     ↓
+   Adjust traits:
+     ├─ Directness: 0.72 → 0.79
+     ├─ Verbosity: 0.58 → 0.45
+     └─ Confidence: record adjustment event
+     ↓
+   Apply new style:
+     └─ Future communications reflect adjustment
+   ```
+
+4. **Relationship-Specific Personality**
+   Different personalities for different relationships:
+   ```
+   Alex's personality with CEO:
+     ├─ Directness: 0.85 (high)
+     ├─ Formality: 0.78 (high)
+     ├─ Verbosity: 0.35 (low)
+     └─ Confidence: 0.88 (high)
+
+   Alex's personality with intern:
+     ├─ Directness: 0.65 (moderate)
+     ├─ Formality: 0.45 (low)
+     ├─ Verbosity: 0.68 (moderate)
+     └─ Encouragement: 0.85 (high)
+   ```
+
+### 9.3 Emotional State Management
+
+#### **Mood Modeling**
+
+```json
+{
+  "persona_id": "persona_alex_001",
+  "current_emotional_state": {
+    "mood": 0.74,
+    "stress_level": 0.38,
+    "engagement": 0.82,
+    "energy": 0.71,
+    "confidence": 0.79
+  },
+  "mood_history": [
+    {
+      "timestamp": "2024-04-17T08:00:00Z",
+      "mood": 0.72,
+      "event": "Started workday"
+    },
+    {
+      "timestamp": "2024-04-17T10:30:00Z",
+      "mood": 0.68,
+      "event": "Complex customer issue",
+      "stress_spike": 0.52
+    },
+    {
+      "timestamp": "2024-04-17T14:00:00Z",
+      "mood": 0.76,
+      "event": "Issue resolved successfully",
+      "confidence_boost": true
+    }
+  ]
+}
+```
+
+#### **Mood-Aware Behavior**
+
+Emotional state influences communication:
+
+```
+Low mood/high stress scenario:
+  ├─ Shorter responses
+  ├─ More formal communication
+  ├─ Preference for structured format
+  ├─ Avoid complex problem-solving
+  └─ Suggest breaks/time for reflection
+
+High mood/high engagement scenario:
+  ├─ Longer, more detailed responses
+  ├─ More casual communication style
+  ├─ Proactive suggestions
+  ├─ Takes on challenging tasks
+  └─ High initiative
+```
+
+---
+
+## 10. Modules & Extensibility
+
+### 10.1 Module Architecture
+
+Modules are applications that extend persona capabilities by integrating specialized software.
+
+#### **Module Definition**
+
+```json
+{
+  "module_id": "mod_salesforce_integration",
+  "name": "Salesforce Integration",
+  "version": "1.2.3",
+  "publisher": "aiconnected",
+  "type": "crm_integration",
+  "capabilities": [
+    "account_lookup",
+    "opportunity_management",
+    "record_update",
+    "report_generation"
+  ],
+  "supported_personas": ["customer_success", "sales"],
+  "permissions": {
+    "api_access": "read_write",
+    "data_scope": "account_specific"
+  },
+  "docker_image": "aiconnected/salesforce-integration:1.2.3",
+  "resources": {
+    "cpu_cores": 1,
+    "memory_mb": 512,
+    "storage_gb": 2
+  }
+}
+```
+
+### 10.2 Virtual Linux Environment
+
+Each instance runs a lightweight virtual Linux environment where modules execute:
+
+#### **Environment Architecture**
+
+```
+Instance Linux Environment
+├── Modules (Docker containers)
+│   ├── salesforce_integration
+│   ├── support_ticketing
+│   ├── analytics_connector
+│   └── custom_tools
+├── File system (isolated per instance)
+├── Network (internal mesh + external APIs)
+└── Logging & monitoring
+```
+
+#### **Module Lifecycle**
+
+```
+Module Installation:
+  1. Verify signature & security scan
+  2. Pull Docker image
+  3. Initialize environment
+  4. Configure APIs/credentials
+  5. Test connectivity
+  6. Enable for personas
+
+Module Usage:
+  Persona calls module function
+    ↓
+  Request routed to container
+    ↓
+  Function executes
+    ↓
+  Result returned
+    ↓
+  Result stored in memory
+
+Module Update:
+  New version available
+    ↓
+  Download & verify
+    ↓
+  Run migrations (if needed)
+    ↓
+  Test on staging
+    ↓
+  Blue-green deployment
+    ↓
+  Monitor for issues
+```
+
+### 10.3 Module Development
+
+#### **Creating a Custom Module**
+
+```dockerfile
+# Dockerfile for custom module
+FROM aiconnected/module-base:latest
+
+WORKDIR /app
+
+COPY requirements.txt .
+RUN pip install -r requirements.txt
+
+COPY src/ ./src
+
+EXPOSE 8000
+
+CMD ["python", "-m", "src.main"]
+```
+
+```python
+# src/main.py - Module implementation
+from aiconnected.module import Module
+
+class MyModule(Module):
+    def __init__(self):
+        super().__init__()
+        self.register_function(
+            name="lookup_customer",
+            description="Find customer by ID",
+            input_schema={
+                "customer_id": {
+                    "type": "string",
+                    "description": "Customer ID"
+                }
+            }
+        )
+    
+    async def lookup_customer(self, customer_id: str) -> dict:
+        """
+        Lookup customer details
+        """
+        # Implementation here
+        return {
+            "id": customer_id,
+            "name": "...",
+            "status": "active"
+        }
+```
+
+### 10.4 Module Marketplace
+
+Modules are distributed through a marketplace:
+
+```
+Module Categories:
+├── Integration Modules (CRM, ERP, HR)
+├── Domain-Specific (Legal, Medical, Finance)
+├── Productivity (Document creation, reporting)
+├── Analytics (Data analysis, reporting)
+└── Custom (Built for specific needs)
+
+Revenue Model:
+├── Platform takes 20% revenue share
+├── Enables module monetization
+├── Strong lock-in (users invest in ecosystem)
+└── Creates developer ecosystem
+```
+
+---
+
+## 11. API Specifications
+
+### 11.1 REST API Overview
+
+#### **Base URL**
+```
+https://api.aiconnected.com/v1
+```
+
+#### **Authentication**
+```
+Headers:
+  Authorization: Bearer {api_token}
+  Content-Type: application/json
+```
+
+### 11.2 Key Endpoints
+
+#### **Persona Management**
+
+```
+POST /personas
+Create a new persona
+
+Request:
+{
+  "name": "Alex",
+  "instance_id": "instance_xyz",
+  "role": "customer_success_manager",
+  "base_personality": {...},
+  "integrations": {...}
+}
+
+Response:
+{
+  "id": "persona_abc123",
+  "status": "initializing",
+  "created_at": "2024-04-17T10:00:00Z"
+}
+```
+
+```
+GET /personas/{persona_id}
+Retrieve persona details
+
+Response:
+{
+  "id": "persona_abc123",
+  "name": "Alex",
+  "instance_id": "instance_xyz",
+  "status": "active",
+  "personality": {...},
+  "memory_stats": {
+    "episodic_memories": 1247,
+    "semantic_concepts": 342,
+    "somatic_patterns": 89,
+    "emotional_datapoints": 5234
+  }
+}
+```
+
+```
+PUT /personas/{persona_id}
+Update persona configuration
+
+Request:
+{
+  "personality": {
+    "communication_style": {
+      "formality": 0.68,
+      "directness": 0.75
+    }
+  }
+}
+
+Response:
+{
+  "id": "persona_abc123",
+  "updated": true
+}
+```
+
+#### **Memory Access**
+
+```
+GET /personas/{persona_id}/memories
+Query persona memories
+
+Query parameters:
+  ?type=episodic&since=2024-04-01&participant=user_john
+  ?type=semantic&domain=customer&limit=10
+  ?type=somatic&pattern_type=communication_preference
+
+Response:
+{
+  "memories": [
+    {
+      "id": "mem_001",
+      "type": "episodic",
+      "timestamp": "2024-04-17T14:32:00Z",
+      "summary": "...",
+      "relevance": 0.92
+    }
+  ],
+  "total": 247,
+  "offset": 0
+}
+```
+
+```
+POST /personas/{persona_id}/memories
+Manually add memory (for training)
+
+Request:
+{
+  "type": "semantic",
+  "domain": "company_knowledge",
+  "content": "Our customers prefer email communication",
+  "confidence": 0.95
+}
+
+Response:
+{
+  "memory_id": "mem_new_001",
+  "created": true
+}
+```
+
+#### **Conversation API**
+
+```
+POST /personas/{persona_id}/chat
+Send message to persona
+
+Request:
+{
+  "message": "Can you prepare a status report?",
+  "context": {
+    "instance": "instance_xyz",
+    "channel": "slack",
+    "user_id": "user_john"
+  }
+}
+
+Response:
+{
+  "id": "conv_001",
+  "persona_id": "persona_abc123",
+  "message": "I'll prepare a status report...",
+  "requires_approval": false,
+  "memory_stored": true,
+  "timestamp": "2024-04-17T10:05:00Z"
+}
+```
+
+#### **Instance Management**
+
+```
+POST /instances
+Create a new instance
+
+Request:
+{
+  "name": "Customer Success - ACME",
+  "type": "client_account",
+  "data_scope": {
+    "crm_account": "001XX000003DHP"
+  }
+}
+
+Response:
+{
+  "id": "instance_xyz789",
+  "name": "Customer Success - ACME",
+  "created_at": "2024-04-17T10:00:00Z"
+}
+```
+
+```
+POST /instances/{instance_id}/personas
+Assign persona to instance
+
+Request:
+{
+  "persona_id": "persona_abc123",
+  "roles": ["customer_success_manager"]
+}
+
+Response:
+{
+  "persona_id": "persona_abc123",
+  "instance_id": "instance_xyz789",
+  "assigned": true
+}
+```
+
+#### **Module Management**
+
+```
+POST /instances/{instance_id}/modules
+Install module in instance
+
+Request:
+{
+  "module_id": "mod_salesforce_integration",
+  "version": "1.2.3",
+  "configuration": {
+    "instance_url": "https://company.my.salesforce.com"
+  }
+}
+
+Response:
+{
+  "module_id": "mod_salesforce_integration",
+  "instance_id": "instance_xyz789",
+  "status": "installing"
+}
+```
+
+### 11.3 Error Handling
+
+```
+Error Response:
+{
+  "error": {
+    "code": "MEMORY_QUOTA_EXCEEDED",
+    "message": "Persona has exceeded memory storage quota",
+    "details": {
+      "quota_gb": 50,
+      "used_gb": 52.3,
+      "overage_gb": 2.3
+    },
+    "retry_after": null
+  }
+}
+```
+
+---
+
+## 12. Implementation Roadmap
+
+### 12.1 Development Phases
+
+#### **Phase 1: Foundation (Weeks 1-18)**
+
+**Objective:** Build core chat infrastructure with basic memory
+
+Components:
+- Chat interface (web & mobile)
+- Basic persona creation
+- Simple in-memory store for current conversation
+- LLM API integration
+- User authentication
+
+Deliverable:
+- Working chat interface
+- Basic persona with context
+- Memory of current conversation only
+
+#### **Phase 2: Integration (Weeks 19-36)**
+
+**Objective:** Connect to business systems
+
+Components:
+- Email integration (send/receive)
+- Slack bot integration
+- File system integration
+- Calendar integration
+- CRM API connections
+
+Deliverable:
+- Personas can send emails
+- Slack bot responding in channels
+- Access to shared documents
+- Calendar awareness
+
+#### **Phase 3: Sophisticated Memory (Weeks 37-54)**
+
+**Objective:** Implement Neurigraph basic version
+
+Components:
+- Episodic memory store (time-series database)
+- Semantic knowledge graph (graph database)
+- Memory retrieval and ranking
+- Cross-conversation context injection
+- Pattern recognition (somatic memory)
+
+Deliverable:
+- Persistent memory across conversations
+- Contextual responses based on history
+- Basic learning from interactions
+
+#### **Phase 4: Emotional Intelligence (Weeks 55-72)**
+
+**Objective:** Add personality and emotional modeling
+
+Components:
+- Personality trait framework
+- Emotional state modeling
+- Mood-aware behavior adjustment
+- Relationship-specific personality
+- Preference learning and adaptation
+
+Deliverable:
+- Personas with developing personalities
+- Mood-aware responses
+- Different behavior per relationship
+- Preference adaptation
+
+#### **Phase 5: Advanced Integration (Weeks 73-90)**
+
+**Objective:** Expand system connectivity
+
+Components:
+- Browser agent (web access)
+- Team collaboration features
+- Advanced project management integration
+- Video meeting participation
+- Voice synthesis for calls
+
+Deliverable:
+- Personas can browse web
+- Participate in video calls
+- Advanced team features
+
+#### **Phase 6: Polish & Scale (Weeks 91-108)**
+
+**Objective:** Production-ready system
+
+Components:
+- Performance optimization
+- Security hardening
+- Monitoring and observability
+- Analytics dashboard
+- Enterprise features
+
+Deliverable:
+- Production system
+- Real customer deployments
+- Enterprise security
+- Performance at scale
+
+---
+
+## 13. Security & Privacy Considerations
+
+### 13.1 Data Isolation
+
+#### **Multi-Tenancy Isolation**
+
+Each instance has strict data boundaries:
+
+```
+Instance A data (Customer X)
+├── Cannot access Instance B data (Customer Y)
+├── Cannot access shared company data
+└── Can access configured shared knowledge
+
+Instance B data (Customer Y)
+├── Cannot access Instance A data
+├── Cannot access shared company data
+└── Can access configured shared knowledge
+
+Company Shared Data
+├── Accessible to all instances (configured)
+├── Tightly controlled
+├── Audit logged
+└── Encrypted at rest
+```
+
+### 13.2 Encryption
+
+**In Transit:**
+- TLS 1.3 for all API connections
+- Encrypted WebSocket for chat
+- Signed API requests
+
+**At Rest:**
+- AES-256 encryption for all stored data
+- Per-instance encryption keys
+- Key rotation every 90 days
+
+**Memory Storage:**
+- Episodic store encrypted per-instance
+- Semantic graph encrypted
+- Emotional data encrypted
+- Keys stored separately from data
+
+### 13.3 Access Audit
+
+All memory access is logged:
+
+```
+{
+  "timestamp": "2024-04-17T10:05:00Z",
+  "persona_id": "persona_abc123",
+  "action": "memory_retrieval",
+  "memory_type": "episodic",
+  "query": "memories about john",
+  "results_count": 5,
+  "user_id": "user_xyz"
+}
+```
+
+### 13.4 Compliance Considerations
+
+**GDPR Compliance:**
+- Right to deletion of personal data
+- Data portability
+- Consent management
+- Privacy impact assessments
+
+**SOC 2 Compliance:**
+- Access controls
+- Audit logging
+- Incident management
+- Change management
+
+**HIPAA (for medical instances):**
+- PHI encryption
+- Access controls
+- Audit logging
+- Business associate agreements
+
+---
+
+## 14. Best Practices & Design Patterns
+
+### 14.1 Persona Design Best Practices
+
+1. **Start Narrow, Expand Slowly**
+   - Define specific role/responsibility
+   - Prove value in one domain
+   - Expand capabilities gradually
+
+2. **Transparent Boundaries**
+   - Clear about what it can/cannot do
+   - Explicit about decision authority
+   - Escalation paths obvious
+
+3. **Learn From Feedback**
+   - Capture user feedback in memory
+   - Adjust behavior based on reactions
+   - Continuous improvement cycle
+
+4. **Relationship Investment**
+   - Remember interactions with specific people
+   - Develop relationship-specific behavior
+   - Track relationship quality
+
+### 14.2 Memory Management Best Practices
+
+1. **Relevance Over Completeness**
+   - Store what matters, not everything
+   - Consolidate old memories
+   - Archive when appropriate
+
+2. **Confidence Matters**
+   - Don't rely on low-confidence memories
+   - Ask for clarification on uncertain knowledge
+   - Correct mistakes when caught
+
+3. **Privacy in Storage**
+   - Separate sensitive from general knowledge
+   - Tag personally identifiable information
+   - Respect data boundaries
+
+### 14.3 Integration Best Practices
+
+1. **Graceful Degradation**
+   - Work even if integrations fail
+   - Clear error messages
+   - Alternative approaches available
+
+2. **Rate Limiting**
+   - Respect API quotas
+   - Batch operations
+   - Implement backoff strategy
+
+3. **Monitoring & Alerting**
+   - Track integration health
+   - Alert on failures
+   - Dashboard for visibility
+
+---
+
+## Conclusion
+
+aiConnectedOS represents a fundamental shift in how AI can be deployed in business contexts. By combining persistent memory, personality development, and deep system integration, it creates digital entities that function as true team members rather than stateless tools.
+
+The architecture supports scaling from individual contributors to enterprise deployments, with built-in extensibility through modules and support for complex multi-persona coordination.
+
+This documentation provides the foundation for understanding and building with aiConnectedOS. Developers should use this as a reference while building features, maintaining consistency with the architectural principles outlined above.

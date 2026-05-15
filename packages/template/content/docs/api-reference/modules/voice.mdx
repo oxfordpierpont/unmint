@@ -1,0 +1,110 @@
+---
+title: "Voice"
+description: "The aiConnected Voice service contract, including tenant setup, agent management, webhooks, and call lifecycle behavior."
+---
+## Contract status
+
+- `Canonical route contract` for setup and test endpoints documented in the voice dev environment guide
+- `Canonical interface contract` for the broader call pipeline, event model, and service boundaries
+
+## Source documents
+
+- [aiConnected modules overview](/docs/knowledge-base/aiconnected-apps-and-modules/modules/aiconnected-modules-overview)
+- [Developer introduction](/docs/knowledge-base/aiconnected-apps-and-modules/modules/aiConnected-voice/Developer-Introduction)
+- [voice pipeline architecture](/docs/knowledge-base/aiconnected-apps-and-modules/modules/aiConnected-voice/voice-pipeline-architecture)
+- [dev env setup guide](/docs/knowledge-base/aiconnected-apps-and-modules/modules/aiConnected-voice/dev-env-setup-guide)
+- [credentials checklist](/docs/knowledge-base/aiconnected-apps-and-modules/modules/aiConnected-voice/aiConnected-voice-credentials-checklist)
+
+## Module purpose
+
+aiConnected Voice is a multi-tenant voice AI runtime that routes calls through GoToConnect, a WebRTC bridge, LiveKit, and AI services for STT, reasoning, TTS, and tool execution.
+
+## Canonical setup endpoints
+
+The voice dev setup guide includes these test endpoints:
+
+| Method | Route | Purpose |
+|---|---|---|
+| `POST` | `/api/v1/tenants` | Create a tenant |
+| `POST` | `/api/v1/auth/api-keys` | Create an API key |
+| `GET` | `/api/v1/agents` | List or inspect agents |
+
+## Canonical webhook endpoints
+
+The environment guide also references these inbound integration routes:
+
+| Route | Source |
+|---|---|
+| `/webhooks/goto` | GoToConnect |
+| `/webhooks/livekit` | LiveKit |
+
+The credentials checklist also requires webhook-secret validation for GoToConnect and LiveKit.
+
+## Required voice service domains
+
+### Tenant and agent management
+
+- Provision tenants
+- Configure phone and AI credentials per tenant
+- Create and manage voice agents
+- Assign knowledge and tool access to an agent
+
+### Call lifecycle
+
+- Start inbound call handling
+- Track call state changes
+- Stream transcripts and utterances
+- Handle interruptions and endpointing
+- Execute tool calls and transfers
+- Close and archive the call
+
+### Observability
+
+- Emit call lifecycle events
+- Track latency across STT, LLM, and TTS
+- Preserve trace and error context
+
+## Event-driven architecture
+
+The developer introduction is explicit that services communicate through events, not direct calls.
+
+Examples in the repo include:
+
+- `call.connected`
+- state transition events published during call lifecycle updates
+
+The platform-level event bus should also receive normalized topics such as:
+
+- `voice.call.started`
+- `voice.call.completed`
+- `voice.call.failed`
+
+Those align with the platform manifest examples.
+
+## Required data model
+
+The repo repeatedly references:
+
+- `tenants`
+- `agents`
+- `voice_calls`
+- `transcripts`
+- `call_events`
+- `webhook_configs`
+- voice profiles and credentials
+
+## External dependencies
+
+The credentials checklist calls out integration requirements for:
+
+- GoToConnect
+- LiveKit
+- Deepgram
+- Claude or other LLM provider
+- Chatterbox
+- DigitalOcean Spaces
+- n8n webhooks
+
+## Implementation note
+
+Treat Voice as an evented, low-latency orchestration system. The route surface is only one part of the contract. The more important behavior is real-time streaming, interruption safety, and tenant-scoped call state.

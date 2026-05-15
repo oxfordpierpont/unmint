@@ -1,0 +1,271 @@
+---
+title: "Client and CLI"
+description: "The v1 services-layer SDK for module builders: platform client APIs, CLI scaffolding, examples, failure modes, and migration notes."
+---
+## Contract status
+
+`Canonical interface contract`
+
+This page is based on:
+
+- `platform.sec-admn.com-2/sdk/README.md`
+- `platform.sec-admn.com-2/sdk/packages/client/src/index.ts`
+- `platform.sec-admn.com-2/sdk/packages/cli/src/index.ts`
+
+## Use this page when
+
+- you are wiring a module to the platform event bus
+- you need to call another module through the registry
+- you want to report usage
+- you are scaffolding a new module from scratch
+
+## Golden path example
+
+### Scaffold
+
+```bash
+npx create-aiconnected-module
+```
+
+### Initialize the client
+
+```ts
+import { createPlatformClientFromEnv } from "@aiconnected/client";
+
+const platform = createPlatformClientFromEnv();
+```
+
+### Emit an event
+
+```ts
+await platform.emit("call.started", {
+  call_id: "call_123",
+  contact_id: "contact_456"
+});
+```
+
+### Call another module through the registry
+
+```ts
+const result = await platform.call("chat", "send_message", {
+  contact_id: "contact_456",
+  message: "Hello from voice-ai"
+});
+```
+
+### Report usage
+
+```ts
+await platform.usage("calls_initiated", 1, "calls", {
+  provider: "livekit"
+});
+```
+
+## Platform client
+
+The v1 `@aiconnected/client` package defines a module-side platform client with three core responsibilities:
+
+- emit events
+- call registered module functions through the registry
+- report usage metrics
+
+## Client configuration
+
+The client expects:
+
+```ts
+{
+  appId: string,
+  apiKey: string,
+  eventEndpoint: string,
+  registryEndpoint: string,
+  usageEndpoint: string,
+  timeout?: number,
+  retries?: number,
+  debug?: boolean
+}
+```
+
+## Core client methods
+
+### `emit(eventName, payload)`
+
+Purpose:
+
+- fire a platform event asynchronously
+- include `event`, `app_id`, `timestamp`, and `payload`
+
+Behavior from the source:
+
+- event delivery failures are logged
+- failures do not throw into the main code path
+
+Use it for:
+
+- lifecycle events
+- state changes
+- outputs that other modules may consume indirectly
+
+### `createEventHandler(events, handler)`
+
+Purpose:
+
+- build a local development or webhook-style event handler
+- route only subscribed events to the provided async handler
+
+This is especially useful for local event consumption before the full production event wiring is in place.
+
+### `call(appId, functionName, inputs)`
+
+Purpose:
+
+- call another module through the registry
+- POST to the registry's `/call` endpoint
+- return structured success or error data
+
+Payload shape from the client source:
+
+```json
+{
+  "app_id": "target-app",
+  "function": "function_name",
+  "inputs": {},
+  "caller_app_id": "source-app"
+}
+```
+
+### `listFunctions(appId?)`
+
+Purpose:
+
+- retrieve available registry functions
+- optionally filter by app
+
+### `hasFunction(appId, functionName)`
+
+Purpose:
+
+- check whether a function is available in the registry
+
+### `usage(metric, value, unit, metadata?)`
+
+Purpose:
+
+- report metered usage to the platform
+
+Allowed usage units from the source:
+
+- `tokens`
+- `calls`
+- `messages`
+- `requests`
+- `minutes`
+- `storage_mb`
+
+## SDK operating rules
+
+The SDK README is explicit:
+
+1. Ship a manifest.
+2. Expose authenticated REST endpoints for declared functions.
+3. Emit events for meaningful state changes.
+4. Never connect directly to another module.
+
+## Error handling and failure modes
+
+### `emit()`
+
+- failures are logged
+- caller flow is not interrupted
+- use this for non-blocking event publication
+
+### `call()`
+
+- returns `{ success: false, error }` if the registry call fails
+- does not crash the caller by default
+- supports async job-style responses with `async` and `job_id`
+
+### `usage()`
+
+- failures are logged
+- reporting is fire-and-forget
+
+### `createPlatformClientFromEnv()`
+
+Throws when required environment variables are missing:
+
+- `PLATFORM_API_KEY`
+- `PLATFORM_EVENT_ENDPOINT`
+- `PLATFORM_REGISTRY_ENDPOINT`
+- `PLATFORM_USAGE_ENDPOINT`
+- `APP_ID`
+
+## CLI scaffolder
+
+The v1 CLI package exposes:
+
+```bash
+npx create-aiconnected-module
+```
+
+## What the CLI generates
+
+The scaffolded output includes:
+
+- `platform-app.json`
+- `.env.example`
+- `README.md`
+- Express server starter
+- platform client integration
+- validation command hints
+
+## CLI manifest defaults
+
+The generator creates a `schemaVersion: 1` manifest with:
+
+- `app`
+- `inputs`
+- `outputs`
+- `extends`
+- optional `extensionPoints` for UI or fullstack templates
+
+## Environment variables required by generated modules
+
+From the v1 SDK docs and CLI:
+
+- `APP_KEY` or `APP_ID`
+- `APP_PORT`
+- `APP_ENV`
+- `PLATFORM_API_KEY`
+- `PLATFORM_EVENT_ENDPOINT`
+- `PLATFORM_REGISTRY_ENDPOINT`
+- `PLATFORM_USAGE_ENDPOINT`
+
+## Delivery checklist for module authors
+
+- manifest passes validation
+- every declared function has a real authenticated endpoint
+- all meaningful state changes emit events
+- usage is reported for billable or reportable operations
+- shared schemas are imported, not redefined
+- `.env.example` is complete
+
+## v1 reality vs v2 target
+
+### Implemented in v1
+
+- client API for events, calls, and usage
+- CLI scaffold for new modules
+- generated module starter structure
+
+### Carry forward to v2
+
+- registry-based module calling
+- fire-and-forget usage and event reporting
+- scaffold-driven module creation
+
+### Known mismatch or migration risk
+
+- some source comments still show underscore-based app IDs like `voice_ai`
+- the actual validated contract requires kebab-case
+- prefer kebab-case everywhere in docs, manifests, and code examples

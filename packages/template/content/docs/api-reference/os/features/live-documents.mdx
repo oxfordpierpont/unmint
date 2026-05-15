@@ -1,0 +1,36 @@
+---
+title: "Live documents"
+description: "Feature-level API contract for live document creation, editing, versioning, export, and document-chat integration."
+---
+## Contract status
+
+`Derived implementation contract`
+
+## Source document
+
+- [Live documents](/docs/knowledge-base/aiconnected-os/aiconnected-os-3-live-document-feature)
+
+## Feature purpose
+
+Defines persistent documents that can be edited through UI actions and AI-assisted document workflows.
+
+## Required operations
+
+- Create and edit live documents
+- Maintain revision history and snapshots
+- Attach documents to chats, spaces, and tasks
+- Export documents to external formats such as Markdown, PDF, and Google Docs
+
+## Suggested resources
+
+- `documents`
+- `document_versions`
+- `document_exports`
+- `document_links`
+- `document_sessions`
+
+## Implementation notes
+
+- Keep this feature workspace-scoped and persona-aware where applicable.
+- Preserve authorship, timestamps, and auditability for all state changes.
+- Treat the source doc as the behavioral specification even where final route names remain open.

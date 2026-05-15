@@ -1,0 +1,15 @@
+---
+title: "Introduction"
+description: "Create and manage reusable message templates for Persona communications."
+---
+Templates are reusable message structures that Personas pull from at send time. They support dynamic variable injection, multi-channel formats, and version control.
+
+## Creating a template
+
+Templates are written in MDX and stored in your connected GitHub repo under `/templates`. Variables are injected using double curly brace syntax:
+
+```mdx
+Hello \{\{ contact.first_name \}\},
+
+Your trial expires on \{\{ trial.end_date \}\}.
+```

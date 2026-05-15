@@ -1,0 +1,2412 @@
+---
+title: "Voice by aiConnected — Development Environment Setup Guide voice by aiconnected — development environment setup guide"
+description: "Document Information & 123; document information& 125; Field Value : : Document ID ARCH 005 Version 1.0 Last Updated 2026 01 16 ..."
+---
+<Info>
+Normalized for Mintlify from `knowledge-base/aiconnected-apps-and-modules/modules/aiConnected-voice/dev-env-setup-guide.mdx`.
+</Info>
+# Voice by aiConnected — Development Environment Setup Guide &#123;#voice-by-aiconnected-—-development-environment-setup-guide&#125;
+
+## Document Information &#123;#document-information&#125;
+
+| Field | Value |
+| :---- | :---- |
+| **Document ID** | ARCH-005 |
+| **Version** | 1.0 |
+| **Last Updated** | 2026-01-16 |
+| **Status** | Draft |
+| **Owner** | Engineering |
+| **Dependencies** | ARCH-001 |
+
+---
+
+## Table of Contents &#123;#table-of-contents&#125;
+
+[Voice by aiConnected — Development Environment Setup Guide](#voice-by-aiconnected-—-development-environment-setup-guide)
+
+[Document Information](#document-information)
+
+[Table of Contents](#table-of-contents)
+
+[1\. Introduction](#1.-introduction)
+
+[1.1 Purpose](#1.1-purpose)
+
+[1.2 Scope](#1.2-scope)
+
+[1.3 Time Estimate](#1.3-time-estimate)
+
+[2\. Prerequisites](#2.-prerequisites)
+
+[2.1 Required Knowledge](#2.1-required-knowledge)
+
+[2.2 Required Accounts](#2.2-required-accounts)
+
+[2.3 Required Software](#2.3-required-software)
+
+[3\. System Requirements](#3.-system-requirements)
+
+[3.1 Hardware Requirements](#3.1-hardware-requirements)
+
+[Minimum Specifications](#minimum-specifications)
+
+[Recommended Specifications](#recommended-specifications)
+
+[3.2 Network Requirements](#3.2-network-requirements)
+
+[3.3 Operating System Specific Notes](#3.3-operating-system-specific-notes)
+
+[macOS](#macos)
+
+[Ubuntu/Debian](#ubuntu/debian)
+
+[Windows (WSL2)](#windows-\(wsl2\))
+
+[4\. Development Tools Installation](#4.-development-tools-installation)
+
+[4.1 Docker Installation](#4.1-docker-installation)
+
+[macOS](#macos-1)
+
+[Ubuntu](#ubuntu)
+
+[4.2 Python Installation](#4.2-python-installation)
+
+[Install pyenv](#install-pyenv)
+
+[Install Python](#install-python)
+
+[4.3 Node.js Installation (Optional)](#4.3-node.js-installation-\(optional\))
+
+[4.4 Additional Tools](#4.4-additional-tools)
+
+[4.5 Python Development Tools](#4.5-python-development-tools)
+
+[5\. Repository Setup](#5.-repository-setup)
+
+[5.1 Clone the Repository](#5.1-clone-the-repository)
+
+[5.2 Repository Structure](#5.2-repository-structure)
+
+[5.3 Create Python Virtual Environment](#5.3-create-python-virtual-environment)
+
+[5.4 Install Service Dependencies](#5.4-install-service-dependencies)
+
+[6\. Docker Compose Stack](#6.-docker-compose-stack)
+
+[6.1 Stack Overview](#6.1-stack-overview)
+
+[6.2 Docker Compose Configuration](#6.2-docker-compose-configuration)
+
+[6.3 LiveKit Configuration](#6.3-livekit-configuration)
+
+[6.4 PostgreSQL Initialization Scripts](#6.4-postgresql-initialization-scripts)
+
+[6.5 Starting the Stack](#6.5-starting-the-stack)
+
+[7\. Environment Variables](#7.-environment-variables)
+
+[7.1 Environment File Setup](#7.1-environment-file-setup)
+
+[7.2 Complete Environment Variables Reference](#7.2-complete-environment-variables-reference)
+
+[7.3 Environment Variable Validation](#7.3-environment-variable-validation)
+
+[8\. API Credentials](#8.-api-credentials)
+
+[8.1 Obtaining GoToConnect Credentials](#8.1-obtaining-gotoconnect-credentials)
+
+[8.2 Obtaining LiveKit Credentials](#8.2-obtaining-livekit-credentials)
+
+[Option A: Local Development (No credentials needed)](#option-a:-local-development-\(no-credentials-needed\))
+
+[Option B: LiveKit Cloud (For integration testing)](#option-b:-livekit-cloud-\(for-integration-testing\))
+
+[8.3 Obtaining Deepgram Credentials](#8.3-obtaining-deepgram-credentials)
+
+[8.4 Obtaining Anthropic Credentials](#8.4-obtaining-anthropic-credentials)
+
+[8.5 RunPod Setup (For Chatterbox TTS)](#8.5-runpod-setup-\(for-chatterbox-tts\))
+
+[8.6 Using Mock Services](#8.6-using-mock-services)
+
+[9\. Database Setup](#9.-database-setup)
+
+[9.1 Verify Database Connection](#9.1-verify-database-connection)
+
+[9.2 Run Database Migrations](#9.2-run-database-migrations)
+
+[9.3 Seed Development Data](#9.3-seed-development-data)
+
+[9.4 Verify Database Schema](#9.4-verify-database-schema)
+
+[9.5 Database Management UI](#9.5-database-management-ui)
+
+[10\. Service Configuration](#10.-service-configuration)
+
+[10.1 API Gateway Configuration](#10.1-api-gateway-configuration)
+
+[10.2 WebRTC Bridge Configuration](#10.2-webrtc-bridge-configuration)
+
+[10.3 Agent Service Configuration](#10.3-agent-service-configuration)
+
+[10.4 Worker Service Configuration](#10.4-worker-service-configuration)
+
+[11\. Running the Development Stack](#11.-running-the-development-stack)
+
+[11.1 Start Infrastructure Services](#11.1-start-infrastructure-services)
+
+[11.2 Start Application Services](#11.2-start-application-services)
+
+[11.3 Using the Start Script](#11.3-using-the-start-script)
+
+[11.4 Verify Services Are Running](#11.4-verify-services-are-running)
+
+[11.5 Stopping Services](#11.5-stopping-services)
+
+[12\. Testing Your Setup](#12.-testing-your-setup)
+
+[12.1 Run Unit Tests](#12.1-run-unit-tests)
+
+[12.2 Run Integration Tests](#12.2-run-integration-tests)
+
+[12.3 Test API Endpoints](#12.3-test-api-endpoints)
+
+[12.4 Test WebRTC Connection](#12.4-test-webrtc-connection)
+
+[12.5 Test End-to-End Flow](#12.5-test-end-to-end-flow)
+
+[12.6 Health Check Script](#12.6-health-check-script)
+
+[13\. IDE Configuration](#13.-ide-configuration)
+
+[13.1 VS Code Setup](#13.1-vs-code-setup)
+
+[Recommended Extensions](#recommended-extensions)
+
+[Workspace Settings](#workspace-settings)
+
+[Launch Configuration](#launch-configuration)
+
+[13.2 PyCharm Setup](#13.2-pycharm-setup)
+
+[Project Interpreter](#project-interpreter)
+
+[Run Configurations](#run-configurations)
+
+[13.3 Git Configuration](#13.3-git-configuration)
+
+[14\. Troubleshooting](#14.-troubleshooting)
+
+[14.1 Common Issues](#14.1-common-issues)
+
+[Docker Issues](#docker-issues)
+
+[Database Issues](#database-issues)
+
+[Python Environment Issues](#python-environment-issues)
+
+[Service Connection Issues](#service-connection-issues)
+
+[WebRTC Issues](#webrtc-issues)
+
+[14.2 Debug Mode](#14.2-debug-mode)
+
+[14.3 Useful Debug Commands](#14.3-useful-debug-commands)
+
+[14.4 Getting Help](#14.4-getting-help)
+
+[15\. Appendix](#15.-appendix)
+
+[15.1 Quick Reference Card](#15.1-quick-reference-card)
+
+[15.2 Environment Variables Cheat Sheet](#15.2-environment-variables-cheat-sheet)
+
+[15.3 Port Reference](#15.3-port-reference)
+
+[15.4 Useful Aliases](#15.4-useful-aliases)
+
+[Document Revision History](#document-revision-history)
+
+---
+
+## 1\. Introduction &#123;#1.-introduction&#125;
+
+### 1.1 Purpose &#123;#1.1-purpose&#125;
+
+This document provides step-by-step instructions for setting up a local development environment for Voice by aiConnected. A properly configured development environment enables developers to:
+
+- Run and test all platform services locally  
+- Debug issues without affecting production systems  
+- Develop new features with rapid iteration cycles  
+- Execute the full test suite before committing changes
+
+### 1.2 Scope &#123;#1.2-scope&#125;
+
+This guide covers:
+
+- Installing required software and dependencies  
+- Configuring the local Docker Compose stack  
+- Setting up environment variables and credentials  
+- Running and testing all services locally  
+- IDE configuration for optimal development experience
+
+This guide does not cover:
+
+- Production deployment (see Document \#25: Deployment Runbook)  
+- CI/CD pipeline setup (see Document \#26: CI/CD Pipeline Specification)  
+- Infrastructure provisioning (see Document \#24: Infrastructure Architecture)
+
+### 1.3 Time Estimate &#123;#1.3-time-estimate&#125;
+
+A complete setup from scratch typically takes 30-60 minutes, depending on internet speed and familiarity with the tools.
+
+---
+
+## 2\. Prerequisites &#123;#2.-prerequisites&#125;
+
+### 2.1 Required Knowledge &#123;#2.1-required-knowledge&#125;
+
+Before proceeding, you should be familiar with:
+
+- Basic command line operations (bash/zsh)  
+- Git version control  
+- Docker and containerization concepts  
+- Python virtual environments  
+- Basic understanding of WebRTC and real-time audio (helpful but not required)
+
+### 2.2 Required Accounts &#123;#2.2-required-accounts&#125;
+
+You will need accounts for the following services:
+
+| Service | Purpose | Sign-up URL |
+| :---- | :---- | :---- |
+| GitHub | Source code access | github.com |
+| GoToConnect | Telephony sandbox | developer.goto.com |
+| LiveKit Cloud | Real-time audio infrastructure | cloud.livekit.io |
+| Deepgram | Speech-to-text | console.deepgram.com |
+| Anthropic | Claude LLM | console.anthropic.com |
+| RunPod | GPU hosting (optional for local TTS) | runpod.io |
+
+**Note**: For initial development, you can use mock services for most external APIs. Real credentials are only required for integration testing.
+
+### 2.3 Required Software &#123;#2.3-required-software&#125;
+
+| Software | Minimum Version | Recommended Version | Purpose |
+| :---- | :---- | :---- | :---- |
+| Operating System | macOS 12+, Ubuntu 20.04+, Windows 11 WSL2 | Ubuntu 22.04 or macOS 14 | Development host |
+| Docker | 24.0 | 25.0+ | Containerization |
+| Docker Compose | 2.20 | 2.24+ | Multi-container orchestration |
+| Python | 3.11 | 3.12 | Primary language |
+| Node.js | 18 LTS | 20 LTS | Build tools, optional dashboard |
+| Git | 2.40 | 2.43+ | Version control |
+| PostgreSQL Client | 15 | 16 | Database CLI tools |
+| Redis CLI | 7.0 | 7.2 | Cache debugging |
+
+---
+
+## 3\. System Requirements &#123;#3.-system-requirements&#125;
+
+### 3.1 Hardware Requirements &#123;#3.1-hardware-requirements&#125;
+
+#### Minimum Specifications &#123;#minimum-specifications&#125;
+
+| Resource | Minimum | Notes |
+| :---- | :---- | :---- |
+| CPU | 4 cores | Intel i5/AMD Ryzen 5 or equivalent |
+| RAM | 16 GB | Docker containers require significant memory |
+| Storage | 50 GB free | Docker images, logs, recordings |
+| Network | Broadband | Required for API calls and WebRTC |
+
+#### Recommended Specifications &#123;#recommended-specifications&#125;
+
+| Resource | Recommended | Notes |
+| :---- | :---- | :---- |
+| CPU | 8+ cores | Faster builds, smoother multi-service operation |
+| RAM | 32 GB | Comfortable headroom for all services |
+| Storage | 100 GB SSD | Fast I/O for development |
+| Network | 100 Mbps+ | Reduced latency for external services |
+
+### 3.2 Network Requirements &#123;#3.2-network-requirements&#125;
+
+The development environment requires access to:
+
+```
+Outbound connections:
+- api.goto.com (443)           # GoToConnect API
+- *.livekit.cloud (443, 7881)  # LiveKit Cloud
+- api.deepgram.com (443)       # Deepgram STT
+- api.anthropic.com (443)      # Claude API
+- api.runpod.io (443)          # RunPod (if using cloud TTS)
+ 
+Local ports (ensure these are available):
+- 5432: PostgreSQL
+- 6379: Redis
+- 8000: API Gateway
+- 8001: WebRTC Bridge
+- 8002: Agent Service
+- 8003: Worker Service
+- 5173: Admin Dashboard (if running)
+```
+
+### 3.3 Operating System Specific Notes &#123;#3.3-operating-system-specific-notes&#125;
+
+#### macOS &#123;#macos&#125;
+
+```shell
+# Install Homebrew if not present
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+ 
+# Install Rosetta 2 for Apple Silicon (if needed)
+softwareupdate --install-rosetta --agree-to-license
+```
+
+#### Ubuntu/Debian &#123;#ubuntu/debian&#125;
+
+```shell
+# Update package lists
+sudo apt update && sudo apt upgrade -y
+ 
+# Install build essentials
+sudo apt install -y build-essential curl git
+```
+
+#### Windows (WSL2) &#123;#windows-(wsl2)&#125;
+
+```
+# Enable WSL2 (PowerShell as Administrator)
+wsl --install -d Ubuntu-22.04
+ 
+# After reboot, open Ubuntu terminal and proceed with Ubuntu instructions
+```
+
+---
+
+## 4\. Development Tools Installation &#123;#4.-development-tools-installation&#125;
+
+### 4.1 Docker Installation &#123;#4.1-docker-installation&#125;
+
+#### macOS &#123;#macos-1&#125;
+
+```shell
+# Download and install Docker Desktop from docker.com
+# Or use Homebrew:
+brew install --cask docker
+ 
+# Start Docker Desktop and verify
+docker --version
+docker compose version
+```
+
+#### Ubuntu &#123;#ubuntu&#125;
+
+```shell
+# Remove old versions
+sudo apt remove docker docker-engine docker.io containerd runc
+ 
+# Install prerequisites
+sudo apt update
+sudo apt install -y ca-certificates curl gnupg
+ 
+# Add Docker's official GPG key
+sudo install -m 0755 -d /etc/apt/keyrings
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+sudo chmod a+r /etc/apt/keyrings/docker.gpg
+ 
+# Add the repository
+echo \
+  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
+  $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
+  sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+ 
+# Install Docker
+sudo apt update
+sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+ 
+# Add your user to the docker group
+sudo usermod -aG docker $USER
+newgrp docker
+ 
+# Verify installation
+docker --version
+docker compose version
+```
+
+### 4.2 Python Installation &#123;#4.2-python-installation&#125;
+
+We recommend using `pyenv` for Python version management.
+
+#### Install pyenv &#123;#install-pyenv&#125;
+
+```shell
+# macOS
+brew install pyenv pyenv-virtualenv
+ 
+# Ubuntu
+curl https://pyenv.run | bash
+ 
+# Add to shell configuration (~/.bashrc or ~/.zshrc)
+export PYENV_ROOT="$HOME/.pyenv"
+[[ -d $PYENV_ROOT/bin ]] && export PATH="$PYENV_ROOT/bin:$PATH"
+eval "$(pyenv init -)"
+eval "$(pyenv virtualenv-init -)"
+ 
+# Reload shell
+source ~/.bashrc  # or source ~/.zshrc
+```
+
+#### Install Python &#123;#install-python&#125;
+
+```shell
+# Install Python 3.12
+pyenv install 3.12.1
+ 
+# Set as global default
+pyenv global 3.12.1
+ 
+# Verify
+python --version
+# Python 3.12.1
+```
+
+### 4.3 Node.js Installation (Optional) &#123;#4.3-node.js-installation-(optional)&#125;
+
+Required only if working on the admin dashboard.
+
+```shell
+# Install nvm
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+ 
+# Reload shell configuration
+source ~/.bashrc
+ 
+# Install Node.js 20 LTS
+nvm install 20
+nvm use 20
+nvm alias default 20
+ 
+# Verify
+node --version
+npm --version
+```
+
+### 4.4 Additional Tools &#123;#4.4-additional-tools&#125;
+
+```shell
+# macOS
+brew install postgresql@16 redis jq httpie
+ 
+# Ubuntu
+sudo apt install -y postgresql-client-16 redis-tools jq httpie
+ 
+# Verify tools
+psql --version
+redis-cli --version
+jq --version
+http --version
+```
+
+### 4.5 Python Development Tools &#123;#4.5-python-development-tools&#125;
+
+```shell
+# Install pipx for global Python tools
+python -m pip install --user pipx
+python -m pipx ensurepath
+ 
+# Install development tools
+pipx install poetry
+pipx install black
+pipx install ruff
+pipx install mypy
+pipx install pre-commit
+ 
+# Verify
+poetry --version
+black --version
+ruff --version
+```
+
+---
+
+## 5\. Repository Setup &#123;#5.-repository-setup&#125;
+
+### 5.1 Clone the Repository &#123;#5.1-clone-the-repository&#125;
+
+```shell
+# Create development directory
+mkdir -p ~/dev
+cd ~/dev
+ 
+# Clone the repository
+git clone git@github.com:oxfordpierpont/voice-by-aiconnected.git
+cd voice-by-aiconnected
+ 
+# Verify you're on the main branch
+git branch
+# * main
+```
+
+### 5.2 Repository Structure &#123;#5.2-repository-structure&#125;
+
+After cloning, you should see the following structure:
+
+```
+voice-by-aiconnected/
+├── docs/                          # Documentation
+│   ├── 01-system-architecture.md
+│   ├── 02-gotoconnect-integration.md
+│   └── ...
+│
+├── services/                      # Backend services
+│   ├── api-gateway/              # Public API (FastAPI)
+│   ├── webrtc-bridge/            # GoToConnect ↔ LiveKit bridge
+│   ├── agent-service/            # LiveKit AI agent
+│   └── worker-service/           # Background jobs
+│
+├── shared/                        # Shared code library
+│   ├── database/                 # SQLAlchemy models, migrations
+│   ├── schemas/                  # Pydantic schemas
+│   ├── utils/                    # Shared utilities
+│   └── config/                   # Configuration management
+│
+├── integrations/                  # Provider integrations
+│   ├── gotoconnect/
+│   ├── livekit/
+│   ├── deepgram/
+│   ├── anthropic/
+│   ├── chatterbox/
+│   └── n8n/
+│
+├── tests/                         # Test suites
+│   ├── unit/
+│   ├── integration/
+│   └── e2e/
+│
+├── infrastructure/                # Deployment configurations
+│   ├── docker-compose.yml        # Local development
+│   ├── docker-compose.test.yml   # Test environment
+│   └── dokploy/                  # Production configs
+│
+├── scripts/                       # Utility scripts
+│   ├── setup.sh
+│   ├── migrate.sh
+│   └── seed.sh
+│
+├── .env.example                   # Environment template
+├── pyproject.toml                # Python project config
+├── poetry.lock                   # Locked dependencies
+└── README.md
+```
+
+### 5.3 Create Python Virtual Environment &#123;#5.3-create-python-virtual-environment&#125;
+
+```shell
+# Navigate to repository root
+cd ~/dev/voice-by-aiconnected
+ 
+# Create virtual environment using pyenv
+pyenv virtualenv 3.12.1 voice-ai
+pyenv local voice-ai
+ 
+# Install dependencies with Poetry
+poetry install
+ 
+# Verify virtual environment is active
+which python
+# /home/user/.pyenv/versions/voice-ai/bin/python
+ 
+# Install pre-commit hooks
+pre-commit install
+```
+
+### 5.4 Install Service Dependencies &#123;#5.4-install-service-dependencies&#125;
+
+Each service has its own dependencies. Install them all:
+
+```shell
+# From repository root
+cd services/api-gateway && poetry install && cd ../..
+cd services/webrtc-bridge && poetry install && cd ../..
+cd services/agent-service && poetry install && cd ../..
+cd services/worker-service && poetry install && cd ../..
+ 
+# Or use the setup script
+./scripts/setup.sh
+```
+
+---
+
+## 6\. Docker Compose Stack &#123;#6.-docker-compose-stack&#125;
+
+### 6.1 Stack Overview &#123;#6.1-stack-overview&#125;
+
+The local development stack includes the following services:
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                          LOCAL DOCKER COMPOSE STACK                         │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐       │
+│  │ PostgreSQL  │  │    Redis    │  │   Mailhog   │  │   Adminer   │       │
+│  │   :5432     │  │    :6379    │  │ :1025/:8025 │  │    :8080    │       │
+│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘       │
+│                                                                             │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐                        │
+│  │   Minio     │  │  LiveKit    │  │   n8n       │                        │
+│  │   :9000     │  │   :7880     │  │   :5678     │                        │
+│  │   :9001     │  │   :7881     │  │             │                        │
+│  └─────────────┘  └─────────────┘  └─────────────┘                        │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+ 
+Services run on host (not in Docker for easier debugging):
+- API Gateway     :8000
+- WebRTC Bridge   :8001
+- Agent Service   :8002
+- Worker Service  :8003
+```
+
+### 6.2 Docker Compose Configuration &#123;#6.2-docker-compose-configuration&#125;
+
+Create or verify `infrastructure/docker-compose.yml`:
+
+```
+# infrastructure/docker-compose.yml
+version: "3.9"
+ 
+services:
+  # ==========================================================================
+  # PostgreSQL Database
+  # ==========================================================================
+  postgres:
+    image: postgres:16-alpine
+    container_name: voice-ai-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: voiceai
+      POSTGRES_PASSWORD: voiceai_dev_password
+      POSTGRES_DB: voiceai
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-scripts/postgres:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U voiceai -d voiceai"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+ 
+  # ==========================================================================
+  # Redis Cache
+  # ==========================================================================
+  redis:
+    image: redis:7.2-alpine
+    container_name: voice-ai-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+ 
+  # ==========================================================================
+  # Minio (S3-compatible object storage)
+  # ==========================================================================
+  minio:
+    image: minio/minio:latest
+    container_name: voice-ai-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin123
+    ports:
+      - "9000:9000"   # API
+      - "9001:9001"   # Console
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+ 
+  # ==========================================================================
+  # LiveKit Server (Local Development)
+  # ==========================================================================
+  livekit:
+    image: livekit/livekit-server:latest
+    container_name: voice-ai-livekit
+    restart: unless-stopped
+    command: --config /etc/livekit.yaml --dev
+    ports:
+      - "7880:7880"   # HTTP API
+      - "7881:7881"   # WebRTC/TURN
+      - "7882:7882/udp"  # WebRTC UDP
+    volumes:
+      - ./livekit/livekit.yaml:/etc/livekit.yaml:ro
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:7880"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+ 
+  # ==========================================================================
+  # n8n Workflow Automation
+  # ==========================================================================
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: voice-ai-n8n
+    restart: unless-stopped
+    environment:
+      - N8N_BASIC_AUTH_ACTIVE=true
+      - N8N_BASIC_AUTH_USER=admin
+      - N8N_BASIC_AUTH_PASSWORD=admin123
+      - N8N_HOST=localhost
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      - WEBHOOK_URL=http://localhost:5678/
+    ports:
+      - "5678:5678"
+    volumes:
+      - n8n_data:/home/node/.n8n
+ 
+  # ==========================================================================
+  # Mailhog (Email testing)
+  # ==========================================================================
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: voice-ai-mailhog
+    restart: unless-stopped
+    ports:
+      - "1025:1025"   # SMTP
+      - "8025:8025"   # Web UI
+ 
+  # ==========================================================================
+  # Adminer (Database management UI)
+  # ==========================================================================
+  adminer:
+    image: adminer:latest
+    container_name: voice-ai-adminer
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      ADMINER_DEFAULT_SERVER: postgres
+ 
+volumes:
+  postgres_data:
+  redis_data:
+  minio_data:
+  n8n_data:
+ 
+networks:
+  default:
+    name: voice-ai-network
+```
+
+### 6.3 LiveKit Configuration &#123;#6.3-livekit-configuration&#125;
+
+Create `infrastructure/livekit/livekit.yaml`:
+
+```
+# infrastructure/livekit/livekit.yaml
+port: 7880
+rtc:
+  port_range_start: 50000
+  port_range_end: 60000
+  tcp_port: 7881
+  use_external_ip: false
+ 
+keys:
+  devkey: secret_dev_key_do_not_use_in_production
+ 
+logging:
+  level: debug
+  json: false
+ 
+room:
+  auto_create: true
+  empty_timeout: 300
+  max_participants: 100
+ 
+webhook:
+  urls:
+    - http://host.docker.internal:8000/webhooks/livekit
+  api_key: devkey
+```
+
+### 6.4 PostgreSQL Initialization Scripts &#123;#6.4-postgresql-initialization-scripts&#125;
+
+Create `infrastructure/init-scripts/postgres/01-init.sql`:
+
+```sql
+-- infrastructure/init-scripts/postgres/01-init.sql
+ 
+-- Create extensions
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+ 
+-- Create test database for integration tests
+CREATE DATABASE voiceai_test;
+ 
+-- Grant permissions
+GRANT ALL PRIVILEGES ON DATABASE voiceai TO voiceai;
+GRANT ALL PRIVILEGES ON DATABASE voiceai_test TO voiceai;
+ 
+-- Connect to main database
+\c voiceai;
+ 
+-- Enable row-level security preparation
+ALTER DATABASE voiceai SET row_security = on;
+ 
+-- Create schemas for multi-tenancy
+CREATE SCHEMA IF NOT EXISTS tenant_data;
+CREATE SCHEMA IF NOT EXISTS audit;
+CREATE SCHEMA IF NOT EXISTS analytics;
+ 
+-- Grant schema permissions
+GRANT ALL ON SCHEMA tenant_data TO voiceai;
+GRANT ALL ON SCHEMA audit TO voiceai;
+GRANT ALL ON SCHEMA analytics TO voiceai;
+```
+
+### 6.5 Starting the Stack &#123;#6.5-starting-the-stack&#125;
+
+```shell
+# Navigate to infrastructure directory
+cd infrastructure
+ 
+# Pull latest images
+docker compose pull
+ 
+# Start all services
+docker compose up -d
+ 
+# Verify all services are running
+docker compose ps
+ 
+# Expected output:
+# NAME                 STATUS              PORTS
+# voice-ai-postgres    running (healthy)   0.0.0.0:5432->5432/tcp
+# voice-ai-redis       running (healthy)   0.0.0.0:6379->6379/tcp
+# voice-ai-minio       running (healthy)   0.0.0.0:9000-9001->9000-9001/tcp
+# voice-ai-livekit     running (healthy)   0.0.0.0:7880-7882->7880-7882/tcp
+# voice-ai-n8n         running             0.0.0.0:5678->5678/tcp
+# voice-ai-mailhog     running             0.0.0.0:1025->1025/tcp, 0.0.0.0:8025->8025/tcp
+# voice-ai-adminer     running             0.0.0.0:8080->8080/tcp
+ 
+# View logs for a specific service
+docker compose logs -f postgres
+ 
+# Stop all services
+docker compose down
+ 
+# Stop and remove volumes (fresh start)
+docker compose down -v
+```
+
+---
+
+## 7\. Environment Variables &#123;#7.-environment-variables&#125;
+
+### 7.1 Environment File Setup &#123;#7.1-environment-file-setup&#125;
+
+Copy the example environment file and customize it:
+
+```shell
+# From repository root
+cp .env.example .env
+ 
+# Edit with your preferred editor
+code .env  # or vim .env
+```
+
+### 7.2 Complete Environment Variables Reference &#123;#7.2-complete-environment-variables-reference&#125;
+
+```shell
+# =============================================================================
+# .env - Voice by aiConnected Development Environment
+# =============================================================================
+ 
+# -----------------------------------------------------------------------------
+# Application Settings
+# -----------------------------------------------------------------------------
+APP_NAME=voice-by-aiconnected
+APP_ENV=development
+DEBUG=true
+LOG_LEVEL=DEBUG
+ 
+# Secret key for JWT signing and encryption (generate with: openssl rand -hex 32)
+SECRET_KEY=your_secret_key_here_generate_with_openssl_rand_hex_32
+ 
+# -----------------------------------------------------------------------------
+# Database Configuration
+# -----------------------------------------------------------------------------
+DATABASE_URL=postgresql://voiceai:voiceai_dev_password@localhost:5432/voiceai
+DATABASE_TEST_URL=postgresql://voiceai:voiceai_dev_password@localhost:5432/voiceai_test
+ 
+# Connection pool settings
+DATABASE_POOL_SIZE=5
+DATABASE_MAX_OVERFLOW=10
+DATABASE_POOL_TIMEOUT=30
+ 
+# -----------------------------------------------------------------------------
+# Redis Configuration
+# -----------------------------------------------------------------------------
+REDIS_URL=redis://localhost:6379/0
+REDIS_TEST_URL=redis://localhost:6379/1
+ 
+# Cache settings
+CACHE_DEFAULT_TTL=300
+SESSION_TTL=3600
+ 
+# -----------------------------------------------------------------------------
+# Object Storage (Minio/S3)
+# -----------------------------------------------------------------------------
+S3_ENDPOINT=http://localhost:9000
+S3_ACCESS_KEY=minioadmin
+S3_SECRET_KEY=minioadmin123
+S3_BUCKET_RECORDINGS=voice-ai-recordings
+S3_BUCKET_VOICE_SAMPLES=voice-ai-samples
+S3_REGION=us-east-1
+ 
+# -----------------------------------------------------------------------------
+# GoToConnect Configuration
+# -----------------------------------------------------------------------------
+GOTO_CLIENT_ID=your_goto_client_id
+GOTO_CLIENT_SECRET=your_goto_client_secret
+GOTO_REDIRECT_URI=http://localhost:8000/oauth/goto/callback
+GOTO_ACCOUNT_KEY=your_account_key
+GOTO_API_BASE_URL=https://api.goto.com
+ 
+# Sandbox/Development settings
+GOTO_USE_SANDBOX=true
+GOTO_WEBHOOK_URL=http://localhost:8000/webhooks/goto
+ 
+# -----------------------------------------------------------------------------
+# LiveKit Configuration
+# -----------------------------------------------------------------------------
+# For local development (Docker LiveKit)
+LIVEKIT_URL=ws://localhost:7880
+LIVEKIT_API_KEY=devkey
+LIVEKIT_API_SECRET=secret_dev_key_do_not_use_in_production
+ 
+# For LiveKit Cloud (production/integration testing)
+# LIVEKIT_URL=wss://your-project.livekit.cloud
+# LIVEKIT_API_KEY=your_api_key
+# LIVEKIT_API_SECRET=your_api_secret
+ 
+LIVEKIT_WEBHOOK_URL=http://localhost:8000/webhooks/livekit
+ 
+# -----------------------------------------------------------------------------
+# Deepgram Configuration
+# -----------------------------------------------------------------------------
+DEEPGRAM_API_KEY=your_deepgram_api_key
+ 
+# Model settings
+DEEPGRAM_MODEL=nova-2
+DEEPGRAM_LANGUAGE=en-US
+DEEPGRAM_PUNCTUATE=true
+DEEPGRAM_PROFANITY_FILTER=false
+DEEPGRAM_DIARIZE=false
+ 
+# -----------------------------------------------------------------------------
+# Anthropic Configuration
+# -----------------------------------------------------------------------------
+ANTHROPIC_API_KEY=your_anthropic_api_key
+ 
+# Model settings
+ANTHROPIC_MODEL=claude-sonnet-4-20250514
+ANTHROPIC_MAX_TOKENS=1024
+ANTHROPIC_TEMPERATURE=0.7
+ 
+# -----------------------------------------------------------------------------
+# TTS Configuration
+# -----------------------------------------------------------------------------
+# Primary TTS: Chatterbox on RunPod
+TTS_PROVIDER=chatterbox
+CHATTERBOX_API_URL=http://localhost:8100  # Local mock or RunPod endpoint
+CHATTERBOX_RUNPOD_ID=your_runpod_pod_id
+CHATTERBOX_RUNPOD_API_KEY=your_runpod_api_key
+ 
+# Fallback TTS: Cartesia
+CARTESIA_API_KEY=your_cartesia_api_key
+CARTESIA_VOICE_ID=default
+ 
+# Voice settings
+DEFAULT_VOICE_ID=professional_female_1
+TTS_SAMPLE_RATE=24000
+ 
+# -----------------------------------------------------------------------------
+# n8n Configuration
+# -----------------------------------------------------------------------------
+N8N_BASE_URL=http://localhost:5678
+N8N_API_KEY=your_n8n_api_key
+N8N_WEBHOOK_BASE_URL=http://localhost:5678/webhook
+ 
+# -----------------------------------------------------------------------------
+# Service Ports
+# -----------------------------------------------------------------------------
+API_GATEWAY_PORT=8000
+WEBRTC_BRIDGE_PORT=8001
+AGENT_SERVICE_PORT=8002
+WORKER_SERVICE_PORT=8003
+ 
+# -----------------------------------------------------------------------------
+# Service URLs (for inter-service communication)
+# -----------------------------------------------------------------------------
+API_GATEWAY_URL=http://localhost:8000
+WEBRTC_BRIDGE_URL=http://localhost:8001
+AGENT_SERVICE_URL=http://localhost:8002
+WORKER_SERVICE_URL=http://localhost:8003
+ 
+# -----------------------------------------------------------------------------
+# Email Configuration (Mailhog for development)
+# -----------------------------------------------------------------------------
+SMTP_HOST=localhost
+SMTP_PORT=1025
+SMTP_USER=
+SMTP_PASSWORD=
+SMTP_FROM=noreply@voiceai.local
+ 
+# -----------------------------------------------------------------------------
+# Observability
+# -----------------------------------------------------------------------------
+# Structured logging
+LOG_FORMAT=json
+LOG_OUTPUT=stdout
+ 
+# Metrics (Prometheus)
+METRICS_ENABLED=true
+METRICS_PORT=9090
+ 
+# Tracing (OpenTelemetry) - disabled by default in dev
+OTEL_ENABLED=false
+OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317
+ 
+# -----------------------------------------------------------------------------
+# Feature Flags
+# -----------------------------------------------------------------------------
+FEATURE_CALL_RECORDING=true
+FEATURE_SENTIMENT_ANALYSIS=false
+FEATURE_REAL_TIME_COACHING=false
+ 
+# -----------------------------------------------------------------------------
+# Rate Limiting
+# -----------------------------------------------------------------------------
+RATE_LIMIT_ENABLED=false  # Disabled for development
+RATE_LIMIT_REQUESTS_PER_MINUTE=60
+RATE_LIMIT_BURST=10
+ 
+# -----------------------------------------------------------------------------
+# Security
+# -----------------------------------------------------------------------------
+CORS_ORIGINS=http://localhost:5173,http://localhost:3000
+ALLOWED_HOSTS=localhost,127.0.0.1
+ 
+# JWT settings
+JWT_ALGORITHM=HS256
+JWT_ACCESS_TOKEN_EXPIRE_MINUTES=30
+JWT_REFRESH_TOKEN_EXPIRE_DAYS=7
+```
+
+### 7.3 Environment Variable Validation &#123;#7.3-environment-variable-validation&#125;
+
+Create a validation script to ensure all required variables are set:
+
+```py
+# scripts/validate_env.py
+"""Validate environment variables are properly configured."""
+ 
+import os
+import sys
+from typing import List, Tuple
+ 
+REQUIRED_VARS = [
+    ("SECRET_KEY", "Application secret key"),
+    ("DATABASE_URL", "PostgreSQL connection string"),
+    ("REDIS_URL", "Redis connection string"),
+]
+ 
+REQUIRED_FOR_INTEGRATION = [
+    ("GOTO_CLIENT_ID", "GoToConnect OAuth client ID"),
+    ("GOTO_CLIENT_SECRET", "GoToConnect OAuth client secret"),
+    ("LIVEKIT_API_KEY", "LiveKit API key"),
+    ("LIVEKIT_API_SECRET", "LiveKit API secret"),
+    ("DEEPGRAM_API_KEY", "Deepgram API key"),
+    ("ANTHROPIC_API_KEY", "Anthropic API key"),
+]
+ 
+def validate_env(integration_mode: bool = False) -> Tuple[bool, List[str]]:
+    """Validate required environment variables."""
+    missing = []
+ 
+    vars_to_check = REQUIRED_VARS.copy()
+    if integration_mode:
+        vars_to_check.extend(REQUIRED_FOR_INTEGRATION)
+ 
+    for var_name, description in vars_to_check:
+        value = os.getenv(var_name)
+        if not value or value.startswith("your_"):
+            missing.append(f"  - {var_name}: {description}")
+ 
+    return len(missing) == 0, missing
+ 
+if __name__ == "__main__":
+    from dotenv import load_dotenv
+    load_dotenv()
+ 
+    integration_mode = "--integration" in sys.argv
+ 
+    valid, missing = validate_env(integration_mode)
+ 
+    if valid:
+        print("✓ All required environment variables are set")
+        sys.exit(0)
+    else:
+        print("✗ Missing or invalid environment variables:")
+        for msg in missing:
+            print(msg)
+        print("\nPlease update your .env file with the required values.")
+        sys.exit(1)
+```
+
+Run validation:
+
+```shell
+# Basic validation
+python scripts/validate_env.py
+ 
+# Full validation including integration credentials
+python scripts/validate_env.py --integration
+```
+
+---
+
+## 8\. API Credentials &#123;#8.-api-credentials&#125;
+
+### 8.1 Obtaining GoToConnect Credentials &#123;#8.1-obtaining-gotoconnect-credentials&#125;
+
+1. **Create a Developer Account**  
+     
+   - Visit [https://developer.goto.com](https://developer.goto.com)  
+   - Sign up for a developer account  
+   - Verify your email
+
+   
+
+2. **Create an Application**  
+     
+   - Navigate to "My Apps" in the developer portal  
+   - Click "Create New App"  
+   - Fill in application details:  
+     - **App Name**: Voice AI Development  
+     - **App Type**: Server Application  
+     - **Redirect URI**: `http://localhost:8000/oauth/goto/callback`  
+   - Select required scopes:  
+     - `calls.v2.calls.manage`  
+     - `calls.v2.calls.read`  
+     - `messaging.v1.notifications.manage`  
+     - `webrtc.v1.devices.manage`  
+     - `webrtc.v1.calls.manage`
+
+   
+
+3. **Copy Credentials**  
+     
+   - Note your Client ID and Client Secret  
+   - Add to `.env`:
+
+```
+GOTO_CLIENT_ID=your_client_id_here
+GOTO_CLIENT_SECRET=your_client_secret_here
+```
+
+4. **Enable Sandbox Mode**  
+     
+   - In the developer portal, enable sandbox/test mode  
+   - This allows testing without using real phone minutes
+
+### 8.2 Obtaining LiveKit Credentials &#123;#8.2-obtaining-livekit-credentials&#125;
+
+```text
+#### Option A: Local Development (No credentials needed) {#option-a:-local-development-(no-credentials-needed)}
+
+```
+The Docker Compose stack includes a local LiveKit server. Use these values:
+
+```
+LIVEKIT_URL=ws://localhost:7880
+LIVEKIT_API_KEY=devkey
+LIVEKIT_API_SECRET=secret_dev_key_do_not_use_in_production
+```
+
+```text
+#### Option B: LiveKit Cloud (For integration testing) {#option-b:-livekit-cloud-(for-integration-testing)}
+
+```
+1. **Create Account**  
+     
+   - Visit [https://cloud.livekit.io](https://cloud.livekit.io)  
+   - Sign up with GitHub or email
+
+   
+
+2. **Create a Project**  
+     
+   - Click "Create Project"  
+   - Name it "voice-ai-dev"  
+   - Select a region close to you
+
+   
+
+3. **Get Credentials**  
+     
+   - Navigate to Settings → API Keys  
+   - Create a new API key  
+   - Copy the API Key and Secret  
+   - Update `.env`:
+
+```
+LIVEKIT_URL=wss://your-project.livekit.cloud
+LIVEKIT_API_KEY=your_api_key
+LIVEKIT_API_SECRET=your_api_secret
+```
+
+### 8.3 Obtaining Deepgram Credentials &#123;#8.3-obtaining-deepgram-credentials&#125;
+
+1. **Create Account**  
+     
+   - Visit [https://console.deepgram.com](https://console.deepgram.com)  
+   - Sign up (includes $200 free credits)
+
+   
+
+2. **Create API Key**  
+     
+   - Navigate to API Keys  
+   - Click "Create Key"  
+   - Name: "Voice AI Development"  
+   - Permissions: Full Access (for development)  
+   - Copy the key
+
+   
+
+3. **Add to Environment**
+
+```
+DEEPGRAM_API_KEY=your_deepgram_api_key
+```
+
+### 8.4 Obtaining Anthropic Credentials &#123;#8.4-obtaining-anthropic-credentials&#125;
+
+1. **Create Account**  
+     
+   - Visit [https://console.anthropic.com](https://console.anthropic.com)  
+   - Sign up and verify your account
+
+   
+
+2. **Create API Key**  
+     
+   - Navigate to API Keys  
+   - Click "Create Key"  
+   - Name: "Voice AI Development"  
+   - Copy the key
+
+   
+
+3. **Add to Environment**
+
+```
+ANTHROPIC_API_KEY=your_anthropic_api_key
+```
+
+### 8.5 RunPod Setup (For Chatterbox TTS) &#123;#8.5-runpod-setup-(for-chatterbox-tts)&#125;
+
+For full TTS functionality, you'll need RunPod access. For initial development, you can use the mock TTS service.
+
+1. **Create Account**  
+     
+   - Visit [https://runpod.io](https://runpod.io)  
+   - Sign up and add payment method
+
+   
+
+2. **Deploy Chatterbox Pod**  
+     
+   - See Document \#15 (Chatterbox TTS Integration Guide) for full instructions  
+   - For development, use the mock service instead:
+
+```
+TTS_PROVIDER=mock
+```
+
+### 8.6 Using Mock Services &#123;#8.6-using-mock-services&#125;
+
+For rapid development without external dependencies, use mock services:
+
+```shell
+# In .env, set:
+GOTO_USE_MOCK=true
+LIVEKIT_USE_MOCK=true
+DEEPGRAM_USE_MOCK=true
+ANTHROPIC_USE_MOCK=true
+TTS_PROVIDER=mock
+```
+
+Mock services return canned responses and are useful for:
+
+- Initial development  
+- Running unit tests  
+- Offline development  
+- CI pipelines without credentials
+
+---
+
+## 9\. Database Setup &#123;#9.-database-setup&#125;
+
+### 9.1 Verify Database Connection &#123;#9.1-verify-database-connection&#125;
+
+```shell
+# Test PostgreSQL connection
+psql postgresql://voiceai:voiceai_dev_password@localhost:5432/voiceai -c "SELECT version();"
+ 
+# Expected output:
+# PostgreSQL 16.x on x86_64-pc-linux-musl, compiled by gcc...
+```
+
+### 9.2 Run Database Migrations &#123;#9.2-run-database-migrations&#125;
+
+```shell
+# Navigate to repository root
+cd ~/dev/voice-by-aiconnected
+ 
+# Run migrations using Alembic
+alembic upgrade head
+ 
+# Or use the migration script
+./scripts/migrate.sh
+ 
+# Expected output:
+# INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+# INFO  [alembic.runtime.migration] Will assume transactional DDL.
+# INFO  [alembic.runtime.migration] Running upgrade  -> 001, initial schema
+# INFO  [alembic.runtime.migration] Running upgrade 001 -> 002, add tenants
+# ...
+```
+
+### 9.3 Seed Development Data &#123;#9.3-seed-development-data&#125;
+
+```shell
+# Seed the database with development data
+python scripts/seed.py
+ 
+# Or use the seed script
+./scripts/seed.sh
+ 
+# This creates:
+# - Default admin user
+# - Test tenant (Oxford Pierpont)
+# - Sample agent configurations
+# - Test phone numbers
+```
+
+### 9.4 Verify Database Schema &#123;#9.4-verify-database-schema&#125;
+
+```shell
+# Connect to database
+psql postgresql://voiceai:voiceai_dev_password@localhost:5432/voiceai
+ 
+# List all tables
+\dt
+ 
+# Expected tables:
+#  Schema  |         Name          | Type  | Owner
+# ---------+-----------------------+-------+--------
+#  public  | alembic_version       | table | voiceai
+#  public  | tenants               | table | voiceai
+#  public  | users                 | table | voiceai
+#  public  | agents                | table | voiceai
+#  public  | phone_numbers         | table | voiceai
+#  public  | calls                 | table | voiceai
+#  public  | call_events           | table | voiceai
+#  public  | conversations         | table | voiceai
+#  public  | transcripts           | table | voiceai
+#  public  | knowledge_bases       | table | voiceai
+#  public  | webhook_configs       | table | voiceai
+#  public  | usage_records         | table | voiceai
+ 
+# Exit psql
+\q
+```
+
+### 9.5 Database Management UI &#123;#9.5-database-management-ui&#125;
+
+Access Adminer for visual database management:
+
+1. Open [http://localhost:8080](http://localhost:8080)  
+2. Login with:  
+   - System: PostgreSQL  
+   - Server: postgres  
+   - Username: voiceai  
+   - Password: voiceai\_dev\_password  
+   - Database: voiceai
+
+---
+
+## 10\. Service Configuration &#123;#10.-service-configuration&#125;
+
+### 10.1 API Gateway Configuration &#123;#10.1-api-gateway-configuration&#125;
+
+Create `services/api-gateway/config.py`:
+
+```py
+# services/api-gateway/config.py
+"""API Gateway configuration."""
+ 
+from pydantic_settings import BaseSettings
+from functools import lru_cache
+ 
+class Settings(BaseSettings):
+    """Application settings loaded from environment."""
+ 
+    # Application
+    app_name: str = "voice-ai-api"
+    app_env: str = "development"
+    debug: bool = True
+ 
+    # Server
+    host: str = "0.0.0.0"
+    port: int = 8000
+    workers: int = 1
+ 
+    # Database
+    database_url: str
+    database_pool_size: int = 5
+ 
+    # Redis
+    redis_url: str
+ 
+    # Security
+    secret_key: str
+    cors_origins: str = "http://localhost:5173"
+ 
+    # External Services
+    webrtc_bridge_url: str = "http://localhost:8001"
+    agent_service_url: str = "http://localhost:8002"
+    worker_service_url: str = "http://localhost:8003"
+ 
+    class Config:
+        env_file = ".env"
+        env_file_encoding = "utf-8"
+ 
+@lru_cache
+def get_settings() -> Settings:
+    """Get cached settings instance."""
+    return Settings()
+```
+
+### 10.2 WebRTC Bridge Configuration &#123;#10.2-webrtc-bridge-configuration&#125;
+
+Create `services/webrtc-bridge/config.py`:
+
+```py
+# services/webrtc-bridge/config.py
+"""WebRTC Bridge configuration."""
+ 
+from pydantic_settings import BaseSettings
+from functools import lru_cache
+ 
+class Settings(BaseSettings):
+    """WebRTC Bridge settings."""
+ 
+    # Server
+    host: str = "0.0.0.0"
+    port: int = 8001
+ 
+    # GoToConnect
+    goto_client_id: str
+    goto_client_secret: str
+    goto_api_base_url: str = "https://api.goto.com"
+    goto_use_sandbox: bool = True
+    goto_use_mock: bool = False
+ 
+    # LiveKit
+    livekit_url: str
+    livekit_api_key: str
+    livekit_api_secret: str
+    livekit_use_mock: bool = False
+ 
+    # Audio settings
+    audio_sample_rate: int = 48000
+    audio_channels: int = 1
+    audio_frame_duration_ms: int = 20
+ 
+    # Redis (for state management)
+    redis_url: str
+ 
+    class Config:
+        env_file = ".env"
+ 
+@lru_cache
+def get_settings() -> Settings:
+    return Settings()
+```
+
+### 10.3 Agent Service Configuration &#123;#10.3-agent-service-configuration&#125;
+
+Create `services/agent-service/config.py`:
+
+```py
+# services/agent-service/config.py
+"""Agent Service configuration."""
+ 
+from pydantic_settings import BaseSettings
+from functools import lru_cache
+from typing import Optional
+ 
+class Settings(BaseSettings):
+    """Agent Service settings."""
+ 
+    # Server
+    host: str = "0.0.0.0"
+    port: int = 8002
+ 
+    # LiveKit
+    livekit_url: str
+    livekit_api_key: str
+    livekit_api_secret: str
+ 
+    # Deepgram STT
+    deepgram_api_key: str
+    deepgram_model: str = "nova-2"
+    deepgram_language: str = "en-US"
+    deepgram_use_mock: bool = False
+ 
+    # Anthropic LLM
+    anthropic_api_key: str
+    anthropic_model: str = "claude-sonnet-4-20250514"
+    anthropic_max_tokens: int = 1024
+    anthropic_use_mock: bool = False
+ 
+    # TTS
+    tts_provider: str = "chatterbox"  # or "cartesia" or "mock"
+    chatterbox_api_url: Optional[str] = None
+    cartesia_api_key: Optional[str] = None
+    default_voice_id: str = "professional_female_1"
+ 
+    # Pipeline settings
+    vad_threshold: float = 0.5
+    silence_threshold_ms: int = 500
+    max_response_tokens: int = 150
+ 
+    # Database (for agent configs)
+    database_url: str
+ 
+    # Redis (for state)
+    redis_url: str
+ 
+    class Config:
+        env_file = ".env"
+ 
+@lru_cache
+def get_settings() -> Settings:
+    return Settings()
+```
+
+### 10.4 Worker Service Configuration &#123;#10.4-worker-service-configuration&#125;
+
+Create `services/worker-service/config.py`:
+
+```py
+# services/worker-service/config.py
+"""Worker Service configuration."""
+ 
+from pydantic_settings import BaseSettings
+from functools import lru_cache
+ 
+class Settings(BaseSettings):
+    """Worker Service settings."""
+ 
+    # Server
+    host: str = "0.0.0.0"
+    port: int = 8003
+ 
+    # Database
+    database_url: str
+ 
+    # Redis (task queue)
+    redis_url: str
+ 
+    # S3/Minio (for recordings)
+    s3_endpoint: str
+    s3_access_key: str
+    s3_secret_key: str
+    s3_bucket_recordings: str = "voice-ai-recordings"
+ 
+    # n8n
+    n8n_base_url: str
+    n8n_api_key: Optional[str] = None
+ 
+    # Task settings
+    max_concurrent_tasks: int = 10
+    task_timeout_seconds: int = 300
+ 
+    class Config:
+        env_file = ".env"
+ 
+@lru_cache
+def get_settings() -> Settings:
+    return Settings()
+```
+
+---
+
+## 11\. Running the Development Stack &#123;#11.-running-the-development-stack&#125;
+
+### 11.1 Start Infrastructure Services &#123;#11.1-start-infrastructure-services&#125;
+
+```shell
+# Start Docker containers
+cd infrastructure
+docker compose up -d
+ 
+# Wait for services to be healthy
+docker compose ps
+ 
+# Verify all services show "healthy" status
+```
+
+### 11.2 Start Application Services &#123;#11.2-start-application-services&#125;
+
+Open four terminal windows/tabs and run each service:
+
+**Terminal 1 \- API Gateway:**
+
+```shell
+cd ~/dev/voice-by-aiconnected
+source .venv/bin/activate  # or: pyenv activate voice-ai
+cd services/api-gateway
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+**Terminal 2 \- WebRTC Bridge:**
+
+```shell
+cd ~/dev/voice-by-aiconnected
+source .venv/bin/activate
+cd services/webrtc-bridge
+python -m bridge.main
+```
+
+**Terminal 3 \- Agent Service:**
+
+```shell
+cd ~/dev/voice-by-aiconnected
+source .venv/bin/activate
+cd services/agent-service
+python -m agent.main
+```
+
+**Terminal 4 \- Worker Service:**
+
+```shell
+cd ~/dev/voice-by-aiconnected
+source .venv/bin/activate
+cd services/worker-service
+python -m worker.main
+```
+
+### 11.3 Using the Start Script &#123;#11.3-using-the-start-script&#125;
+
+Alternatively, use the all-in-one start script:
+
+```shell
+# Start all services with one command
+./scripts/start-dev.sh
+ 
+# This script:
+# 1. Starts Docker containers if not running
+# 2. Runs database migrations
+# 3. Starts all four services with proper logging
+# 4. Opens log tailing in tmux panes (if tmux installed)
+```
+
+### 11.4 Verify Services Are Running &#123;#11.4-verify-services-are-running&#125;
+
+```shell
+# Check API Gateway
+curl http://localhost:8000/health
+# {"status": "healthy", "version": "1.0.0"}
+ 
+# Check WebRTC Bridge
+curl http://localhost:8001/health
+# {"status": "healthy", "connections": 0}
+ 
+# Check Agent Service
+curl http://localhost:8002/health
+# {"status": "healthy", "agents_available": 0}
+ 
+# Check Worker Service
+curl http://localhost:8003/health
+# {"status": "healthy", "pending_tasks": 0}
+```
+
+### 11.5 Stopping Services &#123;#11.5-stopping-services&#125;
+
+```shell
+# Stop application services (Ctrl+C in each terminal)
+ 
+# Stop Docker containers
+cd infrastructure
+docker compose down
+ 
+# Stop and remove volumes (complete reset)
+docker compose down -v
+```
+
+---
+
+## 12\. Testing Your Setup &#123;#12.-testing-your-setup&#125;
+
+### 12.1 Run Unit Tests &#123;#12.1-run-unit-tests&#125;
+
+```shell
+# Run all unit tests
+pytest tests/unit/ -v
+ 
+# Run tests for a specific service
+pytest tests/unit/api_gateway/ -v
+pytest tests/unit/webrtc_bridge/ -v
+pytest tests/unit/agent_service/ -v
+ 
+# Run with coverage
+pytest tests/unit/ --cov=services --cov-report=html
+```
+
+### 12.2 Run Integration Tests &#123;#12.2-run-integration-tests&#125;
+
+Integration tests require the Docker stack to be running:
+
+```shell
+# Ensure Docker stack is running
+cd infrastructure && docker compose up -d && cd ..
+ 
+# Run integration tests
+pytest tests/integration/ -v
+ 
+# Run specific integration test
+pytest tests/integration/test_call_flow.py -v
+```
+
+### 12.3 Test API Endpoints &#123;#12.3-test-api-endpoints&#125;
+
+```shell
+# Create a test tenant
+http POST localhost:8000/api/v1/tenants \
+  name="Test Tenant" \
+  email="test@example.com"
+ 
+# Create an API key
+http POST localhost:8000/api/v1/auth/api-keys \
+  tenant_id=<tenant_id> \
+  name="Development Key"
+ 
+# List agents
+http GET localhost:8000/api/v1/agents \
+  Authorization:"Bearer <api_key>"
+```
+
+### 12.4 Test WebRTC Connection &#123;#12.4-test-webrtc-connection&#125;
+
+```shell
+# Simulate a test call (uses mock audio)
+python scripts/simulate_call.py \
+  --audio tests/fixtures/audio/hello.wav \
+  --tenant-id <tenant_id>
+ 
+# Expected output:
+# [INFO] Creating LiveKit room: call-test-123
+# [INFO] Connecting to room...
+# [INFO] Publishing audio track...
+# [INFO] Agent connected
+# [INFO] Transcription: "Hello"
+# [INFO] Agent response: "Hello! How can I help you today?"
+# [INFO] Call completed successfully
+```
+
+### 12.5 Test End-to-End Flow &#123;#12.5-test-end-to-end-flow&#125;
+
+```shell
+# Run E2E tests (requires all services and credentials)
+pytest tests/e2e/ -v --integration
+ 
+# Or run the manual E2E test script
+python scripts/e2e_test.py
+```
+
+### 12.6 Health Check Script &#123;#12.6-health-check-script&#125;
+
+Create a comprehensive health check:
+
+```shell
+#!/bin/bash
+# scripts/health-check.sh
+ 
+echo "=== Voice AI Development Stack Health Check ==="
+echo ""
+ 
+# Check Docker services
+echo "Docker Services:"
+docker compose -f infrastructure/docker-compose.yml ps --format "table \{\{.Name\}\}\t\{\{.Status\}\}"
+echo ""
+ 
+# Check application services
+echo "Application Services:"
+services=(
+  "API Gateway|http://localhost:8000/health"
+  "WebRTC Bridge|http://localhost:8001/health"
+  "Agent Service|http://localhost:8002/health"
+  "Worker Service|http://localhost:8003/health"
+)
+ 
+for service in "${services[@]}"; do
+  name="${service%%|*}"
+  url="${service##*|}"
+  status=$(curl -s -o /dev/null -w "%{http_code}" "$url" 2>/dev/null || echo "000")
+  if [ "$status" == "200" ]; then
+    echo "  ✓ $name: healthy"
+  else
+    echo "  ✗ $name: unhealthy (HTTP $status)"
+  fi
+done
+ 
+echo ""
+echo "=== Health Check Complete ==="
+```
+
+---
+
+## 13\. IDE Configuration &#123;#13.-ide-configuration&#125;
+
+### 13.1 VS Code Setup &#123;#13.1-vs-code-setup&#125;
+
+#### Recommended Extensions &#123;#recommended-extensions&#125;
+
+Create `.vscode/extensions.json`:
+
+```json
+{
+  "recommendations": [
+    "ms-python.python",
+    "ms-python.vscode-pylance",
+    "ms-python.black-formatter",
+    "charliermarsh.ruff",
+    "ms-python.mypy-type-checker",
+    "tamasfe.even-better-toml",
+    "redhat.vscode-yaml",
+    "ms-azuretools.vscode-docker",
+    "eamodio.gitlens",
+    "github.copilot",
+    "bradlc.vscode-tailwindcss"
+  ]
+}
+```
+
+#### Workspace Settings &#123;#workspace-settings&#125;
+
+Create `.vscode/settings.json`:
+
+```json
+{
+  "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
+  "python.analysis.typeCheckingMode": "basic",
+  "python.analysis.autoImportCompletions": true,
+ 
+  "[python]": {
+    "editor.defaultFormatter": "ms-python.black-formatter",
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.organizeImports": "explicit"
+    }
+  },
+ 
+  "black-formatter.args": ["--line-length", "100"],
+ 
+  "ruff.args": ["--config", "pyproject.toml"],
+ 
+  "mypy-type-checker.args": [
+    "--config-file=${workspaceFolder}/pyproject.toml"
+  ],
+ 
+  "files.exclude": {
+    "**/__pycache__": true,
+    "**/.pytest_cache": true,
+    "**/.mypy_cache": true,
+    "**/.ruff_cache": true,
+    "**/node_modules": true
+  },
+ 
+  "editor.rulers": [100],
+  "files.trimTrailingWhitespace": true,
+  "files.insertFinalNewline": true
+}
+```
+
+#### Launch Configuration &#123;#launch-configuration&#125;
+
+Create `.vscode/launch.json`:
+
+```json
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "API Gateway",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "uvicorn",
+      "args": ["app.main:app", "--reload", "--port", "8000"],
+      "cwd": "${workspaceFolder}/services/api-gateway",
+      "envFile": "${workspaceFolder}/.env",
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "WebRTC Bridge",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "bridge.main",
+      "cwd": "${workspaceFolder}/services/webrtc-bridge",
+      "envFile": "${workspaceFolder}/.env",
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "Agent Service",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "agent.main",
+      "cwd": "${workspaceFolder}/services/agent-service",
+      "envFile": "${workspaceFolder}/.env",
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "Worker Service",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "worker.main",
+      "cwd": "${workspaceFolder}/services/worker-service",
+      "envFile": "${workspaceFolder}/.env",
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "Pytest: Current File",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "pytest",
+      "args": ["${file}", "-v"],
+      "console": "integratedTerminal"
+    }
+  ],
+  "compounds": [
+    {
+      "name": "All Services",
+      "configurations": [
+        "API Gateway",
+        "WebRTC Bridge",
+        "Agent Service",
+        "Worker Service"
+      ]
+    }
+  ]
+}
+```
+
+### 13.2 PyCharm Setup &#123;#13.2-pycharm-setup&#125;
+
+#### Project Interpreter &#123;#project-interpreter&#125;
+
+1. Open Settings (Cmd+, or Ctrl+,)  
+2. Navigate to Project → Python Interpreter  
+3. Click gear icon → Add  
+4. Select "Existing Environment"  
+5. Path: `~/.pyenv/versions/voice-ai/bin/python`
+
+#### Run Configurations &#123;#run-configurations&#125;
+
+Create run configurations for each service:
+
+1. Run → Edit Configurations  
+2. Add New → Python  
+3. Configure:  
+   - **Name**: API Gateway  
+   - **Script path**: (Module name) `uvicorn`  
+   - **Parameters**: `app.main:app --reload --port 8000`  
+   - **Working directory**: `$ProjectDir$/services/api-gateway`  
+   - **Environment variables**: From `.env` file
+
+### 13.3 Git Configuration &#123;#13.3-git-configuration&#125;
+
+Set up Git hooks for code quality:
+
+```shell
+# Install pre-commit hooks
+pre-commit install
+ 
+# Run hooks manually
+pre-commit run --all-files
+```
+
+`.pre-commit-config.yaml`:
+
+```
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-added-large-files
+      - id: check-merge-conflict
+ 
+  - repo: https://github.com/psf/black
+    rev: 24.1.1
+    hooks:
+      - id: black
+        args: [--line-length=100]
+ 
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.1.14
+    hooks:
+      - id: ruff
+        args: [--fix]
+ 
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.8.0
+    hooks:
+      - id: mypy
+        additional_dependencies:
+          - pydantic
+          - types-redis
+```
+
+---
+
+## 14\. Troubleshooting &#123;#14.-troubleshooting&#125;
+
+### 14.1 Common Issues &#123;#14.1-common-issues&#125;
+
+#### Docker Issues &#123;#docker-issues&#125;
+
+**Problem**: Docker containers won't start
+
+```shell
+# Check Docker is running
+docker info
+ 
+# Check for port conflicts
+lsof -i :5432  # PostgreSQL
+lsof -i :6379  # Redis
+ 
+# Remove old containers and try again
+docker compose down -v
+docker compose up -d
+```
+
+**Problem**: Container shows "unhealthy"
+
+```shell
+# Check container logs
+docker compose logs postgres
+docker compose logs redis
+ 
+# Restart specific container
+docker compose restart postgres
+```
+
+#### Database Issues &#123;#database-issues&#125;
+
+**Problem**: Connection refused to PostgreSQL
+
+```shell
+# Verify PostgreSQL is running
+docker compose ps postgres
+ 
+# Check PostgreSQL logs
+docker compose logs postgres
+ 
+# Test connection from host
+psql postgresql://voiceai:voiceai_dev_password@localhost:5432/voiceai
+ 
+# If using Docker networking issues, try:
+docker exec -it voice-ai-postgres psql -U voiceai -d voiceai
+```
+
+**Problem**: Migration fails
+
+```shell
+# Check current migration status
+alembic current
+ 
+# Show migration history
+alembic history
+ 
+# Downgrade and retry
+alembic downgrade -1
+alembic upgrade head
+ 
+# Reset completely (destructive!)
+alembic downgrade base
+alembic upgrade head
+```
+
+#### Python Environment Issues &#123;#python-environment-issues&#125;
+
+**Problem**: Module not found errors
+
+```shell
+# Verify virtual environment is active
+which python
+# Should show: ~/.pyenv/versions/voice-ai/bin/python
+ 
+# Reinstall dependencies
+poetry install
+ 
+# If using pip directly
+pip install -e .
+```
+
+**Problem**: Wrong Python version
+
+```shell
+# Check Python version
+python --version
+ 
+# Set correct version with pyenv
+pyenv local voice-ai
+pyenv rehash
+```
+
+#### Service Connection Issues &#123;#service-connection-issues&#125;
+
+**Problem**: Service can't connect to Redis
+
+```shell
+# Test Redis connection
+redis-cli ping
+# Should return: PONG
+ 
+# Check Redis URL in .env
+echo $REDIS_URL
+# Should be: redis://localhost:6379/0
+ 
+# Test from Python
+python -c "import redis; r = redis.from_url('redis://localhost:6379/0'); print(r.ping())"
+```
+
+**Problem**: Service can't connect to another service
+
+```shell
+# Check all services are running
+curl http://localhost:8000/health
+curl http://localhost:8001/health
+curl http://localhost:8002/health
+curl http://localhost:8003/health
+ 
+# Check service URLs in .env
+cat .env | grep _URL
+ 
+# Check for firewall issues
+sudo ufw status  # Ubuntu
+```
+
+#### WebRTC Issues &#123;#webrtc-issues&#125;
+
+**Problem**: LiveKit connection fails
+
+```shell
+# Check LiveKit is running
+curl http://localhost:7880
+ 
+# Check LiveKit logs
+docker compose logs livekit
+ 
+# Verify credentials match
+cat .env | grep LIVEKIT
+cat infrastructure/livekit/livekit.yaml | grep -A1 keys
+```
+
+**Problem**: No audio in test calls
+
+```shell
+# Check audio file exists
+ls -la tests/fixtures/audio/
+ 
+# Test audio playback
+ffplay tests/fixtures/audio/hello.wav
+ 
+# Check audio format
+ffprobe tests/fixtures/audio/hello.wav
+```
+
+### 14.2 Debug Mode &#123;#14.2-debug-mode&#125;
+
+Enable verbose logging:
+
+```shell
+# Set in .env
+LOG_LEVEL=DEBUG
+DEBUG=true
+ 
+# Or set environment variable
+export LOG_LEVEL=DEBUG
+```
+
+### 14.3 Useful Debug Commands &#123;#14.3-useful-debug-commands&#125;
+
+```shell
+# Watch logs from all containers
+docker compose logs -f
+ 
+# Watch specific service logs
+docker compose logs -f postgres redis
+ 
+# Monitor Redis in real-time
+redis-cli monitor
+ 
+# Watch PostgreSQL queries (enable logging first)
+docker compose exec postgres tail -f /var/log/postgresql/postgresql-16-main.log
+ 
+# Check network connectivity between containers
+docker compose exec api-gateway ping postgres
+ 
+# Inspect container networking
+docker network inspect voice-ai-network
+```
+
+### 14.4 Getting Help &#123;#14.4-getting-help&#125;
+
+If you're stuck:
+
+1. **Check the logs** \- Most issues leave traces in service logs  
+2. **Search existing issues** \- Someone may have solved this before  
+3. **Ask in Slack** \- \#voice-ai-dev channel  
+4. **Create an issue** \- With reproduction steps and logs
+
+---
+
+## 15\. Appendix &#123;#15.-appendix&#125;
+
+### 15.1 Quick Reference Card &#123;#15.1-quick-reference-card&#125;
+
+```
+=== Voice AI Development Quick Reference ===
+ 
+Start Stack:
+  cd infrastructure && docker compose up -d
+  ./scripts/start-dev.sh
+ 
+Stop Stack:
+  docker compose down
+  # or Ctrl+C on each service
+ 
+Database:
+  psql postgresql://voiceai:voiceai_dev_password@localhost:5432/voiceai
+  alembic upgrade head
+  alembic downgrade -1
+ 
+Tests:
+  pytest tests/unit/ -v
+  pytest tests/integration/ -v
+ 
+Logs:
+  docker compose logs -f
+  tail -f logs/api-gateway.log
+ 
+Health Checks:
+  curl localhost:8000/health
+  curl localhost:8001/health
+  curl localhost:8002/health
+  curl localhost:8003/health
+ 
+URLs:
+  API Gateway:    http://localhost:8000
+  API Docs:       http://localhost:8000/docs
+  WebRTC Bridge:  http://localhost:8001
+  Agent Service:  http://localhost:8002
+  Worker Service: http://localhost:8003
+  Adminer:        http://localhost:8080
+  n8n:            http://localhost:5678
+  Mailhog:        http://localhost:8025
+  Minio Console:  http://localhost:9001
+```
+
+### 15.2 Environment Variables Cheat Sheet &#123;#15.2-environment-variables-cheat-sheet&#125;
+
+| Variable | Default | Description |
+| :---- | :---- | :---- |
+| `DATABASE_URL` | \- | PostgreSQL connection string |
+| `REDIS_URL` | \- | Redis connection string |
+| `SECRET_KEY` | \- | JWT signing key |
+| `LIVEKIT_URL` | ws://localhost:7880 | LiveKit server URL |
+| `LIVEKIT_API_KEY` | devkey | LiveKit API key |
+| `DEEPGRAM_API_KEY` | \- | Deepgram API key |
+| `ANTHROPIC_API_KEY` | \- | Anthropic API key |
+| `GOTO_CLIENT_ID` | \- | GoToConnect OAuth client ID |
+| `GOTO_CLIENT_SECRET` | \- | GoToConnect OAuth secret |
+| `DEBUG` | true | Enable debug mode |
+| `LOG_LEVEL` | DEBUG | Logging level |
+
+### 15.3 Port Reference &#123;#15.3-port-reference&#125;
+
+| Port | Service | Protocol |
+| :---- | :---- | :---- |
+| 5432 | PostgreSQL | TCP |
+| 6379 | Redis | TCP |
+| 7880 | LiveKit HTTP | TCP |
+| 7881 | LiveKit WebRTC | TCP |
+| 8000 | API Gateway | HTTP |
+| 8001 | WebRTC Bridge | HTTP |
+| 8002 | Agent Service | HTTP |
+| 8003 | Worker Service | HTTP |
+| 8025 | Mailhog Web | HTTP |
+| 8080 | Adminer | HTTP |
+| 9000 | Minio API | HTTP |
+| 9001 | Minio Console | HTTP |
+
+### 15.4 Useful Aliases &#123;#15.4-useful-aliases&#125;
+
+Add to your `~/.bashrc` or `~/.zshrc`:
+
+```shell
+# Voice AI Development Aliases
+alias vai-up="cd ~/dev/voice-by-aiconnected/infrastructure && docker compose up -d"
+alias vai-down="cd ~/dev/voice-by-aiconnected/infrastructure && docker compose down"
+alias vai-logs="cd ~/dev/voice-by-aiconnected/infrastructure && docker compose logs -f"
+alias vai-test="cd ~/dev/voice-by-aiconnected && pytest tests/unit/ -v"
+alias vai-migrate="cd ~/dev/voice-by-aiconnected && alembic upgrade head"
+alias vai-shell="cd ~/dev/voice-by-aiconnected && python -c 'from shared.database import get_session; import IPython; IPython.embed()'"
+alias vai-psql="psql postgresql://voiceai:voiceai_dev_password@localhost:5432/voiceai"
+alias vai-redis="redis-cli"
+```
+
+---
+
+## Document Revision History &#123;#document-revision-history&#125;
+
+| Version | Date | Author | Changes |
+| :---- | :---- | :---- | :---- |
+| 1.0 | 2026-01-16 | Claude | Initial document |
+
+---
+
+*This document is part of the Voice by aiConnected technical documentation suite.*

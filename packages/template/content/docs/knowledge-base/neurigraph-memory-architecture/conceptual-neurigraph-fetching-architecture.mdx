@@ -1,0 +1,61 @@
+---
+title: "Conceptual Neurigraph Fetching Architecture"
+---
+Neurigraph stores memory across two layers (OTL and CTL) plus Hyperthyme. A fetch isn't a single operation — it's a traversal that needs to know where to start, what direction to move, how deep to go, and when to stop. The answer looks different depending on who's asking and why.
+
+Let's lay out the full conceptual architecture for Neurigraph fetching.
+
+---
+
+**The three fetch contexts**
+
+Every fetch in Neurigraph originates from one of three callers, and each has different needs:
+
+A Persona fetching context for a task needs relevance-ranked memory — not everything related to a concept, just the most applicable nodes given the current task, skill slot in use, and recency. It needs a bounded result so it doesn't flood the context window.
+
+An agent traversing memory during reasoning needs path-following — starting from a seed concept and walking relationships to discover what's connected. This is open-ended exploration, not a targeted lookup. Depth limits and cycle detection matter here.
+
+An external API or developer query needs precision — find this specific node, or all nodes matching this filter, or the shortest path between two concepts. Deterministic, not probabilistic.
+
+These three contexts should map to three distinct fetch modes in Neurigraph's query layer.
+
+---
+
+**The four primitive fetch operations**
+
+Everything else composes from these:
+
+**Node fetch** — retrieve a single node and its properties by identifier. The simplest case. Every other operation starts here or ends here.
+
+**Neighborhood fetch** — retrieve a node plus its immediate relationships and the nodes on the other end of those relationships. This is one hop. You control which relationship types to include and which direction to follow (inbound, outbound, or both).
+
+**Path fetch** — find a connected chain between a start node and an end node (or concept). This is where graph traversal algorithms live — breadth-first for shortest path, depth-first for deep exploration. You need a max-depth limit or this becomes unbounded.
+
+**Relevance fetch** — given a query (a task description, an embedding vector, a concept label), return the N most semantically related nodes. This is where your OTL/CTL distinction matters most — OTL stores the conceptual graph, CTL stores the experiential/temporal layer, and a relevance fetch may need to pull from both and merge the results.
+
+---
+
+**Where Ontological, Contextual, and Temporal each participate**
+
+The ontological layer is your structured knowledge — concepts, categories, definitions, relationships that don't change based on experience. Fetches here are graph traversals: follow edges, retrieve nodes. Think of it as the map.
+
+The contextual/temporal layer is where lived experience lives — what happened, when, in what context, with what outcome. Fetches here are time-scoped and context-scoped. You're asking "what do I know about X from my experience" not "what is X." Think of it as the journal.
+
+The temporal layer is really just your temporal index. It doesn't store facts — it stores when things were learned, accessed, reinforced, or decayed. A fetch that needs recency weighting passes through Temporal to score or filter its results. It answers "how fresh and relevant is this memory right now."
+
+A full Persona context fetch hits all three: Ontological for structural knowledge about the topic, Contextual for experiential memory relevant to the current task, Temporal to weight and rank the results by recency and reinforcement.
+
+---
+
+**The fetch pipeline**
+
+Every fetch, regardless of caller, should move through the same stages:---
+
+**The result object**
+
+Whatever comes back from a Neurigraph fetch needs to carry more than just data. Every result should include the nodes and their properties, the relationships between them, which layer each piece came from (provenance), a confidence or relevance score, and a Temporal-derived freshness score. This is what lets the caller — whether a Persona, an agent, or an API consumer — decide how much to trust and weight what it received.
+
+<Frame>
+</Frame>
+
+---

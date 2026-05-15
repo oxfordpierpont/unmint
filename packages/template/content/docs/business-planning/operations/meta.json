@@ -1,0 +1,14 @@
+{
+  "title": "Operations",
+  "pages": [
+    "index",
+    "bp-ops-01-current-org-state",
+    "bp-ops-02-org-chart",
+    "bp-ops-03-job-descriptions",
+    "bp-ops-04-compensation-philosophy",
+    "bp-ops-05-advisory-board",
+    "bp-ops-06-operational-infrastructure",
+    "bp-ops-07-development-workflow"
+  ],
+  "defaultOpen": true
+}

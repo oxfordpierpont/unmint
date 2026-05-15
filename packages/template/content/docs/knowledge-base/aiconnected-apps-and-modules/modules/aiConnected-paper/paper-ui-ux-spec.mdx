@@ -1,0 +1,1222 @@
+---
+title: "Content Strategist"
+description: "Last Updated: January 2, 2026 Status: Complete Specification 1. Design Philosophy & Principles 2. Design System Foundation 3. Component Library 4. Layout Sys..."
+---
+<Info>
+Normalized for Mintlify from `knowledge-base/aiconnected-apps-and-modules/modules/aiConnected-paper/paper-ui-ux-spec.mdx`.
+</Info>
+# Content Strategist
+# UI/UX Design Specification
+
+**Version:** 2.0  
+**Last Updated:** January 2, 2026  
+**Status:** Complete Specification
+
+---
+
+# Table of Contents
+
+1. [Design Philosophy & Principles](#1-design-philosophy--principles)
+2. [Design System Foundation](#2-design-system-foundation)
+3. [Component Library](#3-component-library)
+4. [Layout System](#4-layout-system)
+5. [Page Specifications](#5-page-specifications)
+6. [User Flows](#6-user-flows)
+7. [Responsive Design](#7-responsive-design)
+8. [Accessibility Standards](#8-accessibility-standards)
+9. [Motion & Animation](#9-motion--animation)
+10. [Iconography](#10-iconography)
+11. [Data Visualization](#11-data-visualization)
+12. [Empty States & Error States](#12-empty-states--error-states)
+13. [Loading States](#13-loading-states)
+14. [Notifications & Feedback](#14-notifications--feedback)
+15. [Form Design Patterns](#15-form-design-patterns)
+16. [PDF Output Design](#16-pdf-output-design)
+
+---
+
+# 1. Design Philosophy & Principles
+
+## 1.1 Core Philosophy
+
+Content Strategist is a **professional B2B SaaS tool** designed for marketing agencies and their enterprise clients. The interface must convey:
+
+- **Trust & Professionalism**: Clean, polished, enterprise-ready
+- **Efficiency**: Minimize clicks, maximize productivity
+- **Clarity**: Complex AI processes made understandable
+- **Confidence**: Users should feel in control at all times
+
+## 1.2 Design Principles
+
+### 1.2.1 Clarity Over Cleverness
+
+Every interface element should be immediately understandable. Avoid:
+- Ambiguous icons without labels
+- Jargon or technical terms without context
+- Hidden functionality
+
+### 1.2.2 Progressive Disclosure
+
+Show only what's needed at each step. Advanced options should be discoverable but not overwhelming.
+
+### 1.2.3 Immediate Feedback
+
+Every user action should have visible feedback within 100ms:
+- Button click → Visual press state
+- Form submission → Loading indicator
+- Error → Inline message at point of error
+
+### 1.2.4 Contextual Help
+
+Help should be available where needed, not buried in documentation:
+- Tooltips on complex fields
+- Inline hints below inputs
+- "Learn more" links to relevant docs
+
+### 1.2.5 Consistent Patterns
+
+Similar actions should look and behave the same way throughout:
+- All primary actions use the same button style
+- All forms follow the same layout patterns
+- All tables have consistent sorting/filtering
+
+## 1.3 Voice & Tone
+
+### Interface Copy Guidelines
+
+| Context | Tone | Example |
+|---------|------|---------|
+| Headlines | Confident, clear | "Your Content Library" |
+| Instructions | Helpful, direct | "Enter a topic to generate content" |
+| Success | Positive, brief | "Document generated successfully" |
+| Errors | Apologetic, actionable | "We couldn't complete this. Try again or contact support." |
+| Empty states | Encouraging | "No documents yet. Create your first one!" |
+
+### Writing Rules
+
+1. Use active voice: "Generate content" not "Content can be generated"
+2. Be specific: "3 documents ready" not "Some documents ready"
+3. Avoid jargon: "AI-powered" not "LLM-based neural generation"
+4. Use sentence case: "Advanced options" not "Advanced Options"
+
+---
+
+# 2. Design System Foundation
+
+## 2.1 Color System
+
+### 2.1.1 Primary Palette
+
+```scss
+// Brand Colors
+$brand-primary: #1a4a6e;      // Deep teal - primary actions, headers
+$brand-secondary: #b8860b;    // Golden amber - accents, highlights
+$brand-tertiary: #2980b9;     // Bright blue - links, interactive elements
+
+// Primary variations
+$brand-primary-light: #2d6a94;
+$brand-primary-dark: #0f3249;
+$brand-primary-50: #e8f0f5;   // Backgrounds
+$brand-primary-100: #c5d9e8;
+$brand-primary-200: #9ec0d8;
+
+// Secondary variations
+$brand-secondary-light: #d4a012;
+$brand-secondary-dark: #8a6608;
+$brand-secondary-50: #fef8e7;
+$brand-secondary-100: #fcefc4;
+```
+
+### 2.1.2 Neutral Palette
+
+```scss
+// Grays
+$gray-50: #f9fafb;    // Page backgrounds
+$gray-100: #f3f4f6;   // Card backgrounds
+$gray-200: #e5e7eb;   // Borders, dividers
+$gray-300: #d1d5db;   // Disabled borders
+$gray-400: #9ca3af;   // Placeholder text
+$gray-500: #6b7280;   // Secondary text
+$gray-600: #4b5563;   // Body text
+$gray-700: #374151;   // Headings
+$gray-800: #1f2937;   // Primary text
+$gray-900: #111827;   // High contrast text
+
+// Pure colors
+$white: #ffffff;
+$black: #000000;
+```
+
+### 2.1.3 Semantic Colors
+
+```scss
+// Success
+$success-50: #ecfdf5;
+$success-100: #d1fae5;
+$success-500: #10b981;
+$success-600: #059669;
+$success-700: #047857;
+
+// Warning
+$warning-50: #fffbeb;
+$warning-100: #fef3c7;
+$warning-500: #f59e0b;
+$warning-600: #d97706;
+$warning-700: #b45309;
+
+// Error
+$error-50: #fef2f2;
+$error-100: #fee2e2;
+$error-500: #ef4444;
+$error-600: #dc2626;
+$error-700: #b91c1c;
+
+// Info
+$info-50: #eff6ff;
+$info-100: #dbeafe;
+$info-500: #3b82f6;
+$info-600: #2563eb;
+$info-700: #1d4ed8;
+```
+
+### 2.1.4 Dark Mode Palette
+
+```scss
+// Dark mode backgrounds
+$dark-bg-primary: #0f172a;    // Main background
+$dark-bg-secondary: #1e293b;  // Cards, elevated surfaces
+$dark-bg-tertiary: #334155;   // Hover states, borders
+
+// Dark mode text
+$dark-text-primary: #f8fafc;
+$dark-text-secondary: #cbd5e1;
+$dark-text-muted: #64748b;
+
+// Dark mode borders
+$dark-border: #334155;
+$dark-border-light: #475569;
+```
+
+### 2.1.5 Color Usage Guidelines
+
+| Element | Light Mode | Dark Mode |
+|---------|------------|-----------|
+| Page background | $gray-50 | $dark-bg-primary |
+| Card background | $white | $dark-bg-secondary |
+| Primary text | $gray-800 | $dark-text-primary |
+| Secondary text | $gray-500 | $dark-text-secondary |
+| Borders | $gray-200 | $dark-border |
+| Primary button | $brand-primary | $brand-primary-light |
+| Links | $brand-tertiary | #60a5fa |
+| Hover states | 10% darker | 10% lighter |
+
+### 2.1.6 Contrast Requirements
+
+All text must meet WCAG 2.1 AA standards:
+- Normal text (&lt; 18px): 4.5:1 minimum contrast ratio
+- Large text (≥ 18px or ≥ 14px bold): 3:1 minimum contrast ratio
+- UI components: 3:1 minimum contrast ratio
+
+## 2.2 Typography
+
+### 2.2.1 Font Families
+
+```scss
+// Primary font - UI and body text
+$font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
+// Monospace - code, technical data
+$font-mono: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+
+// Display - marketing headers (optional)
+$font-display: 'Plus Jakarta Sans', $font-sans;
+```
+
+### 2.2.2 Type Scale
+
+```scss
+// Font sizes (using modular scale 1.25)
+$text-xs: 0.75rem;     // 12px - labels, captions
+$text-sm: 0.875rem;    // 14px - secondary text, table cells
+$text-base: 1rem;      // 16px - body text (default)
+$text-lg: 1.125rem;    // 18px - lead paragraphs
+$text-xl: 1.25rem;     // 20px - section headers
+$text-2xl: 1.5rem;     // 24px - page section titles
+$text-3xl: 1.875rem;   // 30px - page titles
+$text-4xl: 2.25rem;    // 36px - hero headers
+$text-5xl: 3rem;       // 48px - display headers
+
+// Line heights
+$leading-none: 1;
+$leading-tight: 1.25;
+$leading-snug: 1.375;
+$leading-normal: 1.5;
+$leading-relaxed: 1.625;
+$leading-loose: 2;
+
+// Font weights
+$font-normal: 400;
+$font-medium: 500;
+$font-semibold: 600;
+$font-bold: 700;
+```
+
+### 2.2.3 Type Styles
+
+```scss
+// Headings
+.heading-1 {
+  font-size: $text-3xl;      // 30px
+  font-weight: $font-bold;
+  line-height: $leading-tight;
+  letter-spacing: -0.02em;
+  color: $gray-900;
+}
+
+.heading-2 {
+  font-size: $text-2xl;      // 24px
+  font-weight: $font-semibold;
+  line-height: $leading-tight;
+  letter-spacing: -0.01em;
+  color: $gray-800;
+}
+
+.heading-3 {
+  font-size: $text-xl;       // 20px
+  font-weight: $font-semibold;
+  line-height: $leading-snug;
+  color: $gray-800;
+}
+
+.heading-4 {
+  font-size: $text-lg;       // 18px
+  font-weight: $font-medium;
+  line-height: $leading-snug;
+  color: $gray-700;
+}
+
+// Body text
+.body-large {
+  font-size: $text-lg;       // 18px
+  font-weight: $font-normal;
+  line-height: $leading-relaxed;
+  color: $gray-600;
+}
+
+.body-default {
+  font-size: $text-base;     // 16px
+  font-weight: $font-normal;
+  line-height: $leading-normal;
+  color: $gray-600;
+}
+
+.body-small {
+  font-size: $text-sm;       // 14px
+  font-weight: $font-normal;
+  line-height: $leading-normal;
+  color: $gray-500;
+}
+
+// Utility text
+.caption {
+  font-size: $text-xs;       // 12px
+  font-weight: $font-normal;
+  line-height: $leading-normal;
+  color: $gray-500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.label {
+  font-size: $text-sm;       // 14px
+  font-weight: $font-medium;
+  line-height: $leading-normal;
+  color: $gray-700;
+}
+```
+
+## 2.3 Spacing System
+
+### 2.3.1 Base Unit
+
+All spacing uses a **4px base unit** for consistency.
+
+```scss
+// Spacing scale
+$space-0: 0;
+$space-px: 1px;
+$space-0.5: 0.125rem;  // 2px
+$space-1: 0.25rem;     // 4px
+$space-1.5: 0.375rem;  // 6px
+$space-2: 0.5rem;      // 8px
+$space-2.5: 0.625rem;  // 10px
+$space-3: 0.75rem;     // 12px
+$space-3.5: 0.875rem;  // 14px
+$space-4: 1rem;        // 16px
+$space-5: 1.25rem;     // 20px
+$space-6: 1.5rem;      // 24px
+$space-7: 1.75rem;     // 28px
+$space-8: 2rem;        // 32px
+$space-9: 2.25rem;     // 36px
+$space-10: 2.5rem;     // 40px
+$space-12: 3rem;       // 48px
+$space-14: 3.5rem;     // 56px
+$space-16: 4rem;       // 64px
+$space-20: 5rem;       // 80px
+$space-24: 6rem;       // 96px
+$space-32: 8rem;       // 128px
+```
+
+### 2.3.2 Common Spacing Patterns
+
+```scss
+// Component internal padding
+$padding-button: $space-2 $space-4;           // 8px 16px
+$padding-input: $space-2.5 $space-3;          // 10px 12px
+$padding-card: $space-5;                       // 20px
+$padding-modal: $space-6;                      // 24px
+$padding-section: $space-8;                    // 32px
+
+// Component margins
+$margin-form-field: $space-4;                  // 16px between fields
+$margin-section: $space-8;                     // 32px between sections
+$margin-page-section: $space-12;               // 48px major sections
+
+// Grid gaps
+$gap-card-grid: $space-6;                      // 24px
+$gap-table-cell: $space-4;                     // 16px
+$gap-button-group: $space-2;                   // 8px
+$gap-form-row: $space-4;                       // 16px
+```
+
+## 2.4 Elevation & Shadows
+
+### 2.4.1 Shadow Scale
+
+```scss
+// Elevation levels
+$shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+$shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+$shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+$shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+$shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+$shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+
+// Inner shadow
+$shadow-inner: inset 0 2px 4px 0 rgba(0, 0, 0, 0.05);
+
+// Focus ring
+$shadow-focus: 0 0 0 3px rgba($brand-primary, 0.2);
+$shadow-focus-error: 0 0 0 3px rgba($error-500, 0.2);
+```
+
+### 2.4.2 Elevation Usage
+
+| Level | Shadow | Usage |
+|-------|--------|-------|
+| 0 | none | Flat elements, disabled states |
+| 1 | $shadow-xs | Subtle cards, table rows on hover |
+| 2 | $shadow-sm | Cards, dropdowns (default) |
+| 3 | $shadow-md | Elevated cards, popovers |
+| 4 | $shadow-lg | Modals, dialogs |
+| 5 | $shadow-xl | Notifications, toasts |
+| 6 | $shadow-2xl | Full-screen overlays |
+
+## 2.5 Border Radius
+
+```scss
+// Border radius scale
+$radius-none: 0;
+$radius-sm: 0.125rem;    // 2px - subtle rounding
+$radius-default: 0.25rem; // 4px - default for small elements
+$radius-md: 0.375rem;    // 6px - inputs, buttons
+$radius-lg: 0.5rem;      // 8px - cards, containers
+$radius-xl: 0.75rem;     // 12px - modals, large cards
+$radius-2xl: 1rem;       // 16px - featured elements
+$radius-3xl: 1.5rem;     // 24px - pills, large rounded
+$radius-full: 9999px;    // Full circle/pill
+
+// Usage
+$radius-button: $radius-md;
+$radius-input: $radius-md;
+$radius-card: $radius-lg;
+$radius-modal: $radius-xl;
+$radius-badge: $radius-full;
+$radius-avatar: $radius-full;
+```
+
+## 2.6 Z-Index System
+
+```scss
+// Z-index scale (managed system)
+$z-base: 0;
+$z-dropdown: 100;
+$z-sticky: 200;
+$z-fixed: 300;
+$z-modal-backdrop: 400;
+$z-modal: 500;
+$z-popover: 600;
+$z-tooltip: 700;
+$z-notification: 800;
+$z-max: 9999;
+
+// Specific components
+$z-sidebar: $z-fixed;
+$z-header: $z-fixed + 1;
+$z-drawer: $z-modal;
+$z-toast: $z-notification;
+$z-command-palette: $z-modal + 100;
+```
+
+---
+
+# 3. Component Library
+
+## 3.1 Buttons
+
+### 3.1.1 Button Variants
+
+| Variant | Background | Text | Border | Use Case |
+|---------|------------|------|--------|----------|
+| Primary | $brand-primary | white | none | Main actions |
+| Secondary | transparent | $gray-700 | $gray-300 | Secondary actions |
+| Tertiary | transparent | $brand-tertiary | none | Tertiary/links |
+| Danger | $error-600 | white | none | Destructive actions |
+| Ghost | transparent | $gray-600 | none | Subtle actions |
+
+### 3.1.2 Button Sizes
+
+```scss
+// Size variants
+.btn-xs {
+  height: 28px;
+  padding: 0 $space-2;
+  font-size: $text-xs;
+  border-radius: $radius-default;
+}
+
+.btn-sm {
+  height: 32px;
+  padding: 0 $space-3;
+  font-size: $text-sm;
+  border-radius: $radius-md;
+}
+
+.btn-md {  // Default
+  height: 40px;
+  padding: 0 $space-4;
+  font-size: $text-sm;
+  border-radius: $radius-md;
+}
+
+.btn-lg {
+  height: 48px;
+  padding: 0 $space-6;
+  font-size: $text-base;
+  border-radius: $radius-md;
+}
+
+.btn-xl {
+  height: 56px;
+  padding: 0 $space-8;
+  font-size: $text-lg;
+  border-radius: $radius-lg;
+}
+```
+
+### 3.1.3 Button States
+
+- **Normal**: Default appearance
+- **Hover**: Slightly darker, subtle lift (translateY(-1px))
+- **Active/Pressed**: Darker, no lift
+- **Focus**: Focus ring visible
+- **Loading**: Spinner icon, text changes to "Loading...", disabled
+- **Disabled**: Reduced opacity, cursor: not-allowed
+
+## 3.2 Form Elements
+
+### 3.2.1 Text Input
+
+```scss
+.input {
+  height: 40px;
+  padding: $space-2.5 $space-3;
+  font-size: $text-base;
+  font-family: $font-sans;
+  color: $gray-800;
+  background: $white;
+  border: 1px solid $gray-300;
+  border-radius: $radius-md;
+  transition: border-color 150ms, box-shadow 150ms;
+  
+  &::placeholder {
+    color: $gray-400;
+  }
+  
+  &:hover:not(:disabled) {
+    border-color: $gray-400;
+  }
+  
+  &:focus {
+    outline: none;
+    border-color: $brand-primary;
+    box-shadow: $shadow-focus;
+  }
+  
+  &:disabled {
+    background: $gray-100;
+    color: $gray-400;
+    cursor: not-allowed;
+  }
+  
+  &.error {
+    border-color: $error-500;
+    
+    &:focus {
+      box-shadow: $shadow-focus-error;
+    }
+  }
+}
+```
+
+### 3.2.2 Select Dropdown
+
+- Closed state shows selected value with chevron
+- Open state shows dropdown with options
+- Support for option groups and separators
+- Max height: 320px with scroll
+- Hover highlight on options
+- Checkmark on selected option
+
+### 3.2.3 Textarea
+
+- Min-height: 100px
+- Resize: vertical only
+- Character counter appears when &gt; 50% of max
+
+### 3.2.4 Checkbox & Radio
+
+- 16x16px hit area minimum (44x44px recommended for touch)
+- Clear visual distinction between checked/unchecked
+- Support for indeterminate state (checkbox only)
+- Optional help text below label
+
+### 3.2.5 Toggle Switch
+
+- Width: 44px, Height: 24px
+- Knob: 20px diameter
+- Smooth animation (150ms)
+- Clear on/off states
+
+### 3.2.6 Tag/Chip Input
+
+- Tags displayed inline with input
+- Remove tag: click X or backspace
+- Add tag: Enter key
+- Support for max tags limit
+
+## 3.3 Cards
+
+### 3.3.1 Basic Card
+
+```scss
+.card {
+  padding: $space-5;
+  background: $white;
+  border: 1px solid $gray-200;
+  border-radius: $radius-lg;
+  box-shadow: $shadow-sm;
+}
+```
+
+### 3.3.2 Document Card
+
+- Thumbnail preview (16:9 aspect ratio)
+- Title and metadata
+- Status badge
+- Action buttons
+- Hover: elevated shadow, subtle scale
+
+### 3.3.3 Client Card
+
+- Logo placeholder
+- Company name and info
+- Stats row (documents, scheduled, drafts)
+- Last activity timestamp
+- Action buttons
+
+### 3.3.4 Stat Card
+
+- Large number display
+- Label text
+- Optional trend indicator (up/down/neutral)
+- Optional icon
+
+## 3.4 Navigation
+
+### 3.4.1 Sidebar Navigation
+
+- Width: 256px (collapsible to 64px)
+- Logo area at top
+- Search/command palette trigger
+- Grouped nav items with section labels
+- Active state: background highlight + left border
+- User menu at bottom
+
+### 3.4.2 Top Navigation Bar
+
+- Height: 64px
+- Hamburger toggle (mobile)
+- Logo/title
+- Search trigger
+- Notifications dropdown
+- User menu dropdown
+
+### 3.4.3 Breadcrumbs
+
+- Separator: "/" or "›"
+- Current page not clickable
+- Truncation for long paths
+
+### 3.4.4 Tabs
+
+- Active: primary color text + bottom border
+- Inactive: gray text
+- Hover: slightly darker + background
+
+## 3.5 Tables
+
+### 3.5.1 Data Table
+
+- Header row with sort indicators
+- Checkbox column for selection
+- Hover highlight on rows
+- Row actions menu
+- Pagination controls
+- Bulk actions bar when rows selected
+
+### 3.5.2 Table Row Actions
+
+- Overflow menu (⋮) for actions
+- Common actions: View, Edit, Duplicate, Delete
+- Destructive actions in red
+
+## 3.6 Modals & Dialogs
+
+### 3.6.1 Standard Modal
+
+- Widths: 480px (sm), 640px (md), 800px (lg), 90vw (xl)
+- Max-height: 90vh with scroll
+- Header with title and close button
+- Footer with action buttons
+- Backdrop click to close (optional)
+- ESC key to close
+
+### 3.6.2 Confirmation Dialog
+
+- Centered, smaller width
+- Icon indicating type (warning, danger, info)
+- Clear question
+- Cancel + Confirm buttons
+- Destructive confirm in red
+
+### 3.6.3 Drawer/Slide-over
+
+- Slides from right
+- Widths: 400px (sm), 500px (md), 640px (lg)
+- Same backdrop behavior as modal
+
+## 3.7 Status Indicators
+
+### 3.7.1 Status Badges
+
+| Status | Colors | Icon |
+|--------|--------|------|
+| Ready | success-50 bg, success-700 text | ● filled |
+| Draft | gray-100 bg, gray-700 text | ● filled |
+| Generating | info-50 bg, info-700 text | ● animated pulse |
+| Distributed | secondary-50 bg, secondary-700 text | ● filled |
+| Failed | error-50 bg, error-700 text | ○ outline |
+| Pending | warning-50 bg, warning-700 text | ◷ clock |
+| Completed | success-50 bg, success-700 text | ✓ check |
+| Canceled | gray-100 bg, gray-500 text | ✕ x |
+
+### 3.7.2 Progress Indicators
+
+- **Linear**: 8px height, rounded, animated shimmer
+- **Circular**: 32/48/64/96px sizes, stroke proportional
+- **Step**: Numbered steps with connectors
+
+---
+
+# 4. Layout System
+
+## 4.1 Grid System
+
+### 4.1.1 Base Grid
+
+```scss
+// 12-column grid
+$grid-columns: 12;
+$grid-gutter: 24px;
+$grid-margin: 24px;
+
+// Container max-widths
+$container-sm: 640px;
+$container-md: 768px;
+$container-lg: 1024px;
+$container-xl: 1280px;
+$container-2xl: 1536px;
+
+// Breakpoints
+$breakpoint-sm: 640px;
+$breakpoint-md: 768px;
+$breakpoint-lg: 1024px;
+$breakpoint-xl: 1280px;
+$breakpoint-2xl: 1536px;
+```
+
+## 4.2 Page Structure
+
+### 4.2.1 Standard Page Layout
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                       TOP NAVIGATION (64px)                         │
+├──────────────┬──────────────────────────────────────────────────────┤
+│              │  BREADCRUMBS                                         │
+│   SIDEBAR    │  PAGE HEADER (title + actions)                       │
+│   (256px)    │  ═══════════════════════════════════════════════════ │
+│              │  PAGE CONTENT (max 1280px, centered)                 │
+│              │                                                      │
+└──────────────┴──────────────────────────────────────────────────────┘
+```
+
+Content area padding: 24px (desktop), 16px (tablet), 12px (mobile)
+
+---
+
+# 5. Page Specifications
+
+## 5.1 Dashboard
+
+- Welcome message with user name
+- 4 stat cards (Clients, Documents, Scheduled, Generating)
+- Recent Documents list (5 items)
+- Quick Actions panel
+- Activity Chart (30-day view)
+
+## 5.2 Client List
+
+- Search and filter bar
+- Card grid view (4 columns desktop, 2 tablet, 1 mobile)
+- Pagination
+- Empty state for no clients
+
+## 5.3 Client Detail
+
+- Header with logo, name, industry, location
+- Tab navigation (Overview, Documents, Schedule, Settings)
+- Overview: Stats, Recent Documents, Upcoming Schedule, Details panel
+- Documents: Filterable table
+- Schedule: Calendar or list view
+- Settings: Client-specific configuration
+
+## 5.4 Content Generation
+
+- Topic input (required)
+- Advanced options (collapsible): Template, Tone, Keywords, Services, Custom Direction
+- Distribution settings (collapsible): Auto-distribute toggle, Platform selection
+- Generate button
+- Progress view with real-time updates
+- Completion view with preview and next actions
+
+## 5.5 Document View
+
+- Back navigation
+- Title and metadata header
+- Status badge
+- Action buttons (Download, Share, Distribute)
+- PDF preview with page navigation
+- Generation details panel
+- Distribution status panel
+
+## 5.6 Schedule Management
+
+- Calendar view (monthly with day detail)
+- List view alternative
+- Add/Import buttons
+- Day detail panel shows scheduled items
+- Edit/Cancel actions on items
+
+## 5.7 Settings Pages
+
+- Tabbed interface: General, Branding, Integrations, API Keys
+- General: Agency info, preferences
+- Branding: Logo uploads, color customization, preview
+- Integrations: Social platform connections
+- API Keys: Key management with copy/regenerate
+
+---
+
+# 6. User Flows
+
+## 6.1 First-Time User Onboarding
+
+1. Welcome screen
+2. Agency setup (name, website)
+3. Logo upload (skippable)
+4. First client creation (skippable)
+5. First content generation (skippable)
+6. Completion → Dashboard
+
+## 6.2 Content Generation Flow
+
+1. Select client or navigate from dashboard
+2. Click "Generate"
+3. Enter topic
+4. (Optional) Configure advanced options
+5. (Optional) Configure distribution
+6. Click "Generate"
+7. View progress in real-time
+8. Success → Preview, Download, Distribute options
+9. Error → Retry or Edit & Retry
+
+## 6.3 Document Distribution Flow
+
+1. From document detail, click "Distribute"
+2. Select platforms (connected only)
+3. Add custom message (optional)
+4. Preview post
+5. Click "Distribute Now"
+6. View results with links to posts
+
+## 6.4 CSV Import Flow
+
+1. Navigate to Schedule
+2. Click "Import CSV"
+3. Download template or drop file
+4. Validation processing
+5. Review validation results (errors/warnings)
+6. Confirm import
+7. Success → View schedule
+
+---
+
+# 7. Responsive Design
+
+## 7.1 Breakpoint Behavior
+
+### Desktop (≥1280px)
+- Full sidebar (256px)
+- Multi-column layouts
+- Full-featured tables
+
+### Tablet (768px - 1279px)
+- Collapsed sidebar (64px icons only, hover to expand)
+- Reduced columns
+- Tables remain but with horizontal scroll
+
+### Mobile (&lt;768px)
+- Hidden sidebar (hamburger menu)
+- Bottom tab navigation
+- Single column layouts
+- Tables convert to cards
+- Modals become full-screen
+
+## 7.2 Touch Targets
+
+- Minimum: 44x44px
+- Recommended: 48x48px
+- Spacing between targets: minimum 8px
+
+---
+
+# 8. Accessibility Standards
+
+## 8.1 WCAG 2.1 AA Compliance
+
+| Criterion | Requirement |
+|-----------|-------------|
+| 1.1.1 | Alt text for all images |
+| 1.3.1 | Semantic HTML, ARIA labels |
+| 1.4.1 | Color not sole indicator |
+| 1.4.3 | 4.5:1 text contrast |
+| 1.4.11 | 3:1 UI contrast |
+| 2.1.1 | Full keyboard accessibility |
+| 2.4.3 | Logical focus order |
+| 2.4.7 | Visible focus indicators |
+| 4.1.2 | ARIA for custom components |
+
+## 8.2 Implementation
+
+- Skip links for main content
+- Focus visible on all interactive elements
+- Screen reader announcements for dynamic content
+- Proper heading hierarchy
+- Form field labels and error associations
+
+## 8.3 Reduced Motion
+
+```scss
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+```
+
+---
+
+# 9. Motion & Animation
+
+## 9.1 Duration Scale
+
+```scss
+$duration-instant: 75ms;    // Micro-interactions
+$duration-fast: 150ms;      // Button presses, toggles
+$duration-normal: 200ms;    // Dropdowns, tooltips
+$duration-slow: 300ms;      // Modals, drawers
+$duration-slower: 500ms;    // Page transitions
+```
+
+## 9.2 Easing Functions
+
+```scss
+$ease-in: cubic-bezier(0.4, 0, 1, 1);
+$ease-out: cubic-bezier(0, 0, 0.2, 1);
+$ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+```
+
+## 9.3 Common Animations
+
+- **fadeIn**: opacity 0 → 1
+- **slideUp**: translateY(16px) → 0 with fade
+- **scaleIn**: scale(0.95) → 1 with fade
+- **slideFromRight**: translateX(100%) → 0
+- **pulse**: opacity animation for loading
+- **spin**: 360° rotation for spinners
+
+---
+
+# 10. Iconography
+
+## 10.1 Icon Library
+
+Use **Lucide Icons** (MIT licensed)
+
+## 10.2 Icon Sizes
+
+```scss
+$icon-xs: 12px;    // Inline with small text
+$icon-sm: 16px;    // Inline with body text
+$icon-md: 20px;    // Default, buttons
+$icon-lg: 24px;    // Larger buttons
+$icon-xl: 32px;    // Empty states
+$icon-2xl: 48px;   // Hero illustrations
+```
+
+## 10.3 Icon Guidelines
+
+- Always use with labels for primary actions
+- Maintain consistent style (don't mix filled/outlined)
+- Use appropriate size for context
+- Ensure sufficient contrast
+
+---
+
+# 11. Data Visualization
+
+## 11.1 Chart Colors
+
+```scss
+// Sequential (single metric)
+$chart-blue-1 to $chart-blue-5
+
+// Categorical (multiple series)
+$chart-category-1: $brand-primary;
+$chart-category-2: $brand-secondary;
+$chart-category-3: $brand-tertiary;
+$chart-category-4: #059669;
+$chart-category-5: #7c3aed;
+$chart-category-6: #db2777;
+```
+
+## 11.2 Chart Types
+
+- Bar charts (horizontal for comparisons)
+- Line charts (trends over time)
+- Donut charts (proportions)
+
+---
+
+# 12. Empty States & Error States
+
+## 12.1 Empty States
+
+- Relevant icon (48px)
+- Clear headline
+- Helpful description
+- Primary action button
+- Optional secondary action or link
+
+## 12.2 Error States
+
+### Page-Level
+- Warning icon
+- "Something went wrong"
+- Helpful description
+- Retry button
+- Support contact info
+
+### 404 Page
+- Search icon
+- "404 - Page not found"
+- Description
+- Go to Dashboard button
+
+---
+
+# 13. Loading States
+
+## 13.1 Page Loading
+
+- Skeleton screens matching content layout
+- Subtle pulse/shimmer animation
+
+## 13.2 Button Loading
+
+- Spinner icon
+- Text changes to action verb ("Generating...")
+- Button disabled during loading
+
+## 13.3 Inline Loading
+
+- Centered spinner with message
+- Used within cards/sections
+
+---
+
+# 14. Notifications & Feedback
+
+## 14.1 Toast Notifications
+
+| Type | Colors | Duration |
+|------|--------|----------|
+| Success | success-50, success-500 border | 5s |
+| Error | error-50, error-500 border | Persistent |
+| Warning | warning-50, warning-500 border | 8s |
+| Info | info-50, info-500 border | 5s |
+
+Position: Top-right, 24px from edges
+Max visible: 3 (newest on top)
+Animation: Slide in from right
+
+## 14.2 Inline Alerts
+
+- Full-width within content area
+- Dismissible with X button
+- Same color scheme as toasts
+
+---
+
+# 15. Form Design Patterns
+
+## 15.1 Form Layout
+
+- Single column default (max 600px)
+- Two columns for related short fields
+- 24px between fields
+- 32px between sections
+
+## 15.2 Validation
+
+- Real-time validation on blur
+- Error messages immediately below field
+- Error summary at top on submit failure
+- Success indicator (checkmark) for valid fields
+
+## 15.3 Required Fields
+
+- Asterisk (*) after label
+- Never make optional the minority
+
+---
+
+# 16. PDF Output Design
+
+## 16.1 Page Specifications
+
+- Size: Letter (8.5" x 11")
+- Margins: 0.75" all sides
+- Body text: 11pt, 1.5 line height
+
+## 16.2 Cover Page
+
+- Full-bleed cover image option
+- Title: 42pt, bold
+- Subtitle: 16pt, regular
+- Logo: Bottom left
+- Date: Next to logo
+
+## 16.3 Content Pages
+
+- Header: Logo + document title + page number
+- Section labels: 11pt, uppercase, secondary color
+- Section titles: 26pt, bold, primary color
+- Drop caps: 3.5em, primary color
+- Statistics callouts: Full width, light background
+- Pull quotes: Centered, larger text, attribution
+- Footer: Copyright text + page number
+
+## 16.4 Visual Elements
+
+- Charts: Full content width, brand colors
+- Callout boxes: Colored left border + light background
+- Images: Full width or half width with caption
+
+## 16.5 Color Application
+
+- Primary: Headers, drop caps, stats
+- Secondary: Section labels, accents
+- Accent: Links, secondary highlights
+- Grays: Body text, captions, borders
+
+---
+
+# Appendix A: Quick Reference
+
+## Button Variants
+
+| Variant | Background | Text | Border |
+|---------|------------|------|--------|
+| Primary | brand-primary | white | none |
+| Secondary | transparent | gray-700 | gray-300 |
+| Tertiary | transparent | brand-tertiary | none |
+| Danger | error-600 | white | none |
+
+## Spacing Scale
+
+| Token | Value | Use |
+|-------|-------|-----|
+| space-1 | 4px | Tight spacing |
+| space-2 | 8px | Button padding |
+| space-4 | 16px | Default gaps |
+| space-6 | 24px | Card padding |
+| space-8 | 32px | Section spacing |
+
+## Typography Scale
+
+| Style | Size | Weight |
+|-------|------|--------|
+| heading-1 | 30px | bold |
+| heading-2 | 24px | semibold |
+| heading-3 | 20px | semibold |
+| body-default | 16px | normal |
+| body-small | 14px | normal |
+| caption | 12px | normal |
+
+---
+
+**END OF UI/UX DESIGN SPECIFICATION**

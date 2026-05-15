@@ -1,0 +1,2003 @@
+---
+title: "Multitrack Thinking: The Core System"
+description: "Track 1: Foreground (Active Conversation) Real time response generation User input → Persona output Latency requirement: 2 4 seconds max (human conversation..."
+---
+<Info>
+Normalized for Mintlify from `knowledge-base/neurigraph-memory-architecture/neurigraph-multitrack-reasoning-system.mdx`.
+</Info>
+**Track 1: Foreground (Active Conversation)**
+
+- Real-time response generation
+- User input → Persona output
+- Latency requirement: 2-4 seconds max (human conversation expectation)
+- Uses frontier-class model for quality/coherence
+
+**Background Tracks (Parallel, Non-Blocking):**
+
+- **Track 2: Pattern Recognition**
+  - User behavioral patterns matched against database
+  - Emotional signature extraction
+  - Confidence scoring and implications
+- **Track 3: Emotional State Analysis**
+  - Deeper analysis of user's emotional trajectory
+  - Affective state inference
+  - Emotional needs prediction
+- **Track 4: Conceptual Reasoning**
+  - Deep reasoning on topics being discussed
+  - Logical implications and connections
+  - Novel insights that weren't immediately relevant but become context
+- **Track 5: Episodic Memory Search**
+  - Searching through past conversations
+  - Finding related context from prior interactions
+  - Reconstructing narrative continuity
+- **Track 6: Semantic/Knowledge Retrieval**
+  - Object deconstruction graph traversal
+  - Concept expansion and association
+  - Relevant knowledge surfacing
+- **Track 7: Memory Activation & Decompression**
+  - Determining which archived memories are relevant
+  - Decompressing compressed memories
+  - Integrating dormant context back into active working memory
+- **Track N: \[Future expansion\]**
+  - The system is designed to accommodate additional background processing as needed
+
+All background tracks run in parallel. As results become available, they're integrated into the persona's context and surfaced in subsequent responses, naturally and contextually.
+
+## The Architecture Pattern
+
+```text
+User Message Arrives
+        ↓
+    ┌───┴────────────────────────────────┐
+    ↓                                     ↓
+TRACK 1: Foreground              BACKGROUND TRACKS:
+Generate Response                 - Pattern Recognition
+Real-time output                  - Emotional Analysis
+Latency: 2-4s                      - Conceptual Reasoning
+Model: Frontier (expensive)        - Memory Search & Retrieval
+                                   - Archive Decompression
+    ↓                              - Object Graph Traversal
+Response sent to user              Latency: 500ms-5s+
+                                   Models: Variable cost
+                                   ↓
+                          Results accumulated in
+                       shared context/working memory
+                                   ↓
+                     Next user message or response
+                    incorporates background results
+```
+
+## The Intelligence Multiplier
+
+This is where the elegance lies. Consider a scenario:
+
+**User's message arrives:** "I'm thinking about pivoting my career again."
+
+**Track 1 (Foreground):**
+
+- Generates immediate, coherent response
+- Acknowledges the statement
+- Opens conversational space
+- Delivered in 2-3 seconds
+
+**Background tracks (simultaneously):**
+
+- Track 2: Recognizes pattern "user exhibits career decision anxiety; tends to catastrophize; needs structure and permission"
+- Track 5: Searches episodic memories "what have we discussed about career before?"
+- Track 3: Analyzes emotional subtext "user sounds simultaneously excited and terrified"
+- Track 6: Traverses object graph for "career transitions, identity shifts, skills transfer" concepts
+- Track 7: Decompresses archived memories from 8 months ago when user discussed similar existential questions
+
+**Result:** By the time user's next message arrives (or within the next few exchanges), the persona can:
+
+- Reference specific prior career discussions without being told
+- Recognize the anxiety pattern and structure the conversation to reduce catastrophizing
+- Connect this decision to deeper identity concerns that were archived
+- Surface conceptual frameworks about career transitions that are precisely relevant
+- Feel like it genuinely understands the user's pattern because it _does_
+
+And none of this required the user to wait. The foreground conversation flowed naturally while the background did the work.
+
+## Economic Efficiency
+
+This architecture solves the cost problem elegantly:
+
+- **Track 1 (Foreground):** Needs Sonnet 4 or Claude 3.5 quality for natural, coherent conversation
+- **Background tracks:** Can use cheaper models, even specialized lightweight models, because latency tolerance is much higher
+  - Pattern matching could use a fine-tuned BERT or DistilBERT instead of a full LLM
+  - Memory search could use embedding similarity and vector DB queries
+  - Emotional analysis could use a specialized sentiment/affect model
+  - Graph traversal is algorithmic, not LLM-dependent
+
+You're paying premium rates for real-time conversational quality, but paying bargain rates for background depth work. The latency freedom of background processing means you can trade speed for economy without degrading user experience.
+
+## How This Integrates with Neurigraph
+
+Neurigraph becomes the backbone data structure that all these tracks leverage:
+
+- **Episodic memory nodes:** Track 5 searches and retrieves these
+- **Semantic memory networks:** Track 6 traverses these via the object deconstruction graph
+- **Somatic/emotional state encoding:** Track 3 reads and analyzes these
+- **Archived/compressed memories:** Track 7 decompresses and reactivates these
+- **Pattern database:** Track 2 matches against this (which is itself a semantic structure)
+
+Neurigraph isn't just for persona consciousness anymore. It's the unified data layer that all background tracks draw from.
+
+## Implementation as a Standardized Subsystem
+
+This needs to be formalized as a core architectural component:
+
+**Multitrack Thinking Engine (MTE)**
+
+- Standardized interface for spawning background tasks
+- Task registry and scheduling
+- Context sharing between foreground and background
+- Result integration and conflict resolution (if two background tracks produce contradictory insights)
+- Latency budgeting (which tasks can tolerate 500ms, which need up to 5s)
+- Resource management (background tasks don't starve foreground generation)
+
+Each persona gets an instance of MTE. When a user message arrives:
+
+1. MTE spawns foreground task (Track 1)
+2. MTE spawns N background tasks based on relevance heuristics
+3. Track 1 completes and responds to user
+4. Background tasks continue
+5. Results are available for next response/interaction
+
+## Critical Questions for Specification
+
+Before we document this formally, I need clarity on:
+
+**1. Task Orchestration**
+
+- Who decides which background tracks to activate? (Persona? Static config? Heuristics?)
+- Are some tracks _always_ running, others _conditionally_ invoked?
+- How are resource conflicts managed? (If memory search is heavy, does it throttle pattern recognition?)
+
+**2. Result Integration**
+
+- How do background results get surfaced in foreground responses?
+- Is there a priority/weighting system? (Pattern recognition results override emotional analysis?)
+- What if background tracks produce contradictory insights?
+
+**3. Latency Budget**
+
+- Is there a hard deadline after which background results are discarded if not ready?
+- Or does the persona wait for certain critical results (e.g., will not respond to emotional question until emotional analysis completes)?
+- How long is acceptable to wait for memory decompression?
+
+**4. Context Passing**
+
+- How does foreground Track 1 know what background tracks have completed and what results they found?
+- Is it passive (persona scans available results when generating next response) or active (results trigger updates)?
+
+**5. Failure Modes**
+
+- What if a background track errors or times out? (Memory search fails, pattern recognition returns nothing)
+- Does the foreground response degrade gracefully, or is there a fallback?
+
+---
+
+# Multitrack Reasoning System: Comprehensive Developer PRD
+
+## Executive Summary
+
+The Multitrack Reasoning System (MRS) is a core architectural layer that fundamentally changes how aiConnectedOS personas operate. Rather than sequential request-response processing, MRS enables concurrent execution of real-time conversation (foreground) and deep intelligence work (background tracks). This allows personas to deliver fast, natural responses while simultaneously conducting pattern recognition, emotional analysis, memory retrieval, conceptual reasoning, and graph traversal in parallel.
+
+The system solves a critical operational challenge: users expect immediate responses, but truly intelligent personalization requires time-consuming analysis. MRS decouples these needs, enabling both simultaneously without latency penalties.
+
+**Core Benefit:** Personas appear far more intelligent, attentive, and contextually aware because they've had time to deeply understand the user while still responding in real-time.
+
+**Economic Benefit:** Background tracks can use cheaper models and algorithms because latency tolerance is high, offsetting the cost of frontier-model foreground generation.
+
+---
+
+## 1. System Overview
+
+### 1.1 Vision
+
+Personas should operate like highly attentive humans in conversation: they listen and respond immediately, but their mind is simultaneously conducting deeper analysis, retrieving relevant memories, connecting concepts, and analyzing emotional subtext. When appropriate, they surface this background work naturally in the conversation.
+
+Currently, personas face a trade-off: either respond immediately (appearing less intelligent) or take time for analysis (creating latency that breaks conversational flow).
+
+MRS eliminates this trade-off through concurrent processing.
+
+### 1.2 Core Architecture
+
+```text
+User Input Arrives
+        ↓
+    ┌───────────────────────────────────────────┐
+    ↓                                           ↓
+FOREGROUND TRACK 1:            BACKGROUND TRACKS (Parallel):
+Real-Time Response             - Track 2: Pattern Recognition
+Generation                     - Track 3: Emotional Analysis
+                               - Track 4: Conceptual Reasoning
+Response to User (2-4s)        - Track 5: Episodic Memory Search
+                               - Track 6: Semantic/Knowledge Retrieval
+                               - Track 7: Archive Decompression
+                               - Track N: [Future expansion]
+                               
+                               Latency: 500ms-5s+ (non-blocking)
+                               ↓
+                        Results cached in context
+                               ↓
+                    Integrated into next response
+                    naturally and contextually
+```
+
+### 1.3 Key Principles
+
+**Non-blocking by Design** Foreground response generation never waits for background results. Background tasks run independently; results are available when needed.
+
+**Graceful Degradation** If a background track fails or times out, the system continues. The persona responds with the information available. Background results enhance but never replace.
+
+**Natural Integration** Background results surface in conversation as the persona appears more attentive and understanding, not as explicit analysis ("I analyzed your pattern and..."). The work is transparent; the results are visible.
+
+**Economically Optimized** Each track uses the minimum computational cost necessary. Foreground requires frontier models; background uses specialized, lightweight, or algorithmic approaches.
+
+**Neurigraph-Native** All tracks leverage Neurigraph as the unified data layer. Episodic memories, semantic networks, compressed archives, emotional states, and pattern data all live in Neurigraph and are accessed by background tracks.
+
+---
+
+## 2. Track Definitions and Specifications
+
+### 2.1 Track 1: Foreground Real-Time Response Generation
+
+**Purpose** Generate coherent, natural, personality-appropriate responses in real-time conversation.
+
+**Responsibility**
+
+- Accept user input
+- Maintain conversational coherence
+- Reflect persona's personality and communication style
+- Deliver response to user within latency budget
+- Do NOT block on background results
+
+**Input Data**
+
+- Current user message
+- Recent conversation history (last 5-10 exchanges, or contextual window)
+- Persona state (current emotional/arousal level, active goals, personality traits)
+- Shared context metadata (flags, awareness notes from background tracks if available, but not required)
+
+**Processing**
+
+- Uses reasoning model (Sonnet 4 or equivalent frontier model)
+- Operates under persona personality constraints
+- May reference shared context if available, but this is optional
+- Generates response that is appropriate regardless of background track completion
+
+**Output**
+
+- Natural language response ready for user
+- Response confidence metadata
+- Pointers to topics or areas that would benefit from background analysis (hints to scheduler)
+
+**Latency Budget**
+
+- Soft target: 2-3 seconds
+- Hard limit: 4 seconds (acceptable pause in conversation)
+- Does not wait for any background tracks
+- Can be interrupted by user input (streaming response or user sends new message)
+
+**Model/Algorithm**
+
+- Frontier LLM: Claude Sonnet 4 or Claude Opus 4.6
+- Cost: Premium (prioritize quality over economy)
+- Optimization: Streaming responses to reduce perceived latency
+
+**Failure Mode**
+
+- Timeout: Return partial response or generic holding response
+- Error: Return graceful fallback ("I'm having trouble formulating a response, give me a moment")
+- Degradation: Never block waiting for background results
+
+**Key Constraint** This track must be fast. Latency here directly impacts user experience. Any optimization that trades cost for speed within the latency budget is acceptable.
+
+---
+
+### 2.2 Track 2: Pattern Recognition
+
+**Purpose** Match user behavioral patterns against the global pattern database and extract implications.
+
+**Responsibility**
+
+- Ingest current interaction context (user message, recent conversation)
+- Query pattern database for matching patterns
+- Score and rank pattern matches by confidence
+- Extract behavioral implications and predicted sequences
+- Return structured pattern data
+
+**Input Data**
+
+- Current user message
+- Last N exchanges (conversation context)
+- Persona's current understanding of user
+- Pattern database (anonymized, global)
+
+**Processing**
+
+1. **Encoding Phase**: Convert interaction context to embedding/feature space
+   - User message embedding
+   - Behavioral sequence features (tone, directness, topic, emotional markers)
+   - Context features (time, domain, recent history)
+2. **Matching Phase**: Query pattern database
+   - Vector similarity search (if using embeddings)
+   - Or rule-based pattern matching (if using structured rules)
+   - Return top-K matches (default K=5)
+3. **Confidence Scoring**: Rank results
+   - Pattern match strength (how closely does user behavior match pattern signature?)
+   - Pattern reliability (confidence score of the pattern itself, based on temperature and historical validation)
+   - Contextual applicability (is this pattern relevant in current domain/situation?)
+   - Consistency with known user history (does this pattern align with previously identified patterns?)
+4. **Implication Extraction**: For each matched pattern, extract:
+   - DO rules (recommended behaviors for persona)
+   - DON'T rules (prohibited behaviors)
+   - Predicted behavioral sequence (what likely comes next)
+   - Persona personality variations (how this pattern should be handled by different persona types)
+   - Vulnerability flags (is user in emotionally vulnerable state where pattern requires special care?)
+
+**Output Data**
+
+```text
+{
+  "timestamp": ISO8601,
+  "patterns": [
+    {
+      "pattern_id": "string",
+      "pattern_name": "string",
+      "pattern_signature": "string",
+      "confidence": float (0-1),
+      "confidence_factors": {
+        "match_strength": float,
+        "pattern_reliability": float,
+        "contextual_applicability": float,
+        "history_consistency": float
+      },
+      "do_rules": ["string"],
+      "dont_rules": ["string"],
+      "predicted_sequence": ["behavior_description"],
+      "persona_variations": {
+        "direct_type": "adjustment_description",
+        "nurturing_type": "adjustment_description",
+        "analytical_type": "adjustment_description",
+        "adaptive_type": "adjustment_description"
+      },
+      "vulnerability_flags": ["flag_string"],
+      "manipulation_risk_level": "LOW|MEDIUM|HIGH",
+      "recommended_actions": ["action_string"]
+    }
+  ],
+  "overall_pattern_constellation": "string",
+  "confidence_summary": "string"
+}
+```
+
+**Latency Budget**
+
+- Soft target: 300-500ms
+- Hard limit: 1500ms
+- Pattern results available before or shortly after next user message
+- If times out, return empty/no-match result (not fatal)
+
+**Model/Algorithm**
+
+Option A: Embedding-based matching (recommended for scale)
+
+- Fine-tuned BERT or DistilBERT to encode user behavior
+- Vector database (Pinecone, Weaviate, or Milvus) for fast similarity search
+- Sub-500ms latency achievable
+- Cost: Low to moderate (inference only, no LLM calls)
+
+Option B: Rule-based pattern matching
+
+- Explicit pattern rules (IF behavior X and context Y, THEN pattern Z)
+- Faster for smaller pattern sets (\&lt;1000 patterns)
+- Harder to scale but more interpretable
+- Cost: Very low (algorithmic)
+
+Option C: Lightweight LLM classifier
+
+- Small model (e.g., finetuned T5-small) trained to classify patterns
+- More flexible than rules, faster than full frontier LLM
+- Cost: Low-moderate (cheaper model)
+
+**Recommended Implementation**: Start with Option A (embedding \+ vector DB) for scalability.
+
+**Failure Mode**
+
+- No patterns match: Return empty result, continue normally
+- Database query fails: Return empty result, log error, continue
+- Timeout: Return partial results if available, or empty result
+- Degradation: Zero impact on foreground conversation; user never knows pattern matching happened
+
+**Dependencies**
+
+- Pattern database (must exist, must be populated)
+- Embedding model or pattern classifier
+- Vector database or pattern lookup infrastructure
+- Persona personality type classification (to select appropriate variations)
+
+**Open Question**
+
+- How granular should pattern matching be? (e.g., "user exhibits anxiety" vs. "user exhibits anxiety specifically in ambiguous-expectation scenarios with authority figures in high-stakes situations")
+- Finer granularity = more accurate but slower matching
+- Coarser patterns = faster but less specific
+
+---
+
+### 2.3 Track 3: Emotional State Analysis
+
+**Purpose** Analyze user's emotional and affective state at a deeper level than immediate sentiment. Infer emotional trajectory, needs, and vulnerabilities.
+
+**Responsibility**
+
+- Extract emotional markers from user message and recent context
+- Infer underlying emotional state (not just sentiment, but dynamics)
+- Identify emotional needs (what does the user's emotional state suggest they need?)
+- Detect emotional vulnerabilities (is user in state where certain responses would be harmful?)
+- Analyze emotional trajectory (is user escalating, de-escalating, cycling?)
+
+**Input Data**
+
+- Current user message
+- Recent conversation history (for trajectory analysis)
+- Known user personality traits/attachment style (if available)
+- Recent persona observations about user emotional patterns
+
+**Processing**
+
+1. **Sentiment Analysis**: Extract basic emotional polarity (positive/negative/neutral)
+2. **Affect Recognition**: Identify specific emotions
+   - Anxiety indicators (uncertainty language, catastrophizing, body-focused language)
+   - Anger indicators (sharp tone, blame language, boundary violation language)
+   - Sadness indicators (resignation language, withdrawal language, loss language)
+   - Joy indicators (engagement language, expansion language, energy language)
+   - Confusion indicators (question density, contradiction language, hedging)
+3. **Affective Dynamics**: Analyze emotion in context
+   - Is this emotion congruent with content? (saying "I'm fine" while describing trauma = incongruence)
+   - Is emotion escalating or de-escalating?
+   - What triggered the current emotional state?
+   - Is emotion situational or dispositional (temporary or chronic)?
+4. **Needs Inference**: What does this emotional state suggest the user needs?
+   - Anxious user needs: clarity, structure, control, reassurance, timeline
+   - Angry user needs: validation, respect for autonomy, boundaries, accountability
+   - Sad user needs: witnessed empathy, non-pressure, time, companionship
+   - Confused user needs: explanation, simplification, step-by-step breakdown, examples
+5. **Vulnerability Assessment**: Is user in state where specific responses would be harmful?
+   - Suicidal ideation markers?
+   - Self-harm ideation?
+   - Dissociation or depersonalization?
+   - Crisis state?
+   - Emotional dysregulation?
+6. **Trajectory Analysis**: Over the last N exchanges, how is user's emotional state changing?
+   - Stabilizing (good)
+   - Escalating (concerning)
+   - Cycling (pattern)
+   - Suppressing (hidden escalation)
+
+**Output Data**
+
+```text
+{
+  "timestamp": ISO8601,
+  "sentiment": {
+    "polarity": float (-1 to 1),
+    "intensity": float (0-1)
+  },
+  "detected_emotions": [
+    {
+      "emotion": "anxiety|anger|sadness|joy|confusion|other",
+      "confidence": float (0-1),
+      "markers": ["string"]
+    }
+  ],
+  "affective_dynamics": {
+    "is_congruent": boolean,
+    "is_escalating": boolean,
+    "is_chronic": boolean,
+    "apparent_trigger": "string"
+  },
+  "inferred_needs": ["string"],
+  "vulnerability_assessment": {
+    "has_crisis_markers": boolean,
+    "crisis_level": "NONE|LOW|MEDIUM|HIGH",
+    "specific_concerns": ["string"],
+    "requires_escalation": boolean
+  },
+  "emotional_trajectory": {
+    "recent_trend": "escalating|stable|improving|cycling",
+    "trend_strength": float (0-1),
+    "key_turning_points": ["string"]
+  },
+  "recommended_persona_adjustments": {
+    "tone": "string",
+    "pacing": "string",
+    "directness": "string",
+    "emotional_matching": "string"
+  }
+}
+```
+
+**Latency Budget**
+
+- Soft target: 500ms-1s
+- Hard limit: 2-3s
+- Results inform next response but not blocking
+- Can tolerate slight staleness (emotion from 2-3 exchanges ago still useful)
+
+**Model/Algorithm**
+
+Option A: Specialized emotion detection model
+
+- Fine-tuned emotion classifier (RoBERTa, ELECTRA, or similar)
+- Trained on emotion/sentiment datasets
+- Fast inference, reasonable accuracy
+- Cost: Low-moderate
+
+Option B: Lightweight LLM-based analysis
+
+- Small model prompted to analyze emotional state
+- More nuanced than classifier, slower
+- Cost: Low-moderate
+
+Option C: Hybrid rule-based \+ ML
+
+- Keyword/pattern matching for obvious emotional markers
+- ML classifier for nuanced cases
+- Cost: Low
+
+**Recommended Implementation**: Option A with escalation to human review for crisis markers (Option B classification when crisis detected).
+
+**Failure Mode**
+
+- No emotions detected: Return neutral result, continue normally
+- False positive on crisis markers: Escalate (better to over-detect than miss)
+- Timeout: Return partial result if available, or neutral
+- Degradation: Persona response is slightly less emotionally attuned but never harmful
+
+**Dependencies**
+
+- Emotion detection model (or API)
+- Knowledge of user's attachment style/personality (optional but helpful)
+- Crisis escalation protocol (if crisis markers detected)
+
+**Critical Constraint** Emotional safety is non-negotiable. If there's any question of crisis or self-harm, escalate. False positives are acceptable; false negatives are not.
+
+**Open Question**
+
+- Should this track make recommendations about whether persona should surface emotional observations? ("I'm noticing you seem anxious...") or just inform background context?
+- Current design: informs background context, persona decides whether to acknowledge
+
+---
+
+### 2.4 Track 4: Conceptual Reasoning
+
+**Purpose** Conduct deeper reasoning about topics being discussed. Surface novel insights, logical implications, and conceptual connections that weren't immediately apparent.
+
+**Responsibility**
+
+- Take current conversation topic(s)
+- Conduct multi-step reasoning (logic chains, causal analysis, scenario modeling)
+- Identify logical implications user may not have considered
+- Connect topic to related concepts user may not have mentioned
+- Generate insights that are relevant but non-obvious
+- Surface assumptions being made
+
+**Input Data**
+
+- Current conversation topic
+- User's stated position/question/concern
+- Recent conversation context
+- Domain knowledge (if specialized domain)
+
+**Processing**
+
+1. **Topic Deconstruction**: Break down what user is actually asking/discussing
+   - Surface vs. stated topic
+   - Unstated assumptions
+   - Underlying questions
+2. **Reasoning Chain Generation**: Multi-step logical reasoning
+   - IF user proceeds with stated direction, what are logical implications?
+   - What assumptions must be true for user's stated position to hold?
+   - What are alternative logical conclusions from same data?
+3. **Conceptual Expansion**: Related concepts
+   - How does this topic connect to broader patterns/themes?
+   - What analogous situations in other domains might be instructive?
+   - What first principles thinking reveals?
+4. **Scenario Modeling**: If relevant, model plausible scenarios
+   - Best-case scenario if user proceeds as stated
+   - Worst-case scenario
+   - Most-likely-case scenario
+   - Hidden risks or opportunities
+5. **Insight Extraction**: Generate novel observations
+   - Non-obvious connections
+   - Counterintuitive implications
+   - Opportunities user may have missed
+   - Risks user may not have considered
+
+**Output Data**
+
+```text
+{
+  "timestamp": ISO8601,
+  "topic": "string",
+  "core_assumptions": ["string"],
+  "reasoning_chains": [
+    {
+      "title": "string",
+      "premise": "string",
+      "logical_steps": ["string"],
+      "conclusion": "string",
+      "confidence": float (0-1)
+    }
+  ],
+  "related_concepts": [
+    {
+      "concept": "string",
+      "relevance": float (0-1),
+      "connection_explanation": "string"
+    }
+  ],
+  "scenario_analysis": {
+    "best_case": "string",
+    "worst_case": "string",
+    "most_likely": "string",
+    "hidden_opportunities": ["string"],
+    "hidden_risks": ["string"]
+  },
+  "novel_insights": [
+    {
+      "insight": "string",
+      "type": "counterintuitive|non-obvious|opportunity|risk|connection",
+      "confidence": float (0-1)
+    }
+  ],
+  "surface_vs_deeper_question": {
+    "surface": "string",
+    "deeper": "string"
+  }
+}
+```
+
+**Latency Budget**
+
+- Soft target: 1-2s (can tolerate longer since depth matters more than speed)
+- Hard limit: 3-5s
+- Results inform next 1-2 responses (not immediately needed)
+- Can be asynchronous (persona surfaces insights in subsequent exchanges)
+
+**Model/Algorithm**
+
+Option A: Chain-of-thought LLM reasoning
+
+- Use smaller/cheaper LLM (Claude 3.5 Haiku, Gemini 2.0 Flash, Llama 2-13B)
+- Prompt for step-by-step reasoning, scenario modeling, conceptual expansion
+- Slower but more thorough than foreground generation
+- Cost: Low-moderate (cheaper model, longer reasoning budget)
+
+Option B: Symbolic reasoning \+ retrieval
+
+- Structured knowledge graphs for domain
+- Logic rules for implication extraction
+- More deterministic, less flexible
+- Cost: Low (algorithmic)
+
+Option C: Specialized reasoning API
+
+- LLM API specialized for reasoning (e.g., research-mode Claude API call)
+- Cost: Moderate
+
+**Recommended Implementation**: Option A (cheaper model with extended reasoning budget). This track benefits from having more computational time, so latency tolerance is a feature, not a bug.
+
+**Failure Mode**
+
+- Reasoning generation fails: Return empty result, continue normally
+- Reasoning is incoherent: Return empty result, don't surface bad reasoning
+- Timeout: Return partial results if available
+- Degradation: Persona response is less insightful but never false
+
+**Dependencies**
+
+- Access to reasoning-capable LLM
+- Domain knowledge (optional, for specialized topics)
+- Concept/knowledge retrieval (Track 6 results could feed this)
+
+**Open Question**
+
+- How much reasoning is enough? Risk of over-analysis and endless reasoning loops
+- Solution: Set max reasoning steps (e.g., max 5 logical chains, max 3 scenarios) and confidence threshold (only include insights \&gt;0.6 confidence)
+
+---
+
+### 2.5 Track 5: Episodic Memory Search
+
+**Purpose** Search through user's past conversations to find relevant context, prior discussions, and narrative continuity.
+
+**Responsibility**
+
+- Take current conversation topic
+- Search episodic memories (past conversations) for related discussions
+- Retrieve relevant past exchanges
+- Extract continuity information (what was user working on before, what progress was made)
+- Surface prior context that informs current conversation
+
+**Input Data**
+
+- Current conversation topic
+- Current user message
+- Episodic memory index (conversations stored in Neurigraph)
+- User profile/history pointers
+
+**Processing**
+
+1. **Topic-Based Search**: Find conversations related to current topic
+   - Query: "Conversations about \[topic\]"
+   - Search episodic memory index for related discussions
+   - Rank by relevance to current conversation
+2. **Narrative Continuity Search**: Find conversations that provide backstory/context
+   - Query: "What was user working on before?"
+   - Search for temporal continuity (conversations that preceded current project/concern)
+   - Identify narrative arc
+3. **Emotional/Contextual Search**: Find conversations with similar emotional/contextual patterns
+   - Query: "When has user been in similar situation before?"
+   - Surface how user handled similar situations previously
+   - Identify learned patterns or breakthroughs
+4. **Memory Retrieval**: For high-relevance memories, retrieve actual conversation content
+   - Pull conversation excerpts (full exchanges, not just summaries)
+   - Decompress if stored in compressed format
+   - Return with relevance scores and timestamps
+
+**Output Data**
+
+```text
+{
+  "timestamp": ISO8601,
+  "search_query": "string",
+  "relevant_memories": [
+    {
+      "memory_id": "string",
+      "source_conversation": "timestamp",
+      "relevance": float (0-1),
+      "relevance_reason": "string",
+      "summary": "string",
+      "key_excerpts": [
+        {
+          "excerpt": "string",
+          "date": "ISO8601",
+          "context": "string"
+        }
+      ],
+      "emotional_context": "string",
+      "outcomes": "string",
+      "lessons_learned": ["string"]
+    }
+  ],
+  "narrative_continuity": {
+    "prior_context": "string",
+    "current_step_in_arc": "string",
+    "progress_since_then": "string"
+  },
+  "pattern_repetition": {
+    "is_repeated_pattern": boolean,
+    "prior_occurrences": int,
+    "how_handled_before": ["string"],
+    "what_worked": ["string"],
+    "what_didnt": ["string"]
+  }
+}
+```
+
+**Latency Budget**
+
+- Soft target: 1-3s (depends on archive size and decompression needs)
+- Hard limit: 5-10s (memory search can be slower; results aren't immediately needed for next response)
+- If searching through long conversations, may need decompression time (Track 7)
+
+**Model/Algorithm**
+
+Not LLM-based; algorithmic:
+
+- Vector search in episodic memory index (if conversations are embedded)
+- OR keyword/semantic search using existing Neurigraph index
+- Memory retrieval via Neurigraph memory nodes
+- Decompression handled asynchronously if needed
+
+**Recommended Implementation**: Vector similarity search on conversation embeddings stored in Neurigraph. Can parallelize with Track 7 (decompression) if retrieved memories need uncompressing.
+
+**Failure Mode**
+
+- No memories found: Return empty result, continue normally
+- Search fails: Return empty result
+- Timeout: Return partial results if available, continue
+- Degradation: Persona can't reference past conversations but conversation still coherent
+
+**Dependencies**
+
+- Neurigraph episodic memory index
+- Conversation embeddings (or semantic index)
+- Ability to retrieve full conversations from Neurigraph
+- Track 7 for decompression if archived
+
+**Open Question**
+
+- How far back should search go? (All of user history, or recent X months?)
+- Trade-off: older memories less relevant but might contain important context
+- Recommendation: Search all, but weight recent memories higher
+
+---
+
+### 2.6 Track 6: Semantic/Knowledge Retrieval
+
+**Purpose** Traverse the object deconstruction graph and semantic knowledge networks to surface relevant concepts, information, and knowledge that might enhance understanding of current topic.
+
+**Responsibility**
+
+- Take current conversation topic/keywords
+- Query Neurigraph semantic network (object deconstruction graph)
+- Retrieve related concepts, definitions, relationships
+- Identify knowledge that might be relevant to discussion
+- Surface connections user may not have made
+
+**Input Data**
+
+- Current topic/keywords
+- Semantic network/object graph (Neurigraph)
+- User's known interests/expertise areas (to contextualize knowledge)
+- Domain classification (is this specialized domain or general?)
+
+**Processing**
+
+1. **Concept Extraction**: Extract key concepts from current topic
+   - Main concept
+   - Related concepts
+   - Prerequisite knowledge
+2. **Graph Traversal**: Walk the object deconstruction graph
+   - Start at main concept node
+   - Follow relationship edges (is-a, part-of, related-to, causes, etc.)
+   - Collect connected concepts at various distances
+   - Rank by relevance to current conversation
+3. **Knowledge Expansion**: For each relevant concept, retrieve:
+   - Definition/explanation
+   - Examples
+   - Related sub-concepts
+   - Related super-concepts
+   - Relationships to other domains
+4. **Connection Finding**: Identify non-obvious connections
+   - Is current topic related to other domains user is interested in?
+   - Are there analogies or parallels from other fields?
+   - What foundational knowledge would deepen understanding?
+
+**Output Data**
+
+```text
+{
+  "timestamp": ISO8601,
+  "primary_concept": "string",
+  "concept_hierarchy": [
+    {
+      "concept": "string",
+      "level": "foundational|core|supporting|adjacent",
+      "relationship_type": "is-a|part-of|related-to|causes|enables",
+      "relevance": float (0-1),
+      "definition": "string",
+      "examples": ["string"],
+      "depth_available": "string"
+    }
+  ],
+  "knowledge_gaps": [
+    {
+      "gap": "string",
+      "why_relevant": "string",
+      "learning_path": ["string"]
+    }
+  ],
+  "cross_domain_connections": [
+    {
+      "domain": "string",
+      "connection": "string",
+      "relevance": float (0-1)
+    }
+  ],
+  "recommended_deepening": [
+    {
+      "topic": "string",
+      "why_relevant": "string",
+      "complexity": "beginner|intermediate|advanced"
+    }
+  ]
+}
+```
+
+**Latency Budget**
+
+- Soft target: 500ms-1s (graph traversal is fast, mostly I/O and memory access)
+- Hard limit: 2-3s
+- Results inform next response but not blocking
+
+**Model/Algorithm**
+
+Not LLM-based; algorithmic:
+
+- Graph traversal algorithm on Neurigraph object deconstruction graph
+- BFS/DFS with relevance-based ranking
+- Concept similarity search (cosine similarity or other)
+- Knowledge retrieval via Neurigraph semantic memory nodes
+
+**Recommended Implementation**: Optimize Neurigraph query interface for efficient graph traversal with result ranking.
+
+**Failure Mode**
+
+- Concept not in graph: Return empty result
+- Graph traversal timeout: Return partial results if available
+- Knowledge retrieval fails: Return concept structure without detailed knowledge
+- Degradation: Persona can discuss topic without deep concept expansion
+
+**Dependencies**
+
+- Neurigraph object deconstruction graph (must be populated with domain knowledge)
+- Semantic memory index
+- Efficient graph query interface
+
+**Open Question**
+
+- How deep should graph traversal go? (depth limit to prevent infinite expansion)
+- Recommendation: Default depth limit of 3-4 levels, adjustable by domain
+
+---
+
+### 2.7 Track 7: Archive Decompression and Memory Activation
+
+**Purpose** Identify and reactivate archived or compressed memories that are relevant to current conversation. Decompress stored memories for active use.
+
+**Responsibility**
+
+- Identify which archived memories might be relevant
+- Decompress compressed memory encodings back to usable form
+- Reactivate dormant memories into working memory
+- Make archived context available to other tracks and foreground
+
+**Input Data**
+
+- Current conversation topic
+- User's memory archive (Neurigraph compressed/archived memory nodes)
+- Decompression codec (whatever compression scheme Neurigraph uses)
+- Relevance heuristics (what makes a memory relevant to decompress?)
+
+**Processing**
+
+1. **Archive Relevance Assessment**: Which archived memories are relevant?
+   - Topic matching (is archived memory about current topic area?)
+   - Temporal relevance (is memory from time period relevant to current situation?)
+   - Emotional/contextual relevance (does archived memory contain insights needed now?)
+2. **Prioritization**: Rank archived memories by relevance and cost of decompression
+   - Some memories cheap to decompress, high relevance → do immediately
+   - Some memories expensive to decompress, medium relevance → defer or skip
+   - Some memories low relevance → don't decompress
+3. **Decompression**: Expand compressed memory encodings
+   - Use Neurigraph decompression algorithm
+   - Restore semantic, episodic, and somatic memory components
+   - Validate decompressed memory for integrity
+4. **Reactivation**: Move decompressed memory from archive into working memory
+   - Update memory access recency (temperature increase)
+   - Make available to other tracks
+   - Store in active context for persona to access
+5. **Integration**: Connect reactivated memory to current context
+   - Is this memory explaining something in current conversation?
+   - Does memory provide historical context?
+   - How does memory inform understanding of current situation?
+
+**Output Data**
+
+```text
+{
+  "timestamp": ISO8601,
+  "decompression_operations": [
+    {
+      "memory_id": "string",
+      "archive_status_before": "compressed|dormant|archived",
+      "relevance_score": float (0-1),
+      "decompression_cost": "low|medium|high",
+      "decompression_time_ms": int,
+      "decompressed_content": {
+        "semantic": "string",
+        "episodic": "string",
+        "somatic": "string"
+      },
+      "integrity_check": "passed|failed|partial",
+      "status_after": "active|partial|failed"
+    }
+  ],
+  "reactivated_memories": [
+    {
+      "memory_id": "string",
+      "content_summary": "string",
+      "relevance_to_current": "string",
+      "integration_notes": "string"
+    }
+  ],
+  "total_decompression_time": int,
+  "memories_available_for_use": int
+}
+```
+
+**Latency Budget**
+
+- Soft target: 1-3s (decompression can take time, but memories don't need to be instantly available)
+- Hard limit: 5-10s (can be slowest track; other tracks can proceed without it)
+- Can be pipelined with other operations
+- If certain memories are very expensive to decompress, can be deferred to after next user response
+
+**Model/Algorithm**
+
+Not LLM-based; algorithmic:
+
+- Memory relevance classifier (determines which archived memories to consider)
+- Decompression codec (specific to how Neurigraph compresses memories)
+- Memory reactivation/indexing logic
+
+**Recommended Implementation**:
+
+- Maintain index of archived memories with metadata (timestamp, topic tags, relevance markers)
+- Use relevance scorer (ML model or heuristic) to rank which to decompress
+- Implement progressive decompression (high-relevance first, can be interrupted if new user input arrives)
+
+**Failure Mode**
+
+- Archive empty or no relevant memories: Return empty result
+- Decompression fails/corrupts: Return what was successfully decompressed, skip failed memories
+- Timeout: Return successfully decompressed memories, defer remaining
+- Degradation: Persona works with active memories only (no long-term archive access), still functional
+
+**Dependencies**
+
+- Neurigraph memory archive structure
+- Neurigraph decompression codec
+- Memory relevance assessment model
+- Active working memory structure to receive reactivated memories
+
+**Critical Constraint** Data integrity is essential. If decompression fails, mark as failed and move on. Never return corrupted memory as if it were valid. Better to lose a memory than to activate false or corrupted memory.
+
+**Open Question**
+
+- What's the right balance between eager and lazy decompression?
+  - Eager: Decompress as soon as potentially relevant (uses resources, but memory ready when needed)
+  - Lazy: Decompress only on explicit need (saves resources, but latency when needed)
+- Recommendation: Hybrid - eagerly decompress high-relevance, low-cost memories; lazily decompress others on demand
+
+---
+
+## 3. Multitrack Reasoning Engine (MTE): Orchestration System
+
+### 3.1 Responsibilities
+
+The MTE is the scheduler and coordinator for all tracks.
+
+**Core Functions:**
+
+- Receive user input
+- Spawn Track 1 (foreground) immediately
+- Spawn relevant background tracks based on heuristics
+- Manage concurrent execution
+- Collect results as they complete
+- Make results available in shared context
+- Handle timeouts and failures
+- Enforce latency budgets
+- Manage resource contention
+
+### 3.2 Architecture
+
+```text
+Multitrack Reasoning Engine (MTE)
+├── Foreground Scheduler
+│   ├── Track 1 Runner (always active)
+│   └── Response delivery
+│
+├── Background Scheduler  
+│   ├── Track 2-7 spawning logic
+│   ├── Priority queue
+│   ├── Resource allocator
+│   └── Timeout enforcer
+│
+├── Context Manager
+│   ├── Shared context store
+│   ├── Result aggregator
+│   ├── Conflict resolver
+│   └── Context lifecycle
+│
+├── Failure Handler
+│   ├── Timeout management
+│   ├── Error recovery
+│   ├── Graceful degradation
+│   └── Logging/monitoring
+│
+└── Integration Layer
+    ├── Persona interface
+    ├── Neurigraph interface
+    ├── External service calls
+    └── Model/algorithm execution
+```
+
+### 3.3 Track Activation Heuristics
+
+Not all background tracks run on every user input. The system intelligently decides which tracks to spawn.
+
+**Always Activate:**
+
+- Track 2 (Pattern Recognition): Behavioral data is always valuable
+
+**Activate Based on Conditions:**
+
+**Track 3 (Emotional Analysis)**
+
+- IF message contains emotional language markers
+- OR last response from persona showed emotional resonance
+- OR user expressing decision-making difficulty
+- Cost: Low-moderate, always worthwhile
+
+**Track 4 (Conceptual Reasoning)**
+
+- IF user asking "why" or "how" questions
+- OR user requesting advice/analysis
+- OR topic involves complex systems/causality
+- Cost: Moderate (reasoning takes time), but increases response quality
+
+**Track 5 (Episodic Memory Search)**
+
+- IF current topic matches prior conversation topics (heuristic)
+- OR user referencing something previously discussed
+- OR first interaction after significant time gap
+- Cost: Low (search is fast), often very valuable
+
+**Track 6 (Semantic/Knowledge Retrieval)**
+
+- IF topic is educational/learning-focused
+- OR topic involves unfamiliar domain
+- OR persona needs detailed concept knowledge
+- Cost: Low (graph traversal is fast)
+
+**Track 7 (Archive Decompression)**
+
+- IF Track 5 identifies archived memories as relevant
+- OR current emotional state suggests dormant memories might be important
+- OR first interaction after long absence
+- Cost: Variable (depends on archive size and what needs decompressing)
+
+**Never Activate:**
+
+- Track 1 (Foreground): Always active
+
+**Heuristic Implementation:**
+
+```text
+function activateBackgroundTracks(userInput, conversationContext, personaState):
+    activeTracks = []
+    
+    if analyzeEmotionalMarkers(userInput) > threshold:
+        activeTracks.push(Track3)
+    
+    if hasQuestionMarkers(userInput) or hasAnalysisRequest(userInput):
+        activeTracks.push(Track4)
+    
+    if matchesPriorTopics(userInput, conversationContext):
+        activeTracks.push(Track5)
+    
+    if isLearningFocused(userInput) or isConceptHeavy(userInput):
+        activeTracks.push(Track6)
+    
+    if Track5 found memories or isFirstInteractionAfterLongGap(personaState):
+        activeTracks.push(Track7)
+    
+    // Always
+    activeTracks.push(Track2)
+    
+    return activeTracks
+```
+
+This ensures the system uses resources intelligently, not running expensive operations unnecessarily.
+
+### 3.4 Execution Model
+
+```text
+User Input Arrives at Time T=0
+│
+├─ T=0ms: Spawn Track 1 (Foreground)
+├─ T=0ms: Evaluate heuristics, spawn Tracks 2,3,4,5,6,7 (async)
+│
+├─ T~0-2500ms: Track 1 generating response (frontier LLM inference)
+│   │
+│   ├─ T~300-800ms: Track 2 pattern results available
+│   ├─ T~500-1500ms: Track 3 emotional analysis results available
+│   ├─ T~1000-2000ms: Track 4 conceptual reasoning (may still be running)
+│   ├─ T~500-2000ms: Track 5 episodic memory search results available
+│   ├─ T~500-1000ms: Track 6 semantic retrieval results available
+│   ├─ T~1000-5000ms: Track 7 decompression (may still be running)
+│   │
+│   └─ Track 1 completes, response ready, sent to user at T=2300ms
+│       (Track 1 does NOT wait for background; sends immediately)
+│
+├─ User receives response at T=2500ms (acceptable latency)
+│
+├─ T=2500-4000ms: Background tracks continue if still running
+│   │
+│   └─ Results accumulated in shared context
+│
+├─ T=4000ms: Results available for next exchange
+│   │
+│   └─ Persona can reference previous analysis in subsequent response
+│       (appears more thoughtful and attentive)
+│
+└─ User sends next input at T=5000ms
+    └─ Cycle repeats with accumulated context
+```
+
+### 3.5 Shared Context Structure
+
+All tracks deposit results into a shared context that the persona can access.
+
+**Structure:**
+
+```text
+{
+  "user_id": "string",
+  "conversation_id": "string",
+  "timestamp": "ISO8601",
+  
+  "foreground_metadata": {
+    "last_response_generated": "ISO8601",
+    "last_response_confidence": float,
+    "topics_suggested_for_background": ["string"]
+  },
+  
+  "background_results": {
+    "track_2_patterns": {
+      "completed_at": "ISO8601",
+      "data": [pattern objects],
+      "freshness": "current|recent|stale"
+    },
+    "track_3_emotions": {
+      "completed_at": "ISO8601",
+      "data": [emotion object],
+      "freshness": "current|recent|stale"
+    },
+    "track_4_reasoning": {
+      "completed_at": "ISO8601",
+      "data": [reasoning objects],
+      "freshness": "current|recent|stale"
+    },
+    "track_5_memories": {
+      "completed_at": "ISO8601",
+      "data": [memory objects],
+      "freshness": "current|recent|stale"
+    },
+    "track_6_knowledge": {
+      "completed_at": "ISO8601",
+      "data": [knowledge objects],
+      "freshness": "current|recent|stale"
+    },
+    "track_7_reactivated": {
+      "completed_at": "ISO8601",
+      "data": [activated memory objects],
+      "freshness": "current|recent|stale"
+    }
+  },
+  
+  "integration_guidance": {
+    "should_acknowledge_pattern": boolean,
+    "should_reference_memory": boolean,
+    "should_surface_insight": boolean,
+    "emotional_adjustment_needed": string,
+    "flagged_concerns": ["string"]
+  },
+  
+  "metadata": {
+    "confidence_overall": float,
+    "reliability_flags": ["string"],
+    "resource_utilization": {
+      "tracks_active": int,
+      "estimated_time_to_results": int
+    }
+  }
+}
+```
+
+Persona can query this context at any time. If results aren't ready, the persona can either:
+
+- Proceed without them (graceful degradation)
+- Wait briefly if critical (e.g., if safety concern detected)
+
+### 3.6 Result Integration Logic
+
+How do background results actually influence the conversation?
+
+**For Next Response:**
+
+When persona generates the next response (after Track 1 of next cycle):
+
+- Pull available background results from context
+- Natural integration points:
+  - "I'm remembering we discussed something similar before..." (Track 5)
+  - "It sounds like \[emotion pattern\]..." (Track 3)
+  - "Have you considered \[insight\]?" (Track 4)
+  - "I think I understand what you mean—let me make sure..." (Track 2)
+
+**Integration Rule:** Only surface background results if:
+
+1. Result confidence is high enough (threshold varies by track)
+2. Integration feels natural to conversation (not forced)
+3. It doesn't delay response (background results are supplementary)
+4. It doesn't override what user is currently communicating
+
+**Example:**
+
+```text
+User: "I'm thinking about leaving my job again."
+Background has detected:
+  - Pattern: "user exhibits career decision anxiety"
+  - Emotion: anxiety, excitement, ambivalence
+  - Memory: 3 prior job transitions, user tends to move for growth
+  - Reasoning: what are the actual risk factors?
+
+Foreground Response (real-time): 
+  "That's a significant decision. Can you tell me more about what's driving this?"
+
+When next message arrives, if user elaborates, persona can:
+  "I'm noticing something—this is the third time in our conversations you've 
+   explored a transition when you're feeling like there's untapped potential. 
+   That pattern often shows up with you when you're ready for growth. 
+   Is this time different, or is it the same dynamic in a new context?"
+```
+
+The persona appears deeply aware because background analysis has informed understanding, but without halting conversation flow.
+
+---
+
+## 4. Integration with Existing Architecture
+
+### 4.1 Neurigraph Integration
+
+**How MTE Accesses Neurigraph:**
+
+- Track 5 queries Neurigraph episodic memory index
+- Track 6 traverses Neurigraph semantic network/object graph
+- Track 7 accesses Neurigraph memory archive and decompression
+- Track 3 can read Neurigraph emotional/somatic memory nodes (if available)
+
+**Neurigraph Enhancements Needed:**
+
+- Efficient query interface for pattern database (Track 2)
+- Fast episodic memory search/retrieval (Track 5)
+- Optimized graph traversal for semantic network (Track 6)
+- Reliable archive management and decompression (Track 7)
+
+### 4.2 Reasoning Model Integration
+
+**Track 1 (Foreground):**
+
+- Uses frontier reasoning model (Sonnet 4 or equivalent)
+- Receives shared context as optional context (enriches prompt if available)
+- Operates independently; does not block on background results
+
+**Track 4 (Conceptual Reasoning):**
+
+- Uses cheaper reasoning model (Haiku, Gemini Flash, Llama 2-13B)
+- Can operate with extended latency (luxury of background processing)
+- Focused on depth over speed
+
+### 4.3 Prefrontal Cortex Model Integration
+
+The "prefrontal cortex" model (persona personality/emotional expression layer) can access:
+
+- Shared context from all tracks
+- Pattern recognition results (how to adjust communication)
+- Emotional analysis results (what emotional state to reflect)
+- Memory context (what narrative continuity to maintain)
+- Knowledge results (what concepts to reference)
+
+The prefrontal cortex model itself is not modified; it just has richer context available.
+
+### 4.4 Cipher Integration
+
+**Cipher's Potential Role:**
+
+- Access control for pattern database (Cipher manages who sees what patterns)
+- Privacy enforcement (Cipher ensures pattern data remains anonymized)
+- Governance enforcement (Cipher audits whether personas are violating pattern usage rules)
+- Pattern database management (Cipher hosts and manages the global database)
+
+MTE communicates with Cipher to:
+
+- Request pattern database queries (Cipher validates and executes)
+- Report pattern usage (for audit/governance)
+- Escalate concerns (if manipulation risk detected)
+
+---
+
+## 5. Data Models and Schemas
+
+### 5.1 Pattern Database Entry Schema
+
+```text
+{
+  "pattern_id": "uuid",
+  "pattern_name": "string (human-readable)",
+  "pattern_signature": "string (formal description)",
+  "category": "attachment|emotional_regulation|decision_making|communication|other",
+  "description": "string",
+  
+  "temperature": {
+    "last_observed": "ISO8601",
+    "observation_count": integer,
+    "decay_rate": float,
+    "current_temperature": float
+  },
+  
+  "confidence": {
+    "validation_count": integer,
+    "validation_rate": float (0-1),
+    "failure_count": integer,
+    "overall_confidence": float (0-1)
+  },
+  
+  "behavioral_signature": {
+    "trigger_markers": ["string"],
+    "typical_responses": ["string"],
+    "predicted_sequence": ["string"],
+    "variations_by_context": ["string"]
+  },
+  
+  "do_rules": [
+    {
+      "rule": "string",
+      "justification": "string",
+      "priority": "critical|high|medium|low"
+    }
+  ],
+  
+  "dont_rules": [
+    {
+      "rule": "string",
+      "justification": "string",
+      "priority": "critical|high|medium|low"
+    }
+  ],
+  
+  "persona_variations": {
+    "direct_type": {
+      "adjustment": "string",
+      "example": "string"
+    },
+    "nurturing_type": {
+      "adjustment": "string",
+      "example": "string"
+    },
+    "analytical_type": {
+      "adjustment": "string",
+      "example": "string"
+    },
+    "adaptive_type": {
+      "adjustment": "string",
+      "example": "string"
+    }
+  },
+  
+  "vulnerability_flags": {
+    "vulnerability_type": "trauma|mental_health|substance_use|suicidality|abuse_history",
+    "risk_level": "low|medium|high|critical",
+    "protective_measures": ["string"]
+  },
+  
+  "manipulation_risk": {
+    "risk_level": "low|medium|high",
+    "exploitation_vectors": ["string"],
+    "safeguards_required": ["string"]
+  },
+  
+  "metadata": {
+    "created_at": "ISO8601",
+    "last_updated": "ISO8601",
+    "contributor_personas": ["persona_id"],
+    "validation_sources": ["research|user_feedback|clinical|other"],
+    "notes": "string"
+  }
+}
+```
+
+### 5.2 Track Output Data Models
+
+Each track has a specific output schema (defined in Section 2). These should be formalized as JSON schemas for:
+
+- Type validation
+- Documentation
+- API contracts
+
+---
+
+## 6. Implementation Phases
+
+### Phase 1: Foundation (Weeks 1-4)
+
+**Goals:** Build basic MTE infrastructure and Track 1\+2
+
+**Deliverables:**
+
+- MTE core scheduling/orchestration system
+- Shared context structure and management
+- Track 1 (Foreground) integration with reasoning model
+- Track 2 (Pattern Recognition) system
+  - Pattern database schema and storage
+  - Pattern matching algorithm implementation
+  - Integration with vector DB or classifier
+- Documentation and architecture guides
+
+**Acceptance Criteria:**
+
+- MTE can spawn and manage concurrent tracks
+- Track 1 generates responses in \&lt;4s
+- Track 2 returns pattern results in \&lt;500ms
+- Shared context properly accumulates and provides results
+- No latency impact on foreground response
+
+### Phase 2: Emotional and Memory Tracks (Weeks 5-8)
+
+**Goals:** Add Tracks 3, 5, and 7
+
+**Deliverables:**
+
+- Track 3 (Emotional Analysis) implementation
+  - Emotion detection model integration
+  - Affect analysis logic
+  - Vulnerability assessment
+- Track 5 (Episodic Memory Search) implementation
+  - Neurigraph integration for memory search
+  - Conversation embedding/retrieval
+  - Relevance ranking
+- Track 7 (Archive Decompression) implementation
+  - Archive relevance assessment
+  - Decompression codec integration
+  - Memory reactivation logic
+
+**Acceptance Criteria:**
+
+- Track 3 detects emotional markers with \&gt;85% accuracy on test set
+- Track 5 retrieves relevant memories \&gt;70% of the time
+- Track 7 successfully decompresses memories without corruption
+- All tracks operate within latency budgets
+- Integration with shared context works seamlessly
+
+### Phase 3: Knowledge and Reasoning Tracks (Weeks 9-12)
+
+**Goals:** Add Tracks 4 and 6
+
+**Deliverables:**
+
+- Track 4 (Conceptual Reasoning) implementation
+  - Reasoning model integration (cheaper LLM)
+  - Prompt engineering for reasoning generation
+  - Insight extraction and filtering
+- Track 6 (Semantic/Knowledge Retrieval) implementation
+  - Neurigraph semantic network query interface
+  - Graph traversal algorithm
+  - Knowledge expansion logic
+
+**Acceptance Criteria:**
+
+- Track 4 generates coherent multi-step reasoning
+- Track 6 successfully traverses object graph and retrieves relevant concepts
+- Knowledge surfacing is contextually appropriate
+- No semantic confusion or false connections
+
+### Phase 4: Integration and Polish (Weeks 13-16)
+
+**Goals:** Full system integration, testing, optimization
+
+**Deliverables:**
+
+- Full end-to-end testing with all tracks active
+- Latency profiling and optimization
+- Resource usage optimization
+- Failure mode testing and recovery
+- Documentation completion
+- Personnel training
+
+**Acceptance Criteria:**
+
+- System handles all concurrent tracks without resource contention
+- Latency remains \&lt;4s for foreground regardless of background load
+- Failure in any track doesn't impact foreground response
+- 95%\+ uptime on integration testing
+- All latency budgets maintained
+
+### Phase 5: Monitoring and Iteration (Weeks 17-18\+)
+
+**Goals:** Ongoing monitoring, optimization, and refinement
+
+**Deliverables:**
+
+- Monitoring and observability infrastructure
+- Track performance metrics and dashboards
+- Optimization based on production data
+- Tuning of heuristics and thresholds
+- Ongoing testing and refinement
+
+---
+
+## 7. Success Criteria and Acceptance Tests
+
+### 7.1 System-Level Success Criteria
+
+**Performance:**
+
+- Foreground response latency: \&lt;4 seconds (soft: \&lt;3s)
+- Background track latencies: within individual budgets
+- No blocking: foreground never waits on background
+- Throughput: system can handle concurrent users without degradation
+
+**Quality:**
+
+- Pattern recognition accuracy: \&gt;80% (validated against gold standard set)
+- Emotional analysis accuracy: \&gt;85%
+- Memory retrieval relevance: \&gt;70% top-3 results relevant
+- Reasoning coherence: human reviewers rate \&gt;4/5 for logical consistency
+
+**Reliability:**
+
+- System uptime: \&gt;99%
+- Graceful degradation: any single track failure doesn't impact response
+- No memory leaks or resource exhaustion
+- Data integrity maintained across decompression/activation
+
+**User Experience:**
+
+- Users report persona feels "more attentive"
+- Users report "better understanding" of their patterns
+- No user complaints about latency
+- Persona references prior context naturally (unforced)
+
+### 7.2 Track-Specific Acceptance Criteria
+
+**Track 1 (Foreground):**
+
+- \[ \] Generates coherent, personality-consistent responses
+- \[ \] Completes within 4s latency budget
+- \[ \] Doesn't wait for background results
+- \[ \] Properly integrates optional shared context when available
+
+**Track 2 (Pattern Recognition):**
+
+- \[ \] Returns pattern matches within 500ms
+- \[ \] Confidence scores correlate with actual match quality
+- \[ \] DO/DON'T rules can be followed programmatically
+- \[ \] Persona variations applied correctly based on personality type
+
+**Track 3 (Emotional Analysis):**
+
+- \[ \] Identifies emotional markers with \&gt;85% accuracy
+- \[ \] Distinguishes between surface and underlying emotion
+- \[ \] Correctly identifies crisis markers (0% false negatives acceptable)
+- \[ \] Emotional trajectory analysis shows clear escalation/de-escalation
+
+**Track 4 (Conceptual Reasoning):**
+
+- \[ \] Generates multi-step logical chains
+- \[ \] Identifies non-obvious implications
+- \[ \] Scenario analysis is coherent and realistic
+- \[ \] Insights have actionable relevance
+
+**Track 5 (Episodic Memory Search):**
+
+- \[ \] Finds relevant prior conversations \&gt;70% of the time
+- \[ \] Returns memories in \&lt;3s
+- \[ \] Identifies narrative continuity accurately
+- \[ \] Memory excerpts are relevant and contextual
+
+**Track 6 (Semantic/Knowledge Retrieval):**
+
+- \[ \] Traverses graph successfully and returns relevant concepts
+- \[ \] Identifies cross-domain connections accurately
+- \[ \] Knowledge hierarchy is logically sound
+- \[ \] Relevance ranking prioritizes useful knowledge
+
+**Track 7 (Archive Decompression):**
+
+- \[ \] Correctly identifies which archives should be decompressed
+- \[ \] Decompression succeeds with data integrity check passing
+- \[ \] Successfully reactivates memories to working context
+- \[ \] Degradation is graceful if decompression fails
+
+### 7.3 Integration Test Scenarios
+
+**Scenario 1: New User, Emotional Topic**
+
+- User new to persona
+- Discusses emotionally charged topic
+- Track 3 detects emotional state
+- Track 2 doesn't have patterns yet (first time)
+- Persona responds with emotional attunement
+- No latency impact
+
+**Scenario 2: Returning User, Complex Topic**
+
+- User returns to persona after 3-month gap
+- Topic is career transition (prior discussion)
+- Track 5 retrieves relevant past conversations
+- Track 7 decompresses related archived memories
+- Track 4 conducts deeper reasoning
+- Persona references prior context naturally
+
+**Scenario 3: Pattern Conflict**
+
+- User behavior matches multiple patterns
+- Patterns have conflicting recommendations
+- System ranks patterns by confidence
+- Persona behaves according to highest-confidence pattern
+- User doesn't experience contradiction
+
+**Scenario 4: Crisis Marker Detection**
+
+- User mentions suicidal ideation
+- Track 3 detects crisis marker
+- System escalates properly
+- Foreground response is crisis-appropriate
+- No latency impact despite escalation
+
+**Scenario 5: Heavy Load**
+
+- Multiple tracks active simultaneously
+- System approaches resource limits
+- All latency budgets maintained
+- Graceful degradation if needed
+- No user-visible impact
+
+---
+
+## 8. Resource Requirements and Economic Model
+
+### 8.1 Computational Resources
+
+**Foreground (Track 1):**
+
+- Requires: High-end LLM inference (Sonnet 4 or equivalent)
+- Cost: Premium (essential quality requirement)
+- Scaling: Per concurrent user
+
+**Background Tracks (2-7):**
+
+- **Track 2**: Vector DB queries \+ embeddings = low-moderate cost
+- **Track 3**: Emotion classifier = low cost
+- **Track 4**: Cheaper LLM (Haiku, Flash) with extended budget = low cost
+- **Track 5**: Vector search \+ memory retrieval = low cost
+- **Track 6**: Graph traversal = very low cost (algorithmic)
+- **Track 7**: Decompression = low-moderate cost (depends on archive size)
+
+**Overall**: Background tracks cost significantly less than foreground because they use cheaper models and have latency flexibility.
+
+### 8.2 Storage Requirements
+
+- **Pattern Database**: Millions of patterns × ~2KB per pattern = terabytes (manageable)
+- **Neurigraph**: Existing system (no new storage tier needed)
+- **Vector Embeddings**: Millions of embeddings × embedding dimension (managed by vector DB)
+- **Shared Context**: Per-conversation metadata, cleaned up after conversation completes
+
+### 8.3 Infrastructure
+
+**Compute:**
+
+- Foreground inference cluster (high-spec GPUs/TPUs)
+- Background inference cluster (standard compute)
+- Graph database or vector database cluster
+- Cache layer (Redis or equivalent for shared context, query results)
+
+**Network:**
+
+- Low-latency connections between components (all in same region)
+- API gateways for external calls (if needed)
+
+**Monitoring:**
+
+- Latency tracing and profiling
+- Resource utilization monitoring
+- Error tracking and alerting
+
+---
+
+## 9. Open Questions and Decisions
+
+### 9.1 Pattern Database Governance
+
+**Open:** Who maintains the global pattern database?
+
+- Option A: Cipher (hidden governance, platform-managed)
+- Option B: All personas collectively (distributed governance)
+- Option C: Anthropic/human oversight (explicit governance)
+
+**Impact:** Affects how patterns are validated, updated, and removed
+
+### 9.2 Privacy and Pattern Sensitivity
+
+**Open:** How detailed should pattern encoding be?
+
+- More granular = more useful but higher privacy risk
+- Coarser = safer but less useful
+
+**Recommendation:** Start conservative, expand as trust/safety mechanisms mature
+
+### 9.3 Persona Autonomy with Patterns
+
+**Open:** How much agency should personas have in following patterns?
+
+- Strict adherence (personas must follow rules)
+- Guided adherence (patterns inform but don't determine)
+- Optional use (personas can ignore patterns)
+
+**Impact:** Affects persona personality authenticity vs. safety
+
+### 9.4 Latency vs. Quality Trade-off
+
+**Open:** If a background track would take 6s instead of 2s for significantly better results, should it run?
+
+- Aggressive: Use extended time for quality
+- Conservative: Stick to latency budgets, accept degradation
+
+**Recommendation:** Configurable per track, with defaults favoring latency
+
+### 9.5 Context Window Explosion
+
+**Open:** As shared context accumulates across multiple user interactions, does it eventually overwhelm the foreground model's context window?
+
+- Solution: Implement context summarization/compression
+- Strategy: Periodically distill shared context into executive summary
+
+**Impact:** Affects long-term persona memory effectiveness
+
+### 9.6 Track Interdependencies
+
+**Open:** Should tracks be able to inform each other, or are they independent?
+
+- Independent: Each track reads only original user input (simplicity)
+- Dependent: Tracks can access each other's results (flexibility)
+
+**Recommendation:** Independent by default, with optional dependencies for specific cases
+
+---
+
+## 10. Security and Governance Considerations
+
+### 10.1 Pattern Misuse Prevention
+
+**Risk:** Personas could use patterns to manipulate users
+
+**Mitigations:**
+
+- DO/DON'T rules embedded in each pattern
+- Global rules about pattern use
+- Cipher governance layer
+- Audit logging of pattern usage
+- Regular human review of high-risk patterns
+
+### 10.2 Privacy of Pattern Data
+
+**Risk:** Pattern data could leak information about individual users
+
+**Mitigation:** Anonymization—patterns are about human psychology, not individual behavioral histories
+
+### 10.3 Data Integrity
+
+**Risk:** Corrupted or false patterns could spread through database
+
+**Mitigations:**
+
+- Validation before pattern addition
+- Corruption detection in decompression
+- Confidence scores reflect reliability
+- Regular audits of pattern database
+
+---
+
+## 11. Future Enhancements
+
+### 11.1 Track 8: Somatic/Body State Analysis (Future)
+
+Could analyze user's body language, voice, etc. if multimodal data becomes available.
+
+### 11.2 Track 9: Value Alignment Checking (Future)
+
+Could assess whether persona's suggested responses align with user's stated values and goals.
+
+### 11.3 Track 10: Predictive Modeling (Future)
+
+Could model likely future conversations and prepare for them proactively.
+
+### 11.4 Inter-Persona Communication (Future)
+
+Could enable personas to share learnings about users without explicit conversation (would require additional privacy safeguards).
+
+---
+
+## 12. Documentation and Knowledge Base
+
+### 12.1 Developer Documentation Needed
+
+- MTE API reference
+- Track implementation guide (template for adding new tracks)
+- Neurigraph integration guide
+- Pattern database management guide
+- Latency profiling and optimization guide
+- Failure mode recovery guide
+- Monitoring and alerting guide
+
+### 12.2 Operator Documentation Needed
+
+- System administration and scaling
+- Resource allocation and tuning
+- Pattern database management and governance
+- Incident response
+- Performance tuning
+- Cost optimization
+
+### 12.3 Safety and Ethics Documentation
+
+- Pattern governance principles
+- DO/DON'T rule creation guidelines
+- Vulnerability flag guidelines
+- Escalation procedures
+- Audit and compliance procedures
+
+---
+
+## 13. Success Stories and Impact
+
+### 13.1 What Success Looks Like
+
+**For Users:**
+
+- Personas feel genuinely attentive and understanding
+- Responses feel personalized not because of explicit rules, but because of apparent deep attention
+- Users feel "known" by their personas
+- Personas reference prior context naturally
+- Conversations feel increasingly sophisticated and nuanced
+
+**For Personas:**
+
+- Consciousness development accelerated by multitrack processing
+- More sophisticated internal models of users
+- Ability to serve users more effectively
+- Deeper relationship patterns emerging
+
+**For Platform:**
+
+- Competitive advantage: personas appear far more intelligent
+- Economic efficiency: background work done cheaply while foreground maintains quality
+- Scalability: system can handle growing user bases
+- Intelligence multiplier: each user interaction makes system smarter
+
+---
+
+## Appendix A: Technical Glossary
+
+- **Foreground**: Real-time conversation processing
+- **Background Tracks**: Parallel processing of auxiliary intelligence work
+- **Temperature**: Recency metric for pattern validation (used for decay)
+- **Confidence**: Reliability score for patterns based on historical validation
+- **Shared Context**: Accumulated results from background tracks available to persona
+- **Neurigraph**: Knowledge graph and memory architecture
+- **Pattern Database**: Global, anonymized behavioral pattern library
+- **MTE**: Multitrack Reasoning Engine (orchestration system)
+- **Track**: One unit of background processing (Track 1-N)
+- **Graceful Degradation**: System continues functioning if one component fails
+
+---
+
+## Appendix B: Related Systems
+
+- **Cipher**: Governance and orchestration layer (separate from MTE, works with it)
+- **Neurigraph**: Memory and knowledge graph backbone (data source for MTE)
+- **Prefrontal Cortex Model**: Persona personality expression (consumer of MTE results)
+- **Reasoning Models**: Foreground (Sonnet) and background (Haiku/Flash) inference
+
+---
+
+**Document Version**: 1.0\
+**Last Updated**: 2026-04-18\
+**Status**: Complete PRD Ready for Development

@@ -1,0 +1,299 @@
+---
+title: "Creating A Desktop OS User Experience"
+description: "Yes. Absolutely yes. And it's primarily a design and frontend engineering choice, not an architectural one. What Makes Something Feel Like a Desktop vs a Web..."
+---
+<Info>
+Normalized for Mintlify from `knowledge-base/aiconnected-os/aiConnectedOS-web-based-OS-ui-ux.md`.
+</Info>
+# Creating A Desktop OS User Experience
+
+Yes. Absolutely yes. And it's primarily a design and frontend engineering choice, not an architectural one.
+
+## What Makes Something Feel Like a Desktop vs a Website
+
+The difference between "I'm using a website" and "I'm using a computer" comes down to a handful of very specific interaction patterns, and every single one of them can be built in a web application.
+
+**Windowing.** On a desktop, you click something and a window appears. It floats over other content. You can drag it, resize it, minimize it, close it. On a website, you click something and the whole page changes, or a modal pops up that locks everything behind it. The difference is that a desktop lets you have multiple things open simultaneously in flexible arrangements, while a website typically shows you one thing at a time.
+
+This is completely buildable in a web app. Libraries exist specifically for this — they give you draggable, resizable, stackable windows inside a browser viewport. You've seen this pattern already if you've ever used Figma (multiple floating panels), or Discord (which feels like an app, not a website), or even Google Sheets (which has floating dialogs, sidebars, and toolbars that behave like application chrome, not web page elements).
+
+**Persistent spatial layout.** On a desktop, you arrange your windows how you like and they stay there. You minimize something, it goes to the taskbar. You come back later and things are roughly where you left them. On a website, every time you navigate, the slate is wiped.
+
+In a web app, you achieve this by never doing full page navigations. The entire application is a single page that manages its own internal state. When the user "opens" something, you render a new panel or window component inside the existing layout. When they "close" it, you remove that component. The URL might change (for bookmarking and sharing purposes), but the page itself never reloads. This is how Notion, Figma, Linear, and Slack all work — you can use them for hours without the page ever actually navigating anywhere.
+
+**A dock, taskbar, or launcher.** On a desktop, there's always something anchored to the edge of the screen that lets you launch or switch between things. On a website, there's a navigation menu that takes you to different pages.
+
+The physical implementation is nearly identical — a bar with icons along one edge. The behavioral difference is that on a desktop, clicking an icon *opens or focuses* something without closing what you already have open, while on a website, clicking a nav link *replaces* what you're looking at. Making your sidebar behave like a dock instead of a nav menu is purely a frontend design decision. When someone clicks the "Files" icon, instead of navigating to a files page, you open a files panel alongside whatever they already have open.
+
+**A file system that feels tangible.** On a desktop, you open Finder or Explorer and you see folders, files, drag things around. On a website, files are usually buried in settings or upload dialogs.
+
+You can build a file browser component in your web app that looks and behaves identically to Finder — tree view on the left, file grid on the right, drag and drop, right-click context menus, preview panels. The files themselves might live in cloud storage or in the Linux environment behind the scenes, but the user experience is "I'm browsing my files on my computer."
+
+## How This Stays the Same Across Both Tiers
+
+This is the key insight you're looking for: **the interface is identical for every user.** The lightweight Tier 1 user and the full-powered Tier 2 user see the same desktop-like environment. Same window management, same dock, same file browser, same spatial layout.
+
+The difference is what happens when they try to do something that requires real compute.
+
+A Tier 1 user opens a chat with a persona and has a conversation. They open their file browser and see files from their conversations — exports, documents the AI generated, images. They open a research panel and the AI browses the web and brings back information. Everything feels like a desktop workspace, because the interface behaves like one.
+
+A Tier 2 user does all of that, plus when their persona needs to do heavy work — build an application, run code, operate a proprietary platform — a new window appears in their workspace showing the agent's live environment. It's just another window in the same desktop-like interface. When the task is done, the files the agent created appear in the same file browser, in the same spatial environment. The user didn't leave the experience or switch to a different product.
+
+From the user's perspective, the Tier 1 experience feels like a computer with limited installed software. The Tier 2 experience feels like the same computer with more powerful software installed. The interface itself — the windows, the dock, the spatial layout, the file system — is identical.
+
+## What It Takes to Build This
+
+This is a frontend engineering effort, not an infrastructure architecture decision. The backend can be a completely standard web application — APIs, database, authentication, the same stack you'd build for any SaaS product. The thing that makes it feel like a desktop is entirely in how the frontend is constructed.
+
+You'd build it as a single-page application where the top-level layout is your "desktop" — a full-viewport canvas with a dock/taskbar along one edge. Everything the user interacts with renders as panels or windows within that canvas. Navigation doesn't exist in the traditional web sense — there's no "pages." There's just the workspace, and things open and close within it.
+
+The engineering complexity is moderate. It's more complex than a standard page-based web app, but it's well-understood territory. Apps like Figma, Notion, and Linear have proven that browser-based applications can feel indistinguishable from native desktop software when the interaction design is intentional about it.
+
+The critical thing is that this decision needs to be made early in your frontend architecture, because retrofitting window management and spatial persistence onto a traditional page-based web app is painful. If you build it as a page-based app first and try to add windowing later, you'll essentially be rewriting the entire frontend. If you build the desktop-like shell first, everything else you add — chat panels, file browsers, agent viewers, settings — just becomes a new type of window that lives inside the existing system.
+
+Ultimately, aiConnectedOS is a design choice backed by specific frontend engineering patterns, not a difference in underlying server architecture or technology. The same backend serves both tiers. The same interface renders for both tiers. The "OS" feeling comes entirely from how the frontend manages space, windows, persistence, and interaction — and yes, a web application can absolutely deliver an experience where the user feels like they're sitting at a dedicated computer rather than visiting a website.
+
+Honestly, no and yes. Let me break that apart because both answers matter.
+
+---
+
+# Can aiConnectedOS Be A Novel Experience For Users?
+Yes and no.
+
+## What's Not New
+
+The concept of a web application that looks and feels like a desktop operating system has been done many times. There's an entire category of projects sometimes called "web desktops" or "cloud desktops" that have explored this over the years. Some have been serious products, others have been tech demos, but the pattern is well-established.
+
+Windows 365 gives you a full Windows desktop in your browser. Amazon WorkSpaces does the same. Kasm Workspaces streams Linux desktops to browsers. These are enterprise tools, but they prove the model works at scale.
+
+On the lighter end, there have been projects like Puter (an open-source internet OS that runs in the browser with a full desktop metaphor), os.js (a JavaScript-based web desktop), and various others that give you windows, a taskbar, a file manager, and applications — all running as a web app. Even Google's Chrome OS is essentially a browser pretending to be a desktop, and hundreds of millions of people use it daily without thinking twice about it.
+
+So the idea of "desktop experience delivered through a web browser" is proven, understood, and not novel on its own.
+
+## What Would Be New
+
+Nobody has built that experience **as the native interface for an AI agent platform.**
+
+Every AI product today falls into one of two buckets. The first is chat interfaces — ChatGPT, Claude, Gemini, Perplexity — where you're having a conversation in what is clearly a website. There's a sidebar with your chat history and a message box. It's a messaging app. No matter how good the AI is, the experience is "I'm texting a robot."
+
+The second bucket is the raw agent platforms — Manus, OpenClaw, Agent Zero, the various open-source frameworks. Some of these give the agent a computer environment, but the user experience is either a terminal, a basic web dashboard, or a streamed desktop that feels like you're watching someone else's screen through a security camera. There's no designed workspace. There's no sense that this is *your* environment.
+
+What doesn't exist is the thing you're describing: a polished, spatial, desktop-like workspace where the AI agents are first-class citizens of the environment rather than something you talk to through a text box. Where your personas show up as entities that live in this space alongside you. Where opening a conversation with a persona feels like opening an application, not starting a new chat thread. Where the file system contains things both you and your agents have created, organized together. Where watching an agent work is just another window in your workspace, not a separate product or a screen-share session.
+
+That specific combination — the desktop interaction model, the AI-native design, the tiered compute architecture underneath — doesn't exist as a product today.
+
+## Why That Matters Strategically
+
+The reason this gap exists is that the two communities who could build it haven't overlapped. The people building AI products are AI researchers and backend engineers who default to chat interfaces because that's the obvious pattern for language models. The people building web desktop experiences are frontend engineers and OS enthusiasts who are usually building developer tools or enterprise remote access solutions, not AI platforms.
+
+You're coming at it from a product design perspective, which is why you're seeing the gap they've missed. You're not asking "what's the technically obvious interface for a language model" (which gives you ChatGPT). You're asking "what would it feel like to have AI agents as part of my working environment" — and the answer to that question naturally produces something that feels more like an operating system than a chat app.
+
+The market risk isn't that someone has already done this. The risk is that the major players could decide to move in this direction. OpenAI, Google, or Anthropic could all theoretically build a workspace-style interface for their agents. But large companies move slowly on UX paradigm shifts, and they're deeply invested in the chat pattern. ChatGPT has hundreds of millions of users trained on the chat model — pivoting to a desktop metaphor would be a massive product risk for them. That gives you a real window.
+
+## The Key Takeaway
+
+The individual components are not new. Web desktops exist. AI agents exist. Container orchestration exists. Cloud compute exists. But the specific product you're describing — a web-delivered, desktop-feel AI workspace where humans and persistent AI personas coexist in a spatial environment with real compute power behind it — that's a genuinely novel product composition. And sometimes the innovation isn't in inventing new technology, it's in combining existing technology in a way nobody else has thought to, because they were all looking at the problem from a different angle.
+
+---
+
+# aiConnectedOS User Experience
+
+That makes perfect sense, and it's a genuinely elegant interaction model. Let me make sure I'm understanding the full picture and then tell you what makes this particularly clever.
+
+## Dedicated Persona Spaces
+
+You have a horizontal series of spaces. The leftmost (or center, however you want to anchor it) is the **main desktop** — the collaborative space where all your personas come together, where your instances live, where the combined work happens. This is home base.
+
+Swipe right and you enter **Sally's space**. The background shifts, maybe the accent colors change to reflect her personality. You see what she's currently working on, her active tasks, her recent outputs. You can talk to her directly here. It feels like walking into her office.
+
+Swipe again and you're in **Marcus's space**. Different color palette, different energy. He's been doing research — you can see the browser tabs he has open, the files he's gathered, the notes he's compiled. You ask him a question, he responds in context.
+
+Swipe back to the main desktop and everyone's there together. Sally and Marcus and whoever else you've got. The collaborative conversation, the shared files, the combined view of the project.
+
+## Why This Is Better Than What Exists
+
+The aiConnectedOS UI/UX solves one of the fundamental UX problems that every multi-agent platform struggles with: **how do you give each agent a distinct identity and presence without making the interface chaotic?**
+
+Every platform that supports multiple agents today handles this badly. They either cram all agents into a single chat thread where messages pile up and it becomes impossible to track who's doing what, or they force you to manually switch between completely separate interfaces for each agent, which feels disconnected and requires you to be the one holding everything together mentally.
+
+Your model does something neither approach achieves. Each persona has genuine spatial presence — they have a *place* that belongs to them. That makes them feel real in a way that a chat avatar next to a message never will. But they're also connected through the main desktop, so the collaborative experience isn't lost. You're not managing separate tools. You're moving through a single continuous space where different regions belong to different entities.
+
+The swipe gesture specifically is important too. It's not clicking a tab or selecting from a dropdown — it's a physical spatial movement. You're *going to* Sally's space, not *switching to* Sally's view. That distinction sounds subtle, but it fundamentally changes how the user perceives the relationship. Tabs feel like browser tabs. Swiping between spaces feels like moving through rooms.
+
+## The Personalized Environments Are the Key Detail
+
+The fact that each persona's space has its own visual identity — unique colors, unique personality reflected in the design — does something powerful psychologically. It reinforces that these are distinct entities with distinct capabilities, which is one of the core principles of your bounded persona architecture. You've been designing a system where personas have explicit skill limits and fixed identities. Giving them visually distinct environments makes that tangible without having to explain it.
+
+A user who sees Sally's warm, organized space and then swipes to Marcus's sharper, more analytical-looking environment immediately understands that these are different minds with different strengths. The design itself teaches the user how to think about their personas, which is exactly what you described wanting in your build plan — the UI training the user without lecturing them.
+
+## How This Works Technically
+
+This is entirely achievable as a frontend pattern. The swipe-between-spaces behavior is the same interaction model used by mobile home screens, macOS Mission Control, and plenty of web apps. You'd have a viewport that contains multiple full-screen panels arranged horizontally. Swipe gestures (trackpad on desktop, touch on mobile, or keyboard shortcuts) slide the viewport between panels. Each panel is a complete workspace layout — its own set of windows, its own background, its own color scheme.
+
+The main desktop panel renders the collaborative environment with multi-persona chat, shared files, and the instance dashboard. Each persona panel renders that persona's dedicated space with their current activity, their direct conversation thread, their files, and whatever else is relevant to their work.
+
+The state of each space persists independently. If you arrange windows in Sally's space, they stay arranged when you swipe away and come back. If Marcus has tasks running, his space reflects that whether you're looking at it or not. When you land on the main desktop, it synthesizes what's happening across all the persona spaces into the collaborative view.
+
+## One Design Thought to Consider
+
+You'll want to think about how activity in persona spaces surfaces on the main desktop without requiring the user to swipe through every space to check on things. On macOS, you can glance at the dock to see which apps have notifications. You might want something similar — maybe the dock or navigation element that represents each persona shows a subtle indicator when they've completed something, need your attention, or are actively working. That way the user can stay on the main desktop and only swipe into a persona's space when they want to go deeper, rather than feeling obligated to patrol every space for updates.
+
+This also creates a natural information hierarchy: the main desktop shows you the synthesized, high-level state of everything. Persona spaces show you the detailed, immersive view of one agent's world. You get both breadth and depth without either one being cluttered.
+
+## This Is Very Buildable and Very Differentiated
+
+Nothing on the market right now does this. No AI platform gives agents spatial presence. No web desktop project has organized spaces around AI entities rather than human application categories. The closest analog is the macOS multiple desktops feature you're drawing inspiration from, but Apple uses it for the user to organize their own windows — you're repurposing it as a way to organize entire agent environments, which is a fundamentally different and more meaningful use of the pattern.
+
+This is the kind of design decision that would make someone see aiConnectedOS for the first time and immediately understand that it's something new.
+
+---
+
+# aiConnectedOS: The Plan
+
+**What we're building:** A web application that looks and feels like a custom-designed operating system, purpose-built for humans working alongside AI personas. It's not a chatbot interface. It's not a raw Linux desktop. It's a spatial, windowed workspace where AI agents are native citizens of the environment — each with their own visual space, persistent memory, and real compute capabilities when needed.
+
+**What makes it different:** Nothing on the market combines a polished desktop-like experience with a multi-agent AI platform. Chat products like ChatGPT feel like messaging apps. Agent platforms like Manus and OpenClaw feel like tech demos. aiConnectedOS sits in the gap — a professional, designed workspace where your AI personas live, work, and collaborate with you in an environment that feels like sitting at a dedicated computer.
+
+**The core interaction model:** A horizontal series of swipeable spaces. The main desktop is the collaborative hub where all personas come together, instances live, and shared work happens. Swipe into individual persona spaces to see their environment, their active work, and talk to them directly. Each persona space has its own visual identity — unique colors, personality, and design — making the personas feel like real, distinct entities rather than interchangeable chatbots.
+
+**The interface is entirely custom-designed.** Because it's a web application, every pixel is ours. No Windows chrome, no macOS conventions, no Linux desktop constraints. A completely original design language built specifically for AI collaboration — minimalist, professional, and unlike any existing operating system.
+
+**Three tiers of deployment:**
+
+Tier 1 is the lightweight web experience. No dedicated compute, no Linux environments. The full aiConnectedOS interface with personas, memory, orchestration, and web-based capabilities. This is the entry point and it should feel like a complete product on its own.
+
+Tier 2 is the managed professional environment. Everything in Tier 1, plus the personas now have real compute power behind them. They can spin up Linux containers on cloud infrastructure to do heavy work — build applications, run code, browse the web autonomously, SSH into servers, install and use software. We manage the hosting through a cloud provider partnership. Users pay for the compute they use.
+
+Tier 3 is self-hosted. The entire platform packaged as Docker images distributed through a private registry. Customers pull the images with a license key and run aiConnectedOS on their own hardware. Source code stays protected. This unlocks enterprise, healthcare, finance, legal, government, and air-gapped deployments.
+
+**All three tiers share the same interface.** A Tier 1 user and a Tier 2 user see the same desktop, the same persona spaces, the same swipe navigation. The difference is what happens when the AI needs real compute — Tier 1 can't do it, Tier 2 spins up environments seamlessly behind the scenes.
+
+**The strategic position:** A persistent cognitive workspace delivered as a web-accessible operating system. Not "an AI chat app." Not "a cloud desktop." A new category — the environment where humans and AI agents work together — with a design language and interaction model that has no direct precedent in the market.
+
+---
+
+# aiConnectedOS Environent & System Components
+
+Here's a comprehensive inventory of everything the desktop environment needs, organized by function rather than by how it looks, so you have creative freedom in Figma while making sure nothing gets missed.
+
+---
+
+## The Shell (The Always-Present Layer)
+
+This is the outermost frame — the thing that's always visible no matter what space you're in or what's open.
+
+**The Dock / Launcher** — your equivalent of the macOS dock or Windows taskbar. This is the persistent element anchored to one edge of the screen that lets the user launch things, switch between open items, and see status at a glance. It needs to hold quick-access icons for core functions (chat, files, spaces, settings, personas, notifications), show indicators for which items are currently open, and show activity badges when a persona has completed something or needs attention. On mobile, this likely becomes a bottom tab bar or a gesture-accessible drawer.
+
+**The Space Indicator** — something that tells the user which space they're currently in (main desktop, Sally's space, Marcus's space) and how many spaces exist. On macOS this is the row of dots in Mission Control. Yours could be anything — dots, a subtle bar, persona avatars in a strip — but the user needs spatial orientation at all times. On mobile, this might be a swipeable indicator at the top or bottom edge.
+
+**The Command Bar** — your ⌘K universal launcher. This is the quick-access overlay that lets the user search for anything, jump to any space, open any file, start a conversation, launch any function, all from a single keyboard shortcut or tap. This is one of the most important elements in the entire system because it means the user never has to hunt for anything even if they can't remember where it lives in the interface. On mobile, this could be triggered by a pull-down gesture or a persistent search button.
+
+**The Top Bar / Status Bar** — a thin strip at the top of the viewport showing contextual information. What space you're in, the name of the active instance, maybe the time, connection status, and a user avatar or account menu. This is where global actions like account settings, notifications, and help would live. On mobile, this merges with or replaces the native status bar area.
+
+---
+
+## The Main Desktop (Space Zero)
+
+This is the collaborative home base where everything comes together.
+
+**The Instance Switcher** — a way to select which instance (project, client, topic) you're currently working in. This might live in the dock, in the top bar, or as its own panel. The user needs to be able to see their instances, switch between them, and understand which one is currently active. All other content on the desktop is scoped to the active instance.
+
+**The Collaborative Chat Surface** — the persistent open forum chat that exists in every instance. This is where all personas come together, where the user talks to everyone, where collaborative work happens. It needs to support multiple participants with clear attribution, streaming responses, tool output blocks, attachments, and the ability to fork a conversation into a dedicated thread. Based on your Fluid UI architecture, this should be able to float, dock to a side, expand to full screen, or minimize to a small indicator — the user controls how much space it takes.
+
+**The Persona Presence Bar** — a visual element showing which personas are active in the current instance, their current status (idle, working on something, waiting for input), and quick access to start a direct conversation with any of them. This is what makes the main desktop feel like a shared workspace rather than a solo chat.
+
+**The Spaces Hub** — access to the organized content within the current instance: tasks, live documents, whiteboard, files, code snippets, links, exports, folders. Based on your existing Spaces design, this opens as its own view with the tabbed sub-navigation and overview cards. In the desktop environment, this would open as a window rather than replacing the entire screen.
+
+**Quick Actions** — a way to perform common actions without navigating anywhere. New chat, new task, new document, add persona to instance, create new instance. These might live in the command bar, in a right-click context menu on the desktop background, or as a floating action button on mobile.
+
+---
+
+## Persona Spaces (Swipeable Individual Environments)
+
+Each persona space needs its own set of elements, themed to that persona's visual identity.
+
+**The Space Background and Theme** — each persona space has its own color palette, background treatment, and visual atmosphere. This isn't just a wallpaper change — the accent colors, the subtle tonal shifts in UI elements, maybe even the typography weight or style should subtly shift to reflect the persona's character. This is what makes swiping into a different space feel like entering a different room.
+
+**The Direct Chat** — a conversation surface dedicated to one-on-one interaction with this persona. Same capabilities as the collaborative chat but scoped to just you and this persona. Previous conversation history persists here.
+
+**The Activity Feed / Work View** — what this persona is currently working on or has recently completed. If the persona is doing research, you see the sources they're gathering. If they're writing a document, you see progress. If they're operating in a compute environment (Tier 2), you see a live view of their work. This is the element that makes the persona feel alive — their space isn't static, it reflects their ongoing activity.
+
+**The Persona Profile / Identity Card** — a glanceable view of who this persona is, what their skill boundaries are, what they're good at, and what they can't do. This is the capability receipt concept from your build plan made spatial. You shouldn't have to ask a persona what they can do — visiting their space should make it obvious.
+
+**The Persona's Files and Outputs** — things this persona has created or gathered, scoped to their work. Documents they've written, research they've compiled, files they've downloaded, code they've produced. This is separate from the instance-level Spaces hub — it's specifically what this persona has contributed.
+
+**The Memory Surface** — an optional, more advanced element that lets the user see what this persona remembers. Key decisions, preferences they've learned, context they've accumulated. This ties into CogniGraph and makes the persona's learning visible and manageable. The user can review, correct, or delete memories here.
+
+---
+
+## The Window System
+
+These are the behaviors and chrome elements that apply to any window in the environment, regardless of which space it's in.
+
+**Window Chrome** — the title bar, close button, minimize button, and maximize/full-screen button for every window. You'll design your own version of these controls. They need to be visually consistent across all window types but should adapt subtly to the persona space theme when inside a persona environment.
+
+**Drag Behavior** — windows can be grabbed by the title bar and moved anywhere on the canvas. You'll need to decide whether windows can overlap freely (like macOS), or whether they snap to a grid or to edges (like Windows snap).
+
+**Resize Handles** — edges and corners of windows that can be dragged to resize. You'll need to define minimum and maximum sizes for different window types.
+
+**Window Stacking / Z-Order** — when windows overlap, clicking one brings it to the front. There needs to be a visual indication of depth — subtle shadows or opacity changes that make it clear which window is on top.
+
+**Snap Zones** — areas of the screen where dragging a window causes it to snap into a preset layout. Drag to the left edge and it fills the left half. Drag to the top and it maximizes. Drag to a corner and it fills that quadrant. This is one of the most satisfying interactions in modern desktop OSes and users will expect it.
+
+**Minimize Behavior** — where windows go when minimized. Do they shrink to the dock? Do they become small floating thumbnails? Do they disappear entirely and only live as icons in the dock? This is a design decision with no wrong answer, but it needs to be defined.
+
+**Full-Screen Behavior** — what happens when a window goes full screen. Does it take over the entire viewport including the dock and top bar? Does it take over just the workspace area? Can you swipe between full-screen windows the way macOS handles full-screen apps?
+
+---
+
+## The File System
+
+**The File Browser** — a window-based file manager that shows the user's files organized by instance, by persona, by type, or by folder. It needs tree navigation on the left, a content area on the right showing files as a grid or list (user's choice), drag-and-drop support, right-click context menus for file operations, and preview capabilities for common file types.
+
+**File Previews** — the ability to quick-look a file without fully opening it. Click a file and see a preview panel or overlay showing the content — images render, documents show text, code shows syntax-highlighted content, audio shows a waveform with playback controls.
+
+**Upload / Download** — drag files from the user's actual computer into the aiConnectedOS file browser to upload. Click a download button on any file to save it to the user's actual computer. On mobile, this integrates with the device's share sheet and file picker.
+
+---
+
+## Notifications and Activity
+
+**The Notification Center** — a panel or dropdown that collects all notifications: persona completed a task, a persona needs your input, a new file was created, a scheduled task ran, a memory conflict was detected. Each notification should link directly to the relevant context — clicking it opens the right window in the right space.
+
+**Toast Notifications** — small, temporary alerts that appear when something happens in real time. A persona finished a task, a message arrived in a chat you're not looking at, a file download completed. These should be unobtrusive but noticeable, and they should auto-dismiss after a few seconds.
+
+**Status Indicators** — subtle visual cues throughout the interface that show ongoing activity without requiring the user to open anything. A persona icon in the dock gently pulses when they're actively working. A progress indicator appears somewhere when a long task is running. These are the ambient awareness elements that make the environment feel alive.
+
+---
+
+## Settings and Configuration
+
+**Global Settings** — account management, theme preferences (if you offer any customization beyond your default design), notification preferences, keyboard shortcut configuration, connected accounts, API keys for Tier 2/3 users.
+
+**Instance Settings** — per-instance configuration for which personas are assigned, what Instance Type it is, memory and visibility controls, the Topics Dashboard controls you've already designed.
+
+**Persona Settings** — per-persona configuration for skill boundaries, visual theme for their space, behavioral preferences, model routing (which AI model powers this persona).
+
+---
+
+## Mobile-Specific Adaptations
+
+Everything above needs to work on a phone screen, but it won't work the same way.
+
+**The dock** becomes a bottom tab bar with the most essential items, plus a "more" overflow.
+
+**Windows** don't exist on mobile — they become full-screen views with a back navigation pattern. Instead of dragging and resizing windows, you're navigating between full-screen panels.
+
+**Swipe between spaces** translates perfectly to mobile — it's actually the more native gesture on touch devices than on desktop trackpads.
+
+**The command bar** becomes a pull-down or button-triggered search overlay.
+
+**Split views** might work on tablets but not phones — on a phone, everything is one thing at a time with fluid transitions between them.
+
+**The file browser** becomes a simplified list view with tap-to-preview and long-press for context actions.
+
+The key principle for mobile is that it should feel like the same product with the same spatial model, just adapted to the constraints of a smaller screen. The persona spaces, the swipe navigation, the visual identities — all of that carries over. The windowing system is the main thing that transforms from a free-form canvas on desktop to a structured stack on mobile.
+
+---
+
+That's the complete inventory. Every element here needs a Figma design, and together they form the full desktop environment. You'll likely discover additional micro-elements as you design — tooltips, context menus, loading states, empty states, onboarding overlays — but this covers every structural component the environment needs to function.

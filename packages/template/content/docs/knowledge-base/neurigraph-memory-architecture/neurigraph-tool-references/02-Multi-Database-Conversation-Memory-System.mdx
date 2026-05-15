@@ -1,0 +1,1036 @@
+---
+title: "Clean Room Specification 02: Multi Database Conversation Memory System (Markdown Memory Bank)"
+description: "Document Purpose This specification describes a markdown file based persistent memory system for AI coding assistants. The system maintains project context a..."
+---
+<Info>
+Normalized for Mintlify from `knowledge-base/neurigraph-memory-architecture/neurigraph-tool-references/02-Multi-Database-Conversation-Memory-System.mdx`.
+</Info>
+# Clean-Room Specification 02: Multi-Database Conversation Memory System (Markdown Memory Bank)
+
+## Document Purpose
+
+This specification describes a **markdown-file-based persistent memory system** for AI coding assistants. The system maintains project context across sessions using a structured set of markdown files stored in the project's version control. An AI coding model should be able to read this document and produce a functionally identical implementation without any additional references.
+
+---
+
+## 1. System Overview
+
+### 1.1 What This System Does
+
+This system provides **persistent project memory** for AI assistants that lose context between sessions. It works by maintaining a `memory-bank/` directory of structured markdown files that the AI reads at the start of every session and updates as work progresses.
+
+The core insight: **AI assistant memory resets completely between sessions**. The Memory Bank is the sole bridge between sessions — the AI writes its understanding to disk before the session ends, then reads it back at the start of the next session.
+
+### 1.2 Core Architecture
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                    AI Assistant Session                   │
+│                                                          │
+│  ┌────────────────────────────────────────────────────┐  │
+│  │              System Prompt / Custom Rules           │  │
+│  │  "MUST read ALL memory bank files at start of      │  │
+│  │   EVERY task. This is NOT optional."               │  │
+│  └───────────────┬────────────────────────────────────┘  │
+│                  │                                        │
+│  ┌───────────────▼────────────────────────────────────┐  │
+│  │            Memory Bank Manager                      │  │
+│  │                                                     │  │
+│  │  Session Start:                                     │  │
+│  │    1. Read ALL files in hierarchical order          │  │
+│  │    2. Validate completeness                         │  │
+│  │    3. Extract current state                         │  │
+│  │                                                     │  │
+│  │  During Work:                                       │  │
+│  │    1. Reference patterns and decisions              │  │
+│  │    2. Follow documented conventions                 │  │
+│  │                                                     │  │
+│  │  Session End / Update Trigger:                      │  │
+│  │    1. Update activeContext.md                        │  │
+│  │    2. Update progress.md                            │  │
+│  │    3. Log new decisions                             │  │
+│  │    4. Document new patterns                         │  │
+│  └───────────────┬────────────────────────────────────┘  │
+│                  │                                        │
+└──────────────────┼────────────────────────────────────────┘
+                   │
+     ┌─────────────▼─────────────────────┐
+     │       memory-bank/ Directory       │
+     │                                    │
+     │  Layer 1: projectBrief.md          │
+     │  Layer 2: productContext.md        │
+     │  Layer 3: systemPatterns.md        │
+     │  Layer 4: techContext.md           │
+     │  Layer 5: activeContext.md         │
+     │  Layer 6: progress.md             │
+     │  Layer 7: decisionLog.md          │
+     │                                    │
+     │  (All stored in project git repo)  │
+     └────────────────────────────────────┘
+```
+
+### 1.3 Key Design Decisions
+
+1. **Pure markdown files**: No database, no binary formats, no special tooling. Every file is plain markdown that humans can read and edit directly.
+
+2. **Version-controlled**: The `memory-bank/` directory lives in the project's git repository. Memory changes are committed alongside code changes.
+
+3. **Hierarchical file structure**: Files are organized in layers from most stable (project brief) to most volatile (active context). Read order goes bottom-up; update order goes top-down.
+
+4. **Session-boundary persistence**: Memory is explicitly read at session start and written at session end (or when triggered). There is no real-time streaming or incremental sync.
+
+5. **AI-driven updates**: The AI assistant itself decides what to write, when to write, and how to structure the content. The system provides conventions, not enforcement.
+
+6. **No external dependencies**: Works with any AI assistant that can read and write files. No database, no server, no API.
+
+---
+
+## 2. File Structure and Hierarchy
+
+### 2.1 Directory Layout
+
+```
+project-root/
+├── memory-bank/
+│   ├── projectBrief.md      # Layer 1: Foundation
+│   ├── productContext.md     # Layer 2: Purpose & Goals
+│   ├── systemPatterns.md     # Layer 3: Architecture
+│   ├── techContext.md        # Layer 4: Tech Stack
+│   ├── activeContext.md      # Layer 5: Current State
+│   ├── progress.md           # Layer 6: Tracking
+│   └── decisionLog.md        # Layer 7: Decision History
+└── .clinerules               # Optional: AI behavioral rules
+```
+
+### 2.2 File Hierarchy and Reading Order
+
+Files MUST be read in this exact order (most stable → most volatile):
+
+| Order | File | Stability | Update Frequency |
+|-------|------|-----------|-----------------|
+| 1 | projectBrief.md | Very Stable | Rarely (project inception) |
+| 2 | productContext.md | Stable | Occasionally (scope changes) |
+| 3 | systemPatterns.md | Moderate | When architecture changes |
+| 4 | techContext.md | Moderate | When stack changes |
+| 5 | activeContext.md | Volatile | Every session |
+| 6 | progress.md | Volatile | Every session |
+| 7 | decisionLog.md | Append-only | When decisions are made |
+
+**Update order is REVERSED**: When updating the memory bank, start with the most volatile files (progress, activeContext) and work backwards toward the stable files. Only update stable files when genuinely necessary.
+
+---
+
+## 3. Complete File Specifications
+
+### 3.1 `projectBrief.md` — Foundation Layer
+
+**Purpose**: Defines the project's identity, scope, and core constraints. This is the foundational document that all other files build upon.
+
+**Template Structure:**
+```markdown
+# Project Brief
+
+## Project Name
+[Name of the project]
+
+## Mission Statement
+[One-paragraph description of what this project is and why it exists]
+
+## Problem Statement
+[What problem does this solve? Who has this problem?]
+
+## Core Requirements
+- [Requirement 1]
+- [Requirement 2]
+- [Requirement 3]
+
+## Key Constraints
+- [Constraint 1: e.g., must work offline]
+- [Constraint 2: e.g., budget limit]
+- [Constraint 3: e.g., timeline]
+
+## Success Criteria
+- [How do we know this project succeeded?]
+- [Measurable outcomes]
+
+## Scope Boundaries
+### In Scope
+- [What is included]
+
+### Out of Scope
+- [What is explicitly excluded]
+```
+
+**Update Rules:**
+- Created once at project inception
+- Updated only when fundamental project direction changes
+- Changes here should cascade to all downstream files
+
+### 3.2 `productContext.md` — Purpose Layer
+
+**Purpose**: Captures the business and user perspective. Why does this exist from the user's point of view?
+
+**Template Structure:**
+```markdown
+# Product Context
+
+## Why This Project Exists
+[Business justification and user need]
+
+## Target Users
+[Who uses this and how]
+
+## User Problems
+- [Problem 1 that users face]
+- [Problem 2 that users face]
+
+## User Experience Goals
+- [UX goal 1: e.g., "Should feel instant"]
+- [UX goal 2: e.g., "Zero configuration needed"]
+
+## How It Should Work
+[High-level user flow description]
+
+## What Makes It Different
+[Differentiation from alternatives]
+```
+
+**Update Rules:**
+- Updated when understanding of users or market changes
+- Updated when scope shifts significantly
+- Should reference projectBrief.md concepts
+
+### 3.3 `systemPatterns.md` — Architecture Layer
+
+**Purpose**: Documents the system architecture, design patterns, coding conventions, and technical decisions that shape how code is structured.
+
+**Template Structure:**
+```markdown
+# System Patterns
+
+## Architecture Overview
+[High-level architecture description — e.g., "Monorepo with microservices"]
+
+## Architecture Diagram
+```
+[ASCII diagram of system components]
+```
+
+## Design Patterns in Use
+### [Pattern Name, e.g., "Repository Pattern"]
+- **Where Used**: [Which modules/files]
+- **Why**: [Rationale]
+- **Implementation**: [Brief description of how it's implemented]
+
+### [Pattern Name 2]
+...
+
+## Coding Conventions
+- [Convention 1: e.g., "All API responses use envelope format { data, error, meta }"]
+- [Convention 2: e.g., "Database queries live in /src/repositories/"]
+- [Convention 3: e.g., "Error handling uses custom AppError class"]
+
+## File Organization
+```
+src/
+├── controllers/    # HTTP handlers
+├── services/       # Business logic
+├── repositories/   # Data access
+├── models/         # Type definitions
+└── utils/          # Shared utilities
+```
+
+## Key Technical Decisions
+- [Decision 1: e.g., "Using SQLite for local storage — see decisionLog.md"]
+- [Decision 2: e.g., "Event-driven architecture for notifications"]
+```
+
+**Update Rules:**
+- Updated when new patterns are adopted
+- Updated when architecture changes significantly (≥25% impact)
+- Changes should be reflected in decisionLog.md
+
+### 3.4 `techContext.md` — Technology Layer
+
+**Purpose**: Records the complete technology stack, development setup, and operational details needed to work on the project.
+
+**Template Structure:**
+```markdown
+# Tech Context
+
+## Technology Stack
+### Languages
+- [Language 1: version]
+- [Language 2: version]
+
+### Frameworks
+- [Framework 1: version — purpose]
+- [Framework 2: version — purpose]
+
+### Databases
+- [Database 1: purpose]
+
+### Key Libraries
+- [Library 1: purpose]
+- [Library 2: purpose]
+
+## Development Environment Setup
+1. [Step 1: e.g., "Clone repository"]
+2. [Step 2: e.g., "Install dependencies: npm install"]
+3. [Step 3: e.g., "Copy .env.example to .env"]
+4. [Step 4: e.g., "Run migrations: npm run migrate"]
+
+## Build Commands
+- **Build**: `[command]`
+- **Test**: `[command]`
+- **Lint**: `[command]`
+- **Dev Server**: `[command]`
+
+## Deployment
+- **Environment**: [e.g., "AWS Lambda via Serverless Framework"]
+- **Deploy Command**: `[command]`
+- **CI/CD**: [e.g., "GitHub Actions — .github/workflows/"]
+
+## Environment Variables
+| Variable | Purpose | Required |
+|----------|---------|----------|
+| DATABASE_URL | Database connection | Yes |
+| API_KEY | External API access | Yes |
+
+## Version Requirements
+- Node.js: >= 18.0.0
+- npm: >= 9.0.0
+```
+
+**Update Rules:**
+- Updated when dependencies change
+- Updated when build/deploy process changes
+- Keep version numbers current
+
+### 3.5 `activeContext.md` — Current State Layer
+
+**Purpose**: Captures the current session's state — what was just done, what's in progress, and what's next. This is the MOST VOLATILE file and should be updated frequently.
+
+**Template Structure:**
+```markdown
+# Active Context
+
+## Current Focus
+[What is being worked on RIGHT NOW — 1-2 sentences]
+
+## Recent Changes
+- [Change 1: what was done and when]
+- [Change 2: what was done and when]
+- [Change 3: what was done and when]
+
+## Current State
+[Brief description of where things stand — what works, what doesn't]
+
+## Active Decisions
+- [Decision pending: e.g., "Need to decide between REST and GraphQL for new endpoints"]
+- [Decision made this session: e.g., "Chose to use WebSockets for real-time updates"]
+
+## Open Questions
+- [Question 1]
+- [Question 2]
+
+## Blockers
+- [Blocker 1: what's blocking progress]
+
+## Next Steps
+1. [Immediate next task]
+2. [Following task]
+3. [After that]
+```
+
+**Update Rules:**
+- Updated at the START of every session (after reading)
+- Updated during work when significant progress occurs
+- Updated at END of every session with final state
+- Should be written as if briefing a new developer who knows nothing about recent work
+
+### 3.6 `progress.md` — Tracking Layer
+
+**Purpose**: Maintains a historical record of what's been completed, what's in progress, and what's planned. Uses checkbox-style task tracking.
+
+**Template Structure:**
+```markdown
+# Progress
+
+## Completed
+- [x] [Feature/task 1 — date completed]
+- [x] [Feature/task 2 — date completed]
+- [x] [Feature/task 3 — date completed]
+
+## In Progress
+- [ ] [Feature/task 4 — current status]
+- [ ] [Feature/task 5 — current status]
+
+## Known Issues
+- [Issue 1: description and impact]
+- [Issue 2: description and impact]
+
+## Technical Debt
+- [Debt 1: what needs cleanup]
+- [Debt 2: what needs cleanup]
+
+## Upcoming
+- [ ] [Planned task 1]
+- [ ] [Planned task 2]
+- [ ] [Planned task 3]
+
+## Milestones
+### Phase 1: [Name] — [Status]
+- [Summary of phase goals and completion]
+
+### Phase 2: [Name] — [Status]
+- [Summary]
+```
+
+**Update Rules:**
+- Move completed items from "In Progress" to "Completed" with dates
+- Add new items to "In Progress" as work begins
+- Update "Known Issues" as bugs are found or fixed
+- Keep "Upcoming" current with planned work
+
+### 3.7 `decisionLog.md` — Decision History
+
+**Purpose**: Permanent record of architectural and technical decisions with full rationale. This is an APPEND-ONLY file — entries are never deleted.
+
+**Template Structure:**
+```markdown
+# Decision Log
+
+## Decision: [Decision Title]
+- **Date**: [YYYY-MM-DD]
+- **Status**: [Accepted / Superseded / Deprecated]
+- **Context**: [What situation prompted this decision]
+- **Options Considered**:
+  1. [Option A — pros/cons]
+  2. [Option B — pros/cons]
+  3. [Option C — pros/cons]
+- **Selected**: [Which option was chosen]
+- **Rationale**: [Why this option was chosen]
+- **Trade-offs**: [What we gave up]
+- **Consequences**: [Expected impact]
+
+---
+
+## Decision: [Another Decision Title]
+...
+```
+
+**Update Rules:**
+- New entries appended when architectural decisions are made
+- Existing entries are NEVER deleted (append-only)
+- Mark old entries as "Superseded" when replaced by new decisions
+- Include date and context for every entry
+
+---
+
+## 4. Operating Modes
+
+The system defines distinct behavioral modes that control how the AI interacts with the memory bank.
+
+### 4.1 Plan Mode
+
+**When activated**: At the start of a new task or when the AI needs to analyze before acting.
+
+**Workflow:**
+```
+1. Read ALL Memory Bank files in hierarchical order (1→7)
+2. Verify documentation completeness:
+   - Are all core files present?
+   - Is activeContext.md current?
+   - Are there gaps in knowledge?
+3. Analyze project context from filesystem:
+   - Check directory structure
+   - Read relevant source files
+   - Understand current code state
+4. Develop strategy:
+   - Based on documented patterns (systemPatterns.md)
+   - Consistent with tech stack (techContext.md)
+   - Aligned with project goals (productContext.md)
+5. Present approach to user before execution
+```
+
+### 4.2 Act Mode
+
+**When activated**: After planning is complete and the user approves the approach.
+
+**Workflow:**
+```
+1. Check Memory Bank (especially activeContext.md)
+2. Follow .clinerules guidance for this project
+3. Execute tasks using documented patterns
+4. Document changes in real-time:
+   - Update activeContext.md with current state
+   - Add progress entries
+5. On completion:
+   - Update progress.md (move items to Completed)
+   - Update activeContext.md (new current state)
+   - Add decision log entries if needed
+```
+
+### 4.3 Extended Modes (Multi-Mode System)
+
+Some implementations support 5 specialized modes:
+
+| Mode | Trigger Keywords | Memory Bank Access | Primary Actions |
+|------|------------------|-------------------|-----------------|
+| **Architect** | "design", "structure", "architect" | Read systemPatterns, productContext | Create/update architecture docs |
+| **Code** | "implement", "code", "build" | Full read/write access | Write code, update progress |
+| **Ask** | "explain", "document", "clarify" | Read-only access | Generate explanations |
+| **Debug** | "debug", "troubleshoot", "fix" | Read + execution | Diagnose and fix issues |
+| **Default** | No specific trigger | Full access | General-purpose work |
+
+**Mode-specific memory updates:**
+- Architect mode → Updates `systemPatterns.md` and `productContext.md`
+- Code mode → Updates `progress.md` and `activeContext.md`
+- Ask mode → Reads only, does not modify memory files
+- Debug mode → Records findings in `activeContext.md`
+
+---
+
+## 5. Memory Update Protocol
+
+### 5.1 Update Triggers
+
+Memory bank updates are triggered by:
+
+1. **Automatic triggers:**
+   - Discovering new project patterns (≥25% impact on existing patterns)
+   - Completing a significant implementation task
+   - Making an architectural or technical decision
+   - End of session (if not already updated)
+
+2. **Manual triggers:**
+   - User explicitly says "update memory bank" or "UMB"
+   - User requests documentation refresh
+   - User initiates a new session
+
+### 5.2 Update Procedure
+
+When updating the memory bank, follow this procedure:
+
+```
+1. Review what has changed since last update
+2. Determine which files need updating
+3. Update files in REVERSE hierarchy order:
+   a. progress.md — Update task statuses
+   b. activeContext.md — Write current state summary
+   c. decisionLog.md — Append new decisions (if any)
+   d. techContext.md — Update if stack changed
+   e. systemPatterns.md — Update if patterns changed
+   f. productContext.md — Update if scope changed
+   g. projectBrief.md — Update only if fundamental change
+4. Validate consistency across files
+5. Confirm updates to user
+```
+
+### 5.3 Content Writing Guidelines
+
+When writing memory bank content:
+
+- **Write for a stranger**: Assume the reader has no context about recent work
+- **Be specific**: Include file names, function names, error messages — not vague descriptions
+- **Be current**: Remove outdated information; don't accumulate stale state
+- **Be concise**: Each file should be readable in under 2 minutes
+- **Use markdown properly**: Headers, bullet points, code blocks for structure
+- **Include dates**: Especially in progress.md and decisionLog.md
+
+### 5.4 JSON Escaping Rules
+
+When updating files programmatically (e.g., via MCP tools or file write APIs):
+
+- Use `\\n` for newlines in JSON strings (not literal newlines)
+- Use lowercase booleans: `true`, `false`
+- Escape quotes inside strings: `\"`
+- Use forward slashes in file paths: `path/to/file` (never backslashes)
+
+---
+
+## 6. Session Lifecycle
+
+### 6.1 Session Start Protocol
+
+**CRITICAL RULE**: The AI MUST read ALL memory bank files at the start of EVERY task. This is non-negotiable.
+
+```
+Session Start:
+  1. Check if memory-bank/ directory exists
+     - If not: Offer to initialize (create directory + template files)
+  2. Read files in hierarchical order:
+     a. projectBrief.md
+     b. productContext.md
+     c. systemPatterns.md
+     d. techContext.md
+     e. activeContext.md
+     f. progress.md
+     g. decisionLog.md
+  3. Identify any missing or incomplete files
+  4. Present summary to user:
+     - Current project state (from activeContext.md)
+     - Active blockers (from activeContext.md)
+     - In-progress work (from progress.md)
+     - Next planned steps
+  5. Ask what the user wants to work on
+```
+
+### 6.2 Mid-Session Updates
+
+During work, update memory when:
+- A feature or significant task is completed
+- A new decision is made
+- A blocker is encountered or resolved
+- The user switches focus to a different area
+
+### 6.3 Session End Protocol
+
+```
+Session End:
+  1. Summarize what was accomplished this session
+  2. Update activeContext.md with:
+     - What was done
+     - Current state of things
+     - Any open questions or blockers
+     - Immediate next steps
+  3. Update progress.md:
+     - Move completed items
+     - Add new items discovered
+     - Update status of in-progress items
+  4. Add any decision log entries
+  5. Commit memory changes alongside code changes
+```
+
+---
+
+## 7. Initialization System
+
+### 7.1 New Project Setup
+
+When initializing a memory bank for a new project:
+
+```
+1. Create memory-bank/ directory in project root
+2. Create all 7 template files with placeholder content
+3. If projectBrief.md content is provided by user:
+   a. Populate projectBrief.md
+   b. Derive initial content for other files based on the brief
+4. If no brief provided:
+   a. Analyze the existing codebase:
+      - Read package.json / requirements.txt / etc.
+      - Scan directory structure
+      - Identify frameworks and patterns
+   b. Auto-populate techContext.md from discovered stack
+   c. Auto-populate systemPatterns.md from directory structure
+   d. Create skeleton files for remaining
+5. Report what was created and ask user to verify/expand
+```
+
+### 7.2 File Validation
+
+When reading the memory bank, validate:
+
+```
+Required files (must exist):
+  - projectBrief.md
+  - activeContext.md
+  - progress.md
+
+Recommended files (create if missing):
+  - productContext.md
+  - systemPatterns.md
+  - techContext.md
+  - decisionLog.md
+
+Validation checks:
+  - File is not empty
+  - File has at least one markdown header (#)
+  - File content is consistent with its purpose
+  - No obvious contradictions between files
+```
+
+---
+
+## 8. MCP Server Implementation
+
+For AI assistants that support MCP (Model Context Protocol), the memory bank can be exposed as an MCP server with the following tools:
+
+### 8.1 Tool Definitions
+
+**`initialize_memory_bank`**
+```text
+- **Input**: `{ projectPath: string, brief?: string }`
+```
+- **Action**: Creates `memory-bank/` directory and template files at projectPath
+- **Returns**: List of created files
+
+**`list_projects`**
+```text
+- **Input**: `{}` (no parameters)
+```
+- **Action**: Scans MEMORY_BANK_ROOT for directories containing memory-bank/ subdirectories
+```text
+- **Returns**: Array of `{ name: string, path: string }`
+
+```
+**`memory_bank_read`**
+```text
+- **Input**: `{ projectPath: string, fileName: string }`
+```
+- **Action**: Reads specified file from project's memory-bank/ directory
+```text
+- **Returns**: `{ content: string, lastModified: string }`
+```
+- **Security**: Path traversal prevention — fileName cannot contain `..` or start with `/`
+
+**`memory_bank_write`**
+```text
+- **Input**: `{ projectPath: string, fileName: string, content: string }`
+```
+- **Action**: Creates a new file in the project's memory-bank/ directory
+```text
+- **Returns**: `{ success: boolean, path: string }`
+```
+- **Security**: Same path traversal prevention
+
+**`memory_bank_update`**
+```text
+- **Input**: `{ projectPath: string, fileName: string, content: string }`
+```
+- **Action**: Overwrites an existing file
+```text
+- **Returns**: `{ success: boolean, path: string }`
+
+```
+**`list_project_files`**
+```text
+- **Input**: `{ projectPath: string }`
+```
+- **Action**: Lists all files in the project's memory-bank/ directory
+```text
+- **Returns**: Array of `{ name: string, size: number, lastModified: string }`
+
+```
+**`validate_project`**
+```text
+- **Input**: `{ projectPath: string }`
+```
+- **Action**: Checks for required and recommended files
+```text
+- **Returns**: `{ valid: boolean, missingRequired: string[], missingRecommended: string[] }`
+
+```
+### 8.2 MCP Server Configuration
+
+```typescript
+// Server setup
+const server = new McpServer({
+  name: "memory-bank",
+  version: "1.0.0",
+});
+
+// Environment variable
+const MEMORY_BANK_ROOT = process.env.MEMORY_BANK_ROOT || path.join(os.homedir(), "memory-banks");
+```
+
+### 8.3 Security Model
+
+- **Path traversal prevention**: All file operations validate that the resolved path stays within the project's memory-bank/ directory
+- **Per-project isolation**: Each project has its own memory-bank/ directory; no cross-project access
+- **Read-only option**: Some modes (Ask, Debug) can be restricted to read-only access
+- **File type restriction**: Only `.md` files are allowed
+
+### 8.4 Auto-Approve Configuration
+
+For seamless operation, these tools can be configured for auto-approval (no user confirmation needed):
+- `memory_bank_read`
+- `memory_bank_write`
+- `memory_bank_update`
+- `list_projects`
+- `list_project_files`
+
+---
+
+## 9. Custom Rules System
+
+### 9.1 Project-Level Rules (.clinerules)
+
+A `.clinerules` file at the project root contains project-specific instructions for the AI assistant:
+
+```markdown
+# Project Rules
+
+## Code Style
+- Use TypeScript strict mode
+- All functions must have JSDoc comments
+- Use named exports, not default exports
+
+## Testing
+- Every new function needs a test
+- Use vitest for unit tests
+- Minimum 80% coverage for new code
+
+## Git
+- Conventional commits format
+- Feature branches from main
+- Squash merge PRs
+
+## Memory Bank
+- Update activeContext.md after every significant change
+- Log all architecture decisions in decisionLog.md
+- Keep progress.md in sync with GitHub issues
+```
+
+### 9.2 Mode-Specific Rules
+
+For multi-mode systems, separate rule files per mode:
+
+```
+.roorules-architect  # Rules when in architect mode
+.roorules-code       # Rules when in code mode
+.roorules-ask        # Rules when in ask mode
+.roorules-debug      # Rules when in debug mode
+```
+
+### 9.3 Rules with Path Scoping
+
+Rules can be scoped to specific file paths using YAML frontmatter:
+
+```markdown
+---
+paths:
+  - "src/api/**/*.ts"
+  - "lib/server/**/*.ts"
+---
+
+# API Development Rules
+- All endpoints require input validation using Zod
+- Response format: { data, error, meta }
+- Rate limiting applied to all public endpoints
+```
+
+---
+
+## 10. AI System Prompt Specification
+
+### 10.1 Core Instructions
+
+The following system prompt instructions are CRITICAL for correct behavior:
+
+```markdown
+# Memory Bank System
+
+## Critical Principle
+**I MUST read ALL memory bank files at the start of EVERY task.**
+This is not optional. My memory resets completely between sessions.
+The Memory Bank is the sole bridge between sessions.
+
+## Read Order (Session Start)
+1. projectBrief.md — Project foundation
+2. productContext.md — Purpose and goals
+3. systemPatterns.md — Architecture and patterns
+4. techContext.md — Technology stack
+5. activeContext.md — Current session state
+6. progress.md — Task tracking
+7. decisionLog.md — Decision history
+
+## Operating Protocol
+
+### Plan Mode
+1. Read ALL Memory Bank files in order
+2. Verify documentation completeness
+3. Analyze project context from code
+4. Develop strategy based on documented patterns
+5. Present approach before execution
+
+### Act Mode
+1. Check Memory Bank (especially activeContext.md)
+2. Follow .clinerules guidance
+3. Execute using documented patterns
+4. Update Memory Bank after significant changes
+
+## Update Protocol
+When to update (triggers):
+- Discovering new patterns (≥25% impact)
+- Completing significant implementation
+- Making architecture decisions
+- User requests "update memory bank" or "UMB"
+
+What to update (in this order):
+1. progress.md — Task status changes
+2. activeContext.md — Current state, focus, blockers, next steps
+3. decisionLog.md — New decisions (append only)
+4. techContext.md — If stack changed
+5. systemPatterns.md — If patterns changed
+6. productContext.md — If scope changed
+7. projectBrief.md — Only if fundamental change
+
+## Writing Rules
+- Write for someone with NO context about recent work
+- Include specific file names, function names, error messages
+- Remove outdated information
+- Keep each file readable in under 2 minutes
+- Use proper markdown formatting
+- Include dates in progress and decision entries
+```
+
+---
+
+## 11. Behavioral Test Specifications
+
+### 11.1 Initialization Tests
+
+**Test: Create memory bank for new project**
+- Input: Initialize memory bank at `/project/`
+- Expected: `memory-bank/` directory created with 7 template files
+- Each file has at least one markdown header and placeholder content
+
+**Test: Initialize with project brief**
+- Input: Initialize with brief "A REST API for managing todo items"
+- Expected: projectBrief.md populated with provided content; other files have derived initial content
+
+**Test: Detect existing memory bank**
+- Input: Project already has `memory-bank/` with files
+- Expected: Files are read, not overwritten
+
+### 11.2 Read Operation Tests
+
+**Test: Read all files in order**
+- Setup: Memory bank with all 7 files
+- Input: Session start
+- Expected: All files read in hierarchical order (1→7)
+
+**Test: Handle missing optional files**
+- Setup: Memory bank with only projectBrief.md, activeContext.md, progress.md
+- Expected: Required files read successfully; missing optional files noted but not blocking
+
+**Test: Handle empty memory bank**
+- Setup: Empty `memory-bank/` directory
+- Expected: Offer to initialize with templates
+
+### 11.3 Write Operation Tests
+
+**Test: Update activeContext.md**
+- Input: Update with current session state
+- Expected: File overwritten with new content; old content replaced
+
+**Test: Append to decisionLog.md**
+- Setup: Decision log with 2 existing entries
+- Input: Add new decision
+- Expected: New entry appended AFTER existing entries; old entries preserved
+
+**Test: Update progress.md checkboxes**
+- Setup: Task "Feature X" in "In Progress"
+- Input: Mark "Feature X" as complete
+- Expected: Task moved to "Completed" section with checkbox checked and date added
+
+### 11.4 Security Tests
+
+**Test: Path traversal prevention**
+- Input: Read file with name `../../etc/passwd`
+- Expected: Rejected — path resolves outside memory-bank/ directory
+
+**Test: File type restriction**
+- Input: Write file named `script.sh` to memory bank
+- Expected: Rejected — only `.md` files allowed
+
+**Test: Project isolation**
+- Input: Read file from different project's memory bank
+- Expected: Rejected — can only access current project's files
+
+### 11.5 Session Lifecycle Tests
+
+**Test: Full session lifecycle**
+```
+1. Start session → Read all memory files
+2. User requests work → Plan mode activates
+3. Plan presented → User approves → Act mode
+4. Work completed → Memory bank updated
+5. Session end → Final state written to activeContext.md
+```
+
+**Test: Mid-session update trigger**
+- Trigger: User says "update memory bank"
+- Expected: All changed files updated in reverse hierarchy order
+
+---
+
+## 12. Multi-Project Support
+
+### 12.1 Project Detection
+
+When multiple projects exist under MEMORY_BANK_ROOT:
+
+```
+MEMORY_BANK_ROOT/
+├── project-a/
+│   └── memory-bank/
+│       ├── projectBrief.md
+│       └── ...
+├── project-b/
+│   └── memory-bank/
+│       ├── projectBrief.md
+│       └── ...
+└── project-c/
+    └── memory-bank/
+        ├── projectBrief.md
+        └── ...
+```
+
+The system should:
+1. Scan for directories containing `memory-bank/` subdirectories
+2. Present available projects to the user
+3. Allow project selection
+4. Load the selected project's memory bank
+
+### 12.2 Project Switching
+
+When switching between projects:
+1. Save current project's memory state (update all changed files)
+2. Confirm project switch with user
+3. Load new project's memory bank in full
+4. Present new project's current state
+
+---
+
+## 13. Context Window Management
+
+### 13.1 Token Budget
+
+Memory bank content consumes context window tokens. Guidelines:
+
+- **Total context window**: ~200K tokens (model dependent)
+- **Memory bank budget**: Keep under 5,000 tokens total across all files
+- **Per-file target**: 500-1,000 tokens (~200-400 words)
+- **activeContext.md**: Most token-intensive — keep focused on CURRENT state only
+
+### 13.2 Content Hygiene
+
+To prevent memory files from growing unbounded:
+
+- **activeContext.md**: Replace entirely each session (not append)
+- **progress.md**: Archive completed items to a separate `archive/` directory after milestones
+- **decisionLog.md**: This grows indefinitely but each entry is small (~100 tokens)
+- **All files**: Remove verbose explanations; prefer bullet points and specific references
+
+---
+
+## 14. Implementation Checklist
+
+To build a functionally identical system:
+
+1. **Directory structure**: Create `memory-bank/` in project root with 7 template files
+2. **File templates**: Each file pre-populated with headers and placeholder sections per Section 3
+3. **Read protocol**: Implement hierarchical read order (Layer 1→7) at session start
+4. **Write protocol**: Implement reverse-order updates (Layer 7→1) on triggers
+5. **System prompt**: Include the full instruction set from Section 10
+6. **Update triggers**: Detect ≥25% impact changes, completion events, manual "UMB" command
+7. **Initialization**: Auto-detect codebase and pre-populate techContext/systemPatterns from project analysis
+8. **MCP tools** (if applicable): Implement 7 tools per Section 8
+9. **Security**: Path traversal prevention, file type restriction, project isolation
+10. **Custom rules**: Support `.clinerules` file and mode-specific rule files
+11. **Multi-project**: Scan for and list available projects under root directory
+
+**Total system is pure markdown files + AI system prompt instructions**. No database, no server (unless MCP), no special runtime.

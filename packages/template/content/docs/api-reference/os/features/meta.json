@@ -1,0 +1,30 @@
+{
+  "title": "Features",
+  "pages": [
+    "index",
+    "adaptive-tutorials",
+    "chat-cleanup",
+    "cognition-console",
+    "collaborative-personas",
+    "computer-use",
+    "context-windows",
+    "conversation-references",
+    "dynamic-persona-waking",
+    "dynamic-screen-routing",
+    "fluid-ui",
+    "folders",
+    "forget",
+    "ideas",
+    "import-migration",
+    "in-chat-navigation",
+    "live-documents",
+    "meeting-mode",
+    "pinning",
+    "skill-slots",
+    "spaces-dashboard",
+    "split-and-route",
+    "tasks",
+    "whiteboards"
+  ],
+  "defaultOpen": false
+}

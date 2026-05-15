@@ -1,0 +1,704 @@
+---
+title: "Folder system design"
+description: "Prompt: Can we also create a folder system within instances? Because let's use the current conversation right now, or the current project as an example. So I..."
+---
+<Info>
+Converted from `aiConnected OS - 4. Folder system design.md`.
+</Info>
+# Folder system design
+
+**User:** Oxford Pierpont  
+**Created:** 12/10/2025 6:19:58  
+**Updated:** 12/10/2025 6:50:32  
+**Exported:** 2/11/2026 7:07:44  
+**Link:** [https://chatgpt.com/g/g-p-69395d9991108191841f1dac1fd8d1a1-oxpi-aiconnected-ui-features/c/6939575d-cfe0-8326-a1b8-35ad5e717fbf](https://chatgpt.com/g/g-p-69395d9991108191841f1dac1fd8d1a1-oxpi-aiconnected-ui-features/c/6939575d-cfe0-8326-a1b8-35ad5e717fbf)  
+
+## Prompt:
+Can we also create a folder system within instances? Because let's use the current conversation right now, or the current project as an example. So I am working on AI Connected overall. In this very moment, I'm working on the user interface for the AI Connected chat, and the dashboard, and just the personas, and all these little bits. Later, I might be doing some kind of market research. Another time, I might be just working on Cognograph. Another time, I might be working on the sales teams and employees and things like that. And there's no way of separating all of these different chats into their own, I guess you could say, like little siloed conversations and categories. So what I would like is some kind of foldering system that has all the same configuration settings as an instance. The only thing that it does not have is a whiteboard. But everything else, I can essentially name that a new folder. So we'll say one is for user interface. Another folder is hiring. Another folder might be marketing, whatever I decide. And I can hold individual chats. But more importantly, if I ask a question about something, it obviously can reference the other chats, not just in other folders, but just overall in the instance, because it's still all one thing. It's just organized in a more reasonable way. And it also allows me to now provide dedicated instructions or customizations for individual folders without having to kind of taint the information, just because while it all might be AI-connected, the instructions I need for my hiring and marketing might be very different from what I might need for designing the user interface. So I need a robust system of folders, or yeah, folders is the right word.
+
+## Response:
+Yes, absolutely — what you’re describing is basically **“sub-instances” = folders**, and that fits really cleanly into what you already have.
+
+Let me lay out a concrete design that gives you:
+
+*   Folders **inside** an instance
+*   Separate instructions / persona per folder
+*   Shared memory across the whole instance
+*   No extra whiteboard per folder (only at instance level)
+
+* * *
+
+1\. Mental model: Instance → Folders → Chats
+--------------------------------------------
+
+**Hierarchy:**
+
+*   **Instance (aiConnected)**
+    *   Has: global instructions, global tools, global memory, one whiteboard.
+    *   Example: “This instance is for the entire aiConnected platform.”
+*   **Folders (sub-domains of the instance)**
+    *   Example folders:
+        *   `User Interface & UX`
+        *   `Hiring & Teams`
+        *   `Marketing & Positioning`
+        *   `Cognigraph Architecture`
+    *   Each folder:
+        *   Has its **own settings & instructions**, like a mini-instance
+        *   Holds **chats/threads**
+        *   Does **not** have its own whiteboard
+*   **Chats (threads)**
+    *   Live inside a folder (or a “root” / uncategorized area).
+    *   Can also link to other chats across folders (your “linked conversations” concept).
+
+So from your perspective:
+
+> aiConnected (instance) → “Hiring” (folder) → “Sales Team Tier Structure v2” (chat)
+
+* * *
+
+2\. What a Folder Actually Is (Feature Set)
+-------------------------------------------
+
+Each **Folder** should support almost everything an instance does, except the whiteboard.
+
+**Folder properties:**
+
+*   `name` – e.g., “User Interface”
+*   `description` – optional, e.g., “All conversations related to chat UI, dashboard, and persona controls.”
+*   `icon / color` – for quick visual scanning in the sidebar
+*   **Instructions / Persona profile**
+    *   Folder-specific system prompt / rules
+    *   Default tone and priorities
+*   **Default model / engine choices**
+    *   e.g., “Use ‘UI Architect Persona’ by default in this folder”
+*   **Default tools / integrations**
+    *   e.g., UI folder can default to Figma / code-oriented tools
+    *   Hiring folder can default to HR templates, job description generator, etc.
+*   **Access / collaborators (eventually)**
+    *   You might want to share just the “Hiring” folder with HR staff but keep “Cognigraph” private.
+
+The only thing missing vs an instance:  
+❌ No folder-level whiteboard (the whiteboard stays **one per instance**, above everything).
+
+* * *
+
+3\. Instruction & Context Inheritance (the important part)
+----------------------------------------------------------
+
+You specifically called out:
+
+> “I can provide dedicated instructions or customizations for individual folders without tainting the information…”
+
+So we need a **stacked instructions model**:
+
+### Instruction layers
+
+When the model is called inside a given chat, the system context could be built like this:
+
+1.  **Global system / platform rules** (safety, core behavior)
+2.  **Instance-level instructions**
+    *   Example: “You are working on aiConnected, an AI automation marketplace…”
+3.  **Folder-level instructions**
+    *   Example (UI folder):
+        *   “Prioritize UX clarity, React/Tailwind patterns, coherence of chat + dashboard.”
+    *   Example (Hiring folder):
+        *   “Focus on role definitions, compensation design, and scaling sales teams.”
+4.  **Chat-level instructions**
+    *   Example: “In this chat we are only working on the persona selection dropdown behaviors.”
+5.  **Message-level modifiers**
+    *   Temporary modes like: “Right now, think like a skeptical investor.”
+
+### How conflicts are handled
+
+Define **clear precedence**:
+
+*   Lower layer can **extend or override** higher layers on specific fields.
+*   Example:
+    *   Instance says: “Talk in warm, professional tone.”
+    *   Folder says: “In this folder, be more technical and concise.”
+    *   Result in that folder: technical + concise wins when there’s tension.
+
+You can even expose this visually:
+
+*   A “Context Stack” panel showing:
+    *   ✅ Which instructions are active (Instance / Folder / Chat)
+    *   ✅ What’s being overridden (e.g., tone, priority, tools)
+
+* * *
+
+4\. Memory & Retrieval Across Folders
+-------------------------------------
+
+You also want:
+
+> “If I ask a question about something, it obviously can reference the other chats, not just in other folders, but just overall in the instance…”
+
+So we distinguish between:
+
+*   **Organizational scope** (folders)
+*   **Cognitive scope** (memory)
+
+### Retrieval logic
+
+When you ask a question in a folder, the retrieval engine can:
+
+1.  **Prioritize**:
+    *   Chats + artifacts in the **current folder** first.
+2.  **Expand to instance**:
+    *   If relevant info isn’t found, automatically widen to **all folders** within the same instance.
+3.  **Mark the origin**:
+    *   When citing past work, show where it came from:
+        *   “Found related spec in: `aiConnected → Marketing → GTM Narrative v1`”
+
+That way:
+
+*   Folders **don’t wall memory off**.
+*   They just **bias** which memories get looked at first.
+
+* * *
+
+5\. UI / UX: How This Feels in the App
+--------------------------------------
+
+Think about the left sidebar of your chat UI / dashboard:
+
+### Sidebar layout
+
+*   **Top: Instance Selector**
+    *   e.g., `[aiConnected] [Cognigraph] [Oxford Pierpont Capital]`
+*   **Within the selected instance:**
+    ```text
+    aiConnected
+      > Whiteboard
+      > All Chats (view)
+      > Folders
+          - User Interface & UX
+          - Hiring & Teams
+          - Marketing & Sales
+          - Cognigraph Architecture
+      > Unsorted / Inbox
+    ```
+*   Clicking a folder shows:
+    *   List of chats in that folder
+    *   A small panel summarizing folder-level instructions/persona.
+
+### Quick actions
+
+*   **Right-click / kebab menu on a chat:**
+    *   “Move to folder…”
+    *   “Link to other chat…”
+    *   “Add to whiteboard”
+*   **Right-click on a folder:**
+    *   “Edit folder settings”
+    *   “Duplicate folder settings to another folder”
+    *   “Create chat with these folder defaults”
+
+### Linked chats across folders
+
+We can integrate your earlier “linked conversation” idea:
+
+*   From any chat, you can:
+    *   “Link existing chat…” → search any chat in the instance → link it.
+*   UI then surfaces:
+    *   “Linked: \[Market Research – ICP\] (Marketing folder)”
+    *   “Linked: \[Persona State Machine Design\] (Cognigraph folder)”
+
+So you can be in `Hiring → Sales Org Design`, click a linked `Marketing → ICP` chat, read it, and come back.
+
+* * *
+
+6\. How Folders Interact with the Whiteboard
+--------------------------------------------
+
+You were clear:
+
+> Folders have all instance config except the whiteboard.
+
+So: **one whiteboard per instance**, but…
+
+We can still make the whiteboard _aware_ of folders without turning them into separate whiteboards.
+
+### Whiteboard filters
+
+Every item you pin/send to the whiteboard can carry metadata:
+
+*   `origin_instance`
+*   `origin_folder`
+*   `origin_chat`
+
+Then in the whiteboard, you can filter:
+
+*   By folder:
+    *   Show only items from `User Interface & UX`
+    *   Show only items from `Hiring & Teams`
+*   Or mix:
+    *   Show all items tagged `aiConnected` regardless of folder.
+
+That gives you:
+
+*   A single “God board” for the instance
+*   But with **folder-aware filtering** so you don’t drown in everything at once.
+
+* * *
+
+7\. Real Examples Using Your aiConnected Work
+---------------------------------------------
+
+Let’s ground this in your actual use cases:
+
+### Example Folder: `User Interface & UX`
+
+*   **Folder instructions:**
+    *   Focus on:
+        *   Interaction design, information architecture
+        *   React/Next.js + Tailwind + shadcn patterns
+        *   Keeping the Cognigraph mental model visible (instances → folders → chats → whiteboard)
+    *   Avoid:
+        *   Deep dives into sales comp models unless explicitly asked.
+*   **Default tools:**
+    *   Figma integration
+    *   Code snippets
+    *   Component library
+*   **Typical chats:**
+    *   “Design the Persona creation modal”
+    *   “Layout for the Conversation Reference panel”
+    *   “Folder sidebar interactions and animations”
+
+### Example Folder: `Hiring & Teams`
+
+*   **Folder instructions:**
+    *   Prioritize:
+        *   Role design, org charts, quotas, comp plans
+        *   Clear, policy-friendly language
+    *   Constraints:
+        *   Don’t drift into UI details; keep it people/process focused.
+*   **Default tools:**
+    *   Org chart generator
+    *   Offer letter templates
+    *   Commission plan calculators
+*   **Typical chats:**
+    *   “Tier 0–5 sales comp restructure”
+    *   “Onboarding flow for Tier 1 SDRs”
+    *   “KPIs & dashboards for VP of Sales”
+
+Same instance, **shared memory**, but very different behaviors because of folder-level instructions.
+
+* * *
+
+8\. Data / Architecture Sketch (for your dev brain)
+---------------------------------------------------
+
+Conceptually:
+
+*   `Instance`
+    *   id
+    *   name
+    *   instructions
+    *   settings
+*   `Folder`
+    *   id
+    *   instance\_id (FK)
+    *   name
+    *   description
+    *   instructions
+    *   settings (default model, default tools, etc.)
+*   `Chat`
+    *   id
+    *   instance\_id (FK)
+    *   folder\_id (FK, nullable for “Unsorted”)
+    *   title
+    *   custom\_instructions (optional)
+*   `ChatLink`
+    *   id
+    *   chat\_id
+    *   linked\_chat\_id
+    *   relationship\_type (e.g., “continued-from”, “related-to”)
+
+Retrieval:
+
+*   Index all chats/messages at the instance level in Cognigraph / your vector store.
+*   Use `folder_id` as a **boosting factor** when scoring relevance.
+
+Context assembly:
+
+*   When answering inside a chat:
+    *   Load:
+        *   `instance.instructions`
+        *   `folder.instructions` (if any)
+        *   `chat.custom_instructions` (if any)
+    *   Merge them in the defined precedence order and send that as the system context.
+
+* * *
+
+9\. What You Get Out of This
+----------------------------
+
+With this folder system:
+
+*   You keep **one unified cognition** for aiConnected.
+*   You gain **clean separation of concerns** by domain (UI vs Hiring vs Marketing vs Cognigraph).
+*   You can **tune the AI’s behavior per folder** without polluting the rest of the instance.
+*   You maintain **navigational sanity** as projects get huge.
+*   You can still **cross-reference anything**, because memory is instance-wide.
+
+If you’d like, next step I can draft:
+
+*   The **exact folder settings UI** (fields, toggles, and layout), or
+*   The **instruction precedence spec** written like an internal dev doc so your team can implement it 1:1.
+
+## Prompt:
+And if the user wants, they don't have to use folders. So there can be chats outside of the folder, there can be a combination of only folders and only chats or mixed whatever. It's just giving the user a better way of organizing things if they want to.
+
+## Response:
+Yep, 100%. Folders should be **purely optional** – an organizational layer, not a requirement or a different “mode.”
+
+Let’s bake that into the spec explicitly.
+
+* * *
+
+1\. Core Rule: Folders Are Optional
+-----------------------------------
+
+For any given instance (like aiConnected):
+
+*   You can have:
+    *   **Only chats** (no folders at all)
+    *   **Only folders** (every chat lives in some folder)
+    *   **A mix** (some chats in folders, some “loose” at the root)
+
+Nothing about the cognition, whiteboard, or memory system **requires** folders. They’re just a way to structure things when you want to.
+
+* * *
+
+2\. Root-Level Chats (“No Folder”)
+----------------------------------
+
+Under the hood:
+
+*   Every chat has an optional `folder_id`.
+    *   If `folder_id = null` → that chat lives at the **root** of the instance.
+    *   If `folder_id = some_id` → that chat lives inside that folder.
+
+In the UI, you can expose this as:
+
+```text
+aiConnected
+  > Whiteboard
+  > All Chats
+  > No Folder
+      - Chat: “Brainstorm engine pricing”
+      - Chat: “Random idea dump”
+  > Folders
+      - User Interface & UX
+      - Hiring & Teams
+      - Marketing & Sales
+      - Cognigraph Architecture
+```
+
+So:
+
+*   **“No Folder”** = root-level chats.
+*   Users never _have_ to create a folder. They can live in “No Folder” forever if they like.
+
+* * *
+
+3\. Instruction Behavior for Root vs Folder
+-------------------------------------------
+
+This keeps your “no tainting” goal clean:
+
+*   **Root-level chats**:
+    *   Get **instance-level instructions** + **chat-level instructions**.
+    *   No additional folder instructions, because they’re not in one.
+*   **Folder chats**:
+    *   Get **instance-level instructions** + **folder-level instructions** + **chat-level instructions**.
+
+So the “stack” is:
+
+*   In a folder:  
+    `Platform → Instance → Folder → Chat`
+*   At root:  
+    `Platform → Instance → Chat`
+
+That gives you exactly what you want:
+
+*   You can keep some things **general-purpose** at the instance level.
+*   You can **constrain and specialize** behavior only inside certain folders, without affecting everything else.
+
+* * *
+
+4\. Moving In and Out of Folders
+--------------------------------
+
+Because folders are optional, you also want to be able to **change your mind later**:
+
+### UX
+
+From any chat:
+
+*   “Move to folder…”
+*   “Remove from folder (send to No Folder)”
+
+### Behavior
+
+*   When you move a chat **into** a folder:
+    *   Future turns in that chat now inherit the folder’s instructions.
+*   When you move it **out** of a folder:
+    *   Future turns lose the folder’s instructions and go back to instance-only.
+
+This is intuitive: you’re changing the **environment** the conversation lives in, so the assistant’s behavior follows.
+
+* * *
+
+5\. Creation Flow (How Users Naturally End Up Using Folders or Not)
+-------------------------------------------------------------------
+
+To make it feel natural and not forced:
+
+### New chat button
+
+When you click **“New Chat”** in an instance, you can:
+
+*   Either:
+    *   Start **in the currently selected folder**, _or_
+    *   Choose a location from a simple dropdown:
+        *   “No Folder”
+        *   “User Interface & UX”
+        *   “Hiring & Teams”
+        *   etc.
+
+If you never touch folders:
+
+*   Everything auto-creates under **“No Folder”**.
+*   You still get a clean, simple interface like “classic chat apps.”
+
+Only once you start creating folders does the “Folders” section really matter.
+
+* * *
+
+6\. Search, Whiteboard, and References Respect This Flexibility
+---------------------------------------------------------------
+
+Nothing about the optional folder logic breaks other features:
+
+*   **Search / Retrieval**
+    *   Searches still run across **all chats in the instance** by default.
+    *   You can filter by:
+        *   Entire instance
+        *   Specific folder
+        *   “No Folder” only
+*   **Whiteboard**
+    *   Still one per instance.
+    *   Items can come from:
+        *   Folder chats
+        *   Root chats
+    *   You can filter whiteboard items by:
+        *   Origin folder
+        *   Or show everything.
+*   **Chat linking / references**
+    *   You can link a root-level chat to a folder chat (e.g., “this loose brainstorm” ↔ “formal spec in UI folder”).
+    *   In the UI you’d see something like:
+        *   “Linked: \[Initial brainstorm\] (No Folder)”
+        *   “Linked: \[UI State Machine Spec\] (User Interface & UX)”
+
+So folder usage doesn’t constrain how things **connect**, it only changes how they’re **organized** and how instructions are applied.
+
+* * *
+
+7\. Explicit Design Principle (So Your Devs Don’t Misinterpret)
+---------------------------------------------------------------
+
+If you’re writing this into a PRD, I’d phrase the core rule something like:
+
+> **Folders are an optional organizational layer within an instance.**
+> 
+> *   Chats MAY be assigned to a folder, but are not required to be.
+> *   Chats with no folder assignment are treated as root-level “No Folder” chats.
+> *   All chats in an instance share the same memory space, regardless of folder, with retrieval optionally biased toward the current folder but never restricted to it.
+> *   Folder-level instructions apply only to chats inside that folder and never to root chats.
+>     
+
+That locks in what you just said:  
+Users can go **full folders**, **no folders**, or **hybrid**, and the cognition still behaves like one unified brain for the instance.
+
+## Prompt:
+The user should also be able add multiple chats or files to a new folder, with an option to select multiples at once, and move.
+
+## Response:
+Absolutely, yes—bulk moving is a must-have here. Let’s wire it in cleanly.
+
+* * *
+
+1\. Core Behavior: Multi-Select → Move → Existing or New Folder
+---------------------------------------------------------------
+
+For both **chats** and **files**, the pattern should be:
+
+1.  **Select multiple items**
+    *   Each row (chat or file) has a checkbox.
+    *   You can:
+        *   Click individual checkboxes, or
+        *   Use Shift-click to select a range (desktop pattern).
+2.  **Bulk action bar appears**
+    *   Once at least one item is selected, a bar appears at the bottom or top:
+        *   `Move`
+        *   `Link` (for chats)
+        *   `Delete` (if supported)
+        *   `Cancel Selection`
+3.  **Click “Move”**
+    *   Opens a **“Move items”** modal:
+        *   **Destination type:**
+            *   `Existing folder`
+            *   `New folder…`
+4.  **If “Existing folder” is chosen**
+    *   Dropdown / list of folders:
+        *   “No Folder (root)”
+        *   “User Interface & UX”
+        *   “Hiring & Teams”
+        *   “Marketing & Sales”
+        *   etc.
+    *   Confirm → all selected items now belong to that destination folder (or root if “No Folder”).
+5.  **If “New folder…” is chosen**
+    *   Modal expands into “Create New Folder”:
+        *   Folder name
+        *   Optional description
+        *   Optional basic settings (you can keep advanced settings behind an “Advanced” toggle):
+            *   Default persona / instructions
+            *   Default model
+        *   **\[Create folder & move items\]** button
+    *   On submit:
+        *   New folder is created.
+        *   All selected items are moved into it in one operation.
+        *   User is optionally navigated straight into that folder to see the result.
+
+* * *
+
+2\. Where This Lives in the UI
+------------------------------
+
+### A. In the normal sidebar views
+
+*   **Chats list view** in an instance:
+    *   Button: `Select` / `Manage`
+    *   Tapping that switches the list into “selection mode”:
+        *   Checkboxes appear
+        *   Bulk action bar appears when something is selected
+*   **Files view** in an instance:
+    *   Same `Select` / `Manage` behavior.
+    *   Exactly the same move flow, but applied to files.
+
+### B. In a centralized “Content Manager” view (optional but powerful)
+
+You can also have an **Instance Content Manager**:
+
+*   Tabs or filters:
+    *   `Chats`
+    *   `Files`
+*   Filters:
+    *   Folder filter: `All folders`, specific folder, or `No Folder` (root).
+*   Multi-select with:
+    *   `Move`
+    *   `Add to whiteboard` (for chats or relevant file types)
+    *   `Link` (for chats)
+
+This gives you a “clean up / reorganize” space for big projects.
+
+* * *
+
+3\. Behavior Details & Edge Cases
+---------------------------------
+
+### Mixed folder origins
+
+If the selected items originally come from different folders:
+
+*   That’s fine.
+*   The move operation just **reassigns** their `folder_id` to the chosen folder (or null for root).
+*   From the user’s POV: “Take all these scattered things and put them _here_.”
+
+### Root vs folders
+
+*   You can move:
+    *   From root → folder
+    *   From folder → root
+    *   From folder A → folder B
+*   This makes it easy to start totally unstructured, then later decide:
+    > “Okay, these 15 chats are all Cognigraph—group them now.”
+
+### Chats vs files
+
+You said:
+
+> The user should also be able add multiple chats or files to a new folder…
+
+So we’ll support:
+
+*   **Bulk move chats** in the Chat view.
+*   **Bulk move files** in the File view.
+
+You _can_ allow mixing chats + files in one selection in a unified Content Manager if you want, but even if you don’t, users still get:
+
+*   Multi-select chats → Move to existing/new folder
+*   Multi-select files → Move to existing/new folder
+
+### Whiteboard metadata
+
+If some of those chats/files already have items on the **whiteboard**, moving them:
+
+*   **Does not remove** those whiteboard items.
+*   Whiteboard items just keep their original `origin_chat_id` / `origin_file_id`.
+*   The whiteboard can still show the updated folder context if you want (e.g., “From: aiConnected → Hiring & Teams”).
+
+* * *
+
+4\. Data / API View (Implementation-Level)
+------------------------------------------
+
+**Bulk move endpoint examples:**
+
+*   `POST /instances/{id}/chats/bulk-move`
+    *   Payload: `{ chat_ids: [...], target_folder_id: "..." | null }`
+*   `POST /instances/{id}/files/bulk-move`
+    *   Payload: `{ file_ids: [...], target_folder_id: "..." | null }`
+
+**New folder + move combined:**
+
+*   Option 1: two calls
+    1.  `POST /instances/{id}/folders` → returns `{ folder_id }`
+    2.  `POST /instances/{id}/chats/bulk-move` with that `folder_id`
+*   Option 2: single combined endpoint:
+    *   `POST /instances/{id}/bulk-move-to-new-folder`
+        *   `{ type: "chats" | "files", item_ids: [...], folder_name: "...", folder_settings: { ... } }`
+
+Either works. The key is atomic semantics:
+
+*   Backend should treat:
+    *   “Create folder + move items” as **one operation** for the user.
+    *   If anything fails, either:
+        *   Folder isn’t created, or
+        *   Items are not partially moved without the folder.
+
+* * *
+
+5\. UX Micro-Details That Will Feel Good
+----------------------------------------
+
+A couple of small touches that will make this feel polished:
+
+*   After moving:
+    *   Show a toast like:
+        *   “Moved 7 chats to ‘Cognigraph Architecture’.”
+        *   Clicking it could jump straight into that folder.
+*   In the folder sidebar:
+    *   Brief animation / highlight to show the new folder or updated counts.
+*   Undo:
+    *   Optional “Undo” button in the toast that reverses the last bulk move.
+
+* * *
+
+If you want, next I can write this as a **formal spec section** (like: “3.4 Folder Bulk Move Operations”) that you can drop directly into the PRD for your devs.
+
+
+
+---
+Powered by [ChatGPT Exporter](https://www.chatgptexporter.com)

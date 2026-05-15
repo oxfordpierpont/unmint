@@ -1,0 +1,35 @@
+---
+title: "Conversation split and route"
+description: "Feature-level API contract for conversation drift detection, branch creation, and route-to-workspace decisions."
+---
+## Contract status
+
+`Derived implementation contract`
+
+## Source document
+
+- [Conversation split and route](/docs/knowledge-base/aiconnected-os/aiconnected-os-conversation-split-and-route)
+
+## Feature purpose
+
+Defines how the system branches conversations into the right destination without losing attribution or history.
+
+## Required operations
+
+- Detect topic drift and branch candidates
+- Present move or copy choices
+- Create destination threads, spaces, or tasks
+- Preserve memory attribution between source and destination
+
+## Suggested resources
+
+- `conversation_splits`
+- `split_candidates`
+- `split_destinations`
+- `split_audit_logs`
+
+## Implementation notes
+
+- Keep this feature workspace-scoped and persona-aware where applicable.
+- Preserve authorship, timestamps, and auditability for all state changes.
+- Treat the source doc as the behavioral specification even where final route names remain open.

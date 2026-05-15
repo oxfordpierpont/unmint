@@ -1,0 +1,102 @@
+---
+title: "Contact, monitor, and co-browser"
+description: "API contracts for Contact Forms, Chat Monitor, and the SiteGuide Co-Browser add-on."
+---
+## Contract status
+
+`Derived implementation contract`
+
+These modules are strongly defined in the MVP spec and SiteGuide documentation, but the repo does not publish one final route map for all three. This page documents the required module surface.
+
+## Source documents
+
+- [aiConnected Platform MVP specification](/docs/knowledge-base/aiconnected-business-platform/aiconnected-platform-v1-mvp-specification)
+- [aiConnected Platform v2 build plan](/docs/knowledge-base/aiconnected-business-platform/aiconnected-platform-v2-build-plan)
+- [aiConnected SiteGuide/CoBrowser](/docs/knowledge-base/aiconnected-apps-and-modules/ai-connected-site-guide-co-browser)
+
+## Contact Forms
+
+### Purpose
+
+Contact Forms closes the lag between a form submission and a business response. It validates the submission, determines intent, starts an AI interaction when appropriate, and converts the result into a qualified lead or booked next step.
+
+### Required operations
+
+- Register and manage form definitions
+- Receive contact submissions
+- Validate submission quality
+- Convert submissions into `contacts`
+- Trigger AI follow-up and qualification workflows
+- Emit lead and submission events to automations
+
+### Required data
+
+- `contact_forms`
+- `contact_submissions`
+- `contacts`
+- `events`
+
+## Chat Monitor
+
+### Purpose
+
+Chat Monitor gives operators a live view into AI sales conversations, especially when a prospect appears ready to buy.
+
+### Required operations
+
+- List active sessions
+- Stream live conversation updates
+- Flag warming or high-intent leads
+- Allow human takeover or silent guidance
+- Persist intervention history
+
+### Required event hooks
+
+- Chat session started
+- Lead warmed
+- Human takeover requested
+- Human takeover completed
+
+## Co-Browser / SiteGuide
+
+### Purpose
+
+The Co-Browser follows the visitor across the site and responds with page-aware context.
+
+### Required operations
+
+- Start and resume a site session
+- Track current page and page history
+- Track element highlight and scroll commands
+- Answer questions with page-context awareness
+- Support voice and text interaction
+- Surface session analytics and lead-intent signals
+
+### Functional areas explicitly described in the SiteGuide doc
+
+- Conversational AI
+- Scroll-to-element
+- DOM highlighting
+- Navigation control
+- Voice input and output
+- Persistent session memory
+- Context recovery
+- Lead capture and marketing integration
+- Analytics and performance tracking
+- Admin and business settings
+- Multisite support
+
+## Shared implementation requirements
+
+- All three modules must write back to shared contacts or events.
+- Co-Browser should enrich lead and page-context data for later sales use.
+- Monitor should observe chat state, not replace chat state ownership.
+- Contact Forms should feed the same lead lifecycle used by chat and voice.
+
+## Delivery model
+
+These modules should be treated as interconnected sales infrastructure:
+
+- Contact Forms creates or enriches the lead.
+- Co-Browser adds browsing and intent context.
+- Chat Monitor gives humans operational visibility at the right moment.

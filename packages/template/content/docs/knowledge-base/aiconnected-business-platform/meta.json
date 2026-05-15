@@ -1,0 +1,28 @@
+{
+  "title": "aiConnected Business Platform",
+  "pages": [
+    "index",
+    "industry-templates",
+    "layout-manager",
+    "ai-services-business-directory",
+    "aiconnected-platform-foundation-prd",
+    "aiconnected-platform-mvp-specification",
+    "aiconnected-platform-overview-non-technical",
+    "aiconnected-platform-overview",
+    "aiconnected-platform-v1-audit",
+    "aiconnected-platform-v1-mvp-specification",
+    "aiconnected-platform-v2-build-plan",
+    "aiconnected-platform-v2-port-map",
+    "legacy-aiConnected-marketplace",
+    "legacy-business-platform-specification",
+    "legacy-n8n-ai-services-directory-prd",
+    "legacy-platform-redesign-spec",
+    "legacy-platform-sidebar-spec",
+    "legacy-platform-v1-inventory",
+    "platform-v1-context",
+    "production-readiness-checklist",
+    "shell-codex-prd",
+    "what-is-the-platform-shell"
+  ],
+  "defaultOpen": true
+}

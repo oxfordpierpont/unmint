@@ -1,0 +1,36 @@
+---
+title: "Tasks"
+description: "Feature-level API contract for task creation, assignment, prioritization, and task-to-chat workflows in aiConnectedOS."
+---
+## Contract status
+
+`Derived implementation contract`
+
+## Source document
+
+- [Tasks](/docs/knowledge-base/aiconnected-os/aiconnected-os-2-task-feature-spec)
+
+## Feature purpose
+
+Defines per-instance task objects, message-to-task conversion, and execution support around task recommendations and notifications.
+
+## Required operations
+
+- Create tasks from chat messages or directly in a workspace
+- Assign tasks to users or personas
+- Track task status, due dates, and linked artifacts
+- Support notify-from-task and next-best-work recommendations
+
+## Suggested resources
+
+- `tasks`
+- `task_assignees`
+- `task_links`
+- `task_comments`
+- `task_activity`
+
+## Implementation notes
+
+- Keep this feature workspace-scoped and persona-aware where applicable.
+- Preserve authorship, timestamps, and auditability for all state changes.
+- Treat the source doc as the behavioral specification even where final route names remain open.

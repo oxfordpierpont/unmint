@@ -1,0 +1,316 @@
+---
+title: "aiConnectedOS PRD Addendum"
+description: "Feature: Conversation Split & Route Status: Specification — Ready for Implementation Planning Part: Addendum to Part 14 (Automatic Conversation Cleanup & Org..."
+---
+<Info>
+Normalized for Mintlify from `knowledge-base/aiconnected-os/aiConnectedOS-conversation-splitting.mdx`.
+</Info>
+# aiConnectedOS PRD Addendum
+## Feature: Conversation Split & Route
+**Status:** Specification — Ready for Implementation Planning  
+**Part:** Addendum to Part 14 (Automatic Conversation Cleanup & Organization)  
+**Related Features:** ChatNav, Linked Conversations, Folder System, Neurigraph/Memory Architecture, Automatic Chat Cleanup (Part 14)
+
+---
+
+## 1. Overview
+
+Conversation Split & Route is an in-flight, AI-assisted feature that detects when a conversation has drifted into a new topic mid-thread and gives the user a fast, low-friction way to surgically extract and relocate the branched portion to its correct folder or instance. The extracted content becomes a properly linked child conversation, with memory attribution routed to match.
+
+This feature is distinct from the broader Automatic Chat Cleanup system (Part 14), which handles whole-conversation organization after the fact. Conversation Split & Route operates inside an active chat, at the message level, while the conversation is still in progress.
+
+The core problem it solves: a conversation that begins in one context (personal, therapeutic, general brainstorm) naturally transitions into a different domain (a product idea, a client topic, a business decision). By the time that happens, the user is generating outputs that belong in a different folder or instance entirely. They shouldn't have to stop, manually create a new chat, and copy content across. The system should detect the drift and offer to handle it — immediately, cleanly, and without interrupting the flow.
+
+---
+
+## 2. Feature Definition
+
+### 2.1 What It Is
+
+Conversation Split & Route allows a user to:
+
+1. Receive a non-intrusive system notification when the AI detects a topic shift mid-conversation
+2. View and modify which specific messages are proposed for extraction
+3. Choose the destination folder or instance for the extracted content
+4. Select whether to **Move** or **Copy** the selected messages
+5. Have relevant memories from the extracted portion routed to the correct destination
+6. Retain a visible, navigable link between the origin chat and the new destination chat
+
+### 2.2 What It Is Not
+
+This feature does not:
+
+- Replace or duplicate the existing Automatic Chat Cleanup function (Part 14), which handles whole-conversation relocation via cron-style background review
+- Operate as a manual "move chat" tool (that already exists at the folder/instance level)
+- Inject any notification or prompt into the conversation record itself
+- Move an entire conversation — only a user-selected subset of messages within it
+
+---
+
+## 3. Trigger Conditions
+
+### 3.1 Automatic Detection (AI-Initiated)
+
+The system continuously monitors the semantic trajectory of the active conversation. A split notification is triggered when the model detects a topic shift meeting the following criteria:
+
+- The last N messages (configurable, suggested default: 4–6) are semantically divergent from the dominant topic of the conversation's earlier content
+- The new topic maps to an existing folder or instance in the user's workspace with reasonable confidence (threshold: configurable, suggested default: 0.75 cosine similarity against folder-level metadata and Neurigraph node tags)
+- The divergence has been sustained for at least 2 consecutive AI response cycles (to avoid false positives on brief tangents)
+
+The system should not fire on:
+
+- Tangential questions that return to the main topic within 1–2 exchanges
+- Meta-conversation (e.g., the user asking about the feature itself)
+- Topics that have no identifiable destination folder or instance
+
+### 3.2 Manual Initiation (User-Initiated)
+
+The user can also trigger the split flow manually at any time without waiting for the AI to detect a shift. This is accessible via:
+
+- The `⋯` message-level action menu on any message (selecting "Split from here" sets that message as the proposed inflection point)
+- The ChatNav sidebar, via a "Split conversation" action available on any checkpoint
+- A context menu triggered by selecting multiple messages in the thread and choosing "Move selected" or "Copy selected"
+
+---
+
+## 4. The Overlay Notification
+
+### 4.1 Design Principle
+
+The split notification must exist entirely outside the conversation record. It must never appear as a chat message, inline system message, or any element that becomes part of the thread history. It is a UI overlay — visually separate from the chat surface — that the user can accept, dismiss, or ignore without affecting the conversation.
+
+### 4.2 Notification Anatomy
+
+The notification appears as a slide-in panel or modal overlay anchored to the edge of the chat interface (right side on desktop, bottom sheet on mobile). It contains:
+
+**Header**
+- Icon indicating a topic shift has been detected
+- Title: "Conversation has shifted topics"
+
+**Body**
+- Brief one-line description of the detected shift, e.g.: "This conversation moved from [Personal / Wellness] into [aiConnected / Product Strategy]."
+- Suggested destination: the folder or instance the system recommends, with its icon and name displayed
+
+**Primary Actions**
+- `Review & Route` — opens the full Split Review panel (see Section 5)
+- `Dismiss` — closes the notification with no action taken; the conversation continues normally
+
+**Secondary Options**
+- `Don't suggest this again for this chat` — suppresses future shift notifications in the current conversation only
+- `Settings` — deep link to notification sensitivity settings
+
+### 4.3 Behavior
+
+- The notification does not interrupt typing or message input
+- It auto-dismisses after a configurable timeout (suggested default: 45 seconds) if the user takes no action, leaving no trace
+- Dismissing it once does not permanently suppress it; a new and sufficiently different topic shift in the same chat will trigger it again
+- The notification is not logged in the conversation history, the ChatNav index, or Neurigraph memory
+
+---
+
+## 5. The Split Review Panel
+
+When the user selects `Review & Route`, a full-screen overlay or side panel opens. This is the primary interaction surface for the feature.
+
+### 5.1 Message Selection View
+
+The panel displays the full conversation thread in a scrollable list. Each message is rendered with a checkbox.
+
+**Pre-selection behavior:**
+The system pre-selects all messages from the detected inflection point forward. The inflection point is the specific message where the semantic shift was first detected. Pre-selected messages are visually highlighted (e.g., a left-border accent in the destination folder's color, or a light tinted background). All prior messages remain visible but are unselected.
+
+The user can:
+- Deselect any pre-selected message to exclude it from the extraction
+- Select any earlier message to include it in the extraction (useful if the topic shift actually began slightly before the AI detected it)
+- Use "Select all after this message" as a shortcut on any message to extend selection forward from that point
+- Use "Deselect all" to clear and start fresh
+
+**Selection rules:**
+- At least one message must be selected to proceed
+- The user can select non-contiguous messages (individual messages scattered throughout the thread)
+- The selection does not need to be linear; users may cherry-pick specific exchanges
+
+### 5.2 Destination Picker
+
+Below or alongside the message list, the panel shows a destination selector:
+
+- The system pre-fills its best suggested destination (the folder or instance it identified during detection)
+- The user can change this to any accessible folder or instance via a searchable dropdown or folder tree
+- The user can also choose "New folder..." or "New instance..." to create a destination on the spot, without leaving the flow
+- The destination shows its current folder name, instance name, and any active persona assigned to it
+
+### 5.3 Move vs. Copy Selection
+
+A clearly labeled toggle or segmented control with two options:
+
+**Move**
+Selecting Move means the chosen messages will be extracted from the origin chat and relocated to the destination. After the operation:
+- The selected messages no longer exist in the origin chat
+- The origin chat record reads as if those messages never occurred there
+- The user has a choice (see Section 7.1, Open Decision) about whether a subtle trace marker appears at the extraction point in the origin chat
+- Memory nodes generated from the moved messages are transferred exclusively to the destination's Neurigraph scope; they are removed from the origin scope
+
+**Copy**
+Selecting Copy means a duplicate of the selected messages is created at the destination, while the originals remain intact in the origin chat. After the operation:
+- Both conversations contain the selected messages
+- The origin chat is unchanged
+- Memory nodes generated from the copied messages exist in both the origin and destination Neurigraph scopes
+- If the user wants to limit memory to only one scope, a prompt appears: "Should memories from these messages apply to both locations, or only the destination?" This gives the user explicit control rather than automatic duplication
+
+### 5.4 Conversation Naming
+
+Before confirming, the user is shown a name field for the new destination chat that will be created. The system pre-fills a suggested name based on the semantic content of the selected messages. The user may accept this or type their own. This field is not required — if left blank, the system names it by the most prominent topic detected.
+
+### 5.5 Confirmation and Execution
+
+A `Confirm` button at the bottom of the panel executes the operation. A brief inline progress indicator appears while the system processes the message extraction, creates the new chat, establishes the link, and routes memory. On completion, the panel closes and the user is offered a `View in [destination]` link to navigate directly to the new chat.
+
+Canceling at any point in the panel discards all changes.
+
+---
+
+## 6. Post-Operation State
+
+### 6.1 The New Destination Chat
+
+The newly created (or receiving) chat at the destination will:
+
+- Open with the selected messages as its initial content, in their original chronological order
+- Display a "Branched from" banner at the top of the thread (consistent with the existing Linked Conversations pattern), e.g.: "Branched from [origin chat name] on [date]" with a `View original` link
+- Have its own ChatNav index generated from the extracted messages
+- Be scoped to the correct folder or instance's persona, instruction layer, and memory context
+
+### 6.2 The Origin Chat
+
+After a Move operation:
+- The selected messages are absent from the thread
+- The conversation flows from the last unextracted message without visual disruption (default behavior)
+- If the trace marker option is enabled (see Section 7.1), a subtle non-message system indicator appears at the extraction point reading: "N messages moved to [destination chat name]" with a jump link. This indicator is read-only, cannot be interacted with in the normal message sense, and does not affect context or memory retrieval.
+
+After a Copy operation:
+- The origin chat is completely unchanged
+- A subtle link annotation may optionally be added to the origin messages that were copied, indicating they also exist in the destination chat (mirroring the Linked Conversations link icon pattern)
+
+### 6.3 Conversation Linking
+
+Regardless of Move or Copy, a `ConversationLink` record is created:
+
+```ts
+type ConversationLink = {
+  id: string;
+  originChatId: string;
+  destinationChatId: string;
+  originMessageIds: string[];       // the specific messages that were extracted
+  operationType: 'move' | 'copy';
+  inflectionMessageId: string;      // the first message of the shift
+  createdAt: string;
+  createdBy: 'system' | 'user';     // whether the split was AI-initiated or manual
+};
+```
+
+Both conversations surface this link in their respective "Linked conversations" menus accessible from the chat header. The relationship is bidirectional. If the destination chat is later itself split or linked, the full chain remains navigable (grandparent, parent, child — consistent with the existing Linked Conversations lineage model).
+
+---
+
+## 7. Memory Routing
+
+### 7.1 Neurigraph Scope Assignment
+
+Memory nodes (episodic, semantic, and somatic) generated during the extracted portion of the conversation are re-scoped according to the operation type:
+
+**On Move:** All memory nodes whose `source_message_ids` include any of the extracted message IDs are reassigned to the destination folder or instance's Neurigraph partition. They are removed from the origin partition. This is the intended behavior: the moved content effectively never happened in the origin context.
+
+**On Copy:** Memory nodes are duplicated into both partitions. The user's response to the memory scope prompt (Section 5.3) can override this to destination-only if preferred.
+
+### 7.2 Memory Integrity
+
+Memory nodes are never partially migrated. If a node was generated from a message set that spans both extracted and non-extracted messages, the system:
+1. Flags the node for review
+2. Presents the user with a brief prompt: "This memory was built from messages in both locations. Which context should own it?" — with options: `Origin`, `Destination`, `Both`
+3. Applies the user's selection before closing the panel
+
+This prevents orphaned or duplicated memory nodes that would cause incorrect retrieval in either context.
+
+---
+
+## 8. ChatNav Integration
+
+The split operation interacts with the ChatNav system in the following ways:
+
+**Origin chat:** Any ChatNav checkpoints that corresponded to the extracted messages are removed (on Move) or annotated with a "also in [destination]" tag (on Copy). The ChatNav date index and session groupings update automatically.
+
+**Destination chat:** A new ChatNav index is generated for the destination chat starting from the extracted messages. If the destination chat already had existing content, the extracted messages are appended and new checkpoints are generated for the combined thread.
+
+**Fast onboarding:** Because ChatNav provides navigable summaries, a persona or new participant joining the destination chat after a split can immediately orient to the context of the extracted content without reading the full extracted history. This is the same onboarding mechanism described in the ChatNav spec for new participants and forks.
+
+---
+
+## 9. UX Notes
+
+**The notification tone matters.** The overlay notification should feel like a helpful colleague tapping you on the shoulder, not a system alarm. The language should be plain and conversational: "Looks like this shifted to a different topic. Want to move it?" — not "TOPIC DRIFT DETECTED."
+
+**Pre-selection should err on the side of more.** It is easier for a user to deselect a few messages than to scroll back and re-select them. The system should be inclusive in its initial selection rather than conservative.
+
+**The flow must be reversible.** Until the user hits Confirm, nothing has happened. If the user closes the panel at any point, the conversation is exactly as it was. Confirmations should not be buried or ambiguous.
+
+**Move is the power option, Copy is the safe default.** The UI should present Copy as the default-selected option, since it is non-destructive. Move should require a slightly more deliberate interaction — a clear label, and if desired, a brief one-line note: "The selected messages will be removed from this conversation."
+
+**On mobile,** the panel should be a full-screen modal with the same functionality, accessed identically via the long-press message menu or the ChatNav sidebar.
+
+---
+
+## 10. Acceptance Criteria
+
+- [ ] System detects a topic shift with no false positives on tangential exchanges of 1–2 messages
+- [ ] Shift notification appears as a UI overlay and is confirmed to write nothing to the conversation record, ChatNav index, or Neurigraph memory
+- [ ] Notification auto-dismisses after configurable timeout without side effects
+- [ ] Split Review panel pre-selects messages from the detected inflection point forward
+- [ ] User can modify the selection (add, remove, non-contiguous selections) without constraints beyond the minimum of 1 message
+- [ ] Destination picker surfaces the system's best guess and allows full override
+- [ ] "New folder" and "New instance" are accessible inline without leaving the panel
+- [ ] Move operation removes selected messages from origin chat record
+- [ ] Copy operation leaves origin chat fully intact
+- [ ] Memory nodes are correctly re-scoped per the operation type and user choices
+- [ ] Spanning memory nodes (across extracted and non-extracted messages) prompt the user for scope resolution
+- [ ] Destination chat is created with the extracted messages in chronological order
+- [ ] "Branched from" banner appears in the destination chat
+- [ ] ConversationLink record is created and accessible from both chats' header menus
+- [ ] ChatNav in both chats reflects the post-split state correctly
+- [ ] The full flow is completable on mobile
+- [ ] The operation is fully reversible up to and excluding the Confirm action
+- [ ] No part of the notification or panel UI becomes part of the conversation history
+
+---
+
+## 11. Dependencies
+
+- **ChatNav** — checkpoint generation and update on split must be implemented and stable
+- **Linked Conversations** — ConversationLink data model and header UI must be in place
+- **Folder System** — destination picker relies on the folder/instance tree and move API
+- **Neurigraph Memory Architecture** — memory re-scoping requires the partition model to support message-level provenance on nodes
+- **Automatic Chat Cleanup (Part 14)** — shares topic classification logic; the detection engine for this feature should be built on the same classifier to avoid duplication
+- **Message-level action menu (`⋯`)** — manual trigger requires the per-message action menu to support "Split from here" as a menu item
+
+---
+
+## 12. Implementation Notes
+
+The topic shift detector should be implemented as a lightweight side-channel inference pass, not as part of the main response generation cycle. It should run asynchronously after each assistant response and evaluate the last N message embeddings against the conversation's baseline topic embedding. This keeps it from adding latency to the user's primary chat experience.
+
+The ConversationLink record should be created atomically with the message extraction. If the extraction succeeds but the link creation fails, the system must roll back the extraction entirely. Partial state (messages moved but no link record) is not acceptable.
+
+The trace marker in the origin chat after a Move is a read-only UI element stored as metadata on the conversation record, not as a message. It must not appear in any message array, context window injection, or memory retrieval result.
+
+The system must never allow a message to exist in zero locations. If a Move operation fails mid-execution (e.g., the destination chat creation fails), the original messages must remain in the origin chat. Failure recovery must always favor preserving the origin state.
+
+---
+
+## 13. Open Decisions
+
+**13.1 Trace marker on Move:** Should the origin chat show a subtle "N messages moved to [destination]" marker at the extraction point, or should the removal be completely clean with no trace? Arguments for the marker: continuity and comprehension for anyone reading the origin chat later. Arguments against: the stated intent of Move is that the content "never happened here." This is a product philosophy decision.
+
+**13.2 Notification sensitivity tuning:** Should the user be able to configure the sensitivity of the topic shift detector (low / medium / high), or should this be a fixed internal threshold? Configurable is more flexible; fixed is simpler to support and less likely to cause user confusion.
+
+**13.3 Retroactive splits on closed conversations:** Should the user be able to initiate a manual split on a conversation that has been closed or archived, not just active ones? The manual trigger path technically supports this, but it requires defining behavior for memory re-scoping when the origin conversation is no longer active.
+
+**13.4 Bulk multi-destination splits:** Currently the feature assumes a single destination per split operation. A future extension could allow the user to route different message selections to different destinations in one pass (e.g., messages 10–15 go to Folder A, messages 20–25 go to Folder B). This is not in scope for v1 but the data model should not preclude it.

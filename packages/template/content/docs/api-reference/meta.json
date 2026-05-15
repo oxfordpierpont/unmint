@@ -1,0 +1,12 @@
+{
+  "title": "API Reference",
+  "pages": [
+    "index",
+    "introduction",
+    "modules",
+    "os",
+    "platform",
+    "sdk"
+  ],
+  "defaultOpen": true
+}

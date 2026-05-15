@@ -1,0 +1,13 @@
+{
+  "title": "SDK",
+  "pages": [
+    "index",
+    "overview",
+    "capabilities-apis",
+    "client-cli",
+    "manifest-contracts",
+    "platform-app-apis",
+    "schemas"
+  ],
+  "defaultOpen": true
+}

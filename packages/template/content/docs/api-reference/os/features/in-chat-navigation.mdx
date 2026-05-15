@@ -1,0 +1,35 @@
+---
+title: "In-chat navigation"
+description: "Feature-level API contract for chat navigation, checkpoints, topic maps, and jump-to-context behavior."
+---
+## Contract status
+
+`Derived implementation contract`
+
+## Source document
+
+- [In-chat navigation](/docs/knowledge-base/aiconnected-os/aiconnected-os-17-in-chat-navigation)
+
+## Feature purpose
+
+Defines the navigation layer that lets users and personas move across long-running conversations safely.
+
+## Required operations
+
+- Create and retrieve semantic checkpoints
+- Group sessions or topics for navigation
+- Jump to a prior section with summary context
+- Expose navigation metadata to the AI for semantic routing
+
+## Suggested resources
+
+- `chat_checkpoints`
+- `chat_topic_maps`
+- `navigation_entries`
+- `navigation_summaries`
+
+## Implementation notes
+
+- Keep this feature workspace-scoped and persona-aware where applicable.
+- Preserve authorship, timestamps, and auditability for all state changes.
+- Treat the source doc as the behavioral specification even where final route names remain open.

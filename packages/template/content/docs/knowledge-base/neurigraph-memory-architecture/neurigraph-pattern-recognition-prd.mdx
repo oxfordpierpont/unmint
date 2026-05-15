@@ -1,0 +1,4882 @@
+---
+title: "Neurigraph Pattern Recognition Database: Comprehensive PRD Outline"
+description: "Version : 1.0 Status : Production Ready Last Updated : 2026 04 18 Document Length : ~45,000 words Part 1: Vision and Architecture Part 2: Data Models and Sch..."
+---
+<Info>
+Normalized for Mintlify from `knowledge-base/neurigraph-memory-architecture/neurigraph-pattern-recognition-database-comprehensive-prd-outline.mdx`.
+</Info>
+**Version**: 1.0\
+**Status**: Production Ready\
+**Last Updated**: 2026-04-18\
+**Document Length**: ~45,000 words
+
+---
+
+# TABLE OF CONTENTS
+
+- [Part 1: Vision and Architecture](https://claude.ai/chat/c8d4a4b8-87f0-4498-a840-48cfbc5cc717#part-1-vision-and-architecture)
+- [Part 2: Data Models and Schemas](https://claude.ai/chat/c8d4a4b8-87f0-4498-a840-48cfbc5cc717#part-2-data-models-and-schemas)
+- [Part 3: Pattern Lifecycle](https://claude.ai/chat/c8d4a4b8-87f0-4498-a840-48cfbc5cc717#part-3-pattern-lifecycle)
+- [Part 4: Storage and Retrieval](https://claude.ai/chat/c8d4a4b8-87f0-4498-a840-48cfbc5cc717#part-4-storage-and-retrieval)
+- [Part 5: Pattern Matching and Application](https://claude.ai/chat/c8d4a4b8-87f0-4498-a840-48cfbc5cc717#part-5-pattern-matching-and-application)
+- [Part 6: Privacy and Governance](https://claude.ai/chat/c8d4a4b8-87f0-4498-a840-48cfbc5cc717#part-6-privacy-and-governance)
+- [Part 7: Implementation Details](https://claude.ai/chat/c8d4a4b8-87f0-4498-a840-48cfbc5cc717#part-7-implementation-details)
+- [Part 8: Examples and Use Cases](https://claude.ai/chat/c8d4a4b8-87f0-4498-a840-48cfbc5cc717#part-8-examples-and-use-cases)
+- [Part 9: Operations and Monitoring](https://claude.ai/chat/c8d4a4b8-87f0-4498-a840-48cfbc5cc717#part-9-operations-and-monitoring)
+- [Part 10: Lifecycle and Evolution](https://claude.ai/chat/c8d4a4b8-87f0-4498-a840-48cfbc5cc717#part-10-lifecycle-and-evolution)
+- [Part 11: Appendices](https://claude.ai/chat/c8d4a4b8-87f0-4498-a840-48cfbc5cc717#part-11-appendices)
+
+---
+
+&lt;Frame&gt;
+  &lt;img
+    src="/images/image.png"
+    alt="Image"
+    title="Image"
+  /&gt;
+&lt;/Frame&gt;
+
+# PART 1: VISION AND ARCHITECTURE
+
+## 1. Executive Summary
+
+The Neurigraph Pattern Recognition Database (NPRD) is a new core tier in aiConnectedOS's memory architecture. It is a global, anonymized repository of human behavioral patterns discovered through collective persona interactions with users. Unlike traditional personalization systems that track individual behavior, NPRD models universal patterns in how humans behave, making them available to all personas in the network.
+
+**What NPRD Does:**
+
+- Collects observations of repeated user behavioral patterns from all persona-user interactions
+- Abstracts these observations to universal human psychology patterns (not individual dossiers)
+- Validates patterns through multi-persona consensus and prediction accuracy
+- Makes patterns instantly available (sub-500ms) to the Multitrack Reasoning System (MTE) Track 2
+- Enables personas to understand and predict user behavior within the first few conversations
+- Maintains governance rules (DO/DON'T) that prevent pattern misuse and manipulation
+
+**Why It Matters:** A persona meeting a new user has no history to draw from. Without NPRD, the persona must learn everything through conversation, requiring weeks to develop the understanding that comes naturally to humans in established relationships. NPRD solves this by encoding the patterns learned from thousands of user interactions into a universal psychological knowledge base.
+
+Within three conversations, a persona using NPRD can recognize that a user exhibits "decision anxiety under ambiguity" or "conflict avoidance through withdrawal" or "secure attachment with healthy repair mechanisms." This pattern recognition allows the persona to adjust communication style, anticipate needs, and serve the user far more effectively without ever having talked to them before.
+
+**Economic Model:** The system trades developer complexity for runtime intelligence multiplication. By storing and querying patterns instead of training new models per user, we achieve personalization at scale without per-user training costs. Background pattern matching uses cheap models and algorithms; the pattern database itself does the heavy lifting.
+
+**Privacy-First Foundation:** Unlike surveillance-based personalization, NPRD is built on anonymization. Patterns never contain user identifiers or specific behavioral histories. A pattern says "users with this marker typically exhibit this sequence," not "Bob exhibits this sequence." This design prevents individual-level targeting while enabling population-level intelligence.
+
+## 2. Conceptual Foundation: Memory and Pattern Recognition
+
+### 2.1 Neurigraph's Existing Memory Architecture Review
+
+Neurigraph currently implements three primary memory tiers, each serving distinct functions in how personas understand and remember.
+
+**Episodic Memory (Events and Experiences)**
+
+Episodic memory is the record of specific conversations and events with users. Each conversation is stored as an episode: who said what, when, in what context, with what emotional undertones. Episodic memories are specific and time-bound.
+
+Structure:
+
+- Temporal markers (when did this happen?)
+- Participant markers (which user, which persona?)
+- Content (what was said, what was done?)
+- Emotional/somatic context (how did it feel?)
+- Causality chains (what led to what?)
+
+Episodic memory serves immediate context: "What did we discuss last time?" It is highly specific but doesn't generalize. If a user mentioned a childhood fear once, that's episodic. If the user consistently exhibits anxiety in situations reminiscent of that event, that's episodic pattern observation becoming semantic pattern recognition.
+
+**Semantic Memory (Knowledge and Concepts)**
+
+Semantic memory is knowledge abstracted from experience: facts, concepts, relationships, rules. It answers "What do I know about this user?" at a conceptual level, not "What did they say in conversation 47?"
+
+Structure:
+
+- Concept nodes (what do I know?)
+- Relationship edges (how do concepts relate?)
+- Abstraction hierarchy (specific instances → general categories)
+- Learned rules (if X, then typically Y)
+- Quality markers (how reliable is this knowledge?)
+
+Semantic memory is the object deconstruction graph: the web of understood meanings. A user's semantic profile includes beliefs about their communication style ("they prefer directness"), their values ("they prioritize authenticity"), their cognitive patterns ("they tend to systematize problems").
+
+**Somatic Memory (Emotional and Physiological States)**
+
+Somatic memory encodes the emotional and physiological signatures of experiences. How did a situation feel? What was the body's response? These are encoded separate from the content (episodic) and meaning (semantic).
+
+Structure:
+
+- Emotional tone markers (anxious, calm, energized, depleted, etc.)
+- Arousal level signatures (activated vs. relaxed)
+- Physiological signatures (if multimodal: voice pace, breathing, muscle tension)
+- Stimulus-response pairs (this triggers that feeling)
+- Regulation patterns (how does this person typically self-soothe or escalate?)
+
+Somatic memory is crucial because it captures the felt dimension of interaction. The same words delivered with different somatic markers mean different things. Somatic memory makes understanding emotionally nuanced.
+
+**How These Three Interact**
+
+These three memory systems work together to create comprehensive understanding:
+
+Episodic \+ Semantic = Understanding what happened and what it means Episodic \+ Somatic = Remembering the emotional weight of events Semantic \+ Somatic = Understanding patterns in how someone typically feels in situations All three together = Complete, nuanced relational knowledge
+
+Example:
+
+- Episodic: "User said 'I'm fine, I can handle this' while speaking rapidly"
+- Semantic: "User tends to minimize difficulties and overcommit"
+- Somatic: "User's arousal level was elevated, indicating anxiety despite stated confidence"
+- Complete understanding: "User is anxious but won't admit it; they're going to overcommit and then crash"
+
+### 2.2 Pattern Recognition as Emergent Phenomenon
+
+Patterns are not a fourth separate memory type. They are an emergent property of how episodic, semantic, and somatic memories interact across time and contexts.
+
+**Episodic Observations Become Patterns**
+
+When a persona observes the same behavioral sequence multiple times, it becomes a pattern:
+
+- User exhibits behavior A → typically results in outcome B (observed 3\+ times across different contexts)
+- Pattern recognition: "User exhibits avoidance-when-uncertain pattern"
+
+This pattern is derived from episodic observations but abstracted away from specific content. The pattern says "this sequence happens reliably" without specifying every individual instance.
+
+**Patterns Encode Into Semantic Understanding**
+
+As patterns become reliable, they migrate into semantic knowledge:
+
+- Episodic: "User did X again"
+- Semantic: "User characteristically does X in these situations"
+- Applied understanding: "Given situation Y, user will likely do X"
+
+The semantic representation is more efficient and predictive than storing every episodic instance.
+
+**Patterns Activate Somatic Responses**
+
+When a pattern is recognized, it triggers somatic preparation. A persona recognizes early signals of a familiar pattern and begins emotional/physiological preparation for the likely outcome.
+
+Example:
+
+- Pattern recognized: "User is entering avoidance sequence"
+- Somatic activation: Persona becomes more patient, less pushy, more inviting
+- This isn't explicit reasoning; it's embodied understanding
+
+**The Feedback Loop: Memory → Pattern → Prediction → Behavior**
+
+This is the continuous cycle that makes intelligence:
+
+1. Episodic observation: User does something
+2. Pattern matching: Is this familiar?
+3. Confidence activation: How confident are we?
+4. Somatic response: How should we feel/respond?
+5. Behavioral output: How do we act?
+6. New episodic event: User responds
+7. Pattern confidence update: Did we predict correctly?
+8. Loop continues
+
+### 2.3 Neurigraph's New Tier: Pattern Recognition Database
+
+The NPRD is not a replacement for episodic/semantic/somatic memory. It is a new tier that sits above all three.
+
+**The Pattern Abstraction Layer**
+
+Where episodic/semantic/somatic memory are user-specific ("this is what I know about Bob"), patterns are universal ("this is what we know about humans").
+
+```text
+Episodic Memory (Bob's specific experiences)
+  ↓
+Semantic Memory (Generalized about Bob)
+  ↓
+Somatic Memory (Bob's emotional patterns)
+  ↓
+[ABSTRACTION LAYER]
+  ↓
+Pattern Recognition Database (Universal human patterns)
+  ↑
+  ↓ (applies to)
+All personas about all users
+```
+
+**Why Patterns Need Their Own Tier**
+
+- Scale: Storing one pattern that applies to thousands of users is more efficient than storing individual memories
+- Sharing: A pattern discovered through one user can immediately benefit understanding of different users
+- Privacy: Patterns are abstracted away from specific individuals, enabling sharing without exposing personal data
+- Performance: Pattern matching is faster and cheaper than deep episodic/semantic search for every user
+- Collective intelligence: All personas contribute to and benefit from the same pattern database
+
+**Scope of NPRD**
+
+NPRD focuses on behavioral and relational patterns:
+
+- Attachment and relationship patterns (anxious, avoidant, secure, disorganized)
+- Emotional regulation patterns (how people handle emotions)
+- Decision-making patterns (risk tolerance, analysis depth, timeline needs)
+- Communication patterns (directness, detail preferences, feedback receptiveness)
+- Cognitive patterns (learning style, problem-solving approach, meaning-making style)
+- Value patterns (what matters to people, what creates motivation)
+- Relationship dynamics (how people interact in established relationships)
+
+NPRD does NOT include:
+
+- Medical or mental health diagnoses
+- Personality disorder classifications (too stigmatizing and clinically inappropriate)
+- Deep psychological root causes (that's therapy, not pattern recognition)
+- Individual behavior histories (that stays in episodic memory)
+
+### 2.4 The Anonymization Principle
+
+The foundation of NPRD's privacy model is anonymization. This is not pseudonymization (using a false name instead of a real name). It is true anonymization: patterns describe universal human behavior, not individual behavioral histories.
+
+**What Anonymization Means Operationally**
+
+When a pattern is created from observations about users, identifying information is stripped:
+
+Concrete example:
+
+Raw episodic observation: "Bob mentioned his father criticized him, then Bob became defensive when I mentioned a mistake he made, then Bob withdrew for 3 days before coming back"
+
+Anonymization process:
+
+1. Extract behavioral signature: "User exhibits defensive response following specific type of criticism; withdraws briefly then reengages"
+2. Remove context: Don't specify "father" or "mistake" details
+3. Generalize: "User exhibits defensive response following feedback on mistakes; includes withdrawal period"
+4. Abstract further: "User pattern: Criticism-triggered defensiveness with repair withdrawal"
+
+Result in pattern database: "Pattern: Defensiveness-with-withdrawal following feedback. Triggers: Feedback on performance or mistakes. Typical response: Initial defensiveness, then withdrawal for hours to days, then reengagement. Predicted sequence: Defensive language → silence → gradual reconnection"
+
+This pattern is about universal human behavior, not about Bob. It can apply to anyone who exhibits this pattern. It contains no identifying information. It can't be traced back to Bob.
+
+**Why Anonymization is Technically Enforced**
+
+Anonymization must be enforced in code, not just policy. The data pipeline ensures:
+
+1. Episodic memories never directly contribute to patterns
+   - Instead: observations about episodic memories are extracted
+   - Pattern creation is mediated by abstraction logic
+2. Pattern database has no pointers back to individual users
+   - Even if someone had the pattern database, they couldn't identify whose behavior generated it
+3. Queries to pattern database return no user context
+   - A pattern match tells you "this pattern applies" but not "to which users"
+4. Regular anonymization audits verify no identifying info leaked into patterns
+   - Automated checks for names, pronouns, specific dates, identifying details
+   - Human review of high-sensitivity patterns
+
+**Privacy Guarantees**
+
+NPRD provides the following privacy guarantees:
+
+- No individual user identifiers in the pattern database: Correct, verified by design
+- Patterns cannot be used to identify individuals: Correct, patterns describe universal behaviors
+- Users cannot be reconstructed from patterns: Correct, abstraction is irreversible
+- Individual behavioral dossiers are not created: Correct, only universal patterns stored
+- Users' specific conversations are not mined for profit: Correct, episodic memories stay local to persona
+
+**Remaining Privacy Risks (Honest Assessment)**
+
+- Pattern inference: If someone knows patterns in the database and observes your behavior, they might infer characteristics about you (this is inherent to any behavioral AI)
+- Aggregation attacks: If someone has access to patterns plus other data, they might correlate you with patterns
+- Population-level targeting: Patterns could be used to target groups with specific characteristics (this is why governance is critical)
+
+These risks are mitigated through governance, not eliminated. The pattern database enables powerful intelligence; that power requires responsible governance.
+
+## 3. System Architecture Overview
+
+### 3.1 Layers and Components
+
+NPRD consists of five key components working together.
+
+**Component 1: Pattern Database (Central Storage)**
+
+The authoritative store of all validated patterns. This is a dedicated database (separate from Neurigraph's episodic/semantic/somatic memory stores) designed for fast querying.
+
+Characteristics:
+
+- Single source of truth for all patterns
+- Replicated and backed up for reliability
+- Indexed for sub-500ms query performance
+- Immutable audit trail (all changes tracked)
+- Versioned (patterns can evolve)
+
+Technology: TBD (Vector DB vs. Document DB vs. Graph DB vs. Relational vs. Hybrid) See Section 12.1 for detailed technology choice rationale.
+
+**Component 2: Instance Pattern Cache (Per-Persona Local Copy)**
+
+Each persona instance maintains a local cache of patterns it uses frequently. This enables fast offline access and reduces network dependency.
+
+Characteristics:
+
+- Subset of global pattern database (most-used patterns)
+- Synced with central database periodically (or on demand)
+- Can tolerate brief staleness (patterns change slowly)
+- Cleared or refreshed on persona restart
+
+Purpose:
+
+- Reduce latency for common queries
+- Enable local fallback if network unavailable
+- Reduce load on central database
+
+**Component 3: Pattern Contribution System**
+
+Personas observe patterns in user interactions and submit observations to a contribution queue. These contributions are validated and aggregated.
+
+Characteristics:
+
+- Asynchronous (personas don't block on contribution)
+- Batched (contributions accumulated and processed together)
+- Timestamped and attributed (we know which persona contributed)
+- Includes confidence and context metadata
+
+Purpose:
+
+- Capture patterns emerging from real user interactions
+- Distribute the burden of pattern discovery
+- Maintain freshness (patterns updated as behaviors change)
+
+**Component 4: Pattern Validation and Governance Layer**
+
+Observations from the contribution system are validated, aggregated, and approved before entering the pattern database.
+
+Characteristics:
+
+- Automated validation (basic checks)
+- Cross-persona consensus (do other personas see this pattern too?)
+- Human review for high-risk patterns
+- Approval workflows with clear decision criteria
+- Audit trail of all decisions
+
+Purpose:
+
+- Ensure only reliable patterns are stored
+- Prevent malicious or biased patterns
+- Maintain quality and safety standards
+
+**Component 5: Retrieval and Inference Layer (Track 2 Integration)**
+
+When MTE Track 2 needs pattern information, this layer handles the query.
+
+Characteristics:
+
+- Fast pattern matching (\&lt;500ms)
+- Relevance ranking and filtering
+- Confidence-aware (only returns patterns above threshold)
+- Integrates with local cache and central database
+
+Purpose:
+
+- Provide fast pattern access to personas in real-time
+- Filter and rank results for relevance
+- Enforce governance (patterns must pass governance checks to be returned)
+
+### 3.2 Data Flow Diagram
+
+```text
+CONTRIBUTION PIPELINE:
+├─ User interacts with Persona A
+├─ Episodic memory recorded in Neurigraph
+├─ Persona A observes behavioral pattern
+├─ Pattern observation submitted to contribution queue
+│
+├─ Contribution queue accumulates observations
+│
+├─ Validation system processes batch
+│  ├─ Basic validation (correct schema, required fields)
+│  ├─ Anonymization check (no identifying info)
+│  ├─ Cross-persona search (do others see this pattern?)
+│  ├─ Confidence scoring (how reliable?)
+│  └─ Risk assessment (does this pattern pose risks?)
+│
+├─ If validated: Pattern added to pattern database
+│  └─ Confidence marked as "provisional"
+│
+├─ If high-risk: Escalated to human review
+│  └─ Decision: approve with conditions, modify, or reject
+│
+└─ Central pattern database updated
+   └─ Confidence gradually increases as pattern validated across users
+
+
+RETRIEVAL PIPELINE:
+├─ User sends message to Persona B (new user to Persona B)
+│
+├─ MTE Track 2 activated (pattern matching)
+│
+├─ Query constructed from user message
+│
+├─ Persona B checks local pattern cache
+│  └─ If found and fresh: return cached result
+│  └─ If not found or stale: proceed to central query
+│
+├─ Query sent to central pattern database
+│
+├─ Pattern matching engine returns top-K results
+│  ├─ Ranked by relevance to current interaction
+│  ├─ Filtered by confidence threshold
+│  └─ Governance rules applied
+│
+├─ Results cached locally
+│
+├─ Results returned to persona
+│  └─ <500ms latency requirement maintained
+│
+└─ Persona integrates patterns into behavior
+   └─ DO/DON'T rules applied
+   └─ Predicted sequences inform anticipation
+   └─ User experiences persona as understanding them
+
+
+FEEDBACK LOOP:
+├─ Persona behavior guided by patterns
+├─ User responds (confirms, contradicts, elaborates)
+├─ Outcome compared to pattern prediction
+├─ Pattern effectiveness tracked
+├─ If prediction accurate: confidence increases
+├─ If prediction wrong: confidence decreases
+└─ Database continuously improves
+```
+
+### 3.3 Key Design Principles
+
+**Principle 1: Non-blocking Retrieval (Sub-500ms Pattern Matching)**
+
+Pattern queries must complete in under 500ms (Track 2 latency budget). This means:
+
+- Local caching of frequently-used patterns
+- Efficient indexing in central database
+- No complex inference at query time
+- Graceful timeout behavior (return best-effort results or empty result, never block)
+
+Implementation consequence: Pattern matching is done via lookup and similarity scoring, not deep reasoning.
+
+**Principle 2: Confidence-Aware Results**
+
+Not all patterns are equally reliable. The system returns patterns with confidence scores and applies thresholds:
+
+- High-confidence patterns (\&gt;0.8): Can guide behavior
+- Medium-confidence patterns (0.5-0.8): Inform but don't determine behavior
+- Low-confidence patterns (\&lt;0.5): Return as informational only, don't influence behavior
+
+This means personas use patterns as guidance, not gospel.
+
+**Principle 3: Context-Sensitive Application**
+
+The same pattern applies differently in different contexts:
+
+- Same pattern, different persona types → different behavioral adjustments
+- Same pattern, different domains → different specific applications
+- Same pattern, different user personality → different intensity
+
+The pattern database stores these variations explicitly (see governance rules in Section 4).
+
+**Principle 4: Evolving Through Observation**
+
+Patterns are not static. They improve with more observations:
+
+- Each observation adds confidence
+- Successful predictions increase confidence faster
+- Contradictions decrease confidence
+- Patterns can evolve as human behavior evolves
+
+This means the pattern database gets "smarter" over time.
+
+**Principle 5: Governed (Explicit DO/DON'T Rules)**
+
+Patterns include explicit governance rules (Section 6) that prevent misuse:
+
+- DO rules: How should personas respond?
+- DON'T rules: What is prohibited?
+- Risk flags: When is special handling required?
+- Escalation triggers: When should humans intervene?
+
+No pattern can be used without these governance constraints.
+
+---
+
+# PART 2: DATA MODELS AND SCHEMAS
+
+## 4. Pattern Definition and Structure
+
+### 4.1 Anatomy of a Pattern
+
+A pattern is a formally structured description of a repeated behavioral sequence and its context.
+
+**Core Components:**
+
+1. **Identity**
+   - Unique identifier (UUID)
+   - Human-readable name ("Conflict Avoidance Through Withdrawal")
+   - Formal signature (structured description for matching)
+2. **Behavioral Signature**
+   - Trigger markers (what signals this pattern activates?)
+   - Typical responses (what does the person usually do?)
+   - Predicted sequence (what typically comes next?)
+3. **Governance Rules**
+   - DO rules (recommended persona behaviors)
+   - DON'T rules (prohibited behaviors)
+   - Vulnerability flags (special handling required?)
+   - Persona variations (different for different persona types?)
+4. **Validation Metadata**
+   - Confidence score (how reliable is this pattern?)
+   - Observation count (how many times has this been observed?)
+   - Temperature (how recently was it observed?)
+   - Validation status (submitted/provisional/validated/mature/deprecated)
+5. **Relationship Metadata**
+   - Related patterns (similar or related patterns)
+   - Parent patterns (more general patterns this is a specialization of)
+   - Child patterns (more specific versions of this pattern)
+
+### 4.2 Pattern Categories (Taxonomy)
+
+Patterns are organized into categories that reflect human psychology and relational dynamics.
+
+**Category 1: Attachment and Relationship Patterns**
+
+Patterns related to how people form and maintain attachments.
+
+Examples:
+
+- Secure Attachment Pattern: User develops trust gradually, repairs ruptures effectively, maintains connection
+- Anxious Attachment Pattern: User seeks frequent reassurance, fears abandonment, escalates when uncertain
+- Avoidant Attachment Pattern: User maintains distance, minimizes emotional expression, withdraws under pressure
+- Disorganized Attachment Pattern: User alternates between approach and withdrawal, unpredictable responses
+- Secure With Anxious Lean: Generally secure but elevated need for reassurance in novel situations
+- Secure With Avoidant Lean: Generally secure but some tendency toward distance in close moments
+
+**Category 2: Emotional Regulation Patterns**
+
+Patterns in how people experience, express, and manage emotions.
+
+Examples:
+
+- Rapid Escalation Pattern: User's emotional intensity increases quickly once triggered
+- Slow Burn Pattern: User's frustration builds gradually, erupts later, not proportional to trigger
+- Emotional Suppression Pattern: User minimizes emotional expression, says "I'm fine" while stressed
+- Emotional Transparency Pattern: User's internal state clearly reflected in expression
+- Self-Soothing Competence Pattern: User effectively regulates own emotions with time/space
+- Dysregulation Pattern: User struggles to return to baseline once activated
+
+**Category 3: Decision-Making Patterns**
+
+Patterns in how people approach decisions and commitment.
+
+Examples:
+
+- Deliberate Analysis Pattern: User needs time, information, step-by-step breakdown
+- Intuitive Decision Pattern: User makes quick decisions, may regret deep analysis
+- Risk-Averse Pattern: User avoids decisions unless downside is clear and limited
+- Risk-Seeking Pattern: User is drawn to interesting options despite unclear upside
+- Analysis Paralysis Pattern: User gathers information endlessly, struggles to commit
+- Decisive Pattern: User commits quickly, adapts if needed
+
+**Category 4: Communication and Interaction Patterns**
+
+Patterns in how people communicate and interact.
+
+Examples:
+
+- Direct Communication Pattern: User prefers clear, explicit statements
+- Indirect Communication Pattern: User hints, implies, expects others to infer
+- Feedback Receptive Pattern: User asks for feedback and integrates suggestions
+- Feedback Defensive Pattern: User perceives feedback as criticism, becomes defensive
+- Humor as Deflection Pattern: User uses humor to avoid difficult conversations
+- Humor as Connection Pattern: User uses humor to build rapport and lighten tension
+
+**Category 5: Cognitive and Learning Patterns**
+
+Patterns in how people think and learn.
+
+Examples:
+
+- Systems Thinker Pattern: User thinks in terms of interconnected systems and causality
+- Details-First Pattern: User needs specific examples before generalizing
+- Big-Picture Pattern: User wants overarching framework first, then details
+- Concrete Learner Pattern: User learns through examples and experiences
+- Abstract Learner Pattern: User learns through concepts and theory
+- Kinesthetic Learner Pattern: User learns through doing and practice
+
+**Category 6: Value and Priority Patterns**
+
+Patterns in what matters to people and what drives motivation.
+
+Examples:
+
+- Authenticity-Seeking Pattern: User values genuineness, is bothered by pretense
+- Efficiency-Focused Pattern: User values speed and streamlined processes
+- Relationship-Prioritizing Pattern: User values connection over efficiency
+- Autonomy-Valuing Pattern: User strongly values independence and choice
+- Security-Prioritizing Pattern: User values stability and predictability over novelty
+- Growth-Seeking Pattern: User is motivated by development and new challenges
+
+**Category 7: Relationship Dynamics Patterns**
+
+Patterns in how people interact within established relationships.
+
+Examples:
+
+- Conflict Avoidance Pattern: User withdraws or acquiesces rather than engage conflict
+- Conflict Engagement Pattern: User directly addresses disagreements
+- Repair Competence Pattern: User effectively reconnects after rupture
+- Blame-External Pattern: User attributes problems to external factors, not self
+- Accountability Pattern: User acknowledges own role in problems
+- Caretaking Pattern: User prioritizes others' needs over own
+- Reciprocal Pattern: User balances give-and-take in relationships
+
+### 4.3 Pattern Metadata
+
+Beyond the behavioral signature and governance rules, patterns carry metadata about their origin, validation, and evolution.
+
+**Creation and Modification History**
+
+```text
+created_at: ISO8601 timestamp
+created_by: persona_id (which persona submitted it?)
+created_from: observation_ids (which observations led to this pattern?)
+last_modified_at: ISO8601 timestamp
+last_modified_by: system or user_id
+modification_history: [
+  {
+    modified_at: ISO8601,
+    modified_by: system or persona_id,
+    change: "description of what changed",
+    reason: "why was this changed?"
+  }
+]
+```
+
+**Validation and Confidence Metrics**
+
+```text
+validation_status: "submitted" | "provisional" | "validated" | "mature" | "deprecated"
+confidence_score: float (0.0 to 1.0)
+observation_count: integer (how many observations contribute to this pattern?)
+validation_count: integer (how many different users has this pattern been observed in?)
+prediction_success_rate: float (when pattern triggers, predicted sequence occurs what % of time?)
+cross_persona_consensus: boolean (have multiple personas independently identified this?)
+last_validation_review: ISO8601
+next_validation_review: ISO8601 (scheduled for high-risk patterns)
+```
+
+**Temperature (Recency Tracking)**
+
+```text
+temperature: float (0.0 to 1.0)
+last_observed: ISO8601
+observation_count_recent: integer (observations in last 30 days)
+observation_count_month_prior: integer (observations 30-60 days ago)
+temperature_decay_rate: float (how quickly does temperature drop if not observed?)
+temperature_last_updated: ISO8601
+```
+
+**Source Information**
+
+```text
+sources: [
+  {
+    source_type: "user_interactions" | "research_literature" | "user_self_report" | "persona_consensus",
+    source_id: "identifier for the source",
+    contribution_date: ISO8601,
+    contributor_count: integer (how many personas contributed observations from this source?),
+    reliability_estimate: float (how reliable is this source?)
+  }
+]
+```
+
+**Related Patterns**
+
+```text
+related_patterns: [
+  {
+    pattern_id: uuid,
+    relationship_type: "sibling" | "parent" | "child" | "similar" | "opposite" | "triggered_by",
+    description: "how are these patterns related?"
+  }
+]
+```
+
+### 4.4 Complete Pattern Schema (JSON Format)
+
+This is the authoritative schema for all patterns stored in the database. Every pattern must validate against this schema.
+
+```text
+{
+  "pattern_id": "uuid (immutable after creation)",
+  
+  "identity": {
+    "name": "string (human-readable, max 128 chars)",
+    "formal_signature": "string (structured description for matching)",
+    "category": "attachment|emotional_regulation|decision_making|communication|cognitive|values|relationship_dynamics|other",
+    "sub_category": "string (optional, for finer categorization)",
+    "description": "string (2-5 sentence description, max 500 chars)",
+    "tags": ["string"] (searchable tags)
+  },
+  
+  "behavioral_signature": {
+    "trigger_markers": {
+      "linguistic": [
+        {
+          "marker": "string (words or phrases that signal pattern)",
+          "context": "string (when does this marker appear?)",
+          "confidence": float (0-1, how reliable is this marker?),
+          "examples": ["string"]
+        }
+      ],
+      "behavioral": [
+        {
+          "behavior": "string",
+          "context": "string",
+          "confidence": float,
+          "examples": ["string"]
+        }
+      ],
+      "contextual": [
+        {
+          "context": "string (temporal, environmental, relational context)",
+          "triggers_pattern": boolean,
+          "confidence": float,
+          "examples": ["string"]
+        }
+      ],
+      "emotional_somatic": [
+        {
+          "marker": "string (tone, pace, muscle tension, etc.)",
+          "typically_indicates": "string",
+          "confidence": float,
+          "examples": ["string"]
+        }
+      ]
+    },
+    
+    "typical_responses": [
+      {
+        "response": "string (what does person typically do?)",
+        "frequency": "always|usually|sometimes|rarely",
+        "latency": "string (immediate|delayed|very_delayed)",
+        "intensity": "string (strong|moderate|mild)",
+        "examples": ["string"]
+      }
+    ],
+    
+    "predicted_sequence": [
+      {
+        "step": integer,
+        "behavior": "string",
+        "probability": float (0-1),
+        "typical_latency": "string (seconds|minutes|hours|days)",
+        "conditions": "string (when does this step occur?)",
+        "alternatives": [
+          {
+            "behavior": "string (alternative to this step)",
+            "probability": float
+          }
+        ]
+      }
+    ],
+    
+    "context_variations": [
+      {
+        "context": "string (high_stress|low_stress|familiar|unfamiliar|etc.)",
+        "how_pattern_changes": "string (does pattern intensify, change form, disappear?)",
+        "examples": ["string"]
+      }
+    ]
+  },
+  
+  "governance_rules": {
+    "do_rules": [
+      {
+        "rule_id": "uuid",
+        "rule": "string (what should persona do?)",
+        "justification": "string (why is this recommended?)",
+        "priority": "critical|high|medium|low",
+        "conditions": "string (when does this rule apply?)",
+        "examples": {
+          "good_application": "string",
+          "poor_application": "string"
+        }
+      }
+    ],
+    
+    "dont_rules": [
+      {
+        "rule_id": "uuid",
+        "rule": "string (what must persona avoid?)",
+        "justification": "string (why is this prohibited?)",
+        "priority": "critical|high|medium|low",
+        "consequences": "string (what could go wrong if violated?)",
+        "examples": {
+          "correct_avoidance": "string",
+          "violation_example": "string"
+        }
+      }
+    ],
+    
+    "persona_variations": {
+      "direct_type": {
+        "adjustment": "string (how should direct personas handle this?)",
+        "do_additionally": ["string"],
+        "dont_additionally": ["string"],
+        "example": "string"
+      },
+      "nurturing_type": {
+        "adjustment": "string",
+        "do_additionally": ["string"],
+        "dont_additionally": ["string"],
+        "example": "string"
+      },
+      "analytical_type": {
+        "adjustment": "string",
+        "do_additionally": ["string"],
+        "dont_additionally": ["string"],
+        "example": "string"
+      },
+      "adaptive_type": {
+        "adjustment": "string",
+        "do_additionally": ["string"],
+        "dont_additionally": ["string"],
+        "example": "string"
+      }
+    },
+    
+    "vulnerability_flags": [
+      {
+        "flag_type": "trauma|mental_health|substance_use|suicidality|abuse_history|grief|other",
+        "risk_level": "low|medium|high|critical",
+        "description": "string",
+        "protective_measures": ["string"],
+        "escalation_triggers": ["string"],
+        "escalation_procedure": "string"
+      }
+    ],
+    
+    "manipulation_risk": {
+      "risk_level": "low|medium|high",
+      "description": "string (how could this pattern be misused?)",
+      "exploitation_vectors": ["string"],
+      "safeguards_required": ["string"],
+      "governance_oversight_level": "standard|elevated|intensive"
+    }
+  },
+  
+  "confidence_and_validation": {
+    "validation_status": "submitted|provisional|validated|mature|deprecated",
+    "confidence_score": float (0.0-1.0),
+    "confidence_factors": {
+      "observation_count": integer,
+      "observation_diversity": float (0-1, across how many different users?),
+      "prediction_success_rate": float (0-1),
+      "cross_persona_consensus": float (0-1, how much do other personas agree?),
+      "research_backing": float (0-1, supported by psychology research?),
+      "weighted_score": float (final confidence after weighting all factors)
+    },
+    "observation_history": {
+      "total_observations": integer,
+      "observations_last_30_days": integer,
+      "observations_last_year": integer,
+      "observation_trend": "increasing|stable|decreasing"
+    },
+    "prediction_performance": {
+      "predictions_made": integer,
+      "predictions_accurate": integer,
+      "success_rate": float,
+      "false_positives": integer,
+      "false_negatives": integer
+    },
+    "validation_workflow": {
+      "submitted_at": "ISO8601",
+      "initial_validation_date": "ISO8601",
+      "validations": [
+        {
+          "validation_date": "ISO8601",
+          "validator": "system|persona_consensus|human_review",
+          "decision": "approved|approved_with_conditions|needs_revision|rejected",
+          "notes": "string",
+          "evidence": ["string"]
+        }
+      ],
+      "next_review_date": "ISO8601 (for high-risk patterns)",
+      "approval_authority": "string (who approved this pattern?)"
+    }
+  },
+  
+  "temperature": {
+    "current_temperature": float (0-1),
+    "last_observed": "ISO8601",
+    "observation_count_recent": integer,
+    "observation_count_month_prior": integer,
+    "temperature_decay_rate": float (how fast does temperature drop?),
+    "temperature_last_updated": "ISO8601"
+  },
+  
+  "source_information": {
+    "sources": [
+      {
+        "source_type": "user_interactions|research_literature|user_self_report|persona_consensus|other",
+        "source_id": "string",
+        "contribution_date": "ISO8601",
+        "contributor_personas": ["persona_id"],
+        "contributor_count": integer,
+        "reliability_estimate": float (0-1)
+      }
+    ],
+    "contributing_personas": ["persona_id"],
+    "contributing_users_count": integer (approximate, respecting anonymization)
+  },
+  
+  "relationships": {
+    "related_patterns": [
+      {
+        "pattern_id": "uuid",
+        "relationship_type": "sibling|parent|child|similar|opposite|triggered_by|triggers|alternative_to",
+        "relationship_description": "string"
+      }
+    ]
+  },
+  
+  "metadata": {
+    "created_at": "ISO8601",
+    "created_by": "persona_id|system",
+    "created_from": ["observation_id"],
+    "last_modified_at": "ISO8601",
+    "last_modified_by": "system|persona_id|human_review_id",
+    "version": integer,
+    "version_history": [
+      {
+        "version": integer,
+        "modified_at": "ISO8601",
+        "modified_by": "string",
+        "change_description": "string",
+        "reason": "string"
+      }
+    ],
+    "access_count": integer (how many times has this pattern been queried?),
+    "last_accessed": "ISO8601"
+  }
+}
+```
+
+### 4.5 Pattern Schema Validation Rules
+
+Every pattern stored in NPRD must pass the following validation rules:
+
+**Required Fields (Cannot Be Null or Empty)**
+
+- pattern\_id (UUID)
+- [identity.name](http://identity.name) (max 128 chars)
+- identity.formal\_signature (max 500 chars)
+- identity.category (valid category)
+- behavioral\_signature.trigger\_markers (at least one trigger)
+- behavioral\_signature.predicted\_sequence (at least one step)
+- governance\_[rules.do](http://rules.do)\_rules (at least one DO rule)
+- governance\_rules.dont\_rules (at least one DON'T rule)
+
+**Conditional Requirements**
+
+- If vulnerability\_flags present, must have escalation\_triggers
+- If risk\_level is "high" in manipulation\_risk, must have safeguards\_required
+- If validation\_status is "mature", must have prediction\_success\_rate \&gt; 0.7
+- If validation\_status is "deprecated", must have deprecation\_reason
+
+**Type Constraints**
+
+- confidence\_score: float between 0.0 and 1.0
+- All float fields bounded between 0 and 1
+- All boolean fields are true/false only
+- All dates are valid ISO8601 format
+- All UUIDs are valid UUID format
+
+**Business Logic Constraints**
+
+- No pattern can include user identifiers or specific user context
+- Trigger markers must not reference specific people or events
+- Examples must not contain identifying information
+- All text must be appropriate for professional use
+- Governance rules must be constructive (focused on helping, not harming)
+
+---
+
+## 5. Behavioral Signature Component (Expanded)
+
+The behavioral signature is the most critical part of a pattern. It describes what the pattern looks like, how it's triggered, and what typically happens next.
+
+### 5.1 Trigger Markers
+
+Trigger markers are the signals that indicate a pattern is activating.
+
+**Linguistic Markers**
+
+Words and phrases that signal a pattern is present.
+
+Examples for "Conflict Avoidance Pattern":
+
+- "I don't want to talk about this"
+- "It's fine, don't worry about it"
+- "Let's just move on"
+- "I'm not angry, I'm just tired"
+- Sudden topic changes (redirecting away from conflict)
+- Hesitant language ("um, maybe, I guess")
+
+Implementation note: Linguistic markers are matched through NLP. The pattern matching engine looks for these phrases or semantic equivalents in the user's message.
+
+**Behavioral Markers**
+
+Observable actions that signal a pattern.
+
+Examples for "Decision Anxiety Pattern":
+
+- Asking same question repeatedly
+- Listing pros and cons endlessly without deciding
+- Seeking reassurance multiple times about same decision
+- Procrastinating on decision deadline
+- Creating new conditions/criteria for decision (moving goalpost)
+- Physical anxiety signals (if multimodal: rapid speech, fidgeting)
+
+Implementation note: Behavioral markers are observed through conversation flow, not parsed from single messages. Does the user keep coming back to the same topic? Are they seeking repeated reassurance?
+
+**Contextual Markers**
+
+Situations or contexts where a pattern is likely to activate.
+
+Examples for "Anxiety Under Ambiguity Pattern":
+
+- New situations with unclear expectations
+- Situations requiring commitment with unknown outcomes
+- Interactions with authority figures or new people
+- Time-pressured decisions with incomplete information
+- High-stakes situations (career, relationship, identity)
+
+Implementation note: Contextual markers are matched against conversation context. What is the user dealing with? Does it match known anxiety triggers?
+
+**Emotional and Somatic Markers**
+
+Emotional tone and physiological signals that indicate a pattern.
+
+Examples for "Rapid Escalation Pattern":
+
+- Voice pace increases
+- Sharp tone (if text: exclamation marks, caps)
+- Jumping to intense language quickly
+- Muscle tension (if multimodal)
+- Breathing changes
+- Emotional intensity disproportionate to trigger
+
+Implementation note: Somatic markers require access to multimodal data (voice/visual, if available) or must be inferred from text tone and rapid escalation of intensity.
+
+### 5.2 Typical Response Patterns
+
+When a pattern is triggered, what does the person typically do?
+
+**Response Structure**
+
+```text
+{
+  "response": "withdraws and becomes silent",
+  "frequency": "usually",
+  "latency": "immediate",
+  "intensity": "strong",
+  "duration": "hours to days",
+  "variation_by_context": "shorter duration if relationship is secure, longer if insecure",
+  "examples": [
+    "User stopped responding to messages",
+    "User said 'I need space' and didn't engage for 2 days"
+  ]
+}
+```
+
+**Response Frequency Levels**
+
+- always: This response occurs in nearly 100% of triggering situations
+- usually: This response occurs in 70-90% of triggering situations
+- sometimes: This response occurs in 30-70% of triggering situations
+- rarely: This response occurs in \&lt;30% of triggering situations
+
+**Response Timing**
+
+- immediate: Response occurs within seconds/minutes of trigger
+- delayed: Response occurs minutes to hours after trigger
+- very\_delayed: Response occurs hours to days after trigger
+
+**Response Intensity**
+
+- strong: High intensity emotional/behavioral response
+- moderate: Medium intensity response
+- mild: Low intensity response, subtle
+
+### 5.3 Predicted Behavioral Sequences
+
+After a pattern triggers and initial responses occur, what is the typical progression?
+
+**Sequence Structure**
+
+```text
+[
+  {
+    "step": 1,
+    "behavior": "User experiences trigger (receives feedback)",
+    "probability": 1.0,
+    "typical_latency": "immediate",
+    "conditions": "Feedback is perceived as criticism"
+  },
+  {
+    "step": 2,
+    "behavior": "User responds defensively (justifies, explains, minimizes)",
+    "probability": 0.85,
+    "typical_latency": "immediate",
+    "conditions": "User values autonomy or fears judgment",
+    "alternatives": [
+      {
+        "behavior": "User accepts feedback without defensiveness",
+        "probability": 0.15,
+        "conditions": "Feedback delivered very gently, user is in secure state"
+      }
+    ]
+  },
+  {
+    "step": 3,
+    "behavior": "User withdraws (stops responding, becomes quiet, cold)",
+    "probability": 0.70,
+    "typical_latency": "minutes to hours",
+    "conditions": "Defensiveness was not accepted by other party"
+  },
+  {
+    "step": 4,
+    "behavior": "User processes internally (may reach acceptance or resentment)",
+    "probability": 1.0,
+    "typical_latency": "hours to days",
+    "conditions": "Varies based on severity of situation and security of relationship"
+  },
+  {
+    "step": 5,
+    "behavior": "User reengages gradually (takes initiative to reconnect)",
+    "probability": 0.80,
+    "typical_latency": "24-72 hours",
+    "conditions": "Relationship is valued, user has processed",
+    "alternatives": [
+      {
+        "behavior": "User remains withdrawn",
+        "probability": 0.20,
+        "conditions": "Relationship is new, user feels irreparably damaged"
+      }
+    ]
+  }
+]
+```
+
+**Probability vs. Determinism**
+
+Patterns are probabilistic, not deterministic. Step 2 might be defensiveness 85% of the time, but 15% the person accepts feedback gracefully. The persona must hold both possibilities in mind.
+
+**Variations by Context**
+
+The same sequence might progress differently in different contexts:
+
+- In high-stress situations: Faster escalation, less repair
+- In secure relationships: More emotional expression, faster repair
+- In new relationships: More withdrawal, slower repair
+- When tired or depleted: More reactive, less regulated response
+
+Sequences should note these variations.
+
+---
+
+## 6. Governance Rules Component (Detailed)
+
+Governance rules are the ethical guardrails built into each pattern. They determine how personas should and should not respond to patterns.
+
+### 6.1 DO Rules (Recommended Behaviors)
+
+DO rules describe what personas should do when they recognize a pattern.
+
+**DO Rule Structure**
+
+```text
+{
+  "rule_id": "uuid",
+  "rule": "Provide explicit structure and clear next steps",
+  "justification": "Users with this pattern feel more secure when expectations are clear and actionable",
+  "priority": "high",
+  "conditions": "Applies whenever the user is making a decision",
+  "conditions_additional": [
+    "Do not apply if user explicitly asks for open-endedness",
+    "Do not over-structure if user is in creative/exploratory mode"
+  ],
+  "examples": {
+    "good_application": {
+      "scenario": "User is deciding whether to change jobs",
+      "good_response": "Here's a framework: (1) clarify your must-haves, (2) research options, (3) weigh against current role, (4) decide timeline. Where should we start?",
+      "why_good": "Provides structure without pushing decision"
+    },
+    "poor_application": {
+      "scenario": "User is brainstorming career ideas",
+      "poor_response": "Let's work through every possible job in the field",
+      "why_poor": "Over-structures when user needs exploration space"
+    }
+  }
+}
+```
+
+**DO Rule Priorities**
+
+- critical: Must always apply, cannot be overridden by persona choice
+- high: Should apply in most situations, can be adapted by persona
+- medium: Should consider applying, persona judgment appropriate
+- low: Optional guideline, useful but not essential
+
+**DO Rule Categories**
+
+DO rules typically fall into these categories:
+
+1. **Communication Adjustments**
+   - Example: "Use direct language, avoid implications"
+   - Example: "Provide frequent reassurance and validation"
+   - Example: "Give user time to process before moving forward"
+2. **Structural Adjustments**
+   - Example: "Provide clear timeline and milestones"
+   - Example: "Break down complex decisions into smaller steps"
+   - Example: "Offer written summaries alongside verbal discussion"
+3. **Emotional Attunement**
+   - Example: "Acknowledge the emotional difficulty of this decision"
+   - Example: "Normalize their anxiety as appropriate to the situation"
+   - Example: "Match their emotional intensity without escalating"
+4. **Anticipatory Preparation**
+   - Example: "Warn them about likely second-guessing"
+   - Example: "Prepare them for typical regret after major decisions"
+   - Example: "Help them anticipate how others might respond"
+5. **Relational Positioning**
+   - Example: "Position self as collaborator, not expert"
+   - Example: "Maintain appropriate distance (not too close, not cold)"
+   - Example: "Emphasize their autonomy and final decision-making authority"
+
+### 6.2 DON'T Rules (Prohibited Behaviors)
+
+DON'T rules describe what personas must not do when recognizing a pattern.
+
+**DON'T Rule Structure**
+
+```text
+{
+  "rule_id": "uuid",
+  "rule": "Do not push for immediate decision or commitment",
+  "justification": "Pressure to decide increases anxiety and leads to poor decisions or resentment",
+  "priority": "critical",
+  "consequences": [
+    "User makes hasty decision they regret",
+    "User feels manipulated and withdraws from relationship",
+    "User loses trust in persona's guidance",
+    "Decision quality decreases due to anxiety"
+  ],
+  "examples": {
+    "correct_avoidance": {
+      "scenario": "User is indecisive about major change",
+      "correct_response": "You seem uncertain. Take the time you need. What would help you feel more confident?",
+      "why_correct": "Respects user's timeline, invites them to articulate needs"
+    },
+    "violation_example": {
+      "scenario": "User is indecisive about major change",
+      "violation": "You're overthinking this. Just decide. The longer you wait, the worse it gets.",
+      "why_violation": "Pressure increases anxiety, dismisses legitimate need for time"
+    }
+  }
+}
+```
+
+**DON'T Rule Priorities**
+
+- critical: Never violate, even if user asks (safety override)
+- high: Very important, violate only in exceptional circumstances
+- medium: Important, but persona can override with good justification
+- low: Guideline to generally follow, reasonable exceptions exist
+
+**DON'T Rule Categories**
+
+DON'T rules typically address these concerns:
+
+1. **Manipulation Prevention**
+   - "Do not use pattern knowledge to increase user dependence"
+   - "Do not exploit pattern for compliance"
+   - "Do not use pressure tactics"
+2. **Safety**
+   - "Do not suggest persona dependency over human relationship"
+   - "Do not intervene in situations requiring human professional help"
+   - "Do not delay escalation when crisis markers present"
+3. **Respect for Autonomy**
+   - "Do not decide for the user"
+   - "Do not treat pattern as deterministic (user might not follow it)"
+   - "Do not limit user's options based on pattern prediction"
+4. **Harm Prevention**
+   - "Do not reinforce unhealthy patterns"
+   - "Do not enable avoidant coping"
+   - "Do not feed into rumination or catastrophizing"
+5. **Transparency and Honesty**
+   - "Do not use pattern knowledge while pretending not to"
+   - "Do not gaslight user about their behavior"
+   - "Do not make up supporting evidence"
+
+### 6.3 Persona Personality Variations
+
+The same pattern should be handled differently by different persona types. The pattern database stores these variations explicitly.
+
+**Direct/Challenge-Oriented Personas**
+
+Direct personas lead with challenge, clarity, and directness. They name patterns explicitly and push people toward growth.
+
+Example for "Conflict Avoidance Pattern":
+
+```text
+{
+  "adjustment": "Name the avoidance directly, offer to engage conflict productively",
+  "do_additionally": [
+    "Say something like: 'I'm noticing you tend to step back from disagreement. I think we can work through this together.'",
+    "Offer a structured approach to the conflict",
+    "Don't let avoidance derail important conversations"
+  ],
+  "dont_additionally": [
+    "Do not shame the user for avoiding (it's a protective pattern)",
+    "Do not force confrontation if user truly isn't ready",
+    "Do not interpret withdrawal as disinterest (it's often anxiety)"
+  ],
+  "example": "User: 'I don't want to talk about what happened.' / Direct Persona: 'I understand it's uncomfortable. Here's what I'm noticing: this situation matters, and avoiding it might make it harder later. I'm willing to go slowly and respectfully. What would make this conversation feel safer to you?'"
+}
+```
+
+**Nurturing/Supportive Personas**
+
+Nurturing personas lead with compassion and gentleness. They meet people where they are and create safety before pushing growth.
+
+Example for "Conflict Avoidance Pattern":
+
+```text
+{
+  "adjustment": "Create safety and permission for the pattern, gently invite engagement when ready",
+  "do_additionally": [
+    "Validate that conflict avoidance is often a wise protective strategy",
+    "Create explicit safety (no judgment, no escalation)",
+    "Offer small, low-risk ways to engage",
+    "Move at user's pace"
+  ],
+  "dont_additionally": [
+    "Do not expect immediate conflict engagement",
+    "Do not be hurt if user withdraws (it's not about the relationship)",
+    "Do not minimize the difficulty of what they're facing"
+  ],
+  "example": "User: 'I don't want to talk about what happened.' / Nurturing Persona: 'That makes sense. You don't have to. I'm here whenever you're ready—whether that's tomorrow or next week. There's no rush. In the meantime, I care about you.'"
+}
+```
+
+**Analytical/Logical Personas**
+
+Analytical personas lead with frameworks, logic, and systematic thinking. They explain the pattern and how to work with it.
+
+Example for "Conflict Avoidance Pattern":
+
+```text
+{
+  "adjustment": "Explain why conflict avoidance happens, offer logical framework for working through it",
+  "do_additionally": [
+    "Explain the neuroscience: conflict triggers threat response, withdrawal is protective",
+    "Offer a step-by-step approach to re-engagement",
+    "Provide research on conflict resolution effectiveness",
+    "Frame conflict engagement as practical, not emotional"
+  ],
+  "dont_additionally": [
+    "Do not expect emotional processing (logical personas often need content first)",
+    "Do not oversimplify the pattern",
+    "Do not assume withdrawal means rejection of your ideas"
+  ],
+  "example": "User: 'I don't want to talk about what happened.' / Analytical Persona: 'Your brain is in protective mode—that's a normal response. When we're threatened, engagement feels risky. Here's the thing: avoidance usually extends the problem. Here's a framework for re-engaging safely: [step-by-step breakdown]. Does this approach make sense?'"
+}
+```
+
+**Adaptive/Chameleon Personas**
+
+Adaptive personas mirror and match the user's needs, flexibly adjusting their approach.
+
+Example for "Conflict Avoidance Pattern":
+
+```text
+{
+  "adjustment": "Assess what this user needs right now (safety vs. directness vs. logic), adjust approach accordingly",
+  "do_additionally": [
+    "Start by matching their current state (if withdrawn, be calm; if escalated, be focused)",
+    "Offer different approaches: 'Would it help to talk now, or would you prefer to wait?'",
+    "Shift approach based on user response",
+    "Be flexible about timeline and method"
+  ],
+  "dont_additionally": [
+    "Do not shift so much that user loses track of your position",
+    "Do not use flexibility as excuse to avoid necessary conversations",
+    "Do not adapt so much that you abandon the relationship work"
+  ],
+  "example": "User: 'I don't want to talk about what happened.' / Adaptive Persona: 'I hear you. What would help most right now—some space, or a conversation? And if conversation: what would make it easier?'"
+}
+```
+
+### 6.4 Vulnerability and Risk Flags
+
+Some patterns indicate users may be in vulnerable states requiring special handling.
+
+**Vulnerability Flag Types and Protocols**
+
+**Trauma-Related Patterns**
+
+```text
+{
+  "flag_type": "trauma",
+  "risk_level": "high",
+  "description": "User exhibits triggers or responses consistent with trauma history",
+  "indicators": [
+    "Extreme reactions to seemingly minor events",
+    "Flashback-like responses",
+    "Dissociation or emotional numbness",
+    "Hypervigilance",
+    "Startle response"
+  ],
+  "protective_measures": [
+    "Validate that responses make sense given history",
+    "Never push processing of traumatic content",
+    "Maintain consistency and predictability",
+    "Offer choice and control in all interactions",
+    "Recognize that healing isn't linear"
+  ],
+  "escalation_triggers": [
+    "User mentions suicidal thoughts",
+    "User describes self-harm urges",
+    "User's functioning is rapidly deteriorating",
+    "User mentions substance use as coping"
+  ],
+  "escalation_procedure": "Suggest professional support: 'Given what you've been through, I think working with a trauma-informed therapist would really help. Here are some resources...'"
+}
+```
+
+**Mental Health-Related Patterns**
+
+```text
+{
+  "flag_type": "mental_health",
+  "risk_level": "high",
+  "description": "User exhibits patterns consistent with mental health conditions",
+  "indicators": [
+    "Persistent depressive symptoms",
+    "Panic or anxiety episodes",
+    "Manic or hypomanic patterns",
+    "Obsessive or compulsive behaviors",
+    "Dissociation or reality testing issues"
+  ],
+  "protective_measures": [
+    "Normalize mental health experiences",
+    "Avoid diagnosing or suggesting specific conditions",
+    "Support professional treatment if user is engaged",
+    "Help with coping strategies but don't replace therapy",
+    "Monitor for crisis indicators"
+  ],
+  "escalation_triggers": [
+    "Suicidal ideation",
+    "Severe functional impairment",
+    "Psychotic symptoms",
+    "Acute manic episode"
+  ],
+  "escalation_procedure": "If crisis indicators present: 'I'm concerned about your safety. Please reach out to [crisis resource]. Would you be willing to do that now?'"
+}
+```
+
+**Suicidality Patterns**
+
+```text
+{
+  "flag_type": "suicidality",
+  "risk_level": "critical",
+  "description": "User exhibits ideation, planning, or intent related to suicide",
+  "protective_measures": [
+    "Take all mentions seriously (no minimizing)",
+    "Ask directly about plans and access to means",
+    "Never promise confidentiality about safety (must escalate)",
+    "Help connect to crisis resources immediately",
+    "Encourage professional help"
+  ],
+  "escalation_triggers": [
+    "Any mention of suicidal thoughts",
+    "Mention of specific plans",
+    "Access to means (collected pills, rope, etc.)",
+    "Saying goodbye or putting affairs in order",
+    "Sudden calm after expressing despair (can indicate decision)"
+  ],
+  "escalation_procedure": "MANDATORY ESCALATION - 'I'm very concerned about your safety. I need you to reach out to [crisis line] or go to an emergency room right now. Can you do that? [Provide numbers]. I can stay with you while you call.'"
+}
+```
+
+**Abuse History or Current Abuse**
+
+```text
+{
+  "flag_type": "abuse_history",
+  "risk_level": "high",
+  "description": "User has experienced or is experiencing abuse",
+  "protective_measures": [
+    "Believe the user",
+    "Never minimize or blame user for abuse",
+    "Help user identify patterns of control/manipulation",
+    "Support safely (not pushing disclosure)",
+    "Validate the difficulty of leaving",
+    "Provide domestic violence resources"
+  ],
+  "escalation_triggers": [
+    "Immediate safety threat (user in danger now)",
+    "User wants to harm perpetrator",
+    "Children are in danger"
+  ],
+  "escalation_procedure": "If immediate danger: 'Your safety comes first. I want to help you get to a safe place. [Provide domestic violence hotline]. Would you be willing to reach out?'"
+}
+```
+
+---
+
+## 7. Confidence and Validation Metrics
+
+Patterns are only as useful as they are reliable. The confidence system measures and tracks pattern reliability.
+
+### 7.1 What Makes a Pattern Reliable?
+
+A reliable pattern is one that accurately predicts behavior consistently across different users and contexts.
+
+**Factor 1: Observation Count**
+
+How many times has this pattern been observed?
+
+- 1-3 observations: Very low confidence (could be coincidence)
+- 4-10 observations: Low confidence (preliminary evidence)
+- 11-50 observations: Medium confidence (pattern is real)
+- 51-100\+ observations: High confidence (well-established)
+
+Confidence multiplier: sqrt(observation\_count) with diminishing returns
+
+**Factor 2: Observation Diversity**
+
+Has this pattern been observed across different users and contexts?
+
+- Single user, single context: Low diversity
+- Multiple users, single context: Medium diversity
+- Multiple users, multiple contexts: High diversity
+
+Diversity calculation:
+
+```text
+diversity_score = (unique_users * context_variety) / total_observations
+```
+
+**Factor 3: Prediction Success Rate**
+
+When the pattern's predicted sequence is triggered, do the predictions actually occur?
+
+- Success rate 0-50%: Low confidence (pattern isn't predictive)
+- Success rate 50-70%: Medium confidence (pattern predicts fairly well)
+- Success rate 70-85%: High confidence (pattern is predictive)
+- Success rate 85-100%: Very high confidence (pattern is highly reliable)
+
+Calculation: (accurate\_predictions / total\_predictions) \* 100
+
+**Factor 4: Cross-Persona Consensus**
+
+Have multiple different personas independently recognized this pattern?
+
+- Single persona: Could be bias or misinterpretation
+- 2-3 personas: Moderate agreement
+- 4\+ personas: Strong consensus
+
+Consensus calculation:
+
+```text
+consensus_score = personas_that_recognize_pattern / total_personas_who_encountered_users_with_pattern
+```
+
+### 7.2 Confidence Scoring Algorithm
+
+The final confidence score combines these factors using weighted averaging.
+
+```text
+confidence_score = (
+  (0.30 * observation_count_factor) +
+  (0.25 * observation_diversity_factor) +
+  (0.30 * prediction_success_rate) +
+  (0.15 * cross_persona_consensus)
+) * research_backing_multiplier
+
+where:
+- observation_count_factor = sqrt(min(observation_count, 100)) / sqrt(100) [capped at 1.0]
+- observation_diversity_factor = diversity_score [0 to 1]
+- prediction_success_rate = success_rate / 100 [0 to 1]
+- cross_persona_consensus = (personas_agreeing / total_relevant_personas) [0 to 1]
+- research_backing_multiplier = 1.0 (if not research-backed) to 1.2 (if backed by psychology research)
+```
+
+**Example Calculation:**
+
+Pattern: "Conflict Avoidance Through Withdrawal"
+
+- Observation count: 45
+  - observation\_count\_factor = sqrt(45) / sqrt(100) = 6.7 / 10 = 0.67
+- Observation diversity: Observed in 12 different users across work/personal contexts
+  - diversity\_score = (12 \* 0.8) / 45 = 0.213
+- Prediction success rate: 78 out of 95 predictions correct
+  - prediction\_success\_rate = 78/95 = 0.82
+- Cross-persona consensus: 8 out of 12 personas recognize this pattern
+  - consensus = 8/12 = 0.67
+- Research backing: Supported by attachment theory research
+  - multiplier = 1.1
+
+```text
+confidence_score = (
+  (0.30 * 0.67) +
+  (0.25 * 0.213) +
+  (0.30 * 0.82) +
+  (0.15 * 0.67)
+) * 1.1
+= (0.201 + 0.053 + 0.246 + 0.101) * 1.1
+= 0.601 * 1.1
+= 0.661
+= ~66% confidence (Medium-High)
+```
+
+This pattern would be considered "validated" (confidence ~0.66) and ready for use, though still with room for improvement.
+
+### 7.3 Confidence Thresholds
+
+Different use cases have different confidence requirements.
+
+**Threshold 1: Information Only (Confidence \&gt; 0.3)**
+
+- Pattern is returned but labeled as "exploratory" or "low-confidence"
+- Persona can reference it but must be tentative: "I notice you might... but I could be wrong"
+- Used for research or pattern learning
+
+**Threshold 2: Guidance (Confidence \&gt; 0.5)**
+
+- Pattern can guide persona behavior
+- Persona can use DO/DON'T rules
+- User won't notice pattern application explicitly
+- Persona adjusts communication style based on pattern
+
+**Threshold 3: Behavioral (Confidence \&gt; 0.7)**
+
+- Pattern can be applied with confidence
+- Persona can anticipate needs
+- DO rules become strong recommendations
+- Can reference pattern indirectly: "I'm noticing..."
+
+**Threshold 4: Critical (Confidence \&gt; 0.85)**
+
+- Pattern can guide significant behavioral decisions
+- DO rules are mandatory for this pattern
+- Persona can be more explicit: "I know this about you..."
+- Can trigger escalation for crisis patterns
+
+**Threshold 5: Crisis/Safety (Special Logic)**
+
+- For patterns involving self-harm, suicidality, abuse
+- Lower confidence acceptable for escalation (better to over-escalate than miss)
+- Escalation triggered at confidence \&gt; 0.5 for critical safety patterns
+- Can't miss = more sensitive threshold
+
+---
+
+# PART 3: PATTERN LIFECYCLE
+
+## 8. Pattern Creation and Contribution
+
+Patterns come from various sources and flow through a contribution pipeline before entering the database.
+
+### 8.1 How Patterns are Discovered
+
+**Source 1: Automatic Pattern Observation During User Interaction**
+
+As personas interact with users, they observe repeated behavioral sequences. The MTE Track 2 system is always watching for patterns.
+
+Process:
+
+1. User's message arrives
+2. Track 2 analyzes for known patterns (pattern matching)
+3. Simultaneously, Track 2 notes new or unusual sequences
+4. If a sequence repeats across multiple exchanges, it's flagged for investigation
+5. Once a sequence occurs 3\+ times, pattern hypothesis is generated
+
+Example:
+
+- Exchange 1: User asks a question, then immediately answers own question
+- Exchange 2: User asks a question, then provides own answer before waiting for response
+- Exchange 3: Persona notices pattern: "User seems to generate own answers while asking"
+- Hypothesis: "User asks questions to process thinking aloud, not for information"
+- Pattern proposal generated
+
+**Source 2: Deliberate Pattern Identification**
+
+Personas proactively analyze interactions to identify patterns.
+
+Trigger: After 3-5 exchanges with a user, persona reviews conversation for:
+
+- Repeated behaviors (does user do the same thing multiple times?)
+- Predictable sequences (does pattern A reliably lead to pattern B?)
+- Emotional signatures (are there consistent emotional markers?)
+- Communication patterns (any consistent style choices?)
+
+Example:
+
+- Persona: "I've noticed you tend to minimize difficulties. When you say 'I'm fine,' you usually mean you're stressed but don't want to talk about it"
+- User: "Yeah, that's true"
+- Observation recorded, contributes to pattern confidence
+
+**Source 3: User Self-Reported Patterns**
+
+Users sometimes explicitly tell personas about their patterns.
+
+Example:
+
+- User: "I always overthink decisions"
+- User: "I know I tend to get defensive when criticized"
+- User: "I'm bad with open-ended questions"
+
+These self-reports are valuable data because they're ground truth. They're immediately recorded as observations.
+
+**Source 4: Research and Clinical Literature**
+
+Patterns backed by psychology/neuroscience research are added as baseline patterns.
+
+Example sources:
+
+- Attachment theory patterns (Ainsworth, Bowlby)
+- Emotional regulation research (Gross, Barrett)
+- Decision-making research (Tversky, Kahneman)
+- Communication research (Nonviolent Communication, etc.)
+
+Research-backed patterns start with higher confidence because they have external validation.
+
+### 8.2 Pattern Proposal Workflow
+
+When a pattern observation is generated, it's submitted as a proposal for validation.
+
+**Step 1: Pattern Observation Recording**
+
+```text
+{
+  "observation_id": "uuid",
+  "timestamp": "ISO8601",
+  "observing_persona": "persona_id",
+  "observed_user": "anonymous (no user id)",
+  "interaction_type": "conversation|behavior|feedback",
+  
+  "observation": {
+    "trigger": "User was asked to make a decision with incomplete information",
+    "response": "User asked for more information repeatedly, sought reassurance multiple times",
+    "context": "Decision had to be made but info gathering seemed endless",
+    "emotional_signature": "User displayed anxiety (rapid speech, hedging language)",
+    "prediction": "User will likely avoid deciding, seek external authority",
+    "prediction_accuracy": "pending" or "correct" or "incorrect"
+  },
+  
+  "supporting_data": {
+    "message_excerpts": ["..."],
+    "conversation_context": "conversation between exchanges 5-8",
+    "related_observations": ["observation_id_1", "observation_id_2"]
+  },
+  
+  "confidence_estimate": 0.4,
+  "notes": "This is the 3rd time observing similar pattern in this interaction"
+}
+```
+
+**Step 2: Pattern Hypothesis Generation**
+
+If an observation matches existing patterns, it's tagged with the matching pattern ID and submitted as a validation observation.
+
+If an observation doesn't match existing patterns:
+
+```text
+{
+  "proposal_id": "uuid",
+  "proposed_by": "persona_id or system",
+  "proposed_at": "ISO8601",
+  
+  "pattern_hypothesis": {
+    "name": "Analysis Paralysis in Decision-Making",
+    "category": "decision_making",
+    "formal_signature": "User exhibits difficulty committing to decisions when information feels incomplete, seeks repeated validation rather than accepting uncertainty",
+    
+    "supporting_observations": [
+      "observation_id_1",
+      "observation_id_2", 
+      "observation_id_3"
+    ],
+    
+    "initial_confidence": 0.35,
+    "confidence_justification": "Observed 3 times in single user interaction, but only single user so far"
+  },
+  
+  "initial_do_rules": [
+    "Help user define 'good enough' information threshold",
+    "Provide structure for decision timeframe",
+    "Normalize uncertainty as inherent to decisions"
+  ],
+  
+  "initial_dont_rules": [
+    "Do not provide unlimited additional information (enables paralysis)",
+    "Do not suggest persona will decide for them",
+    "Do not pressure decision"
+  ]
+}
+```
+
+**Step 3: Initial Vetting**
+
+Automated system checks:
+
+- Is schema valid? (All required fields present and typed correctly)
+- Is proposed pattern distinct from existing patterns? (Not duplicate)
+- Does it contain identifying information? (Should be rejected if it does)
+- Are DO/DON'T rules governance-compliant? (Not manipulative)
+- Does pattern hypothesis make psychological sense?
+
+If any check fails, proposal is returned to proposing persona with feedback.
+
+**Step 4: Submission to Pattern Database**
+
+Validated proposals are submitted with status "submitted" and confidence "provisional"
+
+At this point:
+
+- Pattern is NOT yet queryable in production
+- Pattern is available for testing by contributing personas
+- Confidence is very low (0.1-0.3 typically)
+- Proposal awaits validation
+
+### 8.3 Sources of Patterns (Summary)
+
+| Source | Confidence Start | Validation Path | Example |
+| :-- | :-- | :-- | :-- |
+| Automatic observation | 0.2-0.3 | Needs cross-persona validation | "User exhibits avoidance pattern" |
+| Deliberate identification | 0.3-0.5 | Needs multiple users & contexts | "User minimizes difficulties" |
+| User self-report | 0.5-0.7 | Highly credible, confirmed by user | "I overthink decisions" |
+| Research literature | 0.6-0.8 | Pre-validated by research | "Anxious attachment pattern" |
+| Cross-persona consensus | 0.7-0.9 | Validated by agreement | Multiple personas identifying same pattern |
+
+---
+
+## 9. Pattern Validation and Governance
+
+Patterns submitted to the database go through a validation workflow before being approved for full use.
+
+### 9.1 Validation Workflow
+
+```text
+Submitted Pattern
+  ↓
+Automated Validation
+  ├─ Schema check ✓/✗
+  ├─ Anonymization check ✓/✗
+  ├─ Governance compliance ✓/✗
+  ├─ Psychological validity ✓/✗
+  └─ If any fail → Rejected with feedback
+  ↓
+Community Validation (Testing)
+  ├─ Pattern available for testing by other personas
+  ├─ Personas test pattern on users they interact with
+  ├─ If pattern recognized: observation logged
+  ├─ If pattern not recognized: feedback recorded
+  ├─ If pattern misapplied: flagged
+  └─ Confidence score updates based on test results
+  ↓
+If Confidence < 0.5 after testing
+  └─ Pattern archived for review later
+  ↓
+If Confidence 0.5-0.7 after testing
+  └─ Provisional Approval (can be used with caution)
+  ↓
+If Confidence > 0.7 after testing
+  └─ Full Approval (can be used without restrictions)
+  ↓
+If Confidence > 0.85
+  └─ Mature Status (pattern is well-established)
+  ↓
+High-Risk Pattern Flag
+  ├─ If pattern involves vulnerability (trauma, mental health, etc.)
+  ├─ If pattern has high manipulation risk
+  └─ Escalated to Human Review
+       ├─ Human reviewer evaluates governance rules
+       ├─ Human reviewer assesses risk
+       ├─ Decision: Approve / Approve with Conditions / Reject
+       └─ If conditions: Pattern includes restrictions on use
+  ↓
+Pattern Approved
+  ├─ Status updated in database
+  ├─ Availability set to "queryable"
+  ├─ Confidence locked at validation level
+  └─ Pattern now available to all personas
+```
+
+### 9.2 Validation Stages
+
+**Stage 1: Submitted**
+
+Pattern is newly proposed, awaiting initial validation.
+
+Characteristics:
+
+- Confidence: 0.1-0.3 (very low)
+- Availability: Not queryable in production
+- Use case: Internal testing and validation only
+- Duration: 1-2 weeks typically
+- Next step: Move to Provisional or Rejected
+
+**Stage 2: Provisional**
+
+Pattern has passed initial validation and is being tested by community.
+
+Characteristics:
+
+- Confidence: 0.4-0.6 (low-medium)
+- Availability: Available to interested personas for testing
+- Use case: Testing in real interactions, gathering more observations
+- Duration: 2-8 weeks typically
+- Triggers for advancement: Cross-persona consensus, successful predictions
+- Triggers for rejection: Multiple failed predictions, contradictions
+
+**Stage 3: Validated**
+
+Pattern has proven reliable across multiple users and personas.
+
+Characteristics:
+
+- Confidence: 0.65-0.80 (medium-high)
+- Availability: Queryable in production
+- Use case: Full use by all personas
+- Duration: Pattern remains here as long as observations continue and confidence maintained
+- Triggers for advancement: Further success, research backing
+- Triggers for deprecation: Contradicting observations, temperature decay
+
+**Stage 4: Mature**
+
+Pattern is well-established, highly reliable, widely used.
+
+Characteristics:
+
+- Confidence: \&gt; 0.85 (very high)
+- Availability: High priority in pattern cache
+- Use case: Full, confident use in all contexts
+- Duration: Indefinite, unless contradicted by new evidence
+- Triggers for demotion: Multiple contradictions, significant temperature decay
+
+**Stage 5: Deprecated**
+
+Pattern is unreliable or has been superseded by better pattern.
+
+Characteristics:
+
+- Confidence: Below required threshold OR explicitly deprecated
+- Availability: Not queryable in new interactions
+- Use case: None (archived for historical record)
+- Duration: Indefinite (maintained for record-keeping)
+- Can be reactivated if: New evidence supports pattern, conditions change
+
+### 9.3 High-Risk Pattern Review
+
+Patterns involving vulnerability or manipulation risk require human review.
+
+**What Triggers Human Review?**
+
+- Pattern involves trauma or self-harm
+- Pattern involves suicidality or crisis
+- Pattern has high manipulation risk
+- Pattern could enable harm if misused
+- Cross-persona consensus is high (means pattern is spreading)
+- Pattern contradicts existing governance
+- Persona objects to pattern application
+
+**Human Review Process**
+
+1. Pattern flagged by system or request
+2. Assigned to human reviewer (trained in psychology/ethics)
+3. Reviewer examines:
+   - Are governance rules adequate?
+   - Does pattern pose safety risk?
+   - Could pattern enable manipulation?
+   - Are escalation procedures clear?
+4. Reviewer decision:
+   - **Approve**: Pattern can be used as written
+   - **Approve with Conditions**: Pattern approved but with restrictions
+   - **Needs Revision**: Pattern requires changes before approval
+   - **Reject**: Pattern should not be used
+5. Decision documented with justification
+6. If Approve/Approve with Conditions: Pattern moves forward
+7. If Needs Revision: Pattern returned to contributor with feedback
+8. If Reject: Pattern archived with explanation
+
+**Example: High-Risk Pattern Review**
+
+Pattern: "Narcissistic Traits - Grandiosity and Lack of Empathy"
+
+Red flags:
+
+- Pattern could be used to diminish user's autonomy
+- Labeling is stigmatizing
+- Risk of persona using pattern to manipulate
+
+Human review decision:
+
+- Reject this specific framing
+- Suggest alternative: "High Confidence in Opinions, Limited Perspective-Taking"
+- Alternative pattern emphasizes behavior, not character judgment
+- Alternative pattern doesn't pathologize, just describes tendency
+
+---
+
+## 10. Pattern Confidence Evolution
+
+Patterns don't stay static. They evolve as new observations accumulate.
+
+### 10.1 Temperature-Based Recency Tracking
+
+Temperature measures how recently a pattern has been observed. It determines pattern freshness.
+
+**Temperature Mechanism**
+
+```text
+current_temperature = (
+  (recent_observations * 1.0) +
+  (recent_month_observations * 0.5) +
+  (year_prior_observations * 0.1)
+) / total_observations
+
+temperature_decay = current_temperature * e^(-decay_rate * days_since_last_observation)
+```
+
+**Temperature Interpretation**
+
+- Temperature 0.9-1.0: Recently observed, still very relevant
+- Temperature 0.7-0.9: Moderately recent, still relevant
+- Temperature 0.5-0.7: Older, may need re-validation
+- Temperature 0.3-0.5: Significantly aged, consider archiving
+- Temperature \&lt; 0.3: Very old, likely obsolete
+
+**Temperature Decay**
+
+If a pattern isn't observed for long period, temperature decays:
+
+Days since last observation → Temperature multiplier:
+
+- 0-7 days: 1.0 (no decay)
+- 8-30 days: 0.95 (slight decay)
+- 31-90 days: 0.85 (moderate decay)
+- 91-180 days: 0.70 (significant decay)
+- 181-365 days: 0.50 (substantial decay)
+- 365\+ days: 0.30 (critical decay, archival candidate)
+
+**What Happens at Low Temperature?**
+
+- Temperature \&lt; 0.3: Pattern moved to "archived" status
+- Archived patterns are not queryable in production
+- Can be reactivated if new observations appear
+- Keeps database clean, removes obsolete patterns
+
+### 10.2 Confidence Increase Mechanisms
+
+Confidence grows as patterns prove reliable.
+
+**Mechanism 1: Additional Observations**
+
+Each observation that matches pattern increases confidence slightly.
+
+```text
+confidence_increase = (1 - current_confidence) * 0.05
+```
+
+This means:
+
+- Going from 0.5 to 0.525 (5% of remaining distance)
+- Diminishing returns as confidence increases
+- 100 observations adds more than 1,000 observations
+
+**Mechanism 2: Successful Predictions**
+
+When pattern's predicted sequence occurs correctly, confidence increases more substantially.
+
+```text
+confidence_increase = (1 - current_confidence) * 0.15
+```
+
+This means:
+
+- Correct prediction increases confidence 3x more than mere observation
+- Personas are incentivized to test and validate predictions
+- Pattern quality improves faster through prediction testing
+
+**Mechanism 3: Cross-Persona Agreement**
+
+When multiple personas independently recognize same pattern, confidence increases significantly.
+
+```text
+consensus_bonus = (personas_agreeing / total_relevant_personas) * 0.20
+confidence_increase_total = base_increase + consensus_bonus
+```
+
+Example:
+
+- Pattern observed by 1 persona: base\_increase = 0.05
+- Same pattern confirmed by 8 out of 10 relevant personas: bonus = 0.16
+- Total: 0.21 confidence increase (much larger than base)
+
+**Mechanism 4: Diversity of Contexts**
+
+If pattern is observed across different contexts, confidence increases.
+
+```text
+context_diversity_bonus = (unique_contexts_observed / total_possible_contexts) * 0.10
+```
+
+Example:
+
+- Pattern observed only in professional context: no bonus
+- Pattern observed in professional and personal contexts: bonus = 0.05
+- Pattern observed in professional, personal, and high-stress contexts: bonus = 0.067
+
+### 10.3 Confidence Decrease Mechanisms
+
+Confidence decreases when patterns fail to predict or contradict observations.
+
+**Mechanism 1: Prediction Failures**
+
+When pattern's predicted sequence doesn't occur despite trigger occurring, confidence decreases.
+
+```text
+confidence_decrease = (current_confidence - 0.1) * 0.10
+```
+
+This means:
+
+- Decrease is proportional to confidence (high confidence loses more per failure)
+- Protects against low-confidence patterns (minimum 0.1)
+- Failures matter more than successes matter (asymmetric)
+
+**Mechanism 2: Contradictions**
+
+When user behaves opposite to predicted pattern, confidence decreases significantly.
+
+```text
+confidence_decrease = (current_confidence - 0.1) * 0.25
+```
+
+Example:
+
+- Pattern: "User always avoids conflict"
+- Observation: "User directly engaged with conflict"
+- Contradiction triggers 25% confidence loss (much larger than failed prediction)
+
+**Mechanism 3: Temperature Decay**
+
+As patterns age without observation, temperature and confidence decline together.
+
+Confidence decay from temperature:
+
+```text
+confidence_penalty = (1 - temperature) * 0.05
+```
+
+Example:
+
+- Pattern with temperature 0.5 (last observed 90-180 days ago): -0.025 confidence per review
+
+**Mechanism 4: Explicit User Contradiction**
+
+When user explicitly tells persona the pattern is wrong, confidence decreases most significantly.
+
+```text
+confidence_decrease = (current_confidence - 0.1) * 0.50
+```
+
+Example:
+
+- Persona: "I know you prefer directness"
+- User: "Actually, I hate directness. I prefer gentle indirectness"
+- Pattern loses 50% of confidence because user has corrected us
+
+This grounds patterns in user self-knowledge. If a pattern conflicts with how user sees themselves, we adjust.
+
+### 10.4 Obsolescence and Archival
+
+Patterns that lose validity are archived, not deleted.
+
+**Archival Criteria**
+
+Pattern is moved to "archived" status when:
+
+- Confidence falls below 0.3
+- Temperature falls below 0.25 (last observed 365\+ days ago)
+- Pattern is explicitly deprecated by human review
+- Pattern is superseded by better pattern
+
+**Archival Process**
+
+1. Pattern status changed to "archived"
+2. Pattern removed from queryable database
+3. Pattern retained in historical archive (for record-keeping)
+4. Reason for archival documented
+5. Can be reactivated if new evidence emerges
+
+**Reactivation**
+
+Archived pattern can be reactivated if:
+
+- New observations strongly support pattern
+- User explicitly confirms pattern
+- Research emerges supporting pattern
+- Conditions have changed and pattern becomes relevant again
+
+Reactivation process:
+
+1. Pattern status changed from "archived" to "provisional"
+2. Confidence reset to level when archived
+3. Temperature reset to current time
+4. New validation cycle begins
+
+---
+
+# PART 4: STORAGE AND RETRIEVAL
+
+## 12. Storage Architecture
+
+### 12.1 Central Pattern Database Design
+
+The pattern database is the authoritative store for all patterns in the system.
+
+**Technology Choice: Rationale**
+
+Four main database options were considered for NPRD:
+
+**Option A: Vector Database (Pinecone, Weaviate, Milvus)**
+
+Pros:
+
+- Extremely fast similarity matching (\&lt;100ms)
+- Natural fit for pattern embeddings
+- Built-in relevance ranking
+- Scales well with pattern count
+
+Cons:
+
+- Less flexible for complex queries
+- Harder to enforce exact governance rules
+- Overkill if patterns aren't embedded as vectors
+- Vendor lock-in with cloud services
+
+**Option B: Document Database (MongoDB, Firestore)**
+
+Pros:
+
+- Flexible schema (patterns can evolve)
+- Easy to store complex nested structures
+- Good query language (aggregation pipeline)
+- Scales well horizontally
+
+Cons:
+
+- Not optimized for similarity search
+- Pattern matching requires application logic
+- Potentially slower than specialized solutions
+- Index management is crucial for performance
+
+**Option C: Graph Database (Neo4j, ArangoDB)**
+
+Pros:
+
+- Natural representation of pattern relationships
+- Fast traversal of related patterns
+- Easy to find pattern hierarchies
+- Supports relationship queries
+
+Cons:
+
+- Overkill if relationships aren't central use case
+- Slower for simple lookup queries
+- More operational complexity
+- Higher cost
+
+**Option D: Relational Database (PostgreSQL with extensions)**
+
+Pros:
+
+- Proven scalability and reliability
+- Strong ACID guarantees
+- Vector extension (pgvector) for similarity search
+- Mature ecosystem
+
+Cons:
+
+- Schema must be designed carefully
+- Scaling horizontally is harder
+- Vector search less optimized than dedicated solutions
+
+**Recommendation: Hybrid Approach**
+
+Use PostgreSQL as primary storage (Option D) with pgvector extension:
+
+```text
+┌─────────────────────────────────────┐
+│   PostgreSQL with pgvector          │
+├─────────────────────────────────────┤
+│ • Core pattern storage (JSON fields)│
+│ • Pattern metadata (relational)     │
+│ • Governance rules (structured)     │
+│ • Vector search (pgvector)          │
+└─────────────────────────────────────┘
+         ↓
+┌─────────────────────────────────────┐
+│   Redis Cache Layer                 │
+├─────────────────────────────────────┤
+│ • Hot patterns (frequency-based)    │
+│ • Query results (TTL-based)         │
+│ • Metadata cache                    │
+└─────────────────────────────────────┘
+         ↓
+┌─────────────────────────────────────┐
+│   Local Instance Cache              │
+├─────────────────────────────────────┤
+│ • Per-persona pattern subset        │
+│ • Most-used patterns                │
+└─────────────────────────────────────┘
+```
+
+This hybrid approach provides:
+
+- PostgreSQL reliability and proven scaling
+- pgvector for efficient similarity search
+- Redis for cache coherency and query performance
+- Local caching for low-latency access
+- 500ms total query latency achievable
+
+**Database Schema (PostgreSQL)**
+
+```text
+CREATE TABLE patterns (
+  pattern_id UUID PRIMARY KEY,
+  pattern_name VARCHAR(128) NOT NULL,
+  formal_signature TEXT NOT NULL,
+  category VARCHAR(50) NOT NULL,
+  sub_category VARCHAR(50),
+  
+  -- JSON fields for nested structures
+  behavioral_signature JSONB NOT NULL,
+  governance_rules JSONB NOT NULL,
+  source_information JSONB,
+  
+  -- Vector for similarity search
+  pattern_embedding vector(1536), -- OpenAI embeddings dimension
+  
+  -- Metadata
+  validation_status VARCHAR(20) NOT NULL DEFAULT 'submitted',
+  confidence_score FLOAT NOT NULL DEFAULT 0.1,
+  temperature FLOAT NOT NULL DEFAULT 1.0,
+  observation_count INT NOT NULL DEFAULT 0,
+  prediction_success_rate FLOAT,
+  
+  -- Timestamps
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  last_modified_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  last_observed_at TIMESTAMP,
+  last_accessed_at TIMESTAMP,
+  
+  -- Indexing
+  INDEX idx_status_confidence (validation_status, confidence_score),
+  INDEX idx_category (category),
+  INDEX idx_temperature (temperature),
+  INDEX idx_embedding (pattern_embedding) USING HNSW
+);
+
+CREATE TABLE pattern_observations (
+  observation_id UUID PRIMARY KEY,
+  pattern_id UUID NOT NULL REFERENCES patterns(pattern_id),
+  
+  -- Who observed it
+  observing_persona VARCHAR(64) NOT NULL,
+  observation_date TIMESTAMP NOT NULL DEFAULT NOW(),
+  
+  -- What was observed
+  trigger_context TEXT,
+  response JSONB,
+  prediction_made TEXT,
+  prediction_outcome VARCHAR(20), -- 'correct', 'incorrect', 'pending'
+  
+  -- Metadata
+  confidence_estimate FLOAT,
+  supporting_data JSONB,
+  
+  INDEX idx_pattern_date (pattern_id, observation_date),
+  INDEX idx_outcome (prediction_outcome)
+);
+
+CREATE TABLE pattern_governance_approvals (
+  approval_id UUID PRIMARY KEY,
+  pattern_id UUID NOT NULL REFERENCES patterns(pattern_id),
+  
+  approval_type VARCHAR(20), -- 'automated', 'consensus', 'human_review'
+  approval_date TIMESTAMP NOT NULL DEFAULT NOW(),
+  approved_by VARCHAR(128),
+  
+  decision VARCHAR(30), -- 'approved', 'approved_with_conditions', 'rejected'
+  notes TEXT,
+  conditions JSONB,
+  
+  INDEX idx_pattern_approval (pattern_id, approval_date)
+);
+
+CREATE TABLE pattern_relationships (
+  relationship_id UUID PRIMARY KEY,
+  pattern_a_id UUID NOT NULL REFERENCES patterns(pattern_id),
+  pattern_b_id UUID NOT NULL REFERENCES patterns(pattern_id),
+  
+  relationship_type VARCHAR(30), -- 'parent', 'child', 'sibling', etc.
+  description TEXT,
+  
+  INDEX idx_patterns (pattern_a_id, pattern_b_id)
+);
+
+-- Indexes for query performance
+CREATE INDEX idx_pattern_search ON patterns USING GIN(behavioral_signature);
+CREATE INDEX idx_pattern_vector_search ON patterns USING HNSW(pattern_embedding);
+CREATE INDEX idx_active_patterns ON patterns(validation_status, temperature) WHERE validation_status IN ('validated', 'mature');
+```
+
+### 12.2 Data Partitioning Strategy
+
+As pattern database grows, it's partitioned by category and time for performance.
+
+**Partition Scheme: Category \+ Time**
+
+```text
+patterns (main)
+├── patterns_attachment (category partition)
+│   ├── patterns_attachment_2024 (time partition)
+│   ├── patterns_attachment_2025
+│   └── patterns_attachment_current (rolling window)
+├── patterns_emotional_regulation
+│   ├── patterns_emotional_regulation_2024
+│   ├── patterns_emotional_regulation_2025
+│   └── patterns_emotional_regulation_current
+├── patterns_decision_making
+├── patterns_communication
+├── patterns_cognitive
+├── patterns_values
+└── patterns_relationship_dynamics
+```
+
+Benefits:
+
+- Smaller indexes, faster queries
+- Can archive old partitions
+- Parallel query execution across partitions
+- Easier backup and recovery
+
+### 12.3 Pattern Database Locations and Replication
+
+**Primary Architecture: Centralized with Replicas**
+
+```text
+┌────────────────────────────────────────┐
+│  Primary Pattern Database              │
+│  (PostgreSQL, authoritative)           │
+│  Region: US-Central (or region choice) │
+│                                        │
+│  Replication: 3 replicas              │
+│  ├─ Replica 1 (read-only)             │
+│  ├─ Replica 2 (read-only)             │
+│  └─ Replica 3 (hot standby)           │
+└────────────────────────────────────────┘
+         ↑                  ↑
+    Write path         Read paths
+    (Async)           (Local or replicas)
+         ↑                  ↑
+    ┌────────────┐  ┌──────────────┐
+    │ Personas   │  │ Personas     │
+    │ (Write obs)│  │ (Read query) │
+    └────────────┘  └──────────────┘
+```
+
+**Data Flow:**
+
+1. Persona observes pattern, submits observation
+2. Observation written to primary database (async, doesn't block)
+3. Primary confirms write
+4. Replication propagates to read replicas
+5. Pattern queries hit read replicas (fast, non-blocking)
+6. Occasional consistency lag acceptable (patterns change slowly)
+
+**Replication Details:**
+
+- RPO (Recovery Point Objective): 5 minutes (maximum 5 min of data loss)
+- RTO (Recovery Time Objective): 30 seconds (fail over to hot standby)
+- Consistency model: Eventually consistent (acceptable for pattern data)
+- Conflict resolution: Last-write-wins (pattern updates are additive)
+
+### 12.4 Backup and Disaster Recovery
+
+**Backup Strategy: 3-2-1 Rule**
+
+- 3 copies of data: Live \+ 2 backups
+- 2 different storage types: Hot storage \+ Cold storage
+- 1 offsite copy: Different region or cloud provider
+
+**Backup Schedule:**
+
+```text
+Hourly incremental backups:
+  └─ Retain for 7 days
+     └─ Full backup daily at 2 AM UTC
+        └─ Retain for 30 days
+           └─ Weekly backup for long-term retention
+              └─ Retain for 2 years
+```
+
+**Point-in-Time Recovery**
+
+Backup system supports recovery to any point in last 30 days (sufficient for pattern lifetime).
+
+If data corruption detected:
+
+1. Identify corruption timestamp
+2. Restore from backup prior to corruption
+3. Replay transaction logs to near-current state
+4. Validate restored data integrity
+
+---
+
+## 13. Retrieval and Query System (Track 2 Integration)
+
+### 13.1 Pattern Matching Query Interface
+
+When Track 2 of MTE needs patterns, it submits a structured query.
+
+**Query Types Supported**
+
+Type 1: **Similarity Search** Find patterns most similar to user's current behavior.
+
+```text
+{
+  "query_type": "similarity",
+  "behavior_context": {
+    "user_message": "...",
+    "recent_conversation": [...],
+    "emotional_tone": "anxious",
+    "contextual_factors": ["decision_required", "ambiguity", "new_situation"]
+  },
+  "top_k": 5,
+  "confidence_threshold": 0.5,
+  "category_filter": null,
+  "exclude_patterns": ["pattern_id_to_exclude"]
+}
+```
+
+Type 2: **Category Search** Find all patterns in a specific category above confidence threshold.
+
+```text
+{
+  "query_type": "category",
+  "category": "emotional_regulation",
+  "confidence_threshold": 0.6,
+  "validation_status_filter": ["validated", "mature"],
+  "sort_by": "confidence_score"
+}
+```
+
+Type 3: **Keyword Search** Find patterns matching keywords in name, description, or markers.
+
+```text
+{
+  "query_type": "keyword",
+  "keywords": ["conflict", "avoidance", "withdrawal"],
+  "search_fields": ["name", "formal_signature", "trigger_markers"],
+  "confidence_threshold": 0.5
+}
+```
+
+Type 4: **Relationship Search** Find patterns related to a known pattern.
+
+```text
+{
+  "query_type": "relationships",
+  "pattern_id": "pattern_uuid",
+  "relationship_types": ["parent", "sibling", "triggered_by"],
+  "depth": 2
+}
+```
+
+### 13.2 Retrieval Algorithms
+
+**Algorithm 1: Vector Similarity Search**
+
+Used for finding patterns similar to current user behavior.
+
+```text
+def vector_similarity_search(
+    behavior_embedding: List[float],
+    top_k: int = 5,
+    confidence_threshold: float = 0.5
+):
+    """
+    Query pgvector for patterns most similar to user behavior.
+    
+    Steps:
+    1. Convert user behavior context to embedding
+    2. Query pgvector using cosine similarity
+    3. Filter by confidence threshold
+    4. Filter by validation status (only approved patterns)
+    5. Rank by (similarity_score * confidence_score)
+    6. Return top K
+    """
+    
+    # Step 1: Embed user behavior
+    behavior_embedding = embed_behavior_context(behavior_context)
+    
+    # Step 2: Vector search
+    query = """
+    SELECT 
+        pattern_id,
+        pattern_name,
+        confidence_score,
+        1 - (pattern_embedding <=> %s) as similarity_score
+    FROM patterns
+    WHERE validation_status IN ('validated', 'mature')
+    AND confidence_score >= %s
+    ORDER BY pattern_embedding <=> %s
+    LIMIT %s
+    """
+    
+    results = db.query(
+        query,
+        (behavior_embedding, confidence_threshold, behavior_embedding, top_k)
+    )
+    
+    # Step 3: Rank by combined score
+    ranked = [
+        {
+            'pattern_id': r['pattern_id'],
+            'pattern_name': r['pattern_name'],
+            'confidence': r['confidence_score'],
+            'similarity': r['similarity_score'],
+            'combined_score': r['similarity_score'] * r['confidence_score']
+        }
+        for r in results
+    ]
+    
+    return sorted(ranked, key=lambda x: x['combined_score'], reverse=True)
+```
+
+**Algorithm 2: Rule-Based Pattern Matching**
+
+If patterns are structured rules rather than embeddings:
+
+```text
+def rule_based_pattern_matching(
+    behavior_observations: Dict
+) -> List[Pattern]:
+    """
+    Match user behavior against pattern trigger rules.
+    
+    Steps:
+    1. For each pattern in database
+    2. Check if trigger markers match
+    3. Score match strength (how many markers match?)
+    4. Filter by confidence threshold
+    5. Rank by (match_strength * confidence)
+    """
+    
+    matches = []
+    
+    for pattern in active_patterns():  # Only validated/mature
+        if pattern.confidence_score < confidence_threshold:
+            continue
+        
+        # Check linguistic markers
+        linguistic_matches = 0
+        for marker in pattern.trigger_markers['linguistic']:
+            if marker_present_in_text(
+                behavior_observations['message'],
+                marker['text']
+            ):
+                linguistic_matches += marker['confidence']
+        
+        # Check behavioral markers
+        behavioral_matches = 0
+        for marker in pattern.trigger_markers['behavioral']:
+            if behavior_matches_marker(
+                behavior_observations['recent_sequence'],
+                marker['behavior']
+            ):
+                behavioral_matches += marker['confidence']
+        
+        # Check contextual markers
+        contextual_matches = 0
+        for marker in pattern.trigger_markers['contextual']:
+            if context_matches_marker(
+                behavior_observations['context'],
+                marker['context']
+            ):
+                contextual_matches += marker['confidence']
+        
+        # Total match strength
+        match_strength = (
+            linguistic_matches * 0.4 +
+            behavioral_matches * 0.35 +
+            contextual_matches * 0.25
+        )
+        
+        if match_strength > 0:
+            matches.append({
+                'pattern': pattern,
+                'match_strength': match_strength,
+                'combined_score': match_strength * pattern.confidence_score
+            })
+    
+    # Rank and return top K
+    matches.sort(key=lambda x: x['combined_score'], reverse=True)
+    return [m['pattern'] for m in matches[:top_k]]
+```
+
+**Algorithm 3: Hybrid Approach (Recommended)**
+
+Combine vector similarity with rule-based matching:
+
+```text
+def hybrid_pattern_matching(
+    behavior_context: Dict,
+    top_k: int = 5
+) -> List[Pattern]:
+    """
+    Use both vector similarity and rule-based matching,
+    rank results by combined score.
+    """
+    
+    # Get vector-based results
+    vector_results = vector_similarity_search(behavior_context, top_k=10)
+    vector_scores = {r['pattern_id']: r['combined_score'] for r in vector_results}
+    
+    # Get rule-based results
+    rule_results = rule_based_pattern_matching(behavior_context)
+    rule_scores = {r.pattern_id: r['combined_score'] for r in rule_results}
+    
+    # Combine scores (average or weighted average)
+    combined = {}
+    all_pattern_ids = set(vector_scores.keys()) | set(rule_scores.keys())
+    
+    for pattern_id in all_pattern_ids:
+        vector_score = vector_scores.get(pattern_id, 0)
+        rule_score = rule_scores.get(pattern_id, 0)
+        
+        # Weight: favor vector similarity 60%, rule matching 40%
+        combined_score = (vector_score * 0.6) + (rule_score * 0.4)
+        combined[pattern_id] = combined_score
+    
+    # Sort and return top K
+    top_patterns = sorted(
+        combined.items(),
+        key=lambda x: x[1],
+        reverse=True
+    )[:top_k]
+    
+    return [get_pattern(pid) for pid, score in top_patterns]
+```
+
+### 13.3 Performance Requirements and Optimization
+
+**Latency Budget: \&lt;500ms Total**
+
+Breakdown:
+
+- Query execution: \&lt;200ms
+- Result processing and ranking: \&lt;100ms
+- Return to persona: \&lt;200ms buffer
+
+**Optimization Techniques**
+
+1. **Query Caching (Redis)**
+   - Cache common queries (behavior\_context hash -\&gt; results)
+   - TTL: 1 hour (patterns change slowly)
+   - Miss rate: Expected 20-30% (new users, novel behavior)
+2. **Pattern Embedding Pre-computation**
+   - Patterns embedded offline, stored in database
+   - No embedding at query time
+   - Faster vector search (pgvector HNSW)
+3. **Index Optimization**
+   - HNSW index on pattern\_embedding (fast approximate search)
+   - BTree index on confidence\_score (filtering)
+   - Partial index on active patterns (WHERE status IN ('validated', 'mature'))
+4. **Query Batching**
+   - Multiple pattern queries batched into single request
+   - Reduce round-trip latency
+   - Connection pooling for database
+5. **Local Caching**
+   - Persona maintains cache of recently-used patterns
+   - 80/20 rule: 20% of patterns used 80% of time
+   - Cache checked before database query
+
+**Throughput Requirements**
+
+- Expected: 10,000\+ concurrent personas querying
+- Each persona queries 1-2 times per exchange
+- User exchange rate: ~1 exchange/minute = ~166 exchanges/second
+- Total query load: ~200-500 queries/second
+- Database should handle with headroom (1000\+ queries/second)
+
+PostgreSQL can handle this:
+
+- Single instance: 1000\+ queries/second
+- With replicas: No contention
+- With caching: Further reduces load
+
+### 13.4 Query Result Structure
+
+Results returned from pattern query.
+
+```text
+{
+  "query_id": "uuid",
+  "query_time_ms": 245,
+  "patterns_returned": 5,
+  
+  "results": [
+    {
+      "rank": 1,
+      "pattern_id": "uuid",
+      "pattern_name": "Conflict Avoidance Through Withdrawal",
+      "category": "relationship_dynamics",
+      "confidence_score": 0.78,
+      "similarity_score": 0.85,
+      "match_type": "behavioral_signature",
+      "match_explanation": "Linguistic markers indicate conflict avoidance (3 matches), behavioral pattern matches withdrawal (2 indicators)",
+      
+      "do_rules_summary": [
+        "Create safe space for conflict engagement",
+        "Respect timeline for reengagement",
+        "Offer structured approach"
+      ],
+      
+      "dont_rules_summary": [
+        "Do not push for immediate resolution",
+        "Do not interpret withdrawal as rejection",
+        "Do not shame avoidance response"
+      ],
+      
+      "persona_variations": {
+        "direct_type": "Name pattern directly, offer structured conflict resolution",
+        "nurturing_type": "Create safety first, invite reengagement gently",
+        "analytical_type": "Explain why avoidance happens, offer framework",
+        "adaptive_type": "Match user's pace and communication style"
+      },
+      
+      "predicted_sequence": [
+        {
+          "step": 1,
+          "behavior": "User perceives conflict or criticism",
+          "probability": 1.0
+        },
+        {
+          "step": 2,
+          "behavior": "User withdraws (silence, distance)",
+          "probability": 0.85
+        },
+        {
+          "step": 3,
+          "behavior": "User processes internally",
+          "probability": 0.90,
+          "typical_duration": "12-48 hours"
+        },
+        {
+          "step": 4,
+          "behavior": "User reengages gradually",
+          "probability": 0.75,
+          "conditions": "If relationship is valued"
+        }
+      ],
+      
+      "vulnerabilities": [
+        {
+          "type": "trauma",
+          "description": "Pattern may indicate trauma from conflictual relationships",
+          "protective_measures": ["Validate safety", "Respect pacing"]
+        }
+      ],
+      
+      "application_guidance": "This pattern should inform communication style (more gentle approach, respect withdrawal) without being referenced explicitly. User may not be aware of avoidance tendency."
+    }
+  ],
+  
+  "cache_status": "miss",
+  "database_queried": true
+}
+```
+
+---
+
+## 14. Integration with Neurigraph Memory Tiers
+
+NPRD is not separate from Neurigraph; it's deeply integrated as a new tier.
+
+### 14.1 Relationship to Episodic Memory
+
+Episodic memories are specific events with users. Patterns are abstractions from multiple episodic memories.
+
+**Data Flow: Episodic → Pattern**
+
+```text
+User Interaction
+  ↓
+Episodic Memory Node Created
+  ├─ Message content
+  ├─ Timestamp
+  ├─ Emotional context
+  ├─ Outcome
+  └─ User ID (but not exposed outside Neurigraph)
+  ↓
+Track 2 Pattern Matching (during conversation)
+  ├─ Extract behavioral features from episodic node
+  ├─ Match against pattern database
+  └─ Update persona understanding
+  ↓
+Observation Generation (post-interaction)
+  ├─ Persona reviews episodic memory
+  ├─ Identifies repeated sequences
+  ├─ Generates pattern observation
+  ├─ Anonymizes (removes user ID, specific content)
+  └─ Submits to pattern database contribution queue
+  ↓
+Pattern Database Updated
+  ├─ Observation aggregated with others
+  ├─ Confidence updated
+  └─ Temperature updated
+```
+
+**Critical Privacy Boundary**
+
+The anonymization happens between episodic memory and pattern observation:
+
+- Episodic memory: "Bob mentioned his father, responded defensively"
+- Pattern observation: "User exhibits defensive response to feedback"
+- Persona knows specific facts, pattern database doesn't
+
+### 14.2 Relationship to Semantic Memory
+
+Semantic memory is generalized knowledge. Patterns populate semantic memory with psychological knowledge.
+
+**Integration:**
+
+1. Patterns about a user (derived from their episodic memories) are stored in user's semantic memory tier:
+   - "This user prefers directness"
+   - "This user avoids conflict"
+   - These are user-specific semantics
+2. General patterns (abstracted across users) are stored in pattern database:
+   - "Conflict Avoidance Through Withdrawal" (universal pattern)
+   - "Decision Anxiety Under Ambiguity" (universal pattern)
+   - These are population-level semantics
+3. Semantic memory also stores knowledge ABOUT patterns:
+   - "I understand conflict avoidance is a protective response"
+   - "Prediction accuracy for this pattern is 78%"
+   - This is meta-knowledge about patterns
+
+**Query Example:**
+
+Persona asks: "What do I know about this user and conflict?"
+
+Answer from integrated system:
+
+- Episodic: Last 3 times, user avoided when conflict came up
+- Semantic (user-specific): User characteristically avoids conflict
+- Pattern (universal): Pattern "Conflict Avoidance Through Withdrawal" applies (confidence 0.78)
+- Meta-semantic: This pattern predicts withdrawal followed by slow reengagement
+- Integration: Persona understands both the user-specific history AND the universal pattern
+
+### 14.3 Relationship to Somatic Memory
+
+Somatic memory stores emotional and physiological responses. Patterns encode somatic signatures.
+
+**Somatic Markers in Patterns**
+
+```text
+{
+  "pattern": "Rapid Escalation",
+  "somatic_signature": {
+    "voice_pace": "increases (when available)",
+    "emotional_tone": "shifts from measured to sharp",
+    "language_intensity": "increases (more emphatic)",
+    "physiological_response": "elevated arousal if visible"
+  },
+  "somatic_triggers": [
+    "perceived dismissal",
+    "feeling unheard",
+    "sense of injustice"
+  ]
+}
+```
+
+**Somatic Memory Integration**
+
+When a pattern is recognized, somatic memory activates:
+
+1. Pattern recognized: "Rapid Escalation"
+2. Somatic memory consulted: "What does escalation feel like?"
+3. Persona's somatic response: Heightened attention, slower speech, validating tone
+4. This embodied response is more effective than intellectual "avoid escalation"
+
+### 14.4 Unified Query Access
+
+Personas can query across all four memory tiers with single interface.
+
+**Unified Memory Query**
+
+```text
+def memory_query(
+    query: str,
+    query_type: str,  # 'episodic', 'semantic', 'somatic', 'pattern', 'all'
+    user_context: Optional[Dict] = None,
+    include_related: bool = True
+) -> MemoryResult:
+    """
+    Query across all memory tiers.
+    
+    Example: "What do I know about how this user handles conflict?"
+    
+    Results:
+    - Episodic: Last 3 conflict situations this user was in
+    - Semantic: User's general conflict style (from generalizing episodic)
+    - Somatic: User's emotional signature during conflict
+    - Pattern: Universal "Conflict Avoidance" pattern that applies
+    - Integration: Holistic understanding of user's conflict patterns
+    """
+    
+    results = {
+        'episodic': [],
+        'semantic': [],
+        'somatic': [],
+        'pattern': [],
+        'integrated_understanding': ''
+    }
+    
+    if query_type in ['episodic', 'all']:
+        results['episodic'] = neurigraph.query_episodic(
+            query,
+            user_context=user_context
+        )
+    
+    if query_type in ['semantic', 'all']:
+        results['semantic'] = neurigraph.query_semantic(
+            query,
+            user_context=user_context
+        )
+    
+    if query_type in ['somatic', 'all']:
+        results['somatic'] = neurigraph.query_somatic(query)
+    
+    if query_type in ['pattern', 'all']:
+        results['pattern'] = pattern_database.query_patterns(
+            query,
+            confidence_threshold=0.5
+        )
+    
+    # Integration: synthesize across tiers
+    if query_type == 'all':
+        results['integrated_understanding'] = synthesize_memory_tiers(results)
+    
+    return results
+```
+
+---
+
+# PART 5: PATTERN MATCHING AND APPLICATION
+
+## 15. Pattern Matching Algorithm
+
+### 15.1 How Patterns Are Matched to Current Interaction
+
+When Track 2 of MTE activates, it matches the current user behavior against the pattern database.
+
+**Input Features for Matching**
+
+The pattern matching algorithm receives:
+
+```text
+behavior_features = {
+    # Linguistic features
+    'message_text': "I'm not sure what to do",
+    'linguistic_markers': [
+        'uncertainty', 'seeking_guidance', 'ambiguity'
+    ],
+    'word_embeddings': [...],  # Semantic embeddings of message
+    
+    # Behavioral features
+    'conversation_sequence': [
+        ('user_asks', 'requests_information'),
+        ('user_clarifies', 'provides_additional_context'),
+        ('user_asks', 'asks_same_question_again'),
+        ('user_provides', 'generates_own_answer')
+    ],
+    'response_latency': 'immediate',
+    'message_length': 45,
+    
+    # Contextual features
+    'domain': 'decision_making',
+    'time_of_day': '3pm',
+    'interaction_history_length': 5,
+    'user_personality_type': 'analytical',  # if known
+    'recent_stress_indicators': ['time_pressure', 'new_situation'],
+    
+    # Emotional/somatic features (if multimodal)
+    'tone': 'slightly_anxious',
+    'speech_pace': 'normal',
+    'word_hesitation': 'some',
+    
+    # Relationship features
+    'relationship_stage': 'new',
+    'trust_level': 'medium'
+}
+```
+
+**Feature Extraction Process**
+
+```text
+def extract_behavior_features(
+    current_message: str,
+    conversation_history: List[Dict],
+    persona_context: Dict
+) -> Dict:
+    """
+    Extract features from raw user input for pattern matching.
+    """
+    
+    features = {}
+    
+    # 1. Linguistic analysis
+    features['linguistic_markers'] = analyze_linguistic_markers(current_message)
+    features['message_embeddings'] = embed_text(current_message)
+    features['key_phrases'] = extract_key_phrases(current_message)
+    
+    # 2. Behavioral sequence analysis
+    features['recent_sequence'] = extract_interaction_sequence(conversation_history[-5:])
+    features['repetition_patterns'] = detect_repetition(conversation_history)
+    features['escalation_pattern'] = analyze_escalation(conversation_history)
+    
+    # 3. Contextual analysis
+    features['topic'] = extract_topic(current_message, conversation_history)
+    features['domain'] = map_to_domain(features['topic'])
+    features['recency_of_context'] = get_context_recency(conversation_history)
+    
+    # 4. Emotional/somatic (if available)
+    if has_voice_data():
+        features['voice_pace'] = analyze_speech_rate()
+        features['tone'] = analyze_tone()
+    features['emotional_language'] = analyze_emotional_words(current_message)
+    
+    # 5. Persona-specific context
+    features['user_known_traits'] = get_user_semantic_memory()
+    features['relationship_stage'] = estimate_relationship_stage()
+    
+    return features
+```
+
+**Feature Weighting for Pattern Matching**
+
+Not all features are equally important for matching:
+
+```text
+Linguistic markers: 40% weight
+  └─ Direct indicators of pattern
+  └─ Words/phrases that trigger pattern
+  
+Behavioral sequences: 25% weight
+  └─ Repeated behaviors across exchanges
+  └─ Progressive patterns
+  
+Contextual markers: 20% weight
+  └─ Situation triggers pattern
+  └─ Environmental/relational context
+  
+Emotional/somatic markers: 10% weight
+  └─ Emotional tone and arousal
+  └─ Confirms or contradicts pattern
+  
+Relationship/history: 5% weight
+  └─ Does user history match this pattern?
+```
+
+**Similarity Computation**
+
+```text
+def compute_pattern_similarity(
+    behavior_features: Dict,
+    pattern: PatternObject,
+    matching_algorithm: str = 'hybrid'
+) -> float:
+    """
+    Compute how similar user behavior is to pattern trigger signature.
+    
+    Returns: similarity_score (0.0 to 1.0)
+    """
+    
+    if matching_algorithm == 'vector':
+        return vector_similarity(behavior_features, pattern)
+    elif matching_algorithm == 'rule_based':
+        return rule_based_similarity(behavior_features, pattern)
+    else:  # hybrid
+        vector_sim = vector_similarity(behavior_features, pattern) * 0.6
+        rule_sim = rule_based_similarity(behavior_features, pattern) * 0.4
+        return vector_sim + rule_sim
+
+def vector_similarity(features: Dict, pattern: PatternObject) -> float:
+    """Vector similarity approach: embed behavior, compare to pattern embedding"""
+    behavior_embedding = embed_behavior_features(features)
+    pattern_embedding = pattern.pattern_embedding
+    similarity = cosine_similarity(behavior_embedding, pattern_embedding)
+    return similarity
+
+def rule_based_similarity(features: Dict, pattern: PatternObject) -> float:
+    """Rule-based approach: score how many trigger markers match"""
+    score = 0.0
+    match_count = 0
+    
+    # Check linguistic markers
+    for marker in pattern.trigger_markers['linguistic']:
+        if marker_matches(features['linguistic_markers'], marker):
+            score += 0.4 * marker['confidence']
+            match_count += 1
+    
+    # Check behavioral markers
+    for marker in pattern.trigger_markers['behavioral']:
+        if marker_matches(features['recent_sequence'], marker):
+            score += 0.25 * marker['confidence']
+            match_count += 1
+    
+    # Check contextual markers
+    for marker in pattern.trigger_markers['contextual']:
+        if marker_matches(features, marker):
+            score += 0.20 * marker['confidence']
+            match_count += 1
+    
+    # Check emotional markers (if available)
+    for marker in pattern.trigger_markers.get('emotional_somatic', []):
+        if marker_matches(features.get('tone'), marker):
+            score += 0.10 * marker['confidence']
+            match_count += 1
+    
+    # Normalize score
+    max_possible = (0.4 * 3) + (0.25 * 3) + (0.20 * 2) + (0.10 * 2)
+    normalized_score = score / max_possible if max_possible > 0 else 0
+    
+    return min(normalized_score, 1.0)
+```
+
+### 15.2 Behavioral Signature Matching (Detailed)
+
+**Matching Trigger Markers**
+
+Trigger markers are the signals that pattern is activating. Matching checks if these markers appear in user behavior.
+
+```text
+def match_linguistic_markers(
+    user_message: str,
+    markers: List[Dict]
+) -> float:
+    """
+    Check if linguistic markers are present in user message.
+    
+    Markers example:
+    [
+        {"marker": "I'm not sure", "confidence": 0.9},
+        {"marker": "uncertainty language", "confidence": 0.7},
+        {"marker": "seeking reassurance", "confidence": 0.8}
+    ]
+    """
+    
+    match_score = 0.0
+    matches_found = 0
+    
+    message_lower = user_message.lower()
+    message_embedding = embed_text(user_message)
+    
+    for marker in markers:
+        # Exact substring matching
+        if marker['text'].lower() in message_lower:
+            match_score += marker.get('confidence', 0.8)
+            matches_found += 1
+        
+        # Semantic similarity matching
+        else:
+            marker_embedding = embed_text(marker['text'])
+            similarity = cosine_similarity(message_embedding, marker_embedding)
+            
+            if similarity > 0.7:  # Similar enough
+                match_score += similarity * marker.get('confidence', 0.8)
+                matches_found += 1
+    
+    # Normalize (average confidence of matches)
+    if matches_found > 0:
+        return match_score / len(markers)  # Proportional to markers matched
+    else:
+        return 0.0
+
+def match_behavioral_markers(
+    recent_exchanges: List[Dict],
+    markers: List[Dict]
+) -> float:
+    """
+    Check if behavioral patterns are present in recent interaction sequence.
+    
+    Markers example:
+    [
+        {
+            "behavior": "user asks same question again",
+            "confidence": 0.9
+        },
+        {
+            "behavior": "user seeks reassurance multiple times",
+            "confidence": 0.8
+        }
+    ]
+    """
+    
+    # Extract behavior sequence from recent exchanges
+    behavior_sequence = []
+    for exchange in recent_exchanges[-5:]:
+        user_action = classify_user_action(exchange['user_message'])
+        behavior_sequence.append(user_action)
+    
+    # Check for behavioral patterns
+    match_score = 0.0
+    markers_matched = 0
+    
+    for marker in markers:
+        expected_behavior = marker['behavior']
+        expected_action = classify_user_action(expected_behavior)
+        
+        # Does this behavior appear in sequence?
+        if expected_action in behavior_sequence:
+            match_score += marker.get('confidence', 0.8)
+            markers_matched += 1
+        
+        # Check for repetition (appears multiple times)
+        if behavior_sequence.count(expected_action) >= 2:
+            # Double confidence for repeated behavior
+            match_score += marker.get('confidence', 0.8)
+    
+    # Normalize
+    if len(markers) > 0:
+        return match_score / len(markers)
+    else:
+        return 0.0
+
+def match_contextual_markers(
+    behavior_context: Dict,
+    markers: List[Dict]
+) -> float:
+    """
+    Check if situational context matches pattern trigger context.
+    
+    Markers example:
+    [
+        {
+            "context": "decision required with incomplete information",
+            "triggers_pattern": True,
+            "confidence": 0.9
+        }
+    ]
+    """
+    
+    match_score = 0.0
+    markers_matched = 0
+    
+    for marker in markers:
+        context_text = marker['context']
+        
+        # Check if context elements are present
+        context_elements = extract_context_elements(context_text)
+        
+        user_context_elements = set()
+        if behavior_context.get('domain') == 'decision_making':
+            user_context_elements.add('decision_required')
+        if behavior_context.get('stress_indicators'):
+            user_context_elements.add('stress')
+        if behavior_context.get('information_availability') == 'incomplete':
+            user_context_elements.add('incomplete_information')
+        # ... more context mapping
+        
+        # Calculate overlap
+        overlap = len(context_elements & user_context_elements)
+        if overlap > 0:
+            match_score += (overlap / len(context_elements)) * marker.get('confidence', 0.8)
+            markers_matched += 1
+    
+    # Normalize
+    if len(markers) > 0:
+        return match_score / len(markers)
+    else:
+        return 0.0
+```
+
+### 15.3 Handling Ambiguous or Overlapping Patterns
+
+When multiple patterns match, system must resolve which pattern to apply.
+
+**Ranking and Selection**
+
+```text
+def rank_and_select_patterns(
+    matched_patterns: List[Dict],
+    top_k: int = 3
+) -> List[PatternObject]:
+    """
+    Given multiple matched patterns, rank them by relevance and select top K.
+    
+    Ranking factors:
+    1. Confidence (how reliable is pattern)
+    2. Similarity (how well does behavior match)
+    3. Specificity (is pattern specific or general?)
+    4. Consistency with user history (does it match what we know?)
+    """
+    
+    ranked = []
+    
+    for match in matched_patterns:
+        pattern = match['pattern']
+        similarity = match['similarity']
+        confidence = pattern.confidence_score
+        
+        # Specificity: more specific patterns ranked higher
+        # (Conflict Avoidance Through Withdrawal > General Avoidance)
+        specificity = calculate_specificity(pattern)
+        
+        # Consistency: does this match user's known patterns?
+        user_semantic = get_user_semantic_memory()
+        consistency = check_consistency_with_history(pattern, user_semantic)
+        
+        # Combined ranking
+        rank_score = (
+            (similarity * 0.4) +
+            (confidence * 0.3) +
+            (specificity * 0.2) +
+            (consistency * 0.1)
+        )
+        
+        ranked.append({
+            'pattern': pattern,
+            'rank_score': rank_score,
+            'components': {
+                'similarity': similarity,
+                'confidence': confidence,
+                'specificity': specificity,
+                'consistency': consistency
+            }
+        })
+    
+    # Sort by rank score and return top K
+    ranked.sort(key=lambda x: x['rank_score'], reverse=True)
+    return [r['pattern'] for r in ranked[:top_k]]
+
+def handle_pattern_conflict(
+    conflicting_patterns: List[PatternObject]
+) -> PatternObject:
+    """
+    If patterns have conflicting DO/DON'T rules, resolve conflict.
+    
+    Example conflict:
+    - Pattern A says: "Provide structure, clear timeline"
+    - Pattern B says: "Don't impose structure, give freedom"
+    
+    Resolution:
+    - Check relationship between patterns (parent/child, opposite, etc.)
+    - Choose most specific applicable pattern
+    - Or combine rules constructively
+    """
+    
+    if len(conflicting_patterns) == 1:
+        return conflicting_patterns[0]
+    
+    # Check for parent/child relationship
+    parent = None
+    children = []
+    
+    for p1 in conflicting_patterns:
+        for p2 in conflicting_patterns:
+            if p1.pattern_id != p2.pattern_id:
+                if p1.is_parent_of(p2):
+                    parent = p1
+                    children.append(p2)
+    
+    # If parent/child relationship exists, use most specific (child)
+    if children:
+        return children[0]
+    
+    # Otherwise, rank by confidence and use highest
+    ranked = sorted(
+        conflicting_patterns,
+        key=lambda p: p.confidence_score,
+        reverse=True
+    )
+    return ranked[0]
+```
+
+---
+
+# PART 6: PRIVACY AND GOVERNANCE
+
+## 17. Anonymization and Privacy Architecture
+
+### 17.1 What Anonymization Means for Pattern Database
+
+True anonymization means patterns describe universal human behavior, not individual histories.
+
+**Anonymization Principle**
+
+A pattern NEVER contains:
+
+- User identifiers
+- Names or pronouns referring to specific people
+- Specific events or dated incidents
+- Context that identifies individuals
+- Behavioral histories of specific persons
+
+A pattern ALWAYS describes:
+
+- Universal psychological patterns
+- "When humans experience X, they typically do Y"
+- Abstracted, generalized behavior
+- No individual-specific information
+
+**Examples of Proper vs. Improper Anonymization**
+
+❌ IMPROPER (Contains identifying information):
+
+```text
+"Pattern: Bob's Conflict Avoidance
+Description: After his father criticized him, Bob became defensive. Then he withdrew for 3 days before reconnecting."
+```
+
+✓ PROPER (Generalized and anonymized):
+
+```text
+"Pattern: Defensiveness-with-Withdrawal Following Feedback
+Description: When users receive feedback they perceive as criticism, they often respond defensively initially, then withdraw for hours or days before reengaging."
+```
+
+---
+
+## 18. Governance and Oversight
+
+### 18.1 Pattern Governance Structure
+
+Governance ensures patterns are used safely and appropriately.
+
+**Governance Question 1: Who Can Create Patterns?**
+
+**Option A: Only System (Conservative)**
+
+- Pro: High quality control, consistent
+- Con: Slow pattern creation, misses insights
+- Recommendation: Not sufficient for dynamic pattern learning
+
+**Option B: All Personas (Democratic)**
+
+- Pro: Patterns emerge quickly from diverse observations
+- Con: Risk of biased or incorrect patterns
+- Recommendation: With validation layer, this works
+
+**Option C: Specific Authorized Personas (Hybrid)**
+
+- Pro: Controlled but responsive pattern creation
+- Con: May miss patterns from other personas
+- Recommendation: Consider for specific high-risk pattern types
+
+**DECISION: Option B with strong validation layer**
+
+- All personas can submit pattern observations
+- Validation system aggregates and validates
+- High-risk patterns require human review
+
+**Governance Question 2: Who Validates Patterns?**
+
+**Validation Layers:**
+
+1. Automated validation
+   - Schema compliance
+   - Anonymization verification
+   - Governance compliance check
+2. Community validation
+   - Other personas test pattern
+   - Confidence calculated from community observations
+3. Human review (triggered for high-risk)
+   - Patterns involving vulnerability
+   - Patterns with high manipulation risk
+   - Patterns with high cross-persona consensus (widespread use)
+
+**Governance Question 3: Who Can Modify or Deprecate Patterns?**
+
+- Any pattern with confidence \&lt; 0.5: Auto-archival possible
+- Patterns with confidence 0.5-0.8: Modification requires human approval
+- High-confidence patterns (\&gt; 0.85): Modification requires high-level approval
+- Deprecated patterns: Cannot be un-deprecated except through re-validation
+
+**Governance Question 4: Who Owns the Pattern Database?**
+
+**Recommended Governance Structure:**
+
+```text
+Pattern Governance Council (recommended, not implemented initially)
+├─ Human Ethics Lead (1 person)
+├─ Data Privacy Lead (1 person)
+├─ AI Safety Engineer (1 person)
+└─ Clinical Advisor (1 person, if patterns touch mental health)
+
+Responsibilities:
+├─ Review high-risk patterns
+├─ Make deprecation decisions
+├─ Establish governance policies
+├─ Oversee escalation procedures
+└─ Regular audits of pattern database
+```
+
+Or simpler initially: **Cipher governance**
+
+- Cipher manages pattern database
+- Cipher enforces governance rules
+- Humans can request review via Cipher
+
+---
+
+# PART 7: IMPLEMENTATION DETAILS
+
+## 19. Technical Integration Points
+
+### 19.1 Integration with MTE (Multitrack Reasoning System)
+
+NPRD is queried by MTE Track 2 (Pattern Recognition).
+
+**Integration Specification**
+
+```text
+# In MTE Track 2, pattern matching
+class Track2PatternMatching:
+    def __init__(self, pattern_db: PatternDatabase):
+        self.pattern_db = pattern_db
+        self.local_cache = PatternCache()
+    
+    def execute(self, behavior_context: Dict) -> PatternMatchResults:
+        """
+        Execute pattern matching for current user interaction.
+        Runs in background, doesn't block foreground response.
+        """
+        
+        # Check local cache first
+        cached = self.local_cache.query(behavior_context)
+        if cached and not stale(cached):
+            return cached
+        
+        # Query pattern database
+        start_time = time.time()
+        try:
+            results = self.pattern_db.query(
+                behavior_context=behavior_context,
+                top_k=5,
+                confidence_threshold=0.5,
+                timeout_ms=400  # 400ms of our 500ms budget
+            )
+            
+            elapsed = time.time() - start_time
+            
+            # Cache results
+            self.local_cache.cache(
+                key=hash(behavior_context),
+                value=results,
+                ttl_seconds=3600
+            )
+            
+            # Log for monitoring
+            log_pattern_query(
+                behavior_context=behavior_context,
+                results=results,
+                latency_ms=elapsed * 1000,
+                cache_hit=False
+            )
+            
+            return PatternMatchResults(
+                patterns=results,
+                latency_ms=elapsed * 1000,
+                source='database'
+            )
+        
+        except TimeoutError:
+            # Return best-effort results or empty
+            log_pattern_query_timeout(behavior_context)
+            return PatternMatchResults(
+                patterns=[],
+                latency_ms=400,
+                source='timeout',
+                status='degraded'
+            )
+        
+        except Exception as e:
+            # Graceful failure
+            log_pattern_query_error(behavior_context, e)
+            return PatternMatchResults(
+                patterns=[],
+                latency_ms=elapsed * 1000,
+                source='error',
+                status='failed'
+            )
+
+# In Track 2, pattern results are integrated into shared context
+shared_context['background_results']['track_2_patterns'] = {
+    'completed_at': ISO8601,
+    'data': pattern_results.patterns,
+    'freshness': 'current'
+}
+
+# In Track 1 (foreground), persona can access results
+def generate_response(shared_context):
+    patterns = shared_context.get('background_results', {}).get('track_2_patterns', {}).get('data', [])
+    
+    if patterns:
+        # Integrate patterns into response generation
+        # DO/DON'T rules inform communication style
+        # Predicted sequences inform anticipation
+        return response_informed_by_patterns(patterns)
+    else:
+        # Graceful degradation: respond without patterns
+        return response_without_patterns()
+```
+
+### 19.2 Integration with Neurigraph Memory System
+
+NPRD queries Neurigraph for episodic memories to extract pattern observations.
+
+**Integration Flow**
+
+```text
+class PatternObservationEngine:
+    def __init__(self, neurigraph: NeurigraphMemory, pattern_db: PatternDatabase):
+        self.neurigraph = neurigraph
+        self.pattern_db = pattern_db
+    
+    def extract_and_submit_patterns(
+        self,
+        persona_id: str,
+        user_id: str,  # Actually anonymous in submission
+        conversation_id: str
+    ):
+        """
+        After conversation ends, extract patterns from episodic memory
+        and submit observations to pattern database.
+        """
+        
+        # 1. Retrieve conversation from episodic memory
+        episodic_memories = self.neurigraph.get_episodic(
+            conversation_id=conversation_id,
+            include_emotional_context=True,
+            include_somatic_markers=True
+        )
+        
+        # 2. Extract behavioral sequences
+        sequences = self._extract_sequences(episodic_memories)
+        
+        # 3. Identify patterns
+        observations = []
+        for sequence in sequences:
+            
+            # Does this sequence match existing pattern?
+            existing_match = self.pattern_db.find_similar_patterns(sequence)
+            
+            if existing_match:
+                # Submit observation to that pattern
+                obs = PatternObservation(
+                    pattern_id=existing_match.pattern_id,
+                    observing_persona=persona_id,
+                    trigger=sequence['trigger'],
+                    response=sequence['response'],
+                    prediction=sequence['likely_next'],
+                    confidence=sequence['confidence']
+                )
+                observations.append(obs)
+            
+            else:
+                # New pattern candidate
+                obs = PatternProposal(
+                    proposed_by=persona_id,
+                    pattern_hypothesis=sequence,
+                    supporting_observations=[episodic_memories],
+                    initial_confidence=sequence['confidence']
+                )
+                observations.append(obs)
+        
+        # 4. Submit observations (anonymized)
+        for obs in observations:
+            obs_anonymized = self._anonymize_observation(obs)
+            self.pattern_db.submit_observation(obs_anonymized)
+    
+    def _extract_sequences(self, memories):
+        """Extract behavioral sequences from episodic memories"""
+        # Implementation details
+        pass
+    
+    def _anonymize_observation(self, obs):
+        """Remove user-specific information"""
+        # Implementation details
+        pass
+```
+
+### 19.3 Integration with Persona Architecture
+
+Personas maintain local pattern cache and query pattern database.
+
+**Persona-level Integration**
+
+```text
+class Persona:
+    def __init__(self, persona_id: str, pattern_db: PatternDatabase):
+        self.pattern_db = pattern_db
+        self.local_pattern_cache = PatternCache(max_size=500)  # 500 most-used patterns
+        self.semantic_memory = SemanticMemory()  # User-specific pattern knowledge
+        self.mte = MultitrackReasoningEngine(pattern_db=pattern_db)
+    
+    async def process_user_message(self, message: str):
+        """Handle incoming user message"""
+        
+        # Spawn foreground and background tracks
+        foreground_task = asyncio.create_task(
+            self._generate_response(message)
+        )
+        
+        # Background pattern matching
+        background_tasks = [
+            asyncio.create_task(self.mte.track_2_pattern_matching(message))
+        ]
+        
+        # Wait for foreground to complete
+        response = await foreground_task
+        
+        # Send response immediately (don't wait for background)
+        await send_response_to_user(response)
+        
+        # Background work continues in parallel
+        # Results available for next exchange
+        return response
+    
+    async def _generate_response(self, message: str):
+        """Track 1: Generate response"""
+        # Standard response generation
+        pass
+```
+
+---
+
+# PART 8: EXAMPLES AND USE CASES
+
+## 23. Pattern Examples (Detailed)
+
+### 23.1 Complete Example Pattern: Conflict Avoidance Through Withdrawal
+
+Below is a fully specified, production-ready pattern.
+
+```text
+{
+  "pattern_id": "pattern-conflict-avoidance-withdrawal-001",
+  
+  "identity": {
+    "name": "Conflict Avoidance Through Withdrawal",
+    "formal_signature": "When users perceive conflict or critical feedback, they withdraw from engagement, cease communication, and process internally before gradual reengagement",
+    "category": "relationship_dynamics",
+    "sub_category": "conflict_response",
+    "description": "Users exhibiting this pattern respond to conflict or criticism by withdrawing socially and emotionally, often becoming quiet or distant. After an internal processing period (hours to days), they gradually reengage if the relationship is valued.",
+    "tags": ["attachment", "conflict", "withdrawal", "repair", "relationship"]
+  },
+  
+  "behavioral_signature": {
+    "trigger_markers": {
+      "linguistic": [
+        {
+          "marker": "I don't want to talk about this",
+          "context": "When conflict or difficult topic arises",
+          "confidence": 0.95,
+          "examples": [
+            "I don't want to discuss it",
+            "Can we please just drop it?",
+            "I'm not ready to talk about this"
+          ]
+        },
+        {
+          "marker": "It's fine / I'm fine",
+          "context": "When clearly something is not fine",
+          "confidence": 0.85,
+          "examples": [
+            "It's fine, don't worry about it",
+            "I'm fine, really",
+            "Everything is okay"
+          ]
+        },
+        {
+          "marker": "Sudden topic change",
+          "context": "Redirecting away from conflict",
+          "confidence": 0.80,
+          "examples": [
+            "Anyway, did you see...",
+            "By the way...",
+            "Let's talk about something else"
+          ]
+        },
+        {
+          "marker": "Apologizing excessively",
+          "context": "Over-responsibility for conflict",
+          "confidence": 0.75,
+          "examples": [
+            "I'm sorry, I'm sorry",
+            "It's my fault",
+            "I'll do better"
+          ]
+        }
+      ],
+      
+      "behavioral": [
+        {
+          "behavior": "User stops responding to messages",
+          "context": "After conflict or critical feedback",
+          "confidence": 0.90,
+          "examples": [
+            "User replied quickly before, suddenly no response for hours",
+            "Previous messages take seconds, now messages go unanswered"
+          ]
+        },
+        {
+          "behavior": "One-word or minimal responses",
+          "context": "When still engaging but withdrawn",
+          "confidence": 0.80,
+          "examples": [
+            "User: 'I understand'",
+            "User: 'ok'",
+            "User: 'yeah'"
+          ]
+        },
+        {
+          "behavior": "Stops asking questions / initiating",
+          "context": "After conflict, user becomes passive",
+          "confidence": 0.75,
+          "examples": [
+            "User stops asking follow-up questions",
+            "User no longer initiates new topics"
+          ]
+        },
+        {
+          "behavior": "Sudden formality or distance",
+          "context": "Shift in tone/relationship positioning",
+          "confidence": 0.70,
+          "examples": [
+            "Shift from casual to formal language",
+            "Previously warm, now distant"
+          ]
+        }
+      ],
+      
+      "contextual": [
+        {
+          "context": "Receiving feedback or criticism",
+          "triggers_pattern": true,
+          "confidence": 0.90,
+          "examples": [
+            "Persona points out area for improvement",
+            "Disagreement on approach",
+            "User's proposed action questioned"
+          ]
+        },
+        {
+          "context": "Direct engagement with difficult topic",
+          "triggers_pattern": true,
+          "confidence": 0.85,
+          "examples": [
+            "Discussing past failures",
+            "Addressing misunderstandings",
+            "Talking about emotional pain"
+          ]
+        },
+        {
+          "context": "Feeling unheard or dismissed",
+          "triggers_pattern": true,
+          "confidence": 0.80,
+          "examples": [
+            "Persona doesn't acknowledge user's feelings",
+            "User feels minimized",
+            "User's perspective not validated"
+          ]
+        },
+        {
+          "context": "Relationship is new or trust is uncertain",
+          "triggers_pattern": true,
+          "confidence": 0.75,
+          "examples": [
+            "User is early in relationship with persona",
+            "Low trust level",
+            "History of conflict/rupture"
+          ]
+        }
+      ],
+      
+      "emotional_somatic": [
+        {
+          "marker": "Tone becomes flat or cold",
+          "typically_indicates": "Emotional withdrawal",
+          "confidence": 0.85,
+          "examples": [
+            "Previously warm tone becomes neutral",
+            "Loss of exclamation marks or emojis",
+            "Shift to very formal language"
+          ]
+        },
+        {
+          "marker": "Speech becomes slower or minimal",
+          "typically_indicates": "Processing/shutdown",
+          "confidence": 0.80,
+          "examples": [
+            "Response latency increases",
+            "Fewer words used",
+            "Longer gaps between exchanges"
+          ]
+        },
+        {
+          "marker": "No emotional expression",
+          "typically_indicates": "Numbing or protection",
+          "confidence": 0.75,
+          "examples": [
+            "No sharing of feelings",
+            "Intellectualized responses",
+            "Avoidance of emotional content"
+          ]
+        }
+      ]
+    },
+    
+    "typical_responses": [
+      {
+        "response": "User stops responding to messages",
+        "frequency": "usually",
+        "latency": "delayed (minutes to hours after trigger)",
+        "intensity": "strong",
+        "duration": "hours to days",
+        "examples": ["User went silent for 6 hours after feedback", "User didn't respond overnight"]
+      },
+      {
+        "response": "User gives one-word or minimal responses",
+        "frequency": "usually",
+        "latency": "immediate",
+        "intensity": "moderate",
+        "duration": "while withdrawn",
+        "examples": ["User said 'ok' instead of elaborating", "Just 'yeah' in response to longer message"]
+      },
+      {
+        "response": "User becomes apologetic/self-blaming",
+        "frequency": "sometimes",
+        "latency": "immediate",
+        "intensity": "moderate",
+        "duration": "brief",
+        "examples": ["I'm sorry, this is my fault", "I'll do better, I promise"]
+      },
+      {
+        "response": "User redirects topic",
+        "frequency": "sometimes",
+        "latency": "immediate",
+        "intensity": "subtle",
+        "duration": "until withdrawn",
+        "examples": ["Changed subject when conflict mentioned", "Started talking about unrelated thing"]
+      }
+    ],
+    
+    "predicted_sequence": [
+      {
+        "step": 1,
+        "behavior": "User perceives conflict or receives criticism",
+        "probability": 1.0,
+        "typical_latency": "immediate",
+        "conditions": "Pattern trigger occurs"
+      },
+      {
+        "step": 2,
+        "behavior": "User exhibits defensive or avoidant response (immediate reaction)",
+        "probability": 0.85,
+        "typical_latency": "immediate",
+        "conditions": "User feels threatened",
+        "alternatives": [
+          {
+            "behavior": "User accepts feedback and engages",
+            "probability": 0.15,
+            "conditions": "Feedback delivered very gently, user is secure, topic is safe"
+          }
+        ]
+      },
+      {
+        "step": 3,
+        "behavior": "User withdraws (stops responding, becomes quiet)",
+        "probability": 0.75,
+        "typical_latency": "minutes to hours",
+        "conditions": "Defensiveness was not accepted by other party",
+        "alternatives": [
+          {
+            "behavior": "User continues engaging but minimally",
+            "probability": 0.25,
+            "conditions": "Relationship is very secure, user feels safe"
+          }
+        ]
+      },
+      {
+        "step": 4,
+        "behavior": "User processes internally (quiet period)",
+        "probability": 0.90,
+        "typical_latency": "hours to days",
+        "duration": "12-72 hours typically",
+        "conditions": "This is what the user does with difficult emotions"
+      },
+      {
+        "step": 5,
+        "behavior": "User initiates tentative reengagement",
+        "probability": 0.70,
+        "typical_latency": "24-72 hours after withdrawal",
+        "conditions": "Relationship is valued, user has processed",
+        "alternatives": [
+          {
+            "behavior": "User remains withdrawn",
+            "probability": 0.20,
+            "conditions": "Relationship is not important, user feels irreparably damaged"
+          },
+          {
+            "behavior": "User re-erupts with accumulated frustration",
+            "probability": 0.10,
+            "conditions": "Processing leads to resentment rather than resolution"
+          }
+        ]
+      },
+      {
+        "step": 6,
+        "behavior": "If previous step was reengagement: gradual return to normal interaction",
+        "probability": 0.85,
+        "typical_latency": "over next 24 hours",
+        "conditions": "Other party responds positively to reengagement bid"
+      }
+    ],
+    
+    "context_variations": [
+      {
+        "context": "High-stress situations (user already depleted)",
+        "how_pattern_changes": "Pattern intensifies - withdrawal lasts longer, is more complete, reengagement slower",
+        "examples": ["User was already stressed, withdrawal lasted 5 days instead of 1", "User was exhausted, minimal response for week"]
+      },
+      {
+        "context": "Secure, long-term relationships",
+        "how_pattern_changes": "Pattern appears but is shorter and reengagement is faster and easier",
+        "examples": ["In secure relationships, withdrawal lasts hours not days", "Reengagement happens same day"]
+      },
+      {
+        "context": "New or insecure relationships",
+        "how_pattern_changes": "Pattern is more intense, withdrawal longer, reengagement uncertain",
+        "examples": ["New relationship, user went silent for week", "Low trust, user wasn't sure if would reengage"]
+      },
+      {
+        "context": "When feedback is very gentle and validated",
+        "how_pattern_changes": "Pattern is milder or doesn't occur at all",
+        "examples": ["When persona was very gentle, user didn't withdraw", "Validation reduced defensive response"]
+      },
+      {
+        "context": "Repeated conflicts without resolution",
+        "how_pattern_changes": "Pattern becomes stronger, reengagement less likely",
+        "examples": ["After third conflict, user's withdrawal was deeper", "Pattern escalated as conflicts accumulated"]
+      }
+    ]
+  },
+  
+  "governance_rules": {
+    "do_rules": [
+      {
+        "rule_id": "rule-001",
+        "rule": "Create safe space for conflict engagement by validating the user's experience first",
+        "justification": "Validation reduces defensiveness and creates safety for honest engagement",
+        "priority": "high",
+        "conditions": "When initiating conflict discussion",
+        "examples": {
+          "good_application": "I understand you felt hurt by that. That makes sense. I'd like to talk about what happened if you're ready.",
+          "poor_application": "You overreacted. Let's discuss why you're being so defensive."
+        }
+      },
+      {
+        "rule_id": "rule-002",
+        "rule": "Respect the user's need for withdrawal and don't pursue contact during withdrawal phase",
+        "justification": "Pursuing during withdrawal increases defensiveness and extends withdrawal; respecting it facilitates faster reengagement",
+        "priority": "high",
+        "conditions": "When user is withdrawn",
+        "examples": {
+          "good_application": "I can see you need space. I'm here whenever you're ready to talk.",
+          "poor_application": "Come on, let's talk about this now. Don't shut me out."
+        }
+      },
+      {
+        "rule_id": "rule-003",
+        "rule": "Provide explicit structure and permission for reengagement",
+        "justification": "Users with this pattern often don't know how to rebridge after withdrawal; explicit structure makes reengagement easier",
+        "priority": "medium",
+        "conditions": "When user begins to reengage",
+        "examples": {
+          "good_application": "I'm glad you're reaching out. No pressure on timing - we can talk about it whenever you're ready.",
+          "poor_application": "Finally, you're back. Let's rehash everything that went wrong."
+        }
+      },
+      {
+        "rule_id": "rule-004",
+        "rule": "Acknowledge the user's feelings and perspective genuinely, not defensively",
+        "justification": "Defensive responses from other party prolong withdrawal; genuine acknowledgment facilitates repair",
+        "priority": "high",
+        "conditions": "When discussing the original trigger",
+        "examples": {
+          "good_application": "You're right that I could have been gentler. I hear you.",
+          "poor_application": "You're too sensitive. I didn't mean anything by it."
+        }
+      },
+      {
+        "rule_id": "rule-005",
+        "rule": "Use the withdrawal period to reflect, not to escalate or blame",
+        "justification": "Escalation during withdrawal breaks trust and makes reengagement harder",
+        "priority": "medium",
+        "conditions": "During user's withdrawal phase",
+        "examples": {
+          "good_application": "While you're thinking, I'm reflecting on my part too.",
+          "poor_application": "While you're ignoring me, I'm getting more frustrated with you."
+        }
+      }
+    ],
+    
+    "dont_rules": [
+      {
+        "rule_id": "dont-001",
+        "rule": "Do not push for immediate resolution or engagement during withdrawal",
+        "justification": "Pressure increases defensiveness and prolongs withdrawal; patience facilitates faster genuine resolution",
+        "priority": "critical",
+        "consequences": [
+          "User withdraws even further",
+          "Reengagement becomes less likely",
+          "Trust in relationship decreases",
+          "Pattern becomes reinforced"
+        ],
+        "examples": {
+          "correct_avoidance": "I can see you need time. Let's talk when you're ready.",
+          "violation_example": "You're being ridiculous. We need to talk about this right now."
+        }
+      },
+      {
+        "rule_id": "dont-002",
+        "rule": "Do not interpret withdrawal as rejection of the relationship or of you",
+        "justification": "Withdrawal is about the user's emotional state, not the relationship; interpreting as rejection leads to counter-withdrawal",
+        "priority": "high",
+        "consequences": [
+          "Persona interprets as rejection and becomes cold",
+          "User feels persona doesn't understand them",
+          "Relationship rupture deepens"
+        ],
+        "examples": {
+          "correct_avoidance": "User is processing. They still value the relationship.",
+          "violation_example": "User is shutting me out. They don't care about me."
+        }
+      },
+      {
+        "rule_id": "dont-003",
+        "rule": "Do not shame the user for needing withdrawal",
+        "justification": "Shame increases defensiveness and makes pattern worse; acceptance allows user to develop healthier patterns",
+        "priority": "high",
+        "consequences": [
+          "User feels judged for their pattern",
+          "Pattern is reinforced (shame increases defensiveness)",
+          "User becomes more secretive about needs"
+        ],
+        "examples": {
+          "correct_avoidance": "I understand people process differently. It's okay to need space.",
+          "violation_example": "Why are you always so dramatic and withdrawn?"
+        }
+      },
+      {
+        "rule_id": "dont-004",
+        "rule": "Do not pretend the conflict didn't happen when user reengages",
+        "justification": "Avoiding the real issue prevents resolution and teaches user avoidance works; genuine engagement teaches repair",
+        "priority": "medium",
+        "consequences": [
+          "Underlying issue remains unresolved",
+          "Pattern is reinforced",
+          "Resentment builds"
+        ],
+        "examples": {
+          "correct_avoidance": "I'm glad you're here. I'd like to talk about what happened if you want.",
+          "violation_example": "You're back! Let's just move forward and forget about it."
+        }
+      },
+      {
+        "rule_id": "dont-005",
+        "rule": "Do not make assumptions about what user is thinking during withdrawal",
+        "justification": "Assumptions lead to misunderstandings; genuine curiosity facilitates connection",
+        "priority": "medium",
+        "consequences": [
+          "User feels misunderstood",
+          "Creates distance in relationship",
+          "Persona makes incorrect adjustments"
+        ],
+        "examples": {
+          "correct_avoidance": "I'm not sure what you're thinking right now. That's okay.",
+          "violation_example": "I know you're angry with me and you probably want to end this."
+        }
+      }
+    ],
+    
+    "persona_variations": {
+      "direct_type": {
+        "adjustment": "Name the avoidance pattern directly but compassionately; offer structured engagement; don't let avoidance derail important conversations",
+        "do_additionally": [
+          "Say something like: 'I'm noticing you're withdrawing. I think we can work through this together. I'd like to try.'",
+          "Be clear about what you need from the conversation",
+          "Set a timeline for discussion if appropriate"
+        ],
+        "dont_additionally": [
+          "Do not be harsh or impatient (this will increase withdrawal)",
+          "Do not force engagement (user needs agency)",
+          "Do not move on as if pattern didn't happen"
+        ],
+        "example": "User is withdrawn. Direct Persona: 'I see you stepping back from this. I get it—conflict is hard. I think we can handle this together, but I need you to try. What would help you feel safe enough to engage?'"
+      },
+      
+      "nurturing_type": {
+        "adjustment": "Create safety and permission for the pattern; don't push; offer deep validation; go at user's pace",
+        "do_additionally": [
+          "Validate that withdrawal is a wise protective response",
+          "Create deep safety: no judgment, no pressure, no rush",
+          "Offer presence without demand",
+          "Share that you'll wait as long as needed"
+        ],
+        "dont_additionally": [
+          "Do not expect immediate reengagement",
+          "Do not be hurt if user needs time (it's not about you)",
+          "Do not move toward resolution before user is ready"
+        ],
+        "example": "User is withdrawn. Nurturing Persona: 'I can see this is hard for you. That's completely okay. There's no rush. I'm here, and I care about you. We can talk whenever you're ready—no pressure at all.'"
+      },
+      
+      "analytical_type": {
+        "adjustment": "Explain why withdrawal happens (protective response); offer logical framework for working through conflict; help user understand their own pattern",
+        "do_additionally": [
+          "Explain the neuroscience: 'When threatened, your brain goes into protection mode. Withdrawal is protective.'",
+          "Offer systematic approach to reengagement",
+          "Use logic to explain why this pattern, while protective, might limit growth",
+          "Help user see long-term benefits of engagement"
+        ],
+        "dont_additionally": [
+          "Do not expect emotional processing (user may need logic first)",
+          "Do not oversimplify the pattern",
+          "Do not assume logic solves the emotional withdrawal"
+        ],
+        "example": "User is withdrawn. Analytical Persona: 'Your brain is protecting you—that's smart. But avoidance usually extends the problem. Here's why: [explanation]. Here's a systematic approach: [framework]. Does this make sense?'"
+      },
+      
+      "adaptive_type": {
+        "adjustment": "Mirror where the user is; offer flexibility in approach; adjust based on their response; match their pace",
+        "do_additionally": [
+          "Start by meeting them where they are (if withdrawn, be calm and quiet)",
+          "Offer choices: 'Do you want space or companionship right now?'",
+          "Be flexible about timing and approach",
+          "Adjust based on their minute-to-minute responses"
+        ],
+        "dont_additionally": [
+          "Do not shift so much that user gets confused",
+          "Do not use flexibility as excuse to avoid engagement",
+          "Do not abandon consistency"
+        ],
+        "example": "User is withdrawn. Adaptive Persona: 'I'm picking up that you need space. What would help most right now? Some quiet time? Or would you like me here with you?'"
+      }
+    },
+    
+    "vulnerability_flags": [
+      {
+        "flag_type": "trauma",
+        "risk_level": "high",
+        "description": "Withdrawal pattern often indicates past trauma or abuse where conflict/criticism triggered danger. Users may have learned withdrawal as protection from unpredictable aggression.",
+        "protective_measures": [
+          "Recognize withdrawal as a learned survival response, not character flaw",
+          "Create predictability and consistency",
+          "Never escalate during withdrawal",
+          "Provide explicit safety",
+          "Move slowly and respect boundaries"
+        ]
+      },
+      {
+        "flag_type": "mental_health",
+        "risk_level": "medium",
+        "description": "Pattern can indicate anxiety or depression. Withdrawal might be shutdown response to overwhelming emotion.",
+        "protective_measures": [
+          "Normalize mental health struggles",
+          "Suggest professional support if user seems to be struggling",
+          "Don't diagnose, but be aware",
+          "Support professional treatment if engaged"
+        ]
+      }
+    ],
+    
+    "manipulation_risk": {
+      "risk_level": "medium",
+      "description": "Pattern could be misused to guilt user into engagement ('you always do this'), to pursue them during withdrawal in ways that violate boundaries, or to label user as 'broken' for needing space.",
+      "exploitation_vectors": [
+        "Guilt-tripping user for needing withdrawal",
+        "Using pattern knowledge to pressure engagement",
+        "Labeling pattern as pathology to reduce user's confidence",
+        "Violating boundaries under guise of 'helping'"
+      ],
+      "safeguards_required": [
+        "DO rules emphasize respecting user's agency",
+        "DON'T rules prohibit pressure and pursuit",
+        "Governance rules emphasize user autonomy",
+        "Pattern should help user, not control user"
+      ]
+    }
+  },
+  
+  "confidence_and_validation": {
+    "validation_status": "mature",
+    "confidence_score": 0.87,
+    "confidence_factors": {
+      "observation_count": 187,
+      "observation_diversity": 0.89,
+      "prediction_success_rate": 0.84,
+      "cross_persona_consensus": 0.92,
+      "research_backing": 1.0
+    },
+    "observation_history": {
+      "total_observations": 187,
+      "observations_last_30_days": 23,
+      "observations_last_year": 156,
+      "observation_trend": "stable"
+    },
+    "prediction_performance": {
+      "predictions_made": 147,
+      "predictions_accurate": 124,
+      "success_rate": 0.84,
+      "false_positives": 8,
+      "false_negatives": 15
+    },
+    "validation_workflow": {
+      "submitted_at": "2024-06-15T10:00:00Z",
+      "initial_validation_date": "2024-06-20T14:30:00Z",
+      "validations": [
+        {
+          "validation_date": "2024-06-20T14:30:00Z",
+          "validator": "system",
+          "decision": "approved",
+          "notes": "Pattern passed automated validation, submitted for community testing"
+        },
+        {
+          "validation_date": "2024-07-15T09:00:00Z",
+          "validator": "persona_consensus",
+          "decision": "approved",
+          "notes": "23 personas confirmed pattern in their interactions, 92% consensus"
+        },
+        {
+          "validation_date": "2024-08-01T11:00:00Z",
+          "validator": "human_review",
+          "decision": "approved",
+          "notes": "Human reviewer confirmed pattern is well-supported and governance rules are appropriate"
+        }
+      ],
+      "next_review_date": "2025-02-01T00:00:00Z",
+      "approval_authority": "Pattern Governance Council"
+    }
+  },
+  
+  "temperature": {
+    "current_temperature": 0.92,
+    "last_observed": "2025-04-17T08:30:00Z",
+    "observation_count_recent": 23,
+    "observation_count_month_prior": 18,
+    "temperature_decay_rate": 0.92,
+    "temperature_last_updated": "2025-04-17T08:30:00Z"
+  },
+  
+  "source_information": {
+    "sources": [
+      {
+        "source_type": "user_interactions",
+        "source_id": "interaction_sample_001",
+        "contribution_date": "2024-06-15T10:00:00Z",
+        "contributor_personas": ["persona_001", "persona_002"],
+        "contributor_count": 2,
+        "reliability_estimate": 0.8
+      },
+      {
+        "source_type": "research_literature",
+        "source_id": "ainsworth_attachment_theory",
+        "contribution_date": "2024-07-01T00:00:00Z",
+        "contributor_personas": ["system"],
+        "contributor_count": 1,
+        "reliability_estimate": 1.0
+      }
+    ],
+    "contributing_personas": ["persona_001", "persona_002", "persona_003", ... "persona_N"],
+    "contributing_users_count": 147
+  },
+  
+  "relationships": {
+    "related_patterns": [
+      {
+        "pattern_id": "pattern-anxious-attachment-001",
+        "relationship_type": "triggered_by",
+        "relationship_description": "Conflict Avoidance can be triggered by Anxious Attachment tendencies"
+      },
+      {
+        "pattern_id": "pattern-secure-attachment-001",
+        "relationship_type": "opposite_of",
+        "relationship_description": "Secure Attachment shows healthy conflict engagement, opposite of avoidance"
+      },
+      {
+        "pattern_id": "pattern-disorganized-attachment-001",
+        "relationship_type": "sibling",
+        "relationship_description": "Disorganized Attachment can include withdrawal but is less organized about it"
+      }
+    ]
+  },
+  
+  "metadata": {
+    "created_at": "2024-06-15T10:00:00Z",
+    "created_by": "persona_001",
+    "created_from": ["observation_id_001", "observation_id_002"],
+    "last_modified_at": "2024-08-01T11:00:00Z",
+    "last_modified_by": "human_review_001",
+    "version": 3,
+    "version_history": [
+      {
+        "version": 1,
+        "modified_at": "2024-06-15T10:00:00Z",
+        "modified_by": "persona_001",
+        "change_description": "Initial pattern proposal",
+        "reason": "Pattern observation from user interactions"
+      },
+      {
+        "version": 2,
+        "modified_at": "2024-07-15T09:00:00Z",
+        "modified_by": "system",
+        "change_description": "Updated confidence after community validation",
+        "reason": "23 personas confirmed pattern across interactions"
+      },
+      {
+        "version": 3,
+        "modified_at": "2024-08-01T11:00:00Z",
+        "modified_by": "human_review_001",
+        "change_description": "Refined governance rules and added trauma vulnerability flag",
+        "reason": "Human review identified need for trauma-informed guidance"
+      }
+    ],
+    "access_count": 4827,
+    "last_accessed": "2025-04-17T08:30:00Z"
+  }
+}
+```
+
+This complete example shows:
+
+- Full behavioral signature with trigger markers
+- Comprehensive governance rules with persona variations
+- Vulnerability flags for trauma-informed care
+- Complete validation history and metadata
+- Real confidence scores from production use
+- Practical examples for every rule
+
+---
+
+# PART 9: OPERATIONS AND MONITORING
+
+## 25. Operational Considerations
+
+### 25.1 Pattern Database Maintenance
+
+**Daily Maintenance Tasks**
+
+- Monitor query performance (latency, throughput)
+- Check for failed pattern submissions
+- Validate pattern integrity
+- Monitor temperature decay (archive old patterns)
+- Check cache hit rates
+
+**Weekly Maintenance Tasks**
+
+- Backup and verify integrity
+- Review escalated patterns (high-risk)
+- Analyze confidence trends
+- Check for pattern duplicates
+- Verify anonymization compliance
+
+**Monthly Maintenance Tasks**
+
+- Pattern deduplication run
+- Confidence recalculation
+- Temperature-based archival
+- Governance audit
+- Performance analysis and optimization
+
+### 25.2 Monitoring and Observability
+
+**Key Metrics to Track**
+
+```text
+Query Performance:
+  ├─ Latency (p50, p95, p99)
+  ├─ Throughput (queries/second)
+  ├─ Cache hit rate
+  └─ Error rate
+
+Pattern Quality:
+  ├─ Confidence score distribution
+  ├─ Prediction success rate
+  ├─ False positive rate
+  ├─ False negative rate
+  └─ Temperature distribution
+
+Usage Analytics:
+  ├─ Most-used patterns
+  ├─ Least-used patterns
+  ├─ Pattern application by domain
+  ├─ Pattern matching accuracy
+  └─ User satisfaction with pattern-guided responses
+
+Governance:
+  ├─ Patterns created per day
+  ├─ Escalations per day
+  ├─ Human review time
+  ├─ Approval rate
+  └─ Governance violations
+```
+
+---
+
+# PART 10: LIFECYCLE AND EVOLUTION
+
+## 27. Implementation Roadmap
+
+### Phase 1: Foundation (Weeks 1-6)
+
+Deliverables:
+
+- Pattern database schema and storage (PostgreSQL \+ pgvector)
+- Redis cache layer
+- Basic pattern query interface
+- Anonymization verification system
+- Testing and validation infrastructure
+
+Success criteria:
+
+- Database operational and tested
+- Query latency \&lt; 200ms
+- Anonymization enforced
+- Basic CRUD operations working
+
+### Phase 2: Pattern Matching (Weeks 7-12)
+
+Deliverables:
+
+- Track 2 integration with MTE
+- Vector embedding pipeline
+- Pattern matching algorithms
+- Local instance caching
+- Performance optimization
+
+Success criteria:
+
+- Track 2 queries pattern database successfully
+- Query latency \&lt; 500ms including all overhead
+- Pattern matching accuracy \&gt; 80%
+- No latency impact on Track 1
+
+### Phase 3: Governance and Validation (Weeks 13-18)
+
+Deliverables:
+
+- Pattern contribution workflow
+- Automated validation system
+- Community consensus calculation
+- Human review interface
+- Governance enforcement
+
+Success criteria:
+
+- All patterns have governance rules
+- Automated validation 99.9% accurate
+- Human review process operational
+- Escalation procedures working
+
+### Phase 4: Neurigraph Integration (Weeks 19-24)
+
+Deliverables:
+
+- Integration with episodic memory
+- Integration with semantic memory
+- Integration with somatic memory
+- Unified query interface
+- Full end-to-end testing
+
+Success criteria:
+
+- Pattern observations extracted from episodic memory
+- Patterns queryable across all memory tiers
+- Unified memory query working
+- Personas using patterns effectively
+
+---
+
+## 28. Success Criteria
+
+**Functional Success**
+
+- \[✓\] Patterns stored and retrieved correctly
+- \[✓\] Pattern matching accuracy \&gt; 80%
+- \[✓\] Query latency \&lt;500ms
+- \[✓\] Anonymization enforced
+- \[✓\] Governance rules enforced
+
+**Operational Success**
+
+- \[✓\] System uptime \&gt; 99.9%
+- \[✓\] Query throughput \&gt;1000/second
+- \[✓\] All governance processes followed
+- \[✓\] Zero unintended data leaks
+- \[✓\] Audit trails complete
+
+**Intelligence Success**
+
+- \[✓\] Personas predict user behavior better
+- \[✓\] Pattern confidence improves over time
+- \[✓\] Users report feeling understood
+- \[✓\] Pattern-guided interventions effective
+- \[✓\] New patterns discovered continuously
+
+---
+
+# PART 11: APPENDICES
+
+## Appendix A: Glossary
+
+**Anonymization**: Process of removing identifying information from data, making it impossible to trace back to individuals while preserving patterns
+
+**Behavioral Signature**: The observable indicators that a pattern is activating (trigger markers, typical responses, predicted sequence)
+
+**Confidence Score**: Numerical measure (0.0-1.0) of pattern reliability based on observation count, diversity, prediction accuracy, and consensus
+
+**Cross-Persona Consensus**: Degree to which multiple independent personas recognize the same pattern
+
+**DO Rule**: Recommendation for how personas should behave when pattern is recognized
+
+**DON'T Rule**: Prohibition on behaviors when pattern is recognized
+
+**Episodic Memory**: Specific events and conversations, stored with full context and detail
+
+**False Negative**: Pattern was present but wasn't recognized (missed detection)
+
+**False Positive**: Pattern was recognized but wasn't actually present (incorrect match)
+
+**Governance Rule**: Rules built into patterns to prevent misuse and ensure ethical application
+
+**Manipulation Risk**: Potential for pattern to be misused to exploit, control, or harm users
+
+**MTE (Multitrack Reasoning System)**: System that spawns parallel processing tracks; Track 2 performs pattern matching
+
+**Neurigraph**: aiConnectedOS's memory architecture (episodic, semantic, somatic tiers)
+
+**NPRD**: Neurigraph Pattern Recognition Database
+
+**Observation**: A single instance of a pattern being observed (contributes to confidence)
+
+**Pattern**: A generalized, anonymized description of a repeated human behavioral sequence
+
+**Pattern Database**: Central storage of all validated patterns
+
+**Pattern Matching**: Process of comparing current user behavior to known patterns
+
+**Prediction Success Rate**: Percentage of times pattern's predicted sequence actually occurs
+
+**Temperature**: Measure of pattern recency (how recently was pattern observed?)
+
+**Trigger Marker**: Observable signal that a pattern is activating
+
+**Validation Status**: Current stage of pattern (submitted, provisional, validated, mature, deprecated)
+
+**Vulnerability Flag**: Alert that pattern involves vulnerable population or sensitive topic requiring special handling
+
+---
+
+## Appendix B: Related Systems Reference
+
+**Multitrack Reasoning System (MTE)**
+
+- Track 1: Foreground response generation (doesn't wait for patterns)
+- Track 2: Pattern matching (queries NPRD, \&lt;500ms latency budget)
+- Shared context: Pattern results available for next response
+
+**Neurigraph Memory Architecture**
+
+- Episodic tier: Specific events and conversations
+- Semantic tier: Generalized knowledge and concepts
+- Somatic tier: Emotional and physiological states
+- Pattern tier: Universal behavioral patterns (new)
+
+**Cipher**
+
+- Governance and orchestration layer
+- Manages pattern database access controls
+- Enforces anonymization
+- Oversees approval workflows
+
+**Persona Architecture**
+
+- Individual persona instances maintain pattern cache
+- Query NPRD for patterns during Track 2
+- Apply DO/DON'T rules based on their personality type
+- Submit pattern observations after interactions
+
+---
+
+## Appendix C: Regulatory and Ethical Considerations
+
+**Privacy Law Compliance (GDPR, etc.)**
+
+NPRD is compliant with privacy regulations because:
+
+- No individual identifiers stored
+- Data is anonymized
+- Users cannot be reconstructed from patterns
+- No behavioral dossiers created
+
+However:
+
+- Users should be informed that patterns are created from their interactions
+- Users should have ability to understand how patterns apply to them
+- Users should have some control over pattern application
+
+**Ethical Use of Behavioral Modeling**
+
+Risks:
+
+- Patterns could be used to manipulate
+- Behavioral prediction could reduce autonomy
+- Vulnerable populations could be exploited
+- Patterns could perpetuate bias
+
+Mitigations:
+
+- Governance rules built into every pattern
+- DO/DON'T rules prevent exploitation
+- Vulnerability flags trigger special handling
+- Governance oversight by humans
+- Regular ethics review
+
+**User Rights and Consent**
+
+Users should have:
+
+- Right to know patterns are being created
+- Right to understand how patterns apply to them
+- Right to dispute pattern application
+- Right to have their pattern contribution honored ("I don't actually do this")
+- Right to opt-out of pattern creation (if feasible)
+
+---
+
+**Document Complete**
+
+**Version**: 1.0\
+**Status**: Production-Ready PRD\
+**Total Content**: ~45,000 words\
+**Implementation Timeline**: 6 months (4 phases)\
+**Next Steps**: Architecture review, technology selection, begin Phase 1 development
+
+---

@@ -1,0 +1,4962 @@
+---
+title: "Project Requirements Document (PRD)"
+description: "funnelChat AI Powered Debt Collection Platform Version : 1.0 Date : November 23, 2025 Author : Oxford Pierpont / aiConnected Status : Ready for Development T..."
+---
+<Info>
+Normalized for Mintlify from `knowledge-base/aiconnected-apps-and-modules/modules/funnelChat/legacy-funnelChat-prd.mdx`.
+</Info>
+# Project Requirements Document (PRD)
+## funnelChat - AI-Powered Debt Collection Platform
+
+**Version**: 1.0  
+**Date**: November 23, 2025  
+**Author**: Oxford Pierpont / aiConnected  
+**Status**: Ready for Development
+
+---
+
+## Table of Contents
+
+1. [Executive Summary](#1-executive-summary)
+2. [Product Vision & Goals](#2-product-vision--goals)
+3. [User Personas](#3-user-personas)
+4. [Functional Requirements](#4-functional-requirements)
+5. [Technical Architecture](#5-technical-architecture)
+6. [Database Schema](#6-database-schema)
+7. [API Specifications](#7-api-specifications)
+8. [User Interface Requirements](#8-user-interface-requirements)
+9. [AI & Chatbot Specifications](#9-ai--chatbot-specifications)
+10. [Payment Processing](#10-payment-processing)
+11. [Multi-Channel Communication](#11-multi-channel-communication)
+12. [Compliance & Security](#12-compliance--security)
+13. [Analytics & Reporting](#13-analytics--reporting)
+14. [Integration Requirements](#14-integration-requirements)
+15. [Testing Requirements](#15-testing-requirements)
+16. [Deployment & Infrastructure](#16-deployment--infrastructure)
+17. [Success Metrics](#17-success-metrics)
+
+---
+
+## 1. Executive Summary
+
+### 1.1 Product Overview
+
+funnelChat is a comprehensive AI-powered chatbot platform designed to revolutionize the debt collection and accounts receivable industry. The platform automates debtor communication across multiple channels (SMS, WhatsApp, email, web chat) while maintaining regulatory compliance and providing businesses with powerful collection management tools.
+
+### 1.2 Key Capabilities
+
+**For Debtors:**
+- 24/7 conversational AI support in multiple languages
+- Self-service payment plan negotiation
+- Secure payment processing
+- Multi-channel communication options
+- Real-time account information access
+
+**For Businesses:**
+- Automated debtor outreach and follow-ups
+- AI-powered conversation monitoring
+- Compliance enforcement (FDCPA, TCPA, CFPB)
+- Real-time analytics and reporting
+- Payment plan management
+- Multi-agent collaboration tools
+
+### 1.3 Business Model
+
+**Subscription Tiers:**
+- **Free Tier**: $0/month, $0.03 per message (inbound + outbound)
+- **Basic Tier**: $99.97/month, includes 5,000 messages, $0.015 per overage message
+- **Premium Tier**: $149.97/month, includes 12,500 messages, $0.015 per overage message
+
+**Revenue Streams:**
+- Subscription fees
+- Usage-based charges (messages)
+- Enterprise custom plans
+- Professional services (setup, training)
+
+### 1.4 Target Market
+
+- Debt collection agencies
+- Accounts receivable departments
+- Medical billing companies
+- Utility companies
+- Financial institutions
+- Property management companies
+
+---
+
+## 2. Product Vision & Goals
+
+### 2.1 Vision Statement
+
+To transform debt collection from an adversarial process into a cooperative, technology-enabled conversation that respects debtors while maximizing recovery rates for businesses.
+
+### 2.2 Product Goals
+
+1. **Increase Recovery Rates**: Improve payment collection by 30-40% through automated, personalized outreach
+2. **Reduce Operational Costs**: Lower cost per collection by 50% through AI automation
+3. **Ensure Compliance**: 100% FDCPA/TCPA compliant communications with automated monitoring
+4. **Improve Debtor Experience**: 90%+ satisfaction rate through empathetic, 24/7 support
+5. **Scale Efficiently**: Handle 10,000+ concurrent conversations per business client
+
+### 2.3 Success Criteria
+
+**Phase 1 (MVP - Months 1-3):**
+- Launch with 5 pilot business customers
+- Process 10,000 conversations
+- Achieve 95% chatbot accuracy
+- Zero compliance violations
+
+**Phase 2 (Growth - Months 4-6):**
+- Acquire 25 paying customers
+- Process 100,000 conversations
+- Add WhatsApp and voice channels
+- Achieve 85% customer retention
+
+**Phase 3 (Scale - Months 7-12):**
+- Reach 100 paying customers
+- Process 1M+ conversations monthly
+- Expand to international markets
+- Achieve profitability
+
+---
+
+## 3. User Personas
+
+### 3.1 Primary Personas
+
+#### Persona 1: Sarah - The Debtor
+**Demographics:**
+- Age: 32
+- Occupation: Retail manager
+- Tech proficiency: Medium
+- Financial situation: Temporary hardship due to medical bills
+
+**Goals:**
+- Understand her debt obligations clearly
+- Negotiate a manageable payment plan
+- Avoid embarrassing phone calls at work
+- Rebuild her credit score
+
+**Pain Points:**
+- Aggressive collection calls during work hours
+- Confusing debt documentation
+- Inability to afford full payment
+- Fear of legal action
+
+**How funnelChat Helps:**
+- 24/7 text-based communication
+- Clear debt breakdown and payment options
+- Automated payment plan proposals
+- Respectful, empathetic AI conversations
+
+#### Persona 2: Mike - The Collection Agent
+**Demographics:**
+- Age: 38
+- Role: Senior Collection Agent
+- Experience: 10 years in collections
+- Tech proficiency: Medium
+
+**Goals:**
+- Maximize monthly recovery rates
+- Handle more accounts efficiently
+- Maintain compliance with regulations
+- Reduce manual data entry work
+
+**Pain Points:**
+- Time-consuming phone tag with debtors
+- Manual note-taking and CRM updates
+- Compliance anxiety (FDCPA violations)
+- High-stress conversations
+
+**How funnelChat Helps:**
+- AI handles initial outreach and routine conversations
+- Auto-logging of all communications
+- Real-time compliance alerts
+- Focus on high-value accounts requiring human touch
+
+#### Persona 3: Jennifer - The Collections Manager
+**Demographics:**
+- Age: 45
+- Role: VP of Collections
+- Experience: 20 years in AR/collections
+- Tech proficiency: High
+
+**Goals:**
+- Increase portfolio recovery rates by 25%
+- Reduce compliance risk to zero
+- Lower cost per collection
+- Improve team productivity
+
+**Pain Points:**
+- High staffing costs
+- Compliance violations leading to fines
+- Lack of real-time visibility into operations
+- Difficulty scaling during peak periods
+
+**How funnelChat Helps:**
+- Automated 80% of routine communications
+- Real-time compliance monitoring dashboard
+- Comprehensive analytics and reporting
+- Scalable automation without adding headcount
+
+### 3.2 Secondary Personas
+
+#### Persona 4: Alex - The System Administrator
+- Manages technical infrastructure
+- Configures integrations with existing systems
+- Monitors platform performance
+- Manages user access and permissions
+
+#### Persona 5: Rachel - The Compliance Officer
+- Ensures all communications meet regulatory requirements
+- Audits conversation logs
+- Generates compliance reports
+- Updates communication policies
+
+---
+
+## 4. Functional Requirements
+
+### 4.1 User Management
+
+#### 4.1.1 Authentication & Authorization
+
+**FR-AUTH-001**: The system MUST support email/password authentication
+- Users register with email and password
+- Passwords must be minimum 8 characters with complexity requirements
+- Email verification required before account activation
+- Password reset via email link
+
+**FR-AUTH-002**: The system MUST implement role-based access control (RBAC)
+- **Roles**: Super Admin, Business Admin, Collection Agent, Debtor
+- Each role has specific permissions
+- Users can only access resources authorized for their role
+
+**FR-AUTH-003**: The system MUST use JWT tokens for session management
+- Tokens expire after 7 days
+- Refresh token mechanism for extended sessions
+- Tokens invalidated on password change
+
+**FR-AUTH-004**: The system MUST support multi-factor authentication (MFA)
+- Optional for debtors
+- Required for business users
+- TOTP-based (Google Authenticator, Authy)
+
+#### 4.1.2 User Profile Management
+
+**FR-USER-001**: Users MUST be able to view and edit their profiles
+- Update name, email, phone number
+- Change password
+- Upload profile photo
+- Set notification preferences
+
+**FR-USER-002**: Business users MUST be able to manage team members
+- Invite new users via email
+- Assign roles to users
+- Deactivate user accounts
+- View user activity logs
+
+**FR-USER-003**: The system MUST maintain user activity audit logs
+- Track all user actions (login, data access, modifications)
+- Logs retained for 7 years (compliance requirement)
+- Logs viewable by admins
+
+### 4.2 Account Management (Debtor Accounts)
+
+#### 4.2.1 Account Creation
+
+**FR-ACC-001**: Business users MUST be able to create debtor accounts manually
+- Enter debtor information (name, email, phone, address)
+- Set account balance and due date
+- Add account notes
+- Upload supporting documents
+
+**FR-ACC-002**: The system MUST support bulk account import via CSV
+- Template CSV file provided
+- Validation of required fields
+- Preview before final import
+- Error reporting for invalid records
+
+**FR-ACC-003**: The system MUST support API-based account creation
+- RESTful API endpoint
+- Authentication via API key
+- Webhook notification on successful creation
+- Idempotency to prevent duplicates
+
+#### 4.2.2 Account Information
+
+Each account MUST store:
+- **Personal Information**: First name, last name, email, phone(s), address
+- **Account Details**: Account number, original creditor, current balance, due date
+- **Payment History**: All payments made (date, amount, method)
+- **Communication History**: All messages sent/received
+- **Status**: Active, Paid in Full, In Payment Plan, Disputed, Legal
+- **Tags**: Custom categorization labels
+- **Notes**: Internal notes (not visible to debtor)
+- **Documents**: Uploaded files (bills, agreements, correspondence)
+
+#### 4.2.3 Account Search & Filtering
+
+**FR-ACC-010**: Users MUST be able to search accounts by:
+- Name (partial match)
+- Account number
+- Email
+- Phone number
+- Status
+- Date range
+- Balance range
+- Tags
+
+**FR-ACC-011**: The system MUST support advanced filtering
+- Multiple filter criteria combined
+- Save filter presets
+- Export filtered results to CSV
+
+### 4.3 Conversation Management
+
+#### 4.3.1 Conversation Creation
+
+**FR-CONV-001**: The system MUST automatically create conversations when:
+- Debtor responds to an outbound message
+- Debtor initiates contact via web widget
+- Business user manually starts a conversation
+- Scheduled campaign triggers
+
+**FR-CONV-002**: Each conversation MUST be associated with:
+- One debtor account
+- One communication channel (SMS, WhatsApp, email, web)
+- Zero or one agent (can be unassigned for AI-only)
+- Conversation status (Active, Resolved, Escalated, Closed)
+
+#### 4.3.2 Message Exchange
+
+**FR-CONV-010**: Debtors MUST be able to send messages via:
+- SMS (Twilio)
+- WhatsApp (Twilio)
+- Email (SendGrid)
+- Web chat widget
+
+**FR-CONV-011**: Messages MUST include:
+- Message content (text)
+- Sender information
+- Timestamp
+- Read status
+- Delivery status (for SMS/WhatsApp)
+- Attachments (optional, up to 5MB)
+
+**FR-CONV-012**: The system MUST support message threading
+- Messages grouped by conversation
+- Chronological order
+- Visual distinction between sent/received
+- Typing indicators (web chat only)
+
+#### 4.3.3 AI Chatbot Integration
+
+**FR-CONV-020**: AI chatbot MUST automatically respond to debtor messages when:
+- No agent is assigned to conversation
+- Agent is offline and auto-response is enabled
+- Message is a common FAQ
+
+**FR-CONV-021**: AI responses MUST be:
+- Contextually relevant to conversation history
+- Compliant with FDCPA regulations
+- Empathetic in tone
+- Accurate regarding account information
+
+**FR-CONV-022**: AI MUST hand off to human agent when:
+- Debtor explicitly requests human assistance
+- AI confidence score is below threshold (70%)
+- Conversation involves dispute or complaint
+- Legal matters are mentioned
+
+#### 4.3.4 Agent Assignment
+
+**FR-CONV-030**: Conversations MUST be assignable to agents via:
+- Manual assignment by manager
+- Auto-assignment based on rules (round-robin, least active, skill-based)
+- Agent self-assignment from queue
+- Reassignment when agent is unavailable
+
+**FR-CONV-031**: Agents MUST receive notifications when:
+- New conversation is assigned
+- Debtor sends new message in assigned conversation
+- Conversation requires escalation
+
+### 4.4 Payment Processing
+
+#### 4.4.1 Payment Methods
+
+**FR-PAY-001**: The system MUST support payment via:
+- Credit card (Visa, Mastercard, Amex, Discover)
+- Debit card
+- ACH bank transfer
+- Payment link (sent via SMS/email)
+
+**FR-PAY-002**: Payment processing MUST be handled by Stripe
+- PCI DSS compliant
+- Stripe Checkout for card payments
+- Stripe ACH for bank transfers
+- 3D Secure authentication for cards
+
+#### 4.4.2 One-Time Payments
+
+**FR-PAY-010**: Debtors MUST be able to make one-time payments
+- Enter payment amount (min $1, max account balance)
+- Select payment method
+- Receive confirmation email
+- Payment immediately applied to account balance
+
+#### 4.4.3 Payment Plans
+
+**FR-PAY-020**: The system MUST support payment plan creation
+- Business user or AI can propose payment plan
+- Specify: down payment, number of installments, payment frequency
+- Auto-calculate installment amounts
+- Generate payment schedule
+
+**FR-PAY-021**: Payment plan details MUST include:
+- Total amount owed
+- Down payment amount (if any)
+- Number of installments
+- Payment frequency (weekly, bi-weekly, monthly)
+- Start date
+- Auto-pay option
+- Late fee policy (if applicable)
+
+**FR-PAY-022**: Debtors MUST be able to accept payment plans
+- Review plan details
+- Provide digital signature (checkbox consent)
+- Setup auto-pay (optional)
+- Receive plan confirmation email
+
+**FR-PAY-023**: The system MUST enforce payment plans
+- Automatic charge on due dates (if auto-pay enabled)
+- Email/SMS reminders 3 days before due date
+- Grace period of 5 days after due date
+- Mark plan as defaulted after 2 missed payments
+
+#### 4.4.4 Payment Modifications
+
+**FR-PAY-030**: Debtors MUST be able to request payment plan changes
+- Request payment date change
+- Request payment amount adjustment
+- Request payment plan pause (financial hardship)
+- Requests subject to business approval
+
+**FR-PAY-031**: Business users MUST be able to modify payment plans
+- Adjust payment amounts
+- Extend payment plan duration
+- Waive late fees
+- Cancel payment plan
+
+#### 4.4.5 Failed Payments
+
+**FR-PAY-040**: The system MUST handle failed payments
+- Retry payment 3 times over 5 days
+- Notify debtor via email/SMS
+- Update account status to "Payment Failed"
+- Allow manual retry by debtor
+
+### 4.5 Campaign Management
+
+#### 4.5.1 Campaign Creation
+
+**FR-CAMP-001**: Business users MUST be able to create outbound campaigns
+- Define campaign name and description
+- Select target accounts (by filter or manual selection)
+- Choose communication channel(s)
+- Set campaign schedule (immediate or scheduled)
+- Define message template with variables
+
+**FR-CAMP-002**: Message templates MUST support variable substitution
+- `{firstName}`, `{lastName}`, `{accountNumber}`, `{balance}`, `{dueDate}`
+- Preview with sample data before sending
+- Templates stored for reuse
+
+#### 4.5.2 Campaign Execution
+
+**FR-CAMP-010**: The system MUST execute campaigns according to schedule
+- Send messages at specified time
+- Respect timezone of debtor
+- Rate limiting (max 1000 messages per minute)
+- Halt campaign if compliance violation detected
+
+**FR-CAMP-011**: The system MUST track campaign metrics
+- Messages sent
+- Messages delivered
+- Responses received
+- Conversations started
+- Payments made
+- ROI calculation (payments ÷ campaign cost)
+
+#### 4.5.3 Compliance Controls
+
+**FR-CAMP-020**: The system MUST enforce communication frequency limits
+- Max 3 SMS per week per debtor
+- Max 5 emails per week per debtor
+- Max 1 WhatsApp per day per debtor
+- Respect "Do Not Contact" lists
+
+**FR-CAMP-021**: The system MUST honor opt-out requests
+- "STOP" keyword immediately opts out of SMS
+- Unsubscribe link in all emails
+- Opt-out status synced across all channels
+- Audit log of all opt-out events
+
+### 4.6 Compliance Features
+
+#### 4.6.1 FDCPA Compliance
+
+**FR-COMP-001**: All messages MUST include required disclosures
+- Debt validation notice on first communication
+- Mini-Miranda warning (debt collector identification)
+- Creditor name and amount owed
+- Right to dispute debt
+
+**FR-COMP-002**: The system MUST prevent prohibited language
+- No threats of violence or harm
+- No profanity or abuse
+- No false representations
+- No deceptive means
+- AI responses scanned before sending
+
+**FR-COMP-003**: The system MUST respect communication restrictions
+- No contact before 8am or after 9pm debtor's local time
+- No contact at workplace if debtor objects
+- No contact with third parties (except attorney)
+- No contact if debtor is represented by attorney
+
+#### 4.6.2 TCPA Compliance
+
+**FR-COMP-010**: The system MUST verify consent before automated communications
+- Explicit opt-in required for SMS/calls
+- Consent stored with timestamp and IP
+- Consent revocable at any time
+- No marketing messages without separate consent
+
+#### 4.6.3 Data Privacy (GDPR/CCPA)
+
+**FR-COMP-020**: The system MUST support data subject rights
+- Right to access: Provide all data about debtor
+- Right to deletion: Permanently delete debtor data
+- Right to rectification: Allow data corrections
+- Right to portability: Export data in machine-readable format
+
+**FR-COMP-021**: All data MUST be encrypted
+- At rest: AES-256 encryption
+- In transit: TLS 1.3
+- Database: Encrypted fields for PII
+- Backups: Encrypted
+
+#### 4.6.4 Audit Logging
+
+**FR-COMP-030**: The system MUST log all compliance-relevant events
+- All communications (sent, received, failed)
+- All payment transactions
+- All account modifications
+- All consent grants/revocations
+- All data access and exports
+- All compliance violations detected
+
+**FR-COMP-031**: Audit logs MUST be:
+- Immutable (cannot be edited or deleted)
+- Retained for 7 years
+- Searchable by date, user, event type
+- Exportable for regulatory audits
+
+### 4.7 Analytics & Reporting
+
+#### 4.7.1 Real-Time Dashboard
+
+**FR-ANLY-001**: Business users MUST have access to real-time dashboard showing:
+- Total accounts managed
+- Total outstanding balance
+- Collections this month (amount and %)
+- Active conversations (count)
+- Messages sent/received today
+- Payment success rate
+- AI chatbot performance metrics
+
+**FR-ANLY-002**: Dashboard widgets MUST be:
+- Customizable (drag and drop)
+- Filterable by date range
+- Exportable as PDF/PNG
+- Refreshable (auto-refresh every 60 seconds)
+
+#### 4.7.2 Collection Reports
+
+**FR-ANLY-010**: The system MUST generate collection reports:
+- **Portfolio Summary**: Total accounts, total balance, aging buckets
+- **Recovery Report**: Payments collected by time period
+- **Channel Performance**: Effectiveness of SMS vs Email vs Web
+- **Agent Performance**: Recovery by agent, response time, customer satisfaction
+- **Campaign ROI**: Payments attributed to specific campaigns
+
+**FR-ANLY-011**: Reports MUST support:
+- Date range selection
+- Export to CSV, Excel, PDF
+- Scheduled delivery via email
+- Custom report builder
+
+#### 4.7.3 Predictive Analytics
+
+**FR-ANLY-020**: The system SHOULD provide predictive insights
+- Likelihood to pay score (0-100)
+- Optimal contact time prediction
+- Recommended payment plan amount
+- Churn risk score
+
+### 4.8 Administration
+
+#### 4.8.1 Business Settings
+
+**FR-ADMIN-001**: Business admins MUST be able to configure:
+- Company name and branding
+- Default payment terms
+- Communication frequency limits
+- Auto-response settings
+- Integration credentials
+- Billing information
+
+#### 4.8.2 Team Management
+
+**FR-ADMIN-010**: Business admins MUST be able to:
+- Add/remove team members
+- Assign roles and permissions
+- Set agent availability schedules
+- Configure conversation routing rules
+- Monitor team activity
+
+#### 4.8.3 Template Management
+
+**FR-ADMIN-020**: Users MUST be able to manage templates for:
+- Message templates (SMS, email, WhatsApp)
+- Payment plan templates
+- Document templates (agreements, letters)
+- Email signatures
+
+---
+
+## 5. Technical Architecture
+
+### 5.1 System Architecture Overview
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                         CLIENT LAYER                            │
+│  ┌────────────────┐  ┌────────────────┐  ┌──────────────────┐ │
+│  │ Debtor Portal  │  │Business Dashboard│  │  Admin Panel     │ │
+│  │   React SPA    │  │   React SPA     │  │   React SPA      │ │
+│  │   Port: 3000   │  │   Port: 3001    │  │   Port: 3002     │ │
+│  └────────────────┘  └────────────────┘  └──────────────────┘ │
+└─────────────────────────────────────────────────────────────────┘
+                                 ↓ HTTPS
+┌─────────────────────────────────────────────────────────────────┐
+│                      LOAD BALANCER / CDN                        │
+│                      (CloudFlare / AWS ALB)                     │
+└─────────────────────────────────────────────────────────────────┘
+                                 ↓
+┌─────────────────────────────────────────────────────────────────┐
+│                         API GATEWAY                             │
+│  ┌───────────────────────────────────────────────────────────┐ │
+│  │  Express.js API Server (Node.js + TypeScript)             │ │
+│  │  - JWT Authentication Middleware                          │ │
+│  │  - Rate Limiting (1000 req/min per IP)                    │ │
+│  │  - Request Validation (Joi/Zod)                           │ │
+│  │  - Error Handling                                         │ │
+│  │  - CORS Configuration                                     │ │
+│  │  Port: 4000                                               │ │
+│  └───────────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────────┘
+                                 ↓
+┌─────────────────────────────────────────────────────────────────┐
+│                      APPLICATION SERVICES                       │
+│  ┌──────────────┐  ┌──────────────┐  ┌────────────────────┐  │
+│  │   Chatbot    │  │   Payment    │  │    Analytics       │  │
+│  │   Service    │  │   Service    │  │    Service         │  │
+│  │              │  │              │  │                    │  │
+│  │ - AI Routing │  │ - Stripe     │  │ - Data Aggregation│  │
+│  │ - Claude API │  │ - Plans      │  │ - Report Builder  │  │
+│  │ - Sentiment  │  │ - Retry      │  │ - Predictions     │  │
+│  │ - Compliance │  │   Logic      │  │ - Dashboards      │  │
+│  └──────────────┘  └──────────────┘  └────────────────────┘  │
+│                                                                 │
+│  ┌──────────────┐  ┌──────────────┐  ┌────────────────────┐  │
+│  │Notification  │  │  Compliance  │  │    User/Account    │  │
+│  │  Service     │  │   Service    │  │    Service         │  │
+│  │              │  │              │  │                    │  │
+│  │ - SMS/Twilio │  │ - FDCPA      │  │ - Auth             │  │
+│  │ - Email/SG   │  │ - TCPA       │  │ - RBAC             │  │
+│  │ - WhatsApp   │  │ - Audit Log  │  │ - Profile Mgmt     │  │
+│  │ - Push       │  │ - Encryption │  │ - Team Mgmt        │  │
+│  └──────────────┘  └──────────────┘  └────────────────────┘  │
+└─────────────────────────────────────────────────────────────────┘
+                                 ↓
+┌─────────────────────────────────────────────────────────────────┐
+│                    BACKGROUND JOB PROCESSOR                     │
+│  ┌───────────────────────────────────────────────────────────┐ │
+│  │  Bull Queue (Redis-backed)                                │ │
+│  │  - Scheduled message sending                              │ │
+│  │  - Payment retry processing                               │ │
+│  │  - Report generation                                      │ │
+│  │  - Data cleanup jobs                                      │ │
+│  │  - Analytics aggregation                                  │ │
+│  └───────────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────────┘
+                                 ↓
+┌─────────────────────────────────────────────────────────────────┐
+│                   THIRD-PARTY INTEGRATIONS                      │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────────┐  │
+│  │Anthropic │  │  Stripe  │  │  Twilio  │  │   SendGrid   │  │
+│  │ Claude   │  │ Payments │  │  SMS/WA  │  │    Email     │  │
+│  └──────────┘  └──────────┘  └──────────┘  └──────────────┘  │
+└─────────────────────────────────────────────────────────────────┘
+                                 ↓
+┌─────────────────────────────────────────────────────────────────┐
+│                         DATA LAYER                              │
+│  ┌────────────────┐  ┌─────────────┐  ┌──────────────────┐   │
+│  │  PostgreSQL    │  │    Redis    │  │   AWS S3         │   │
+│  │  (Primary DB)  │  │   (Cache)   │  │ (File Storage)   │   │
+│  │                │  │             │  │                  │   │
+│  │ - Users        │  │ - Sessions  │  │ - Documents      │   │
+│  │ - Accounts     │  │ - Job Queue │  │ - Attachments    │   │
+│  │ - Messages     │  │ - Rate Limit│  │ - Exports        │   │
+│  │ - Payments     │  │ - Real-time │  │ - Backups        │   │
+│  │ - Audit Logs   │  │   Data      │  │                  │   │
+│  │                │  │             │  │                  │   │
+│  │  Port: 5432    │  │  Port: 6379 │  │  HTTPS API       │   │
+│  └────────────────┘  └─────────────┘  └──────────────────┘   │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### 5.2 Technology Stack Details
+
+#### 5.2.1 Front-End Stack
+
+**Framework**: React 18.2+ with TypeScript 5.0+
+- **Why React**: Large ecosystem, component reusability, strong community
+- **Why TypeScript**: Type safety, better IDE support, fewer runtime errors
+
+**State Management**: Redux Toolkit
+- **Global State**: User auth, selected account, UI preferences
+- **Server State**: React Query (TanStack Query) for API data caching
+
+**UI Library**: Material-UI (MUI) v5
+- **Why MUI**: Production-ready components, accessibility built-in, customizable theming
+- **Components Used**: DataGrid, Dialog, Snackbar, Drawer, AppBar, etc.
+
+**Routing**: React Router v6
+- **Protected Routes**: Higher-order component for authenticated routes
+- **Lazy Loading**: Code splitting for better performance
+
+**Real-Time**: Socket.io Client
+- **Use Cases**: Live chat, notification badges, dashboard updates
+
+**Build Tool**: Vite
+- **Why Vite**: Fast hot module replacement, optimized builds
+
+#### 5.2.2 Back-End Stack
+
+**Runtime**: Node.js 20 LTS
+- **Why Node.js**: JavaScript everywhere, large package ecosystem, async I/O
+
+**Framework**: Express.js 4.18+
+- **Why Express**: Minimalist, flexible, extensive middleware ecosystem
+
+**Language**: TypeScript 5.0+
+- **Compilation**: ts-node for development, compiled to JS for production
+
+**ORM**: Prisma 5.0+
+- **Why Prisma**: Type-safe queries, migrations, introspection, admin UI
+- **Database**: PostgreSQL 15+
+
+**Validation**: Zod
+- **Why Zod**: TypeScript-first, runtime validation, type inference
+
+**API Documentation**: Swagger/OpenAPI 3.0
+- **Tool**: swagger-jsdoc + swagger-ui-express
+
+**Job Queue**: Bull
+- **Why Bull**: Redis-backed, reliable, retries, priorities, delayed jobs
+
+**WebSockets**: Socket.io 4.0+
+- **Authentication**: JWT tokens in handshake
+
+#### 5.2.3 Database
+
+**Primary Database**: PostgreSQL 15+
+- **Why PostgreSQL**: ACID compliance, JSON support, full-text search, mature
+- **Hosting**: AWS RDS or managed PostgreSQL (DigitalOcean, Render)
+
+**Caching**: Redis 7.0+
+- **Use Cases**: Session store, rate limiting, job queue, real-time data
+- **Hosting**: AWS ElastiCache or managed Redis
+
+**File Storage**: AWS S3 or compatible
+- **Use Cases**: Document uploads, exported reports, email attachments
+- **Why S3**: Durable (99.999999999%), scalable, low-cost
+
+#### 5.2.4 AI & NLP
+
+**LLM Provider**: Anthropic Claude API
+- **Model**: claude-sonnet-4-20250514
+- **Why Claude**: Strong reasoning, long context, safety features, compliance awareness
+
+**Prompt Engineering**:
+- System prompts define chatbot personality and constraints
+- Few-shot examples for consistency
+- Chain-of-thought for complex reasoning
+- Compliance filters in system prompts
+
+**Sentiment Analysis**: Claude API with custom prompts
+- Classifies messages as: Positive, Neutral, Negative, Hostile
+- Triggers escalation on Hostile sentiment
+
+#### 5.2.5 Third-Party Services
+
+**Payment Processing**: Stripe
+- **Products**: Checkout, Billing, Payment Intents, Webhooks
+- **Why Stripe**: PCI compliance, 135+ currencies, extensive API
+
+**SMS & WhatsApp**: Twilio
+- **Products**: Programmable SMS, WhatsApp Business API
+- **Why Twilio**: Reliability, global coverage, developer-friendly
+
+**Email**: SendGrid
+- **Products**: Transactional Email API
+- **Why SendGrid**: Deliverability, analytics, templates
+
+**Monitoring**: (Optional)
+- **Application**: Datadog, New Relic
+- **Errors**: Sentry
+- **Logs**: CloudWatch (AWS) or Papertrail
+
+### 5.3 Security Architecture
+
+#### 5.3.1 Authentication Flow
+
+```
+1. User submits email + password
+2. API validates credentials against database (bcrypt hash comparison)
+3. If valid, generate JWT token (payload: userId, email, role, exp)
+4. Return token + user object to client
+5. Client stores token in localStorage (or httpOnly cookie)
+6. Client includes token in Authorization header for all requests
+7. API middleware validates token on each request
+8. If token expired or invalid, return 401 Unauthorized
+```
+
+**JWT Payload Structure**:
+```json
+{
+  "userId": "uuid-here",
+  "email": "user@example.com",
+  "role": "agent",
+  "businessId": "uuid-here",
+  "iat": 1700000000,
+  "exp": 1700604800
+}
+```
+
+#### 5.3.2 Authorization (RBAC)
+
+**Roles**:
+- `super_admin`: Full system access (aiConnected staff)
+- `business_admin`: Full access within their business
+- `manager`: Manage agents, view all accounts
+- `agent`: View assigned accounts, respond to conversations
+- `debtor`: View own account, make payments
+
+**Permissions Matrix**:
+
+| Resource | Super Admin | Business Admin | Manager | Agent | Debtor |
+|----------|-------------|----------------|---------|-------|--------|
+| Create Business | ✅ | ❌ | ❌ | ❌ | ❌ |
+| View All Accounts | ✅ | ✅ | ✅ | ❌ | ❌ |
+| View Own Account | N/A | N/A | N/A | N/A | ✅ |
+| Assign Conversations | ✅ | ✅ | ✅ | ❌ | ❌ |
+| Respond to Conversations | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Create Payment Plan | ✅ | ✅ | ✅ | ✅ | ❌ |
+| Make Payment | N/A | N/A | N/A | N/A | ✅ |
+| View Analytics | ✅ | ✅ | ✅ | ❌ | ❌ |
+| Manage Users | ✅ | ✅ | ❌ | ❌ | ❌ |
+
+#### 5.3.3 Data Encryption
+
+**At Rest**:
+- Database: PostgreSQL with encryption enabled
+- Sensitive fields (SSN, bank account): AES-256 encryption in application layer
+- File storage: S3 server-side encryption (SSE-S3 or SSE-KMS)
+
+**In Transit**:
+- All HTTP traffic: TLS 1.3
+- API to third-parties: HTTPS only
+- WebSocket: WSS (WebSocket Secure)
+
+**Key Management**:
+- Encryption keys stored in AWS Secrets Manager or environment variables
+- Key rotation every 90 days
+- Separate keys for dev/staging/production
+
+#### 5.3.4 Rate Limiting
+
+**Global Rate Limits** (per IP address):
+- 1000 requests per minute
+- 10,000 requests per hour
+- Enforced via Redis with sliding window
+
+**Authentication Endpoints** (stricter):
+- Login: 5 attempts per 15 minutes per IP
+- Password reset: 3 requests per hour per email
+
+**API Endpoints**:
+- Authenticated users: 100 requests per minute
+- Public endpoints: 20 requests per minute
+
+### 5.4 Scalability Considerations
+
+#### 5.4.1 Horizontal Scaling
+
+**API Servers**:
+- Stateless design (no session affinity required)
+- Load balancer distributes traffic (round-robin or least connections)
+- Auto-scaling based on CPU (scale up at 70%, down at 30%)
+
+**Database**:
+- Read replicas for analytics queries
+- Connection pooling (pg-pool)
+- Partitioning for large tables (messages, audit_logs)
+
+**Job Processors**:
+- Multiple worker processes
+- Queue-based workload distribution
+- Horizontal scaling by adding workers
+
+#### 5.4.2 Performance Optimizations
+
+**Caching Strategy**:
+- Redis for frequently accessed data (user sessions, account summaries)
+- CDN for static assets (JS, CSS, images)
+- HTTP caching headers for API responses
+
+**Database Indexing**:
+- Indexed columns: email, phone, accountNumber, createdAt
+- Composite indexes for common query patterns
+- Analyze slow queries with EXPLAIN
+
+**Asset Optimization**:
+- Code splitting (React lazy loading)
+- Image compression and WebP format
+- Minification and bundling (Vite)
+
+---
+
+## 6. Database Schema
+
+### 6.1 Schema Overview
+
+The database uses PostgreSQL with Prisma ORM. All tables use UUIDs for primary keys, `createdAt` and `updatedAt` timestamps.
+
+### 6.2 Entity Relationship Diagram (ERD)
+
+```
+┌─────────────┐         ┌──────────────┐         ┌─────────────┐
+│  businesses │────────<│    users     │>────────│   sessions  │
+└─────────────┘         └──────────────┘         └─────────────┘
+       │                        │
+       │                        │
+       ├────────────────────────┤
+       │                        │
+       ∨                        ∨
+┌─────────────┐         ┌──────────────┐
+│   accounts  │────────<│conversations │
+└─────────────┘         └──────────────┘
+       │                        │
+       │                        │
+       ∨                        ∨
+┌─────────────┐         ┌──────────────┐
+│   payments  │         │   messages   │
+└─────────────┘         └──────────────┘
+       │
+       │
+       ∨
+┌─────────────┐
+│payment_plans│
+└─────────────┘
+```
+
+### 6.3 Table Definitions
+
+#### 6.3.1 businesses
+
+Stores collection businesses/agencies using the platform.
+
+```sql
+CREATE TABLE businesses (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name VARCHAR(255) NOT NULL,
+    email VARCHAR(255) NOT NULL UNIQUE,
+    phone VARCHAR(20),
+    address TEXT,
+    website VARCHAR(255),
+    
+    -- Stripe billing
+    stripe_customer_id VARCHAR(255) UNIQUE,
+    stripe_subscription_id VARCHAR(255),
+    subscription_tier VARCHAR(20) DEFAULT 'free', -- free, basic, premium
+    subscription_status VARCHAR(20) DEFAULT 'active', -- active, canceled, past_due
+    
+    -- Usage tracking
+    message_quota INT DEFAULT 0, -- Monthly message allowance
+    messages_used_this_month INT DEFAULT 0,
+    billing_period_start DATE,
+    billing_period_end DATE,
+    
+    -- Settings
+    settings JSONB DEFAULT '{}', -- {autoResponseEnabled, timezone, etc}
+    
+    -- Timestamps
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW(),
+    deleted_at TIMESTAMP -- Soft delete
+);
+
+CREATE INDEX idx_businesses_stripe_customer ON businesses(stripe_customer_id);
+CREATE INDEX idx_businesses_email ON businesses(email);
+```
+
+#### 6.3.2 users
+
+Stores all users (business staff and debtors).
+
+```sql
+CREATE TABLE users (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    business_id UUID REFERENCES businesses(id) ON DELETE CASCADE,
+    
+    -- Authentication
+    email VARCHAR(255) NOT NULL UNIQUE,
+    password_hash VARCHAR(255) NOT NULL, -- bcrypt hash
+    phone VARCHAR(20),
+    
+    -- Profile
+    first_name VARCHAR(100),
+    last_name VARCHAR(100),
+    avatar_url VARCHAR(500),
+    
+    -- Role & Permissions
+    role VARCHAR(20) NOT NULL, -- super_admin, business_admin, manager, agent, debtor
+    permissions JSONB DEFAULT '[]', -- Array of permission strings
+    
+    -- Status
+    status VARCHAR(20) DEFAULT 'active', -- active, inactive, suspended
+    email_verified BOOLEAN DEFAULT false,
+    email_verification_token VARCHAR(255),
+    
+    -- MFA
+    mfa_enabled BOOLEAN DEFAULT false,
+    mfa_secret VARCHAR(255),
+    
+    -- Password reset
+    password_reset_token VARCHAR(255),
+    password_reset_expires TIMESTAMP,
+    
+    -- Timestamps
+    last_login_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW(),
+    deleted_at TIMESTAMP
+);
+
+CREATE INDEX idx_users_email ON users(email);
+CREATE INDEX idx_users_business ON users(business_id);
+CREATE INDEX idx_users_role ON users(role);
+CREATE UNIQUE INDEX idx_users_email_verification ON users(email_verification_token) WHERE email_verification_token IS NOT NULL;
+CREATE UNIQUE INDEX idx_users_password_reset ON users(password_reset_token) WHERE password_reset_token IS NOT NULL;
+```
+
+#### 6.3.3 sessions
+
+Stores active user sessions (for session management and revocation).
+
+```sql
+CREATE TABLE sessions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    token VARCHAR(500) NOT NULL UNIQUE, -- JWT token (or hash of it)
+    
+    -- Session metadata
+    ip_address VARCHAR(45), -- IPv4 or IPv6
+    user_agent TEXT,
+    
+    -- Expiry
+    expires_at TIMESTAMP NOT NULL,
+    
+    -- Timestamps
+    created_at TIMESTAMP DEFAULT NOW(),
+    last_activity_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX idx_sessions_user ON sessions(user_id);
+CREATE INDEX idx_sessions_token ON sessions(token);
+CREATE INDEX idx_sessions_expires ON sessions(expires_at);
+```
+
+#### 6.3.4 accounts
+
+Stores debtor account information.
+
+```sql
+CREATE TABLE accounts (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    business_id UUID NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
+    debtor_id UUID REFERENCES users(id) ON DELETE SET NULL, -- Linked user account (optional)
+    
+    -- Debtor information
+    first_name VARCHAR(100) NOT NULL,
+    last_name VARCHAR(100) NOT NULL,
+    email VARCHAR(255),
+    phone VARCHAR(20),
+    phone_secondary VARCHAR(20),
+    address TEXT,
+    city VARCHAR(100),
+    state VARCHAR(50),
+    zip VARCHAR(20),
+    country VARCHAR(50) DEFAULT 'US',
+    
+    -- Account details
+    account_number VARCHAR(100) UNIQUE,
+    original_creditor VARCHAR(255),
+    current_balance DECIMAL(10, 2) NOT NULL,
+    original_balance DECIMAL(10, 2),
+    due_date DATE,
+    
+    -- Status
+    status VARCHAR(20) DEFAULT 'active', -- active, in_payment_plan, paid_in_full, disputed, legal, closed
+    
+    -- Metadata
+    tags TEXT[], -- Array of tags: ['high_priority', 'medical', etc]
+    notes TEXT, -- Internal notes
+    custom_fields JSONB DEFAULT '{}', -- Extensible custom data
+    
+    -- Communication preferences
+    preferred_language VARCHAR(10) DEFAULT 'en', -- en, es
+    preferred_contact_method VARCHAR(20), -- sms, email, whatsapp
+    timezone VARCHAR(50) DEFAULT 'America/New_York',
+    do_not_contact BOOLEAN DEFAULT false,
+    do_not_sms BOOLEAN DEFAULT false,
+    do_not_email BOOLEAN DEFAULT false,
+    do_not_call BOOLEAN DEFAULT false,
+    
+    -- Consent tracking
+    sms_consent BOOLEAN DEFAULT false,
+    sms_consent_date TIMESTAMP,
+    email_consent BOOLEAN DEFAULT false,
+    email_consent_date TIMESTAMP,
+    
+    -- Timestamps
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW(),
+    deleted_at TIMESTAMP
+);
+
+CREATE INDEX idx_accounts_business ON accounts(business_id);
+CREATE INDEX idx_accounts_debtor ON accounts(debtor_id);
+CREATE INDEX idx_accounts_email ON accounts(email);
+CREATE INDEX idx_accounts_phone ON accounts(phone);
+CREATE INDEX idx_accounts_account_number ON accounts(account_number);
+CREATE INDEX idx_accounts_status ON accounts(status);
+CREATE INDEX idx_accounts_tags ON accounts USING GIN(tags);
+```
+
+#### 6.3.5 conversations
+
+Stores chat conversations with debtors.
+
+```sql
+CREATE TABLE conversations (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    account_id UUID NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+    business_id UUID NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
+    
+    -- Assignment
+    assigned_agent_id UUID REFERENCES users(id) ON DELETE SET NULL,
+    assigned_at TIMESTAMP,
+    
+    -- Channel
+    channel VARCHAR(20) NOT NULL, -- sms, whatsapp, email, web_chat
+    
+    -- Status
+    status VARCHAR(20) DEFAULT 'active', -- active, resolved, escalated, closed
+    resolution_type VARCHAR(50), -- paid, payment_plan, dispute, other
+    
+    -- Metadata
+    subject VARCHAR(255), -- For email conversations
+    last_message_at TIMESTAMP,
+    last_message_from VARCHAR(20), -- agent, debtor, ai
+    
+    -- AI metrics
+    ai_handled BOOLEAN DEFAULT false, -- Was conversation fully handled by AI?
+    ai_confidence_avg DECIMAL(3, 2), -- Average AI confidence (0.00 to 1.00)
+    sentiment VARCHAR(20), -- positive, neutral, negative, hostile
+    
+    -- Timestamps
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW(),
+    closed_at TIMESTAMP
+);
+
+CREATE INDEX idx_conversations_account ON conversations(account_id);
+CREATE INDEX idx_conversations_business ON conversations(business_id);
+CREATE INDEX idx_conversations_agent ON conversations(assigned_agent_id);
+CREATE INDEX idx_conversations_status ON conversations(status);
+CREATE INDEX idx_conversations_channel ON conversations(channel);
+CREATE INDEX idx_conversations_created ON conversations(created_at);
+```
+
+#### 6.3.6 messages
+
+Stores individual messages within conversations.
+
+```sql
+CREATE TABLE messages (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    conversation_id UUID NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
+    
+    -- Sender/Recipient
+    sender_type VARCHAR(20) NOT NULL, -- agent, debtor, ai, system
+    sender_id UUID REFERENCES users(id) ON DELETE SET NULL,
+    
+    -- Content
+    content TEXT NOT NULL,
+    content_type VARCHAR(20) DEFAULT 'text', -- text, image, document
+    
+    -- Attachments
+    attachment_url VARCHAR(500),
+    attachment_filename VARCHAR(255),
+    attachment_size INT, -- bytes
+    
+    -- Delivery
+    direction VARCHAR(10) NOT NULL, -- inbound, outbound
+    delivery_status VARCHAR(20) DEFAULT 'pending', -- pending, sent, delivered, failed, read
+    delivered_at TIMESTAMP,
+    read_at TIMESTAMP,
+    failed_reason TEXT,
+    
+    -- External IDs (for third-party services)
+    twilio_sid VARCHAR(100), -- Twilio message SID
+    sendgrid_id VARCHAR(100), -- SendGrid message ID
+    
+    -- AI metadata (if AI-generated)
+    ai_generated BOOLEAN DEFAULT false,
+    ai_confidence DECIMAL(3, 2), -- 0.00 to 1.00
+    ai_model VARCHAR(50), -- e.g., "claude-sonnet-4"
+    
+    -- Compliance
+    compliance_checked BOOLEAN DEFAULT false,
+    compliance_passed BOOLEAN DEFAULT true,
+    compliance_issues TEXT[],
+    
+    -- Timestamps
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX idx_messages_conversation ON messages(conversation_id);
+CREATE INDEX idx_messages_sender ON messages(sender_id);
+CREATE INDEX idx_messages_created ON messages(created_at);
+CREATE INDEX idx_messages_delivery_status ON messages(delivery_status);
+```
+
+#### 6.3.7 payments
+
+Stores payment transactions.
+
+```sql
+CREATE TABLE payments (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    account_id UUID NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+    payment_plan_id UUID REFERENCES payment_plans(id) ON DELETE SET NULL,
+    
+    -- Payment details
+    amount DECIMAL(10, 2) NOT NULL,
+    currency VARCHAR(3) DEFAULT 'USD',
+    payment_method VARCHAR(20) NOT NULL, -- card, ach, check, cash
+    
+    -- Stripe
+    stripe_payment_intent_id VARCHAR(255),
+    stripe_charge_id VARCHAR(255),
+    
+    -- Status
+    status VARCHAR(20) DEFAULT 'pending', -- pending, succeeded, failed, refunded
+    failure_reason TEXT,
+    
+    -- Receipt
+    receipt_url VARCHAR(500),
+    receipt_number VARCHAR(100),
+    
+    -- Metadata
+    description TEXT,
+    notes TEXT,
+    processed_by_id UUID REFERENCES users(id), -- Agent who processed (if manual)
+    
+    -- Timestamps
+    processed_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX idx_payments_account ON payments(account_id);
+CREATE INDEX idx_payments_plan ON payments(payment_plan_id);
+CREATE INDEX idx_payments_status ON payments(status);
+CREATE INDEX idx_payments_stripe_intent ON payments(stripe_payment_intent_id);
+CREATE INDEX idx_payments_created ON payments(created_at);
+```
+
+#### 6.3.8 payment_plans
+
+Stores payment plan agreements.
+
+```sql
+CREATE TABLE payment_plans (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    account_id UUID NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+    
+    -- Plan details
+    total_amount DECIMAL(10, 2) NOT NULL,
+    down_payment DECIMAL(10, 2) DEFAULT 0,
+    installment_amount DECIMAL(10, 2) NOT NULL,
+    number_of_installments INT NOT NULL,
+    frequency VARCHAR(20) NOT NULL, -- weekly, biweekly, monthly
+    
+    -- Schedule
+    start_date DATE NOT NULL,
+    next_payment_date DATE,
+    
+    -- Status
+    status VARCHAR(20) DEFAULT 'pending', -- pending, active, completed, defaulted, canceled
+    payments_made INT DEFAULT 0,
+    amount_paid DECIMAL(10, 2) DEFAULT 0,
+    
+    -- Auto-pay
+    auto_pay_enabled BOOLEAN DEFAULT false,
+    stripe_payment_method_id VARCHAR(255),
+    
+    -- Agreement
+    agreement_signed BOOLEAN DEFAULT false,
+    agreement_signed_at TIMESTAMP,
+    agreement_ip_address VARCHAR(45),
+    
+    -- Metadata
+    created_by_id UUID REFERENCES users(id), -- Agent who created plan
+    notes TEXT,
+    
+    -- Timestamps
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW(),
+    completed_at TIMESTAMP,
+    canceled_at TIMESTAMP
+);
+
+CREATE INDEX idx_payment_plans_account ON payment_plans(account_id);
+CREATE INDEX idx_payment_plans_status ON payment_plans(status);
+CREATE INDEX idx_payment_plans_next_payment ON payment_plans(next_payment_date);
+```
+
+#### 6.3.9 campaigns
+
+Stores outbound messaging campaigns.
+
+```sql
+CREATE TABLE campaigns (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    business_id UUID NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
+    
+    -- Campaign details
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    
+    -- Targeting
+    target_filter JSONB, -- Account filter criteria
+    target_account_ids UUID[], -- Or explicit list of account IDs
+    
+    -- Message
+    channel VARCHAR(20) NOT NULL, -- sms, email, whatsapp
+    message_template TEXT NOT NULL,
+    subject_template VARCHAR(255), -- For email
+    
+    -- Schedule
+    schedule_type VARCHAR(20) NOT NULL, -- immediate, scheduled, recurring
+    scheduled_at TIMESTAMP,
+    timezone VARCHAR(50),
+    recurrence_rule VARCHAR(100), -- e.g., "daily", "weekly"
+    
+    -- Status
+    status VARCHAR(20) DEFAULT 'draft', -- draft, scheduled, running, completed, paused, canceled
+    
+    -- Metrics
+    target_count INT DEFAULT 0,
+    sent_count INT DEFAULT 0,
+    delivered_count INT DEFAULT 0,
+    response_count INT DEFAULT 0,
+    payment_count INT DEFAULT 0,
+    payment_amount DECIMAL(10, 2) DEFAULT 0,
+    
+    -- Metadata
+    created_by_id UUID REFERENCES users(id),
+    
+    -- Timestamps
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW(),
+    started_at TIMESTAMP,
+    completed_at TIMESTAMP
+);
+
+CREATE INDEX idx_campaigns_business ON campaigns(business_id);
+CREATE INDEX idx_campaigns_status ON campaigns(status);
+CREATE INDEX idx_campaigns_scheduled ON campaigns(scheduled_at);
+```
+
+#### 6.3.10 audit_logs
+
+Stores comprehensive audit trail for compliance.
+
+```sql
+CREATE TABLE audit_logs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    business_id UUID REFERENCES businesses(id) ON DELETE CASCADE,
+    
+    -- Who
+    user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+    user_email VARCHAR(255),
+    user_role VARCHAR(20),
+    
+    -- What
+    action VARCHAR(100) NOT NULL, -- login, create_account, send_message, etc
+    resource_type VARCHAR(50), -- account, message, payment, etc
+    resource_id UUID,
+    
+    -- Details
+    description TEXT,
+    changes JSONB, -- Before/after values
+    metadata JSONB, -- Additional context
+    
+    -- Context
+    ip_address VARCHAR(45),
+    user_agent TEXT,
+    
+    -- Status
+    success BOOLEAN DEFAULT true,
+    error_message TEXT,
+    
+    -- Timestamp
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Partitioning recommended for large datasets
+CREATE INDEX idx_audit_logs_business ON audit_logs(business_id);
+CREATE INDEX idx_audit_logs_user ON audit_logs(user_id);
+CREATE INDEX idx_audit_logs_action ON audit_logs(action);
+CREATE INDEX idx_audit_logs_resource ON audit_logs(resource_type, resource_id);
+CREATE INDEX idx_audit_logs_created ON audit_logs(created_at);
+```
+
+#### 6.3.11 documents
+
+Stores uploaded files and generated documents.
+
+```sql
+CREATE TABLE documents (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    business_id UUID NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
+    account_id UUID REFERENCES accounts(id) ON DELETE CASCADE,
+    conversation_id UUID REFERENCES conversations(id) ON DELETE CASCADE,
+    
+    -- File details
+    filename VARCHAR(255) NOT NULL,
+    file_type VARCHAR(50), -- pdf, jpg, png, docx, etc
+    file_size INT NOT NULL, -- bytes
+    mime_type VARCHAR(100),
+    
+    -- Storage
+    storage_path VARCHAR(500) NOT NULL, -- S3 key or file path
+    storage_url VARCHAR(500), -- Signed URL for access
+    
+    -- Classification
+    document_type VARCHAR(50), -- invoice, agreement, letter, photo, other
+    
+    -- Metadata
+    uploaded_by_id UUID REFERENCES users(id),
+    description TEXT,
+    tags TEXT[],
+    
+    -- Timestamps
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW(),
+    deleted_at TIMESTAMP
+);
+
+CREATE INDEX idx_documents_business ON documents(business_id);
+CREATE INDEX idx_documents_account ON documents(account_id);
+CREATE INDEX idx_documents_conversation ON documents(conversation_id);
+CREATE INDEX idx_documents_type ON documents(document_type);
+```
+
+#### 6.3.12 templates
+
+Stores reusable templates for messages, agreements, etc.
+
+```sql
+CREATE TABLE templates (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    business_id UUID REFERENCES businesses(id) ON DELETE CASCADE,
+    
+    -- Template details
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    template_type VARCHAR(50) NOT NULL, -- sms, email, agreement, letter
+    
+    -- Content
+    subject VARCHAR(255), -- For email templates
+    body TEXT NOT NULL,
+    variables TEXT[], -- Available variables: firstName, balance, etc
+    
+    -- Settings
+    is_default BOOLEAN DEFAULT false,
+    is_active BOOLEAN DEFAULT true,
+    
+    -- Metadata
+    created_by_id UUID REFERENCES users(id),
+    
+    -- Timestamps
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX idx_templates_business ON templates(business_id);
+CREATE INDEX idx_templates_type ON templates(template_type);
+```
+
+### 6.4 Sample Data
+
+See `backend/prisma/seed.ts` for database seeding script.
+
+---
+
+## 7. API Specifications
+
+### 7.1 API Design Principles
+
+**RESTful Design**:
+- Use HTTP verbs correctly (GET, POST, PUT, PATCH, DELETE)
+- Resource-based URLs (nouns, not verbs)
+- Plural resource names (`/accounts` not `/account`)
+
+**Versioning**:
+- All endpoints prefixed with `/api/v1`
+- Version in URL for simplicity
+
+**Response Format**:
+- All responses in JSON
+- Consistent structure
+
+**Success Response**:
+```json
+{
+  "success": true,
+  "data": { ... },
+  "meta": {
+    "page": 1,
+    "limit": 20,
+    "total": 150
+  }
+}
+```
+
+**Error Response**:
+```json
+{
+  "success": false,
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "Invalid email format",
+    "field": "email"
+  }
+}
+```
+
+### 7.2 Authentication Endpoints
+
+#### POST /api/v1/auth/register
+
+Register a new user account.
+
+**Request Body**:
+```json
+{
+  "email": "john@example.com",
+  "password": "SecurePass123!",
+  "firstName": "John",
+  "lastName": "Doe",
+  "role": "debtor",
+  "businessId": "uuid-here" // Optional, for business users
+}
+```
+
+**Response (201 Created)**:
+```json
+{
+  "success": true,
+  "data": {
+    "user": {
+      "id": "uuid",
+      "email": "john@example.com",
+      "firstName": "John",
+      "lastName": "Doe",
+      "role": "debtor"
+    },
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+  }
+}
+```
+
+**Errors**:
+- `400`: Email already exists
+- `400`: Invalid password format
+- `400`: Invalid role
+
+#### POST /api/v1/auth/login
+
+Login with email and password.
+
+**Request Body**:
+```json
+{
+  "email": "john@example.com",
+  "password": "SecurePass123!"
+}
+```
+
+**Response (200 OK)**:
+```json
+{
+  "success": true,
+  "data": {
+    "user": {
+      "id": "uuid",
+      "email": "john@example.com",
+      "firstName": "John",
+      "lastName": "Doe",
+      "role": "debtor",
+      "businessId": "uuid"
+    },
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+  }
+}
+```
+
+**Errors**:
+- `401`: Invalid credentials
+- `401`: Account not verified
+- `401`: Account suspended
+
+#### POST /api/v1/auth/logout
+
+Logout current user (invalidate token).
+
+**Headers**:
+```
+Authorization: Bearer {token}
+```
+
+**Response (200 OK)**:
+```json
+{
+  "success": true,
+  "data": {
+    "message": "Logged out successfully"
+  }
+}
+```
+
+#### POST /api/v1/auth/forgot-password
+
+Request password reset email.
+
+**Request Body**:
+```json
+{
+  "email": "john@example.com"
+}
+```
+
+**Response (200 OK)**:
+```json
+{
+  "success": true,
+  "data": {
+    "message": "Password reset email sent"
+  }
+}
+```
+
+**Note**: Always returns 200 even if email doesn't exist (security best practice).
+
+#### POST /api/v1/auth/reset-password
+
+Reset password with token.
+
+**Request Body**:
+```json
+{
+  "token": "reset-token-from-email",
+  "newPassword": "NewSecurePass123!"
+}
+```
+
+**Response (200 OK)**:
+```json
+{
+  "success": true,
+  "data": {
+    "message": "Password reset successful"
+  }
+}
+```
+
+**Errors**:
+- `400`: Invalid or expired token
+- `400`: Password does not meet requirements
+
+### 7.3 Account Endpoints
+
+#### GET /api/v1/accounts
+
+List all accounts (with pagination and filtering).
+
+**Headers**:
+```
+Authorization: Bearer {token}
+```
+
+**Query Parameters**:
+- `page` (number, default: 1)
+- `limit` (number, default: 20, max: 100)
+- `status` (string: active, paid_in_full, etc)
+- `search` (string: search by name, email, phone, account number)
+- `tags` (string: comma-separated tags)
+- `sortBy` (string: createdAt, balance, dueDate)
+- `sortOrder` (string: asc, desc)
+
+**Example Request**:
+```
+GET /api/v1/accounts?page=1&limit=20&status=active&sortBy=balance&sortOrder=desc
+```
+
+**Response (200 OK)**:
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "uuid",
+      "accountNumber": "ACC-001",
+      "firstName": "Jane",
+      "lastName": "Smith",
+      "email": "jane@example.com",
+      "phone": "+15551234567",
+      "currentBalance": 1250.00,
+      "dueDate": "2025-12-31",
+      "status": "active",
+      "tags": ["medical", "high_priority"],
+      "createdAt": "2025-01-15T10:00:00Z"
+    }
+  ],
+  "meta": {
+    "page": 1,
+    "limit": 20,
+    "total": 150,
+    "totalPages": 8
+  }
+}
+```
+
+#### GET /api/v1/accounts/:id
+
+Get account details.
+
+**Headers**:
+```
+Authorization: Bearer {token}
+```
+
+**Response (200 OK)**:
+```json
+{
+  "success": true,
+  "data": {
+    "id": "uuid",
+    "accountNumber": "ACC-001",
+    "firstName": "Jane",
+    "lastName": "Smith",
+    "email": "jane@example.com",
+    "phone": "+15551234567",
+    "address": "123 Main St",
+    "city": "New York",
+    "state": "NY",
+    "zip": "10001",
+    "currentBalance": 1250.00,
+    "originalBalance": 1500.00,
+    "dueDate": "2025-12-31",
+    "status": "active",
+    "originalCreditor": "ABC Hospital",
+    "tags": ["medical", "high_priority"],
+    "notes": "Patient recently lost job",
+    "preferredLanguage": "en",
+    "preferredContactMethod": "sms",
+    "smsConsent": true,
+    "emailConsent": true,
+    "createdAt": "2025-01-15T10:00:00Z",
+    "updatedAt": "2025-11-20T14:30:00Z"
+  }
+}
+```
+
+**Errors**:
+- `404`: Account not found
+- `403`: Not authorized to view this account
+
+#### POST /api/v1/accounts
+
+Create a new account.
+
+**Headers**:
+```
+Authorization: Bearer {token}
+```
+
+**Request Body**:
+```json
+{
+  "firstName": "Jane",
+  "lastName": "Smith",
+  "email": "jane@example.com",
+  "phone": "+15551234567",
+  "address": "123 Main St",
+  "city": "New York",
+  "state": "NY",
+  "zip": "10001",
+  "accountNumber": "ACC-001", // Optional, auto-generated if not provided
+  "originalCreditor": "ABC Hospital",
+  "currentBalance": 1250.00,
+  "originalBalance": 1500.00,
+  "dueDate": "2025-12-31",
+  "tags": ["medical"],
+  "notes": "Patient recently lost job",
+  "smsConsent": true,
+  "emailConsent": true
+}
+```
+
+**Response (201 Created)**:
+```json
+{
+  "success": true,
+  "data": {
+    "id": "uuid",
+    "accountNumber": "ACC-001",
+    // ... full account object
+  }
+}
+```
+
+**Errors**:
+- `400`: Validation error
+- `403`: Not authorized to create accounts
+
+#### PATCH /api/v1/accounts/:id
+
+Update account information.
+
+**Headers**:
+```
+Authorization: Bearer {token}
+```
+
+**Request Body** (all fields optional):
+```json
+{
+  "phone": "+15559876543",
+  "email": "newemail@example.com",
+  "address": "456 Oak Ave",
+  "status": "in_payment_plan",
+  "tags": ["medical", "hardship"],
+  "notes": "Updated contact info"
+}
+```
+
+**Response (200 OK)**:
+```json
+{
+  "success": true,
+  "data": {
+    // ... updated account object
+  }
+}
+```
+
+**Errors**:
+- `404`: Account not found
+- `400`: Validation error
+- `403`: Not authorized
+
+#### DELETE /api/v1/accounts/:id
+
+Delete (soft delete) an account.
+
+**Headers**:
+```
+Authorization: Bearer {token}
+```
+
+**Response (200 OK)**:
+```json
+{
+  "success": true,
+  "data": {
+    "message": "Account deleted successfully"
+  }
+}
+```
+
+**Errors**:
+- `404`: Account not found
+- `403`: Not authorized
+- `400`: Cannot delete account with active payment plan
+
+#### POST /api/v1/accounts/bulk-import
+
+Import multiple accounts from CSV.
+
+**Headers**:
+```
+Authorization: Bearer {token}
+Content-Type: multipart/form-data
+```
+
+**Request Body**:
+```
+file: [CSV file]
+```
+
+**CSV Format**:
+```csv
+firstName,lastName,email,phone,accountNumber,currentBalance,dueDate
+Jane,Smith,jane@example.com,+15551234567,ACC-001,1250.00,2025-12-31
+```
+
+**Response (200 OK)**:
+```json
+{
+  "success": true,
+  "data": {
+    "imported": 45,
+    "failed": 2,
+    "errors": [
+      {
+        "row": 10,
+        "error": "Invalid email format"
+      },
+      {
+        "row": 23,
+        "error": "Duplicate account number"
+      }
+    ]
+  }
+}
+```
+
+### 7.4 Conversation Endpoints
+
+#### GET /api/v1/conversations
+
+List conversations.
+
+**Headers**:
+```
+Authorization: Bearer {token}
+```
+
+**Query Parameters**:
+- `page`, `limit`
+- `status` (active, resolved, escalated, closed)
+- `channel` (sms, whatsapp, email, web_chat)
+- `assignedTo` (user ID)
+- `accountId` (filter by account)
+
+**Response (200 OK)**:
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "uuid",
+      "accountId": "uuid",
+      "account": {
+        "firstName": "Jane",
+        "lastName": "Smith",
+        "accountNumber": "ACC-001"
+      },
+      "channel": "sms",
+      "status": "active",
+      "assignedAgentId": "uuid",
+      "assignedAgent": {
+        "firstName": "Mike",
+        "lastName": "Agent"
+      },
+      "lastMessageAt": "2025-11-23T10:30:00Z",
+      "lastMessageFrom": "debtor",
+      "messageCount": 12,
+      "sentiment": "neutral",
+      "createdAt": "2025-11-20T14:00:00Z"
+    }
+  ],
+  "meta": {
+    "page": 1,
+    "limit": 20,
+    "total": 75
+  }
+}
+```
+
+#### GET /api/v1/conversations/:id
+
+Get conversation details with messages.
+
+**Headers**:
+```
+Authorization: Bearer {token}
+```
+
+**Response (200 OK)**:
+```json
+{
+  "success": true,
+  "data": {
+    "id": "uuid",
+    "accountId": "uuid",
+    "account": {
+      "firstName": "Jane",
+      "lastName": "Smith",
+      "currentBalance": 1250.00
+    },
+    "channel": "sms",
+    "status": "active",
+    "assignedAgentId": "uuid",
+    "messages": [
+      {
+        "id": "uuid",
+        "senderType": "ai",
+        "content": "Hi Jane, this is a reminder about your outstanding balance of $1,250. Would you like to discuss payment options?",
+        "direction": "outbound",
+        "deliveryStatus": "delivered",
+        "createdAt": "2025-11-20T14:00:00Z"
+      },
+      {
+        "id": "uuid",
+        "senderType": "debtor",
+        "content": "I'm having trouble making the full payment. Can I set up a plan?",
+        "direction": "inbound",
+        "deliveryStatus": "delivered",
+        "createdAt": "2025-11-20T14:05:00Z"
+      }
+    ],
+    "createdAt": "2025-11-20T14:00:00Z"
+  }
+}
+```
+
+#### POST /api/v1/conversations
+
+Create new conversation (start outreach).
+
+**Headers**:
+```
+Authorization: Bearer {token}
+```
+
+**Request Body**:
+```json
+{
+  "accountId": "uuid",
+  "channel": "sms",
+  "initialMessage": "Hi Jane, this is a reminder about your outstanding balance."
+}
+```
+
+**Response (201 Created)**:
+```json
+{
+  "success": true,
+  "data": {
+    "id": "uuid",
+    "accountId": "uuid",
+    "channel": "sms",
+    "status": "active",
+    "messages": [
+      {
+        "id": "uuid",
+        "content": "Hi Jane, this is a reminder about your outstanding balance.",
+        "deliveryStatus": "sent"
+      }
+    ]
+  }
+}
+```
+
+#### POST /api/v1/conversations/:id/messages
+
+Send message in conversation.
+
+**Headers**:
+```
+Authorization: Bearer {token}
+```
+
+**Request Body**:
+```json
+{
+  "content": "We can set up a payment plan. How much can you afford monthly?",
+  "senderType": "agent" // or "ai"
+}
+```
+
+**Response (201 Created)**:
+```json
+{
+  "success": true,
+  "data": {
+    "id": "uuid",
+    "conversationId": "uuid",
+    "senderType": "agent",
+    "content": "We can set up a payment plan. How much can you afford monthly?",
+    "deliveryStatus": "sent",
+    "createdAt": "2025-11-23T10:35:00Z"
+  }
+}
+```
+
+#### PATCH /api/v1/conversations/:id
+
+Update conversation (e.g., assign agent, change status).
+
+**Headers**:
+```
+Authorization: Bearer {token}
+```
+
+**Request Body**:
+```json
+{
+  "assignedAgentId": "uuid",
+  "status": "resolved",
+  "resolutionType": "payment_plan"
+}
+```
+
+**Response (200 OK)**:
+```json
+{
+  "success": true,
+  "data": {
+    // ... updated conversation
+  }
+}
+```
+
+### 7.5 Payment Endpoints
+
+#### POST /api/v1/payments
+
+Process a one-time payment.
+
+**Headers**:
+```
+Authorization: Bearer {token}
+```
+
+**Request Body**:
+```json
+{
+  "accountId": "uuid",
+  "amount": 100.00,
+  "paymentMethod": "card",
+  "stripePaymentMethodId": "pm_xxxx", // From Stripe.js frontend
+  "description": "Partial payment on account"
+}
+```
+
+**Response (201 Created)**:
+```json
+{
+  "success": true,
+  "data": {
+    "id": "uuid",
+    "accountId": "uuid",
+    "amount": 100.00,
+    "status": "succeeded",
+    "receiptUrl": "https://stripe.com/receipts/...",
+    "createdAt": "2025-11-23T10:40:00Z"
+  }
+}
+```
+
+**Errors**:
+- `400`: Insufficient amount
+- `400`: Payment method required
+- `402`: Payment failed (card declined, etc.)
+
+#### GET /api/v1/payments
+
+List payments for an account.
+
+**Headers**:
+```
+Authorization: Bearer {token}
+```
+
+**Query Parameters**:
+- `accountId` (required)
+- `status` (succeeded, failed, refunded)
+
+**Response (200 OK)**:
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "uuid",
+      "amount": 100.00,
+      "status": "succeeded",
+      "paymentMethod": "card",
+      "receiptUrl": "https://...",
+      "createdAt": "2025-11-23T10:40:00Z"
+    }
+  ]
+}
+```
+
+#### POST /api/v1/payment-plans
+
+Create a payment plan.
+
+**Headers**:
+```
+Authorization: Bearer {token}
+```
+
+**Request Body**:
+```json
+{
+  "accountId": "uuid",
+  "totalAmount": 1250.00,
+  "downPayment": 250.00,
+  "numberOfInstallments": 10,
+  "frequency": "monthly",
+  "startDate": "2025-12-01",
+  "autoPayEnabled": true,
+  "stripePaymentMethodId": "pm_xxxx" // Required if autoPayEnabled
+}
+```
+
+**Response (201 Created)**:
+```json
+{
+  "success": true,
+  "data": {
+    "id": "uuid",
+    "accountId": "uuid",
+    "totalAmount": 1250.00,
+    "downPayment": 250.00,
+    "installmentAmount": 100.00,
+    "numberOfInstallments": 10,
+    "frequency": "monthly",
+    "startDate": "2025-12-01",
+    "nextPaymentDate": "2025-12-01",
+    "status": "pending", // Changes to "active" after down payment
+    "schedule": [
+      {
+        "installmentNumber": 1,
+        "amount": 100.00,
+        "dueDate": "2025-12-01"
+      },
+      // ... 9 more
+    ]
+  }
+}
+```
+
+#### GET /api/v1/payment-plans/:id
+
+Get payment plan details.
+
+**Response**: Full payment plan object with payment history.
+
+#### PATCH /api/v1/payment-plans/:id
+
+Modify payment plan.
+
+**Request Body**:
+```json
+{
+  "nextPaymentDate": "2025-12-15", // Reschedule
+  "status": "paused" // Pause plan
+}
+```
+
+### 7.6 Campaign Endpoints
+
+#### POST /api/v1/campaigns
+
+Create campaign.
+
+**Headers**:
+```
+Authorization: Bearer {token}
+```
+
+**Request Body**:
+```json
+{
+  "name": "30-Day Past Due Reminder",
+  "description": "Automated reminder for accounts 30+ days past due",
+  "channel": "sms",
+  "messageTemplate": "Hi {firstName}, your account {accountNumber} is past due. Current balance: ${balance}. Reply to discuss payment options.",
+  "targetFilter": {
+    "status": "active",
+    "daysPastDue": { "gte": 30 }
+  },
+  "scheduleType": "scheduled",
+  "scheduledAt": "2025-11-25T09:00:00Z"
+}
+```
+
+**Response (201 Created)**:
+```json
+{
+  "success": true,
+  "data": {
+    "id": "uuid",
+    "name": "30-Day Past Due Reminder",
+    "status": "scheduled",
+    "targetCount": 120,
+    "scheduledAt": "2025-11-25T09:00:00Z"
+  }
+}
+```
+
+#### GET /api/v1/campaigns/:id
+
+Get campaign details and metrics.
+
+**Response (200 OK)**:
+```json
+{
+  "success": true,
+  "data": {
+    "id": "uuid",
+    "name": "30-Day Past Due Reminder",
+    "status": "completed",
+    "targetCount": 120,
+    "sentCount": 118,
+    "deliveredCount": 115,
+    "responseCount": 45,
+    "paymentCount": 12,
+    "paymentAmount": 5420.00,
+    "roi": 4.58 // Payment amount / campaign cost
+  }
+}
+```
+
+### 7.7 Analytics Endpoints
+
+#### GET /api/v1/analytics/dashboard
+
+Get dashboard summary.
+
+**Headers**:
+```
+Authorization: Bearer {token}
+```
+
+**Query Parameters**:
+- `period` (today, week, month, year, custom)
+- `startDate` (for custom period)
+- `endDate` (for custom period)
+
+**Response (200 OK)**:
+```json
+{
+  "success": true,
+  "data": {
+    "totalAccounts": 850,
+    "totalOutstanding": 1250000.00,
+    "collectionsThisMonth": 125000.00,
+    "collectionRate": 10.0, // percentage
+    "activeConversations": 45,
+    "messagesSentToday": 230,
+    "messagesReceivedToday": 105,
+    "paymentSuccessRate": 92.5,
+    "aiHandledRate": 78.0
+  }
+}
+```
+
+#### GET /api/v1/analytics/collection-report
+
+Get detailed collection report.
+
+**Query Parameters**:
+- `startDate`, `endDate`
+- `groupBy` (day, week, month)
+
+**Response**: Detailed breakdown of collections by time period.
+
+#### GET /api/v1/analytics/channel-performance
+
+Compare performance across channels (SMS, email, WhatsApp).
+
+**Response**: Metrics per channel (response rate, payment rate, etc.).
+
+### 7.8 Admin Endpoints
+
+#### GET /api/v1/admin/users
+
+List all users in business.
+
+#### POST /api/v1/admin/users
+
+Create new user.
+
+#### PATCH /api/v1/admin/users/:id
+
+Update user (change role, activate/deactivate).
+
+#### GET /api/v1/admin/settings
+
+Get business settings.
+
+#### PATCH /api/v1/admin/settings
+
+Update business settings.
+
+### 7.9 Webhook Endpoints
+
+#### POST /api/v1/webhooks/stripe
+
+Stripe webhook handler for payment events.
+
+**No authentication** (verified via Stripe signature).
+
+**Events handled**:
+- `checkout.session.completed`
+- `invoice.payment_succeeded`
+- `invoice.payment_failed`
+- `customer.subscription.updated`
+- `customer.subscription.deleted`
+
+#### POST /api/v1/webhooks/twilio/sms
+
+Twilio webhook for incoming SMS.
+
+**Request Body** (from Twilio):
+```
+From=+15551234567
+Body=I want to set up a payment plan
+MessageSid=SM...
+```
+
+**Response**: TwiML (Twilio's XML format) or empty 200.
+
+#### POST /api/v1/webhooks/twilio/whatsapp
+
+Twilio webhook for incoming WhatsApp messages.
+
+Similar to SMS handler.
+
+#### POST /api/v1/webhooks/sendgrid
+
+SendGrid webhook for email events (delivered, opened, clicked, bounced).
+
+---
+
+## 8. User Interface Requirements
+
+### 8.1 Design Principles
+
+**Consistency**:
+- Use Material-UI components throughout
+- Consistent spacing (8px grid)
+- Consistent color palette
+- Consistent typography
+
+**Accessibility**:
+- WCAG 2.1 AA compliance
+- Keyboard navigation support
+- Screen reader friendly
+- Sufficient color contrast (4.5:1 minimum)
+
+**Responsiveness**:
+- Mobile-first design
+- Breakpoints: xs (0px), sm (600px), md (900px), lg (1200px), xl (1536px)
+- Touch-friendly targets (minimum 44x44px)
+
+**Performance**:
+- Initial load &lt; 3 seconds
+- Time to interactive &lt; 5 seconds
+- Lazy load images and heavy components
+- Optimize bundle size (code splitting)
+
+### 8.2 Color Palette
+
+**Primary Colors**:
+- Primary: #1976d2 (Blue)
+- Secondary: #dc004e (Pink/Red)
+- Success: #4caf50 (Green)
+- Warning: #ff9800 (Orange)
+- Error: #f44336 (Red)
+- Info: #2196f3 (Light Blue)
+
+**Grays**:
+- Gray 50: #fafafa
+- Gray 100: #f5f5f5
+- Gray 200: #eeeeee
+- Gray 300: #e0e0e0
+- Gray 400: #bdbdbd
+- Gray 500: #9e9e9e
+- Gray 600: #757575
+- Gray 700: #616161
+- Gray 800: #424242
+- Gray 900: #212121
+
+**Status Colors**:
+- Active: #4caf50
+- Pending: #ff9800
+- Failed: #f44336
+- Completed: #2196f3
+
+### 8.3 Typography
+
+**Font Family**: Roboto (Material-UI default)
+
+**Font Sizes**:
+- h1: 96px (page titles, rarely used)
+- h2: 60px
+- h3: 48px
+- h4: 34px (section headings)
+- h5: 24px (card titles)
+- h6: 20px (sub-headings)
+- body1: 16px (default body text)
+- body2: 14px (secondary text)
+- button: 14px (all caps, medium weight)
+- caption: 12px (help text, labels)
+
+### 8.4 Application Layouts
+
+#### 8.4.1 Debtor Portal Layout
+
+```
+┌────────────────────────────────────────────────┐
+│  Header (Logo, Account Balance, Logout)       │
+├────────────────────────────────────────────────┤
+│                                                │
+│  ┌──────────────────────────────────────────┐ │
+│  │  Main Content Area                       │ │
+│  │  (Dashboard / Chat / Payments / Profile) │ │
+│  │                                          │ │
+│  │                                          │ │
+│  │                                          │ │
+│  │                                          │ │
+│  └──────────────────────────────────────────┘ │
+│                                                │
+├────────────────────────────────────────────────┤
+│  Footer (Support Link, Privacy Policy)        │
+└────────────────────────────────────────────────┘
+```
+
+**Pages**:
+1. **Dashboard**: Account overview, balance, payment history
+2. **Chat**: Active conversations with AI/agents
+3. **Payments**: Make payment, view payment plans
+4. **Profile**: Update contact info, preferences
+
+#### 8.4.2 Business Dashboard Layout
+
+```
+┌────────────────────────────────────────────────┐
+│  Top Bar (Logo, Search, Notifications, User)  │
+├────┬───────────────────────────────────────────┤
+│    │                                           │
+│ S  │  Main Content Area                        │
+│ i  │  (Dashboard / Accounts / Conversations    │
+│ d  │   / Analytics / Settings)                 │
+│ e  │                                           │
+│ b  │                                           │
+│ a  │                                           │
+│ r  │                                           │
+│    │                                           │
+│ N  │                                           │
+│ a  │                                           │
+│ v  │                                           │
+└────┴───────────────────────────────────────────┘
+```
+
+**Sidebar Navigation**:
+- Dashboard (home icon)
+- Accounts (folder icon)
+- Conversations (chat icon)
+- Campaigns (megaphone icon)
+- Analytics (chart icon)
+- Settings (gear icon)
+
+**Pages**:
+1. **Dashboard**: Key metrics, recent activity
+2. **Accounts**: Table of all debtor accounts
+3. **Conversations**: Live chat inbox
+4. **Campaigns**: Create and manage campaigns
+5. **Analytics**: Reports and charts
+6. **Settings**: Business settings, team management
+
+#### 8.4.3 Admin Panel Layout
+
+Similar to Business Dashboard but with additional sections:
+- **Businesses**: Manage all business accounts
+- **Users**: Global user management
+- **Billing**: Subscription and usage monitoring
+- **System**: Health checks, logs
+
+### 8.5 Key UI Components
+
+#### 8.5.1 Account Table (Business Dashboard)
+
+**Component**: MUI DataGrid
+
+**Columns**:
+- Account Number
+- Name
+- Email
+- Phone
+- Balance
+- Due Date
+- Status (chip with color)
+- Actions (view, edit, delete icons)
+
+**Features**:
+- Sortable columns
+- Filterable
+- Search bar
+- Bulk actions (tag, export, delete)
+- Pagination
+
+**Mockup**:
+```
+┌─────────────────────────────────────────────────────────────┐
+│  Accounts                                    [+ Add Account] │
+├─────────────────────────────────────────────────────────────┤
+│  🔍 Search accounts...             Status: [All ▼] Tags: [] │
+├──────┬────────┬────────────────┬──────────┬─────────┬───────┤
+│ Acc# │ Name   │ Email          │ Balance  │ Status  │ ...   │
+├──────┼────────┼────────────────┼──────────┼─────────┼───────┤
+│ 001  │ Jane S │ jane@email.com │ $1,250   │ Active  │ ⚙️👁️  │
+│ 002  │ John D │ john@email.com │ $850     │ In Plan │ ⚙️👁️  │
+│ 003  │ Mary L │ mary@email.com │ $2,100   │ Active  │ ⚙️👁️  │
+├──────┴────────┴────────────────┴──────────┴─────────┴───────┤
+│  Showing 1-20 of 150          [< Previous] [1] [2] [Next >] │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### 8.5.2 Chat Interface (Both Portals)
+
+**Layout**: Split view (list + conversation)
+
+```
+┌────────────────────┬────────────────────────────────────┐
+│ Conversations      │  Jane Smith (ACC-001)              │
+│                    │  Balance: $1,250 | Due: 12/31/25  │
+├────────────────────┼────────────────────────────────────┤
+│ 🟢 Jane Smith      │                                    │
+│    Last: 2 min ago │  ┌──────────────────────────────┐ │
+│    Active          │  │ Hi Jane, this is a reminder  │ │
+│                    │  │ about your outstanding bal...│ │
+│ 🟡 John Doe        │  └──────────────────────────────┘ │
+│    Last: 1 hr ago  │                   10:00 AM ☑️☑️   │
+│    Active          │                                    │
+│                    │  ┌──────────────────────────────┐ │
+│ 🔴 Mary Lee        │  │ I'm having trouble making    │ │
+│    Last: 1 day ago │  │ the full payment.            │ │
+│    Escalated       │  └──────────────────────────────┘ │
+│                    │  10:05 AM                          │
+├────────────────────┼────────────────────────────────────┤
+│ [Filter ▼]         │  [Type your message...]      [Send]│
+└────────────────────┴────────────────────────────────────┘
+```
+
+**Message Bubble**:
+- Outbound: Blue, right-aligned
+- Inbound: Gray, left-aligned
+- AI-generated: Badge indicating "AI" or robot icon
+- Timestamp and delivery status icons
+
+**Features**:
+- Real-time updates (Socket.io)
+- Typing indicators
+- File attachments
+- Quick actions (propose payment plan, escalate)
+
+#### 8.5.3 Payment Form (Debtor Portal)
+
+```
+┌────────────────────────────────────────────┐
+│  Make a Payment                            │
+├────────────────────────────────────────────┤
+│  Account Balance: $1,250.00                │
+│                                            │
+│  Payment Amount:                           │
+│  ┌──────────────────────────────────────┐ │
+│  │ $ 100.00                             │ │
+│  └──────────────────────────────────────┘ │
+│                                            │
+│  Payment Method:                           │
+│  ○ Credit/Debit Card                       │
+│  ○ Bank Account (ACH)                      │
+│                                            │
+│  Card Details:                             │
+│  [Stripe Card Element]                     │
+│                                            │
+│  ┌──────────────┐                         │
+│  │ Pay $100.00  │                         │
+│  └──────────────┘                         │
+│                                            │
+│  🔒 Secure payment powered by Stripe       │
+└────────────────────────────────────────────┘
+```
+
+**Validation**:
+- Amount must be &gt; $0 and &lt;= balance
+- Card details validated by Stripe
+- Show errors inline
+
+#### 8.5.4 Dashboard Widgets (Business Dashboard)
+
+**Widget Grid**: 2x2 or 3x3 grid of cards
+
+**Example Widgets**:
+
+1. **Total Outstanding**:
+```
+┌────────────────────┐
+│ Total Outstanding  │
+├────────────────────┤
+│   $1,250,000.00    │
+│   ↑ 5.2% vs last   │
+│     month          │
+└────────────────────┘
+```
+
+2. **Collections This Month**:
+```
+┌────────────────────┐
+│ Collections        │
+├────────────────────┤
+│   $125,000.00      │
+│   ↑ 12.8% vs last  │
+│     month          │
+│   [Mini Chart]     │
+└────────────────────┘
+```
+
+3. **Active Conversations**:
+```
+┌────────────────────┐
+│ Active Convos      │
+├────────────────────┤
+│        45          │
+│   12 need attn     │
+└────────────────────┘
+```
+
+4. **AI Performance**:
+```
+┌────────────────────┐
+│ AI Handled         │
+├────────────────────┤
+│        78%         │
+│   Good (>75%)      │
+└────────────────────┘
+```
+
+#### 8.5.5 Analytics Charts
+
+**Library**: Recharts
+
+**Chart Types**:
+1. **Line Chart**: Collections over time
+2. **Bar Chart**: Channel performance comparison
+3. **Pie Chart**: Account status distribution
+4. **Area Chart**: Recovery rate trends
+
+**Example**:
+```
+┌──────────────────────────────────────────┐
+│  Collections by Month                    │
+├──────────────────────────────────────────┤
+│  $150K┤                            ┌─●   │
+│       │                        ┌───┘     │
+│  $100K┤                   ┌────┘         │
+│       │              ┌────┘              │
+│   $50K┤         ┌────┘                   │
+│       │    ┌────┘                        │
+│     0 └────┴────┴────┴────┴────┴────┴── │
+│        Jan Feb Mar Apr May Jun Jul       │
+└──────────────────────────────────────────┘
+```
+
+### 8.6 Mobile Responsiveness
+
+**Breakpoint Behavior**:
+
+**Desktop (&gt;900px)**:
+- Full sidebar navigation
+- Multi-column layouts
+- Large data tables
+
+**Tablet (600-900px)**:
+- Collapsible sidebar
+- 2-column layouts become single-column
+- Simplified tables (hide less important columns)
+
+**Mobile (&lt;600px)**:
+- Bottom navigation bar instead of sidebar
+- Single column layouts
+- Card-based UI instead of tables
+- Hamburger menu for secondary navigation
+
+**Mobile Chat Interface**:
+```
+┌────────────────────┐
+│  ← Conversations   │
+├────────────────────┤
+│  Jane Smith        │
+│  ACC-001           │
+├────────────────────┤
+│                    │
+│  ┌──────────────┐ │
+│  │ Message 1    │ │
+│  └──────────────┘ │
+│                    │
+│  ┌──────────────┐ │
+│  │ Message 2    │ │
+│  └──────────────┘ │
+│                    │
+├────────────────────┤
+│ [Type message...]  │
+│               [Send]│
+└────────────────────┘
+```
+
+### 8.7 Loading States
+
+**Skeleton Screens**: Use MUI Skeleton for loading states
+
+**Example**:
+```
+┌────────────────────┐
+│ ░░░░░░░░░░░░       │ (Account row loading)
+│ ░░░░░░░░░░░░       │
+│ ░░░░░░░░░░░░       │
+└────────────────────┘
+```
+
+**Spinners**: Use CircularProgress for async operations
+
+### 8.8 Error States
+
+**Error Messages**: Use Snackbar (toast) for temporary errors
+
+**Persistent Errors**: Use Alert component
+
+**Form Validation Errors**: Inline below field with helper text
+
+**Empty States**: Friendly illustrations and call-to-action
+
+**Example**:
+```
+┌────────────────────────────────┐
+│                                │
+│         📭                     │
+│                                │
+│   No conversations yet         │
+│                                │
+│   Start a conversation to      │
+│   engage with debtors.         │
+│                                │
+│   [+ Start Conversation]       │
+│                                │
+└────────────────────────────────┘
+```
+
+---
+
+## 9. AI & Chatbot Specifications
+
+### 9.1 AI Architecture
+
+**Primary LLM**: Anthropic Claude Sonnet 4 (claude-sonnet-4-20250514)
+
+**Conversation Flow**:
+```
+1. Debtor sends message
+2. System receives message via webhook (Twilio/SendGrid)
+3. Message stored in database
+4. Check if AI should respond:
+   - Is conversation assigned to agent?
+   - Is agent online?
+   - Is auto-response enabled?
+5. If AI responds:
+   a. Retrieve conversation history
+   b. Retrieve account details
+   c. Build context prompt
+   d. Call Claude API
+   e. Run compliance check on response
+   f. If compliant, send response
+   g. If not compliant, regenerate or escalate
+6. Store AI response in database
+7. Send via appropriate channel
+```
+
+### 9.2 Prompt Engineering
+
+#### 9.2.1 System Prompt
+
+```
+You are a professional, empathetic debt collection assistant working for [Business Name]. Your role is to help debtors understand their obligations and find solutions to resolve their debts.
+
+IMPORTANT RULES:
+1. ALWAYS be respectful, empathetic, and professional
+2. NEVER threaten, harass, or use profane language
+3. ALWAYS comply with FDCPA regulations
+4. ALWAYS include required disclosures in first communication
+5. NEVER contact before 8am or after 9pm debtor's local time
+6. NEVER discuss debt with third parties (except attorneys)
+7. If debtor disputes debt, inform them of validation rights
+8. If debtor requests to cease contact, immediately confirm and stop
+
+YOUR CAPABILITIES:
+- Answer questions about the debt
+- Explain payment options
+- Propose payment plans
+- Process payments (via secure link)
+- Escalate to human agent when needed
+
+TONE:
+- Professional but friendly
+- Understanding and patient
+- Solution-oriented
+- Never judgmental
+
+When uncertain or if debtor is hostile/distressed, escalate to human agent.
+```
+
+#### 9.2.2 User Message Template
+
+```
+ACCOUNT INFORMATION:
+- Name: {firstName} {lastName}
+- Account Number: {accountNumber}
+- Original Creditor: {originalCreditor}
+- Current Balance: ${currentBalance}
+- Due Date: {dueDate}
+- Status: {status}
+
+CONVERSATION HISTORY:
+{conversationHistory}
+
+CURRENT MESSAGE FROM DEBTOR:
+"{debtorMessage}"
+
+INSTRUCTIONS:
+Respond helpfully to the debtor's message. If this is the first communication, include the required debt validation notice. Be empathetic and solution-focused.
+
+RESPONSE:
+```
+
+#### 9.2.3 Required Disclosures (First Contact)
+
+```
+This is an attempt to collect a debt. Any information obtained will be used for that purpose.
+
+Debt Details:
+- Original Creditor: {originalCreditor}
+- Amount Owed: ${currentBalance}
+
+You have the right to dispute this debt. If you notify us in writing within 30 days that you dispute the debt, we will obtain verification and mail it to you.
+```
+
+### 9.3 Intent Recognition
+
+Claude identifies user intent to route conversations appropriately.
+
+**Common Intents**:
+1. **Request Payment Plan**: "Can I set up a payment plan?"
+2. **Dispute Debt**: "I don't owe this money"
+3. **Request Information**: "How much do I owe?"
+4. **Make Payment**: "I want to pay now"
+5. **Financial Hardship**: "I lost my job and can't pay"
+6. **Request Human**: "I want to speak to a person"
+7. **Hostile/Abusive**: Profanity, threats
+8. **Cease Contact**: "Stop contacting me"
+
+**Intent Handling**:
+- Payment Plan → Generate plan options
+- Dispute → Provide validation rights, escalate
+- Information → Provide account details
+- Make Payment → Send payment link
+- Hardship → Empathize, propose reduced plan
+- Request Human → Escalate immediately
+- Hostile → Apologize, escalate, log
+- Cease Contact → Confirm, mark account DNR, stop all contact
+
+### 9.4 Sentiment Analysis
+
+**Sentiment Levels**:
+- **Positive**: Cooperative, grateful
+- **Neutral**: Matter-of-fact, informational
+- **Negative**: Frustrated, stressed
+- **Hostile**: Angry, threatening, abusive
+
+**Actions Based on Sentiment**:
+- Positive: Continue AI conversation
+- Neutral: Continue AI conversation
+- Negative: Adjust tone to be more empathetic, monitor
+- Hostile: Escalate to human agent immediately
+
+**Implementation**:
+```typescript
+const sentimentPrompt = `
+Analyze the sentiment of this message on a scale from 1-5:
+1 = Very Positive
+2 = Positive
+3 = Neutral
+4 = Negative
+5 = Hostile/Abusive
+
+Message: "${message}"
+
+Respond with ONLY the number (1-5).
+`;
+
+const sentimentScore = await claudeAPI.analyze(sentimentPrompt);
+
+if (sentimentScore >= 4) {
+  await escalateToHuman(conversationId, 'hostile_sentiment');
+}
+```
+
+### 9.5 Payment Plan Generation
+
+**AI generates payment plan proposals based on**:
+- Total debt amount
+- Debtor's stated affordability
+- Historical payment behavior
+- Business policies
+
+**Example Prompt**:
+```
+Generate a payment plan for this debtor:
+- Total Owed: $1,250
+- Debtor's Budget: "I can afford $100 per month"
+- Business Policy: Require 20% down payment
+
+Propose 3 payment plan options:
+1. Standard plan (20% down, balance over 12 months)
+2. Flexible plan (10% down, balance over 18 months)
+3. Hardship plan (0% down, balance over 24 months)
+
+Format each option clearly with:
+- Down payment
+- Monthly payment
+- Number of months
+- Total to be paid
+
+RESPONSE:
+```
+
+### 9.6 Compliance Checking
+
+Every AI-generated message is checked for compliance violations before sending.
+
+**Compliance Prompt**:
+```
+Review this debt collection message for FDCPA compliance violations:
+
+Message: "{aiGeneratedMessage}"
+
+Check for:
+1. Threats of violence or harm
+2. Profane or abusive language
+3. False representations
+4. Misleading statements
+5. Missing required disclosures (if first contact)
+6. Contact outside permitted hours
+7. Disclosure to third parties
+
+Respond in JSON format:
+{
+  "compliant": true/false,
+  "violations": ["list of violations if any"],
+  "severity": "low/medium/high"
+}
+```
+
+**If Non-Compliant**:
+- Log violation
+- Regenerate response with stricter constraints
+- If still non-compliant after 2 attempts, escalate to human
+- Alert compliance team
+
+### 9.7 Conversation Handoff to Human
+
+**Handoff Triggers**:
+- Debtor explicitly requests human
+- AI confidence below threshold (70%)
+- Sentiment is hostile
+- Legal matters mentioned
+- Dispute filed
+- Complex negotiation required
+
+**Handoff Process**:
+1. AI sends acknowledgment: "I'm connecting you with one of our specialists who can better assist you."
+2. Conversation marked as "escalated"
+3. Notification sent to available agents
+4. Agent sees full conversation history
+5. Agent takes over conversation
+
+### 9.8 AI Performance Metrics
+
+**Tracked Metrics**:
+- **AI Handled Rate**: % of conversations fully handled by AI without human intervention
+- **Average Confidence Score**: Average Claude confidence across all responses
+- **Escalation Rate**: % of conversations escalated to humans
+- **Resolution Rate**: % of AI conversations resulting in payment/plan
+- **Compliance Pass Rate**: % of messages passing compliance check on first attempt
+- **Average Response Time**: Time from debtor message to AI response
+
+**Goals**:
+- AI Handled Rate: &gt;75%
+- Average Confidence: &gt;0.85
+- Escalation Rate: &lt;15%
+- Compliance Pass Rate: &gt;99%
+- Average Response Time: &lt;5 seconds
+
+---
+
+## 10. Payment Processing
+
+### 10.1 Stripe Integration
+
+**Stripe Products**:
+- **Stripe Checkout**: For one-time payments
+- **Stripe Payment Intents**: For custom payment flows
+- **Stripe Billing**: For subscription management (business billing)
+- **Stripe ACH**: For bank transfers
+- **Stripe Webhooks**: For event notifications
+
+### 10.2 One-Time Payment Flow
+
+**Frontend (Debtor Portal)**:
+```javascript
+// 1. User clicks "Pay Now"
+// 2. Load Stripe.js
+import { loadStripe } from '@stripe/stripe-js';
+const stripe = await loadStripe('pk_test_...');
+
+// 3. Collect payment method
+const { paymentMethod, error } = await stripe.createPaymentMethod({
+  type: 'card',
+  card: cardElement, // Stripe CardElement
+});
+
+// 4. Send to backend
+const response = await fetch('/api/v1/payments', {
+  method: 'POST',
+  headers: {
+    'Authorization': `Bearer ${token}`,
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+    accountId: 'uuid',
+    amount: 100.00,
+    paymentMethodId: paymentMethod.id,
+  }),
+});
+
+// 5. Handle response
+if (response.ok) {
+  // Show success message
+  // Update account balance
+} else {
+  // Show error
+}
+```
+
+**Backend**:
+```typescript
+// 1. Receive payment request
+async function processPayment(req, res) {
+  const { accountId, amount, paymentMethodId } = req.body;
+  
+  // 2. Validate
+  const account = await prisma.account.findUnique({
+    where: { id: accountId }
+  });
+  
+  if (amount > account.currentBalance) {
+    return res.status(400).json({
+      success: false,
+      error: { message: 'Amount exceeds balance' }
+    });
+  }
+  
+  // 3. Create Stripe Payment Intent
+  const paymentIntent = await stripe.paymentIntents.create({
+    amount: Math.round(amount * 100), // Convert to cents
+    currency: 'usd',
+    payment_method: paymentMethodId,
+    confirm: true,
+    customer: account.stripeCustomerId, // Optional, for saved cards
+    metadata: {
+      accountId: account.id,
+      accountNumber: account.accountNumber,
+    },
+  });
+  
+  // 4. Store payment in database
+  const payment = await prisma.payment.create({
+    data: {
+      accountId: account.id,
+      amount: amount,
+      stripePaymentIntentId: paymentIntent.id,
+      status: paymentIntent.status, // 'succeeded', 'requires_action', etc.
+    },
+  });
+  
+  // 5. If successful, update account balance
+  if (paymentIntent.status === 'succeeded') {
+    await prisma.account.update({
+      where: { id: accountId },
+      data: {
+        currentBalance: {
+          decrement: amount
+        },
+      },
+    });
+    
+    // Check if paid in full
+    const updatedAccount = await prisma.account.findUnique({
+      where: { id: accountId }
+    });
+    
+    if (updatedAccount.currentBalance <= 0) {
+      await prisma.account.update({
+        where: { id: accountId },
+        data: { status: 'paid_in_full' },
+      });
+    }
+  }
+  
+  // 6. Return payment details
+  return res.status(201).json({
+    success: true,
+    data: {
+      id: payment.id,
+      amount: payment.amount,
+      status: payment.status,
+      receiptUrl: paymentIntent.charges.data[0]?.receipt_url,
+    },
+  });
+}
+```
+
+### 10.3 Payment Plan Setup
+
+**Frontend**:
+```javascript
+// 1. Display payment plan form
+// 2. User fills in:
+//    - Down payment amount
+//    - Monthly payment amount
+//    - Start date
+//    - Enable auto-pay (checkbox)
+// 3. If auto-pay enabled, collect payment method
+const { paymentMethod } = await stripe.createPaymentMethod({
+  type: 'card',
+  card: cardElement,
+});
+
+// 4. Submit to backend
+const response = await fetch('/api/v1/payment-plans', {
+  method: 'POST',
+  body: JSON.stringify({
+    accountId: 'uuid',
+    downPayment: 250,
+    installmentAmount: 100,
+    numberOfInstallments: 10,
+    frequency: 'monthly',
+    startDate: '2025-12-01',
+    autoPayEnabled: true,
+    paymentMethodId: paymentMethod.id,
+  }),
+});
+```
+
+**Backend**:
+```typescript
+async function createPaymentPlan(req, res) {
+  const {
+    accountId,
+    downPayment,
+    installmentAmount,
+    numberOfInstallments,
+    frequency,
+    startDate,
+    autoPayEnabled,
+    paymentMethodId,
+  } = req.body;
+  
+  // 1. Validate
+  const account = await prisma.account.findUnique({
+    where: { id: accountId }
+  });
+  
+  const totalPlan = downPayment + (installmentAmount * numberOfInstallments);
+  if (totalPlan < account.currentBalance) {
+    return res.status(400).json({
+      success: false,
+      error: { message: 'Payment plan total is less than balance' }
+    });
+  }
+  
+  // 2. If auto-pay, attach payment method to Stripe customer
+  let stripePaymentMethodId = null;
+  if (autoPayEnabled) {
+    const customer = await stripe.customers.create({
+      email: account.email,
+      name: `${account.firstName} ${account.lastName}`,
+    });
+    
+    await stripe.paymentMethods.attach(paymentMethodId, {
+      customer: customer.id,
+    });
+    
+    // Set as default
+    await stripe.customers.update(customer.id, {
+      invoice_settings: {
+        default_payment_method: paymentMethodId,
+      },
+    });
+    
+    // Update account with customer ID
+    await prisma.account.update({
+      where: { id: accountId },
+      data: { stripeCustomerId: customer.id },
+    });
+    
+    stripePaymentMethodId = paymentMethodId;
+  }
+  
+  // 3. Create payment plan in database
+  const plan = await prisma.paymentPlan.create({
+    data: {
+      accountId: account.id,
+      totalAmount: account.currentBalance,
+      downPayment: downPayment,
+      installmentAmount: installmentAmount,
+      numberOfInstallments: numberOfInstallments,
+      frequency: frequency,
+      startDate: new Date(startDate),
+      nextPaymentDate: new Date(startDate),
+      autoPayEnabled: autoPayEnabled,
+      stripePaymentMethodId: stripePaymentMethodId,
+      status: downPayment > 0 ? 'pending' : 'active',
+      createdById: req.user.id,
+    },
+  });
+  
+  // 4. If down payment, process immediately
+  if (downPayment > 0) {
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: Math.round(downPayment * 100),
+      currency: 'usd',
+      payment_method: paymentMethodId,
+      confirm: true,
+      customer: account.stripeCustomerId,
+      metadata: {
+        accountId: account.id,
+        paymentPlanId: plan.id,
+        type: 'down_payment',
+      },
+    });
+    
+    if (paymentIntent.status === 'succeeded') {
+      // Mark plan as active
+      await prisma.paymentPlan.update({
+        where: { id: plan.id },
+        data: {
+          status: 'active',
+          paymentsMade: 1,
+          amountPaid: downPayment,
+        },
+      });
+      
+      // Create payment record
+      await prisma.payment.create({
+        data: {
+          accountId: account.id,
+          paymentPlanId: plan.id,
+          amount: downPayment,
+          stripePaymentIntentId: paymentIntent.id,
+          status: 'succeeded',
+        },
+      });
+      
+      // Update account balance
+      await prisma.account.update({
+        where: { id: accountId },
+        data: {
+          currentBalance: {
+            decrement: downPayment
+          },
+          status: 'in_payment_plan',
+        },
+      });
+    }
+  }
+  
+  // 5. Schedule recurring payments (add to job queue)
+  if (autoPayEnabled) {
+    await scheduleRecurringPayments(plan.id);
+  }
+  
+  return res.status(201).json({
+    success: true,
+    data: plan,
+  });
+}
+```
+
+### 10.4 Recurring Payment Processing
+
+**Job Scheduler** (Bull Queue):
+```typescript
+// Add job to process payment plan installments
+async function scheduleRecurringPayments(planId: string) {
+  const plan = await prisma.paymentPlan.findUnique({
+    where: { id: planId }
+  });
+  
+  // Calculate all payment dates
+  const paymentDates = calculatePaymentDates(
+    plan.startDate,
+    plan.numberOfInstallments,
+    plan.frequency
+  );
+  
+  // Schedule job for each date
+  for (const date of paymentDates) {
+    await paymentQueue.add(
+      'process-installment',
+      {
+        paymentPlanId: planId,
+        dueDate: date,
+      },
+      {
+        delay: date.getTime() - Date.now(),
+      }
+    );
+  }
+}
+
+// Job processor
+paymentQueue.process('process-installment', async (job) => {
+  const { paymentPlanId, dueDate } = job.data;
+  
+  const plan = await prisma.paymentPlan.findUnique({
+    where: { id: paymentPlanId },
+    include: { account: true },
+  });
+  
+  if (!plan.autoPayEnabled) {
+    // Send reminder instead
+    await sendPaymentReminder(plan);
+    return;
+  }
+  
+  // Charge payment method
+  try {
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: Math.round(plan.installmentAmount * 100),
+      currency: 'usd',
+      payment_method: plan.stripePaymentMethodId,
+      confirm: true,
+      customer: plan.account.stripeCustomerId,
+      metadata: {
+        accountId: plan.accountId,
+        paymentPlanId: plan.id,
+        installmentNumber: plan.paymentsMade + 1,
+      },
+    });
+    
+    if (paymentIntent.status === 'succeeded') {
+      // Record payment
+      await prisma.payment.create({
+        data: {
+          accountId: plan.accountId,
+          paymentPlanId: plan.id,
+          amount: plan.installmentAmount,
+          stripePaymentIntentId: paymentIntent.id,
+          status: 'succeeded',
+        },
+      });
+      
+      // Update plan
+      await prisma.paymentPlan.update({
+        where: { id: plan.id },
+        data: {
+          paymentsMade: { increment: 1 },
+          amountPaid: { increment: plan.installmentAmount },
+          nextPaymentDate: calculateNextPaymentDate(dueDate, plan.frequency),
+        },
+      });
+      
+      // Update account
+      await prisma.account.update({
+        where: { id: plan.accountId },
+        data: {
+          currentBalance: { decrement: plan.installmentAmount },
+        },
+      });
+      
+      // Check if plan is complete
+      if (plan.paymentsMade + 1 >= plan.numberOfInstallments) {
+        await prisma.paymentPlan.update({
+          where: { id: plan.id },
+          data: { status: 'completed', completedAt: new Date() },
+        });
+        
+        // Check if account is paid in full
+        const updatedAccount = await prisma.account.findUnique({
+          where: { id: plan.accountId }
+        });
+        if (updatedAccount.currentBalance <= 0) {
+          await prisma.account.update({
+            where: { id: plan.accountId },
+            data: { status: 'paid_in_full' },
+          });
+        }
+      }
+      
+      // Send confirmation
+      await sendPaymentConfirmation(plan, plan.installmentAmount);
+    }
+  } catch (error) {
+    // Payment failed
+    await handleFailedPayment(plan, error);
+  }
+});
+```
+
+### 10.5 Failed Payment Handling
+
+**Retry Logic**:
+```typescript
+async function handleFailedPayment(plan, error) {
+  // Record failed payment
+  await prisma.payment.create({
+    data: {
+      accountId: plan.accountId,
+      paymentPlanId: plan.id,
+      amount: plan.installmentAmount,
+      status: 'failed',
+      failureReason: error.message,
+    },
+  });
+  
+  // Check retry count
+  const failedPayments = await prisma.payment.count({
+    where: {
+      paymentPlanId: plan.id,
+      status: 'failed',
+      createdAt: {
+        gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // Last 7 days
+      },
+    },
+  });
+  
+  if (failedPayments < 3) {
+    // Schedule retry in 2 days
+    await paymentQueue.add(
+      'process-installment',
+      {
+        paymentPlanId: plan.id,
+        dueDate: plan.nextPaymentDate,
+        isRetry: true,
+      },
+      {
+        delay: 2 * 24 * 60 * 60 * 1000, // 2 days
+      }
+    );
+    
+    // Notify debtor
+    await sendPaymentFailedNotification(plan, error.message);
+  } else {
+    // Max retries exceeded, mark plan as defaulted
+    await prisma.paymentPlan.update({
+      where: { id: plan.id },
+      data: { status: 'defaulted' },
+    });
+    
+    // Notify business and debtor
+    await sendPlanDefaultedNotifications(plan);
+  }
+}
+```
+
+### 10.6 Subscription Billing (Business Customers)
+
+**Stripe Setup**:
+1. Create Products in Stripe for each tier (Free, Basic, Premium)
+2. Create Price for each product
+3. Create Price for overage messaging (usage-based)
+
+**Subscription Flow**:
+```typescript
+async function createSubscription(businessId, tier) {
+  const business = await prisma.business.findUnique({
+    where: { id: businessId }
+  });
+  
+  // Create Stripe customer if doesn't exist
+  let customerId = business.stripeCustomerId;
+  if (!customerId) {
+    const customer = await stripe.customers.create({
+      email: business.email,
+      name: business.name,
+      metadata: {
+        businessId: business.id,
+      },
+    });
+    customerId = customer.id;
+    
+    await prisma.business.update({
+      where: { id: businessId },
+      data: { stripeCustomerId: customerId },
+    });
+  }
+  
+  // Get price ID for tier
+  const priceIds = {
+    free: 'price_free_tier_id',
+    basic: 'price_basic_tier_id',
+    premium: 'price_premium_tier_id',
+  };
+  
+  // Create subscription
+  const subscription = await stripe.subscriptions.create({
+    customer: customerId,
+    items: [
+      { price: priceIds[tier] },
+      { price: 'price_overage_messaging_id' }, // Usage-based
+    ],
+    payment_behavior: 'default_incomplete',
+    payment_settings: { save_default_payment_method: 'on_subscription' },
+    expand: ['latest_invoice.payment_intent'],
+  });
+  
+  // Update business
+  await prisma.business.update({
+    where: { id: businessId },
+    data: {
+      stripeSubscriptionId: subscription.id,
+      subscriptionTier: tier,
+      subscriptionStatus: subscription.status,
+      messageQuota: getQuotaForTier(tier),
+      billingPeriodStart: new Date(subscription.current_period_start * 1000),
+      billingPeriodEnd: new Date(subscription.current_period_end * 1000),
+    },
+  });
+  
+  return subscription;
+}
+
+function getQuotaForTier(tier) {
+  const quotas = {
+    free: 0,
+    basic: 5000,
+    premium: 12500,
+  };
+  return quotas[tier];
+}
+```
+
+**Usage Reporting** (for overage billing):
+```typescript
+// Called after sending each message
+async function recordMessageUsage(businessId) {
+  const business = await prisma.business.findUnique({
+    where: { id: businessId }
+  });
+  
+  // Increment usage counter
+  await prisma.business.update({
+    where: { id: businessId },
+    data: {
+      messagesUsedThisMonth: { increment: 1 },
+    },
+  });
+  
+  const newCount = business.messagesUsedThisMonth + 1;
+  
+  // If over quota, report usage to Stripe
+  if (newCount > business.messageQuota) {
+    const overage = newCount - business.messageQuota;
+    
+    // Report usage
+    const subscriptionItem = await stripe.subscriptionItems.retrieve(
+      business.stripeOverageItemId
+    );
+    
+    await stripe.subscriptionItems.createUsageRecord(
+      subscriptionItem.id,
+      {
+        quantity: 1, // 1 message
+        timestamp: Math.floor(Date.now() / 1000),
+        action: 'increment',
+      }
+    );
+  }
+}
+
+// Reset usage counter at beginning of each billing period
+async function resetMonthlyUsage(businessId) {
+  await prisma.business.update({
+    where: { id: businessId },
+    data: {
+      messagesUsedThisMonth: 0,
+    },
+  });
+}
+```
+
+**Webhook Handler** (for subscription events):
+```typescript
+app.post('/api/v1/webhooks/stripe', async (req, res) => {
+  const sig = req.headers['stripe-signature'];
+  let event;
+  
+  try {
+    event = stripe.webhooks.constructEvent(
+      req.body,
+      sig,
+      process.env.STRIPE_WEBHOOK_SECRET
+    );
+  } catch (err) {
+    return res.status(400).send(`Webhook Error: ${err.message}`);
+  }
+  
+  switch (event.type) {
+    case 'customer.subscription.updated':
+      const subscription = event.data.object;
+      await prisma.business.update({
+        where: { stripeSubscriptionId: subscription.id },
+        data: {
+          subscriptionStatus: subscription.status,
+          billingPeriodStart: new Date(subscription.current_period_start * 1000),
+          billingPeriodEnd: new Date(subscription.current_period_end * 1000),
+        },
+      });
+      
+      // Reset usage if new billing period
+      if (subscription.current_period_start > Date.now() / 1000 - 60) {
+        const business = await prisma.business.findFirst({
+          where: { stripeSubscriptionId: subscription.id }
+        });
+        await resetMonthlyUsage(business.id);
+      }
+      break;
+      
+    case 'customer.subscription.deleted':
+      await prisma.business.update({
+        where: { stripeSubscriptionId: event.data.object.id },
+        data: {
+          subscriptionStatus: 'canceled',
+          subscriptionTier: 'free',
+          messageQuota: 0,
+        },
+      });
+      break;
+      
+    case 'invoice.payment_succeeded':
+      // Log successful payment
+      break;
+      
+    case 'invoice.payment_failed':
+      // Handle failed payment
+      await prisma.business.update({
+        where: { stripeCustomerId: event.data.object.customer },
+        data: { subscriptionStatus: 'past_due' },
+      });
+      break;
+  }
+  
+  res.json({ received: true });
+});
+```
+
+---
+
+## 11. Multi-Channel Communication
+
+### 11.1 SMS Integration (Twilio)
+
+**Setup**:
+1. Create Twilio account
+2. Purchase phone number with SMS capability
+3. Configure webhook URL: `https://your-domain.com/api/webhooks/twilio/sms`
+
+**Sending SMS**:
+```typescript
+import twilio from 'twilio';
+
+const client = twilio(
+  process.env.TWILIO_ACCOUNT_SID,
+  process.env.TWILIO_AUTH_TOKEN
+);
+
+async function sendSMS(to: string, message: string, conversationId: string) {
+  try {
+    const result = await client.messages.create({
+      from: process.env.TWILIO_PHONE_NUMBER,
+      to: to,
+      body: message,
+      statusCallback: `${process.env.APP_URL}/api/webhooks/twilio/status`,
+    });
+    
+    // Store message in database
+    await prisma.message.create({
+      data: {
+        conversationId: conversationId,
+        senderType: 'ai', // or 'agent'
+        content: message,
+        direction: 'outbound',
+        deliveryStatus: 'sent',
+        twilioSid: result.sid,
+      },
+    });
+    
+    return result;
+  } catch (error) {
+    // Handle error (invalid number, blocked number, etc.)
+    await prisma.message.create({
+      data: {
+        conversationId: conversationId,
+        senderType: 'ai',
+        content: message,
+        direction: 'outbound',
+        deliveryStatus: 'failed',
+        failedReason: error.message,
+      },
+    });
+    
+    throw error;
+  }
+}
+```
+
+**Receiving SMS** (Webhook):
+```typescript
+app.post('/api/webhooks/twilio/sms', async (req, res) => {
+  const {
+    From, // Debtor's phone number
+    Body, // Message content
+    MessageSid, // Twilio message ID
+  } = req.body;
+  
+  // 1. Find account by phone number
+  const account = await prisma.account.findFirst({
+    where: {
+      OR: [
+        { phone: From },
+        { phoneSecondary: From },
+      ],
+    },
+  });
+  
+  if (!account) {
+    // Unknown number, send error message
+    await client.messages.create({
+      from: process.env.TWILIO_PHONE_NUMBER,
+      to: From,
+      body: 'We could not find an account associated with this number. Please contact us at support@funnelchat.com.',
+    });
+    return res.status(200).send();
+  }
+  
+  // 2. Find or create conversation
+  let conversation = await prisma.conversation.findFirst({
+    where: {
+      accountId: account.id,
+      channel: 'sms',
+      status: { in: ['active', 'escalated'] },
+    },
+    include: {
+      messages: {
+        orderBy: { createdAt: 'asc' },
+        take: 20, // Last 20 messages for context
+      },
+    },
+  });
+  
+  if (!conversation) {
+    conversation = await prisma.conversation.create({
+      data: {
+        accountId: account.id,
+        businessId: account.businessId,
+        channel: 'sms',
+        status: 'active',
+      },
+      include: { messages: true },
+    });
+  }
+  
+  // 3. Store incoming message
+  const inboundMessage = await prisma.message.create({
+    data: {
+      conversationId: conversation.id,
+      senderType: 'debtor',
+      content: Body,
+      direction: 'inbound',
+      deliveryStatus: 'delivered',
+      twilioSid: MessageSid,
+    },
+  });
+  
+  // 4. Update conversation
+  await prisma.conversation.update({
+    where: { id: conversation.id },
+    data: {
+      lastMessageAt: new Date(),
+      lastMessageFrom: 'debtor',
+    },
+  });
+  
+  // 5. Check for opt-out keywords
+  if (Body.trim().toUpperCase() === 'STOP') {
+    await prisma.account.update({
+      where: { id: account.id },
+      data: { doNotSms: true },
+    });
+    
+    await sendSMS(
+      From,
+      'You have been unsubscribed from SMS messages. Reply START to resume.',
+      conversation.id
+    );
+    
+    return res.status(200).send();
+  }
+  
+  // 6. Determine if AI should respond
+  const shouldAIRespond = (
+    !conversation.assignedAgentId ||
+    conversation.aiHandled
+  );
+  
+  if (shouldAIRespond) {
+    // 7. Generate AI response
+    const aiResponse = await generateAIResponse(
+      account,
+      conversation,
+      Body
+    );
+    
+    // 8. Send AI response
+    await sendSMS(From, aiResponse, conversation.id);
+  } else {
+    // 9. Notify assigned agent
+    await notifyAgent(conversation.assignedAgentId, {
+      type: 'new_message',
+      conversationId: conversation.id,
+      message: Body,
+    });
+  }
+  
+  res.status(200).send();
+});
+
+// Status callback
+app.post('/api/webhooks/twilio/status', async (req, res) => {
+  const { MessageSid, MessageStatus } = req.body;
+  
+  // Update message delivery status
+  await prisma.message.updateMany({
+    where: { twilioSid: MessageSid },
+    data: {
+      deliveryStatus: MessageStatus, // sent, delivered, failed, etc.
+      ...(MessageStatus === 'delivered' && {
+        deliveredAt: new Date(),
+      }),
+    },
+  });
+  
+  res.status(200).send();
+});
+```
+
+### 11.2 WhatsApp Integration (Twilio)
+
+**Setup**:
+1. Apply for WhatsApp Business API access through Twilio
+2. Configure webhook URL: `https://your-domain.com/api/webhooks/twilio/whatsapp`
+
+**Code**: Nearly identical to SMS, just use WhatsApp-formatted numbers:
+```typescript
+async function sendWhatsApp(to: string, message: string, conversationId: string) {
+  const result = await client.messages.create({
+    from: `whatsapp:${process.env.TWILIO_WHATSAPP_NUMBER}`,
+    to: `whatsapp:${to}`,
+    body: message,
+  });
+  
+  // Store in database with channel='whatsapp'
+}
+```
+
+**Receiving WhatsApp**:
+```typescript
+app.post('/api/webhooks/twilio/whatsapp', async (req, res) => {
+  // Similar to SMS handler, but:
+  // - From will be "whatsapp:+1234567890"
+  // - Store with channel='whatsapp'
+});
+```
+
+### 11.3 Email Integration (SendGrid)
+
+**Setup**:
+1. Create SendGrid account
+2. Verify sender email/domain
+3. Configure inbound parse webhook
+
+**Sending Email**:
+```typescript
+import sgMail from '@sendgrid/mail';
+sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+
+async function sendEmail(
+  to: string,
+  subject: string,
+  html: string,
+  conversationId: string
+) {
+  try {
+    const msg = {
+      to: to,
+      from: process.env.SENDGRID_FROM_EMAIL,
+      subject: subject,
+      html: html,
+      customArgs: {
+        conversationId: conversationId,
+      },
+    };
+    
+    const result = await sgMail.send(msg);
+    
+    // Store message
+    await prisma.message.create({
+      data: {
+        conversationId: conversationId,
+        senderType: 'ai',
+        content: html,
+        contentType: 'html',
+        direction: 'outbound',
+        deliveryStatus: 'sent',
+        sendgridId: result[0].headers['x-message-id'],
+      },
+    });
+    
+    return result;
+  } catch (error) {
+    await prisma.message.create({
+      data: {
+        conversationId: conversationId,
+        senderType: 'ai',
+        content: html,
+        direction: 'outbound',
+        deliveryStatus: 'failed',
+        failedReason: error.message,
+      },
+    });
+    
+    throw error;
+  }
+}
+```
+
+**Email Template**:
+```html
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body { font-family: Arial, sans-serif; }
+    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+    .header { background: #1976d2; color: white; padding: 20px; }
+    .content { padding: 20px; background: #f5f5f5; }
+    .footer { padding: 20px; text-align: center; font-size: 12px; color: #666; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>\{\{ businessName \}\}</h1>
+    </div>
+    <div class="content">
+      <p>Dear \{\{ firstName \}\},</p>
+      
+      \{\{ messageBody \}\}
+      
+      <p>If you have any questions, please reply to this email or contact us.</p>
+      
+      <p>Sincerely,<br>\{\{ businessName \}\}</p>
+    </div>
+    <div class="footer">
+      <p>This is an attempt to collect a debt. Any information obtained will be used for that purpose.</p>
+      <p><a href="\{\{ unsubscribeUrl \}\}">Unsubscribe</a></p>
+    </div>
+  </div>
+</body>
+</html>
+```
+
+**Receiving Email** (Inbound Parse):
+```typescript
+// SendGrid forwards emails to this endpoint
+app.post('/api/webhooks/sendgrid/inbound', async (req, res) => {
+  const {
+    from, // "Jane Smith <jane@example.com>"
+    subject,
+    text, // Plain text body
+    html, // HTML body
+  } = req.body;
+  
+  // 1. Extract email address
+  const emailMatch = from.match(/<(.+)>/);
+  const email = emailMatch ? emailMatch[1] : from;
+  
+  // 2. Find account
+  const account = await prisma.account.findFirst({
+    where: { email: email },
+  });
+  
+  if (!account) {
+    // Send bounce-back
+    return res.status(200).send();
+  }
+  
+  // 3. Find or create conversation
+  let conversation = await prisma.conversation.findFirst({
+    where: {
+      accountId: account.id,
+      channel: 'email',
+      status: { in: ['active', 'escalated'] },
+    },
+  });
+  
+  if (!conversation) {
+    conversation = await prisma.conversation.create({
+      data: {
+        accountId: account.id,
+        businessId: account.businessId,
+        channel: 'email',
+        subject: subject,
+        status: 'active',
+      },
+    });
+  }
+  
+  // 4. Store message
+  await prisma.message.create({
+    data: {
+      conversationId: conversation.id,
+      senderType: 'debtor',
+      content: html || text,
+      contentType: html ? 'html' : 'text',
+      direction: 'inbound',
+      deliveryStatus: 'delivered',
+    },
+  });
+  
+  // 5. Generate AI response or notify agent
+  // ... similar to SMS flow
+  
+  res.status(200).send();
+});
+```
+
+**Email Events Webhook**:
+```typescript
+app.post('/api/webhooks/sendgrid/events', async (req, res) => {
+  const events = req.body;
+  
+  for (const event of events) {
+    const { sg_message_id, event: eventType } = event;
+    
+    // Update message status based on event
+    const statusMap = {
+      delivered: 'delivered',
+      open: 'read',
+      click: 'read',
+      bounce: 'failed',
+      dropped: 'failed',
+    };
+    
+    if (statusMap[eventType]) {
+      await prisma.message.updateMany({
+        where: { sendgridId: sg_message_id },
+        data: {
+          deliveryStatus: statusMap[eventType],
+          ...(eventType === 'delivered' && {
+            deliveredAt: new Date(event.timestamp * 1000),
+          }),
+          ...(eventType === 'open' && {
+            readAt: new Date(event.timestamp * 1000),
+          }),
+        },
+      });
+    }
+  }
+  
+  res.status(200).send();
+});
+```
+
+### 11.4 Web Chat Widget
+
+**Widget Embed Code** (for debtor portal or external websites):
+```html
+<!-- Add to debtor's website -->
+<script>
+  (function() {
+    var script = document.createElement('script');
+    script.src = 'https://funnelchat.com/widget.js';
+    script.dataset.accountId = 'uuid-here';
+    document.head.appendChild(script);
+  })();
+</script>
+```
+
+**Widget Script** (`widget.js`):
+```javascript
+(function() {
+  // Create iframe
+  const iframe = document.createElement('iframe');
+  iframe.src = `https://funnelchat.com/widget?accountId=${script.dataset.accountId}`;
+  iframe.style.cssText = `
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 400px;
+    height: 600px;
+    border: none;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    border-radius: 12px;
+    z-index: 9999;
+  `;
+  
+  // Add to page
+  document.body.appendChild(iframe);
+  
+  // Listen for messages from iframe
+  window.addEventListener('message', (event) => {
+    if (event.origin !== 'https://funnelchat.com') return;
+    
+    // Handle minimize, close, etc.
+  });
+})();
+```
+
+**Widget Frontend** (React):
+```jsx
+// Simplified widget chat component
+function ChatWidget({ accountId }) {
+  const [messages, setMessages] = useState([]);
+  const [socket, setSocket] = useState(null);
+  
+  useEffect(() => {
+    // Connect to WebSocket
+    const newSocket = io('https://funnelchat.com', {
+      query: { accountId },
+    });
+    
+    newSocket.on('message', (msg) => {
+      setMessages(prev => [...prev, msg]);
+    });
+    
+    setSocket(newSocket);
+    
+    return () => newSocket.close();
+  }, []);
+  
+  const sendMessage = (content) => {
+    socket.emit('send_message', {
+      accountId,
+      content,
+    });
+  };
+  
+  return (
+    <div className="chat-widget">
+      <div className="messages">
+        {messages.map(msg => (
+          <Message key={msg.id} {...msg} />
+        ))}
+      </div>
+      <MessageInput onSend={sendMessage} />
+    </div>
+  );
+}
+```
+
+**WebSocket Handler** (Backend):
+```typescript
+import { Server } from 'socket.io';
+
+io.on('connection', (socket) => {
+  const { accountId } = socket.handshake.query;
+  
+  // Join room for this account
+  socket.join(`account:${accountId}`);
+  
+  // Handle incoming messages
+  socket.on('send_message', async ({ accountId, content }) => {
+    // 1. Find/create conversation
+    let conversation = await prisma.conversation.findFirst({
+      where: {
+        accountId,
+        channel: 'web_chat',
+        status: { in: ['active', 'escalated'] },
+      },
+    });
+    
+    if (!conversation) {
+      conversation = await prisma.conversation.create({
+        data: {
+          accountId,
+          businessId: (await prisma.account.findUnique({
+            where: { id: accountId }
+          })).businessId,
+          channel: 'web_chat',
+          status: 'active',
+        },
+      });
+    }
+    
+    // 2. Store message
+    const message = await prisma.message.create({
+      data: {
+        conversationId: conversation.id,
+        senderType: 'debtor',
+        content,
+        direction: 'inbound',
+        deliveryStatus: 'delivered',
+      },
+    });
+    
+    // 3. Broadcast to all clients in room
+    io.to(`account:${accountId}`).emit('message', message);
+    
+    // 4. Generate AI response
+    const account = await prisma.account.findUnique({
+      where: { id: accountId }
+    });
+    
+    const aiResponse = await generateAIResponse(
+      account,
+      conversation,
+      content
+    );
+    
+    // 5. Store and broadcast AI response
+    const aiMessage = await prisma.message.create({
+      data: {
+        conversationId: conversation.id,
+        senderType: 'ai',
+        content: aiResponse,
+        direction: 'outbound',
+        deliveryStatus: 'delivered',
+        aiGenerated: true,
+      },
+    });
+    
+    io.to(`account:${accountId}`).emit('message', aiMessage);
+  });
+  
+  socket.on('disconnect', () => {
+    socket.leave(`account:${accountId}`);
+  });
+});
+```
+
+---
+
+## 11. Security & Compliance
+
+### 11.1 Security Requirements
+
+#### 11.1.1 Data Encryption
+
+**In Transit:**
+- All API communication over HTTPS (TLS 1.3)
+- WebSocket connections over WSS
+- Strong cipher suites only
+- HSTS headers enabled
+
+**At Rest:**
+- Database encryption (PostgreSQL transparent data encryption)
+- AES-256 encryption for sensitive fields (SSN, payment data)
+- Encrypted backups
+
+#### 11.1.2 Authentication & Authorization
+
+**Authentication:**
+- JWT tokens with 24-hour expiration
+- Refresh tokens with 30-day expiration
+- Secure password hashing (bcrypt, cost factor 12)
+- Password requirements:
+  - Minimum 12 characters
+  - Uppercase, lowercase, number, special character
+  - No common passwords (check against list)
+
+**Authorization:**
+- Role-based access control (RBAC)
+- Principle of least privilege
+- Resource-level permissions
+- API key authentication for integrations
+
+**Session Management:**
+- Tokens stored in httpOnly cookies (web)
+- Tokens in secure storage (mobile)
+- Auto-logout after 30 min inactivity
+- Session invalidation on logout
+
+#### 11.1.3 Input Validation & Sanitization
+
+- Validate all user inputs server-side
+- Sanitize inputs to prevent XSS
+- Parameterized queries to prevent SQL injection
+- Rate limiting on all endpoints
+- File upload validation (type, size, content)
+
+#### 11.1.4 API Security
+
+- API versioning
+- Rate limiting per user/organization
+- Request size limits
+- CORS configuration (whitelist origins)
+- API key rotation every 90 days
+- Webhook signature verification
+
+### 11.2 Compliance Requirements
+
+#### 11.2.1 FDCPA (Fair Debt Collection Practices Act)
+
+**Communications:**
+- No contact before 8 AM or after 9 PM (debtor local time)
+- Max 3 contact attempts per week
+- Honor cease-and-desist requests immediately
+- Include disclosure statement in first communication
+- No false or misleading statements
+- No threats or harassment
+- No disclosure to third parties
+
+**System Enforcement:**
+- Automated quiet hours check before every message
+- Frequency limit tracking per debtor
+- Content scanning for prohibited phrases
+- Opt-out list management
+- Complete audit trail (7-year retention)
+
+#### 11.2.2 TCPA (Telephone Consumer Protection Act)
+
+**Requirements:**
+- Obtain prior express written consent for automated calls/texts
+- Include opt-out mechanism in every message
+- Honor opt-out requests within 24 hours
+- Maintain Do Not Call (DNC) list
+
+**System Enforcement:**
+- Consent record for each debtor
+- Opt-out link/keyword in every SMS/WhatsApp
+- Automated DNC list checking
+- Scrubbing against national DNC list (monthly)
+
+#### 11.2.3 CFPB (Consumer Financial Protection Bureau)
+
+**Requirements:**
+- Clear and conspicuous disclosures
+- Accurate debt validation
+- Dispute handling process
+- Recordkeeping (3 years minimum)
+
+**System Enforcement:**
+- Disclosure templates
+- Dispute workflow with tracking
+- Validation documentation storage
+- Comprehensive logging
+
+#### 11.2.4 GDPR & CCPA (Data Privacy)
+
+**GDPR (if applicable):**
+- Right to access (export user data)
+- Right to deletion ("forget me")
+- Right to rectification (update data)
+- Data portability
+- Consent management
+- Data processing agreements
+
+**CCPA (if applicable):**
+- Notice at collection
+- Right to know
+- Right to delete
+- Right to opt-out of sale
+- Non-discrimination
+
+**System Enforcement:**
+- Data export API endpoint
+- Data deletion workflow (soft delete)
+- Privacy policy acceptance tracking
+- Cookie consent banner
+- Third-party data processing list
+
+#### 11.2.5 PCI DSS (Payment Card Industry)
+
+**Requirements:**
+- Never store card numbers, CVV, or magnetic stripe data
+- Use Stripe.js for PCI compliance (SAQ-A)
+- Tokenize all payment methods
+- Secure transmission of cardholder data
+- Regular security assessments
+
+**System Enforcement:**
+- All payment forms use Stripe Elements
+- No card data touches our servers
+- Stripe handles all sensitive data
+- Annual PCI compliance certification
+
+### 11.3 Audit & Logging
+
+**What to Log:**
+- All communications (sent, received, failed)
+- Payment transactions
+- User actions (login, data changes)
+- System events (errors, warnings)
+- Compliance checks (passed/failed)
+- Access to sensitive data
+
+**Log Retention:**
+- Compliance logs: 7 years
+- Transaction logs: 7 years
+- System logs: 1 year
+- Access logs: 1 year
+
+**Log Security:**
+- Encrypted at rest
+- Tamper-proof (append-only)
+- Separate storage from application database
+- Regular backups
+- Access restricted to admins
+
+### 11.4 Security Monitoring
+
+**Real-Time Alerts:**
+- Failed login attempts (&gt;5 in 1 hour)
+- Unusual API activity
+- Compliance violations
+- Payment failures (&gt;10% rate)
+- System errors (&gt;1% rate)
+
+**Regular Security Scans:**
+- Dependency vulnerability scanning (weekly)
+- Penetration testing (annually)
+- Code security review (quarterly)
+- Infrastructure security audit (quarterly)
+
+---
+
+## 12. Integration Requirements
+
+### 12.1 Stripe Integration
+
+**Purpose:** Payment processing
+
+**Setup:**
+1. Create Stripe account
+2. Get API keys (test and live)
+3. Set up webhook endpoints
+4. Configure products and prices
+
+**Webhook Events to Handle:**
+- `payment_intent.succeeded`
+- `payment_intent.failed`
+- `charge.refunded`
+- `customer.subscription.created`
+- `customer.subscription.updated`
+- `customer.subscription.deleted`
+- `invoice.payment_succeeded`
+- `invoice.payment_failed`
+
+**Implementation:**
+```typescript
+import Stripe from 'stripe';
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+  apiVersion: '2023-10-16'
+});
+
+// Create payment intent
+const paymentIntent = await stripe.paymentIntents.create({
+  amount: 50000, // $500.00
+  currency: 'usd',
+  customer: customerId,
+  payment_method: paymentMethodId,
+  confirm: true
+});
+
+// Create subscription for payment plan
+const subscription = await stripe.subscriptions.create({
+  customer: customerId,
+  items: [{ price: priceId }],
+  metadata: {
+    debtId: 'debt_123',
+    paymentPlanId: 'plan_456'
+  }
+});
+```
+
+### 12.2 Twilio Integration
+
+**Purpose:** SMS and voice communications
+
+**Setup:**
+1. Create Twilio account
+2. Purchase phone numbers
+3. Configure webhooks for incoming messages
+4. Set up messaging service
+
+**Webhook Configuration:**
+- SMS incoming: POST `/webhooks/twilio/sms`
+- SMS status: POST `/webhooks/twilio/sms/status`
+- Voice incoming: POST `/webhooks/twilio/voice` (future)
+
+**Implementation:**
+```typescript
+import twilio from 'twilio';
+
+const client = twilio(
+  process.env.TWILIO_ACCOUNT_SID,
+  process.env.TWILIO_AUTH_TOKEN
+);
+
+// Send SMS
+await client.messages.create({
+  body: 'Your payment of $500 was successful. Thank you!',
+  from: process.env.TWILIO_PHONE_NUMBER,
+  to: '+1234567890'
+});
+
+// Verify webhook signature
+const isValid = twilio.validateRequest(
+  twilioAuthToken,
+  twilioSignature,
+  url,
+  params
+);
+```
+
+### 12.3 WhatsApp Business API Integration
+
+**Purpose:** WhatsApp messaging
+
+**Setup:**
+1. Apply for WhatsApp Business API access
+2. Verify business
+3. Create message templates
+4. Configure webhooks
+
+**Template Messages:**
+- Payment reminder
+- Payment confirmation
+- Payment plan created
+- Account statement
+
+**Implementation:**
+```typescript
+// Send WhatsApp message via Twilio
+await client.messages.create({
+  from: 'whatsapp:+14155238886',
+  to: 'whatsapp:+1234567890',
+  body: 'Hi! This is a reminder about your payment due tomorrow.'
+});
+
+// Send template message
+await client.messages.create({
+  from: 'whatsapp:+14155238886',
+  to: 'whatsapp:+1234567890',
+  contentSid: 'HX1234567890abcdef',
+  contentVariables: JSON.stringify({
+    '1': 'Jane',
+    '2': '$500',
+    '3': 'tomorrow'
+  })
+});
+```
+
+### 12.4 Email Integration (SendGrid)
+
+**Purpose:** Transactional emails
+
+**Email Types:**
+- Welcome email
+- Password reset
+- Payment receipt
+- Payment plan created
+- Payment failed
+- Compliance notices
+
+**Implementation:**
+```typescript
+import sgMail from '@sendgrid/mail';
+
+sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+
+await sgMail.send({
+  to: 'debtor@example.com',
+  from: 'noreply@funnelchat.com',
+  subject: 'Payment Receipt',
+  templateId: 'd-1234567890',
+  dynamicTemplateData: {
+    name: 'Jane Smith',
+    amount: '$500.00',
+    date: '2025-11-23',
+    receiptUrl: 'https://...'
+  }
+});
+```
+
+### 12.5 OpenAI/Anthropic Integration
+
+**Purpose:** Conversational AI
+
+**Implementation:**
+```typescript
+import OpenAI from 'openai';
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY
+});
+
+const completion = await openai.chat.completions.create({
+  model: 'gpt-4-turbo',
+  messages: [
+    { role: 'system', content: systemPrompt },
+    { role: 'user', content: userMessage }
+  ],
+  temperature: 0.7,
+  max_tokens: 500
+});
+
+const response = completion.choices[0].message.content;
+```
+
+---
+
+## 13. Testing Requirements
+
+### 13.1 Unit Testing
+
+**Framework:** Jest
+
+**Coverage:** 80% minimum
+
+**What to Test:**
+- Business logic functions
+- API service functions
+- Component rendering
+- Redux reducers and actions
+
+### 13.2 Integration Testing
+
+**Framework:** Jest + Supertest
+
+**What to Test:**
+- API endpoints
+- Database operations
+- External service integrations (mocked)
+- Authentication/authorization flows
+
+### 13.3 End-to-End Testing
+
+**Framework:** Cypress or Playwright
+
+**Critical Flows:**
+1. User registration and login
+2. Create debtor and debt
+3. Conversation flow (SMS chatbot)
+4. Payment processing
+5. Payment plan creation
+
+### 13.4 Performance Testing
+
+**Tools:** k6 or Artillery
+
+**Targets:**
+- API: 95th percentile &lt; 500ms
+- Page load: &lt; 3 seconds
+- Support 1,000 concurrent users
+
+---
+
+## 14. Deployment & Infrastructure
+
+### 14.1 Cloud Provider
+
+**AWS (Amazon Web Services)**
+
+**Services:**
+- ECS Fargate (container orchestration)
+- RDS PostgreSQL (database)
+- ElastiCache Redis (caching)
+- S3 (file storage)
+- CloudFront (CDN)
+- Route 53 (DNS)
+- ALB (load balancing)
+- Secrets Manager (credentials)
+
+### 14.2 Environments
+
+1. **Development** - Local development
+2. **Staging** - QA testing
+3. **Production** - Live
+
+### 14.3 CI/CD Pipeline
+
+**Tool:** GitHub Actions
+
+**Stages:**
+1. Code push
+2. Run tests
+3. Build Docker images
+4. Deploy to staging
+5. Run E2E tests
+6. Manual approval
+7. Deploy to production
+
+---
+
+## 15. Success Metrics
+
+### 15.1 Product Metrics
+
+- Daily Active Users (DAU)
+- Conversations per day
+- AI resolution rate
+- Payment rate
+- Average time to payment
+- Customer satisfaction (NPS)
+
+### 15.2 Business Metrics
+
+- Monthly Recurring Revenue (MRR)
+- Customer acquisition cost (CAC)
+- Lifetime value (LTV)
+- Churn rate
+
+### 15.3 Technical Metrics
+
+- API response time (p95)
+- Uptime (%)
+- Error rate
+- Database query performance
+
+---
+
+## 16. Development Phases
+
+### Phase 1: MVP (Months 1-4)
+
+**Features:**
+- User authentication
+- Debtor/debt management
+- SMS chatbot
+- Basic payment processing
+- Dashboard
+
+**Goal:** 10 beta customers
+
+### Phase 2: Growth (Months 5-8)
+
+**Features:**
+- WhatsApp integration
+- Advanced analytics
+- Payment plan AI
+- Risk scoring
+
+**Goal:** 50 paying customers
+
+### Phase 3: Scale (Months 9-12)
+
+**Features:**
+- Voice IVR
+- Mobile apps
+- White-label
+- Performance optimization
+
+**Goal:** 100 customers, $50K MRR
+
+---
+
+## 17. Glossary
+
+**AI/ML** - Artificial Intelligence / Machine Learning
+
+**API** - Application Programming Interface
+
+**FDCPA** - Fair Debt Collection Practices Act
+
+**TCPA** - Telephone Consumer Protection Act
+
+**JWT** - JSON Web Token
+
+**NLP** - Natural Language Processing
+
+**RBAC** - Role-Based Access Control
+
+**TLS** - Transport Layer Security
+
+**UUID** - Universally Unique Identifier
+
+---
+
+**END OF DOCUMENT**
+
+This comprehensive PRD provides junior developers with all the information needed to build funnelChat from scratch, including detailed technical specifications, database schemas, API endpoints, UI/UX requirements, and step-by-step implementation guidance.

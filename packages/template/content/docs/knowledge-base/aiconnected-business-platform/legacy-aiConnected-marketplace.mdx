@@ -1,0 +1,222 @@
+---
+title: "0) Key definitions (shared language)"
+description: "Here’s a crisp, end to end operating playbook for the aiConnected Marketplace—from a developer submitting an Engine, to a customer turning it on, to monthly..."
+---
+<Info>
+Normalized for Mintlify from `knowledge-base/aiconnected-business-platform/legacy-aiConnected-marketplace.mdx`.
+</Info>
+Here’s a crisp, end-to-end operating playbook for the aiConnected Marketplace—from a developer submitting an Engine, to a customer turning it on, to monthly developer payouts. I’ve split it into phases so you can hand it straight to product, ops, and engineering.
+
+# **0\) Key definitions (shared language)**
+
+* **Engine:** A packaged automation (primarily n8n template–based) that runs on aiConnected infrastructure. Billed **per run at $0.05**.  
+* **Run:** One complete execution of an Engine (success or fail after retries).  
+* **Revenue share:** **80% to developer ($0.04/run), 20% to aiConnected ($0.01/run)** on paid runs.  
+* **Free tier:** Every customer gets **250 free runs/month** platform-wide (non-revenue to developers unless a promo subsidy is explicitly offered).  
+* **Credentials model:** Customers bring their own API keys/OAuth; secrets stored in aiConnected’s vault; developers never see user data.
+
+---
+
+# **A) Developer onboarding (before any submission)**
+
+1. **Create developer account & profile**  
+   * Identity/KYC, tax forms (W-9/W-8), payout method (ACH/wire).  
+   * Public profile page (bio, portfolio, industries served).  
+2. **Accept terms**  
+   * IP ownership, security, data-handling, support expectations, refund & chargeback policy, service deprecation rules.
+
+---
+
+# **B) Engine submission (what a developer uploads)**
+
+1. **Package**  
+   * n8n template (or supported blueprint) \+ **Engine Manifest** (name, category, version, inputs/outputs, required connections & scopes, expected runtime, webhooks).  
+   * Setup assets: logo, 3–5 screenshots, 90-second demo video (optional), quickstart, changelog, support contact.  
+   * **Test kit:** sample data, unit test flows (where relevant), success criteria.  
+2. **Declare requirements**  
+   * Required integrations (e.g., Gmail, Shopify, Stripe), OAuth scopes, environment variables.  
+   * Data classification (PII present? retention needs?) and compliance attestations.  
+3. **Submit** via Developer Console and select **Release channel** (Private, Limited/Pilot, Public).
+
+---
+
+# **C) Automated checks (gate 1\)**
+
+* **Schema & linting:** template validity, manifest completeness.  
+* **Security scan:** disallowed endpoints, key exfiltration patterns, unsafe code nodes.  
+* **Dependency allowlist:** only approved connectors.  
+* **Resource profiling:** estimated runtime, memory, concurrency footprint.  
+* **Synthetic tests:** run with sandbox creds & sample data.  
+  Outcome: **Pass → Human Review**; **Conditional Pass → Fixes requested**; **Fail → Rejection with reasons**.
+
+---
+
+# **D) Human review (gate 2\)**
+
+* **Functionality check:** does it do what it claims?  
+* **UX & docs:** clear activation steps, sane defaults, error messaging.  
+* **Policy/IP:** no scraped/illegal content, license checks.  
+* **Market fit:** avoids duplicative listings without differentiation.  
+  Outcome: **Approve / Approve-with-changes / Reject** (all reasons logged).
+
+---
+
+# **E) Staging & listing**
+
+* Deployed to **staging** cluster with isolated secrets.  
+* Marketplace listing assembled (SEO summary, use cases, industries, required integrations, **$0.05/run** price badge, expected monthly run estimate).  
+* **Quality badges** (Security Checked, Performance Tier, Popular in X Industry) applied when earned.  
+* Optional **Pilot**: limited customer cohort for 1–2 weeks with feedback loop.
+
+---
+
+# **F) Public launch**
+
+* Promotion slots (New & Noteworthy / Trending).  
+* Developer notified; followers of the developer get updates.  
+* **Version pinned** (e.g., v1.0.0); support contact active.
+
+---
+
+# **G) Customer discovery → activation (happy path)**
+
+1. **Find & evaluate**  
+   * Search, filters, “recommended for you” (usage-based & problem-based suggestions).  
+   * Read listing; see **run count**, ratings, industries usage chart, recent updates.  
+2. **Click “Activate”**  
+   * **Pre-flight wizard**: shows required connections & scopes, estimated monthly runs, cost controls.  
+3. **Connect services & secrets**  
+   * OAuth/API key flow; tokens stored in vault; scopes shown plainly; test connectivity.  
+4. **Configure & test**  
+   * Minimal inputs (mapped fields with sensible defaults).  
+   * **Test Run** on sample or real data; view logs, outputs, and data mappings.  
+5. **Set guardrails**  
+   * Choose **Free plan (uses remaining 250 runs)** or **Pay-as-you-go**.  
+   * Budget cap, per-day run limits, alert thresholds, pause-on-error toggle.  
+6. **Go live**  
+   * Enable. A success card confirms: last run time, last status, runs remaining, spend-to-date.
+
+---
+
+# **H) Runtime & reliability (what happens on each run)**
+
+* **Orchestration:** job queued with idempotency key; fetched by a worker in a secure sandbox.  
+* **Secrets:** pulled just-in-time from vault; never exposed to developer.  
+* **Metering:** run recorded at start; **billable only on completion (success or terminal fail after retries)**.  
+* **Retries & DLQ:** exponential backoff; push to dead-letter with clear error codes.  
+* **Observability:** structured logs, step timings, external API latencies.  
+* **Post-run UX:** quick 1–click rating; surface common fixes if errors recur.
+
+---
+
+# **I) Billing & quotas (customer view)**
+
+* **Monthly 250 free runs** draw down first (platform-wide).  
+* After free tier, **$0.05/run** pay-as-you-go; receipts & invoices issued.  
+* Real-time usage dashboard; alerts at 50/75/90% of budget; auto-pause when cap hit.
+
+---
+
+# **J) Support & incident handling**
+
+* **Tiered support** (community → standard → premium).  
+* In-app ticketing pinned to Engine & specific run IDs.  
+* Status page & incident comms; automatic crediting rules for platform-wide incidents (where applicable).
+
+---
+
+# **K) Versioning & change management**
+
+* **SemVer:** Patch \= safe bugfix; Minor \= backward-compatible features; Major \= breaking change.  
+* **Rollouts:** canary (1–5%), staged (25/50/100).  
+* **Migrations:** config diffs shown; one-click revert to previous working version.  
+* **Deprecations:** ≥60-day notice, auto-migration where feasible.
+
+---
+
+# **L) Compliance & privacy (platform guarantees)**
+
+* Data minimization; PII tagging in flows; field-level redaction in logs.  
+* Encryption at rest/in transit; secrets never logged.  
+* OAuth token lifecycle with refresh & automatic rotation.  
+* Customer **export & deletion** (per Engine and global).  
+* Developer never accesses customer data; n8n templates run inside aiConnected tenancy only.
+
+---
+
+# **M) Developer analytics & lifecycle**
+
+* **Dashboard:** daily runs, active installs, conversion funnel (views→activations→paying), error rates, median runtime, average cost per customer.  
+* **Customer feedback:** ratings & reviews; Q\&A tab.  
+* **Comms:** release notes, pinned notices, scheduled maintenance.  
+* **Quality triggers:** automated re-review if crash-looping or spike in error rate; possible delisting after warnings.
+
+---
+
+# **N) Revenue calculation & payouts**
+
+1. **Gross revenue per Engine**  
+   * Count **paid runs only** × $0.05.  
+2. **Share**  
+   * Developer: **80% ($0.04/run)**; aiConnected: 20% ($0.01/run).  
+   * **Free runs**: no revenue share (unless aiConnected runs a clearly announced subsidy promo).  
+3. **Adjustments**  
+   * Refunds/chargebacks/credits netted out in the same period.  
+4. **Schedule**  
+   * **Monthly, net-30** from month-end; minimum payout threshold (e.g., $50).  
+5. **Delivery & docs**  
+   * Payout via ACH/wire; downloadable statements (runs, gross, adjustments, net).  
+6. **Disputes**  
+   * Developer can dispute metering within 60 days with run IDs; audited by ops.
+
+---
+
+# **O) Takedown, sunset, and handover**
+
+* **Voluntary sunset:** developer requests delist → 90-day support window; customers notified with alternatives or migration guides.  
+* **Policy takedown:** immediate unlisting for egregious violations; remediation path defined; payouts held pending resolution.  
+* **Data handling:** all Engine-scoped data can be exported/deleted by customers on sunset.
+
+---
+
+## **Quick checklists**
+
+### **Developer (per Engine)**
+
+1. Package: template \+ manifest \+ assets \+ test kit.  
+2. Declare integrations, scopes, data classes.  
+3. Submit → resolve automated/human review notes.  
+4. Pilot (optional) → Launch.  
+5. Maintain: updates, support, changelog.  
+6. Monitor analytics; iterate on conversion & reliability.  
+7. Receive **monthly net-30 payouts**.
+
+### **aiConnected (internal)**
+
+1. Run automated checks; human review; sign-off.  
+2. Stage, list, badge, and (optionally) pilot.  
+3. Operate runtime: queue, workers, vault, metering, billing, observability.  
+4. Enforce security/compliance; handle incidents.  
+5. Calculate revenue; issue statements & payouts.  
+6. Govern quality; manage deprecations & disputes.
+
+### **Customer**
+
+1. Discover Engine → Activate.  
+2. Connect OAuth/API keys; configure inputs.  
+3. Test run → set budgets/limits → Go live.  
+4. Monitor runs, costs; get alerts; pause/resume as needed.  
+5. Export/delete data anytime.
+
+---
+
+## **“Happy-path” timeline (first public release)**
+
+* **Day 0–2:** Developer packaging & submission.  
+* **Day 2–4:** Automated checks & fixes.  
+* **Day 4–7:** Human review & staging.  
+* **Day 7–14:** Optional pilot → Public launch.
+
+---
+
+If you want, I can turn this into a one-page SOP for each team (DevRel, Review, Runtime Ops, Billing) and a minimal **Engine Manifest** template you can drop into the Developer Console.

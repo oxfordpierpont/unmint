@@ -1,0 +1,35 @@
+---
+title: "Chat cleanup"
+description: "Feature-level API contract for chat cleanup, bulk organization, rename suggestions, and archive flows."
+---
+## Contract status
+
+`Derived implementation contract`
+
+## Source document
+
+- [Chat cleanup](/docs/knowledge-base/aiconnected-os/aiconnected-os-11-chat-cleanup-system)
+
+## Feature purpose
+
+Defines inbox-like cleanup tools that reorganize conversations without destructive loss of context.
+
+## Required operations
+
+- Suggest cleanup or rename actions mid-conversation
+- Move threads into spaces or folders
+- Run bulk chat operations across selected items
+- Support recently deleted retention behavior
+
+## Suggested resources
+
+- `chat_cleanup_jobs`
+- `chat_moves`
+- `chat_archives`
+- `chat_bulk_operations`
+
+## Implementation notes
+
+- Keep this feature workspace-scoped and persona-aware where applicable.
+- Preserve authorship, timestamps, and auditability for all state changes.
+- Treat the source doc as the behavioral specification even where final route names remain open.

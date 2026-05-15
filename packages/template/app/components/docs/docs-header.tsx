@@ -41,15 +41,23 @@ export function DocsHeader({ tree }: DocsHeaderProps) {
               {/* Logo */}
               <Link href="/" className="flex items-center gap-2">
                 {siteConfig.logo.src && (
-                  <Image
-                    src={siteConfig.logo.src}
-                    alt={siteConfig.logo.alt}
-                    width={siteConfig.logo.width}
-                    height={siteConfig.logo.height}
-                    className="dark:invert"
-                  />
+                  <>
+                    <Image
+                      src={siteConfig.logo.src}
+                      alt={siteConfig.logo.alt}
+                      width={siteConfig.logo.width}
+                      height={siteConfig.logo.height}
+                      className="block dark:hidden h-9 w-auto"
+                    />
+                    <Image
+                      src={siteConfig.logo.darkSrc || siteConfig.logo.src}
+                      alt={siteConfig.logo.alt}
+                      width={siteConfig.logo.width}
+                      height={siteConfig.logo.height}
+                      className="hidden dark:block h-9 w-auto"
+                    />
+                  </>
                 )}
-                <span className="font-semibold text-lg hidden sm:inline">{siteConfig.name}</span>
               </Link>
             </div>
 

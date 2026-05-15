@@ -1,0 +1,14 @@
+{
+  "title": "Competitive",
+  "pages": [
+    "index",
+    "bp-comp-01-gohighlevel-deep-dive",
+    "bp-comp-02-chatgpt-enterprise-profile",
+    "bp-comp-03-mem0-openMemory-analysis",
+    "bp-comp-04-vapi-retell-profile",
+    "bp-comp-05-manus-agentic-analysis",
+    "bp-comp-06-robotics-ai-landscape",
+    "bp-comp-07-competitive-matrix"
+  ],
+  "defaultOpen": true
+}

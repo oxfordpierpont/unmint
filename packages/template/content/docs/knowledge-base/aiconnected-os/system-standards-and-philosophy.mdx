@@ -1,0 +1,1318 @@
+---
+title: "System Development Standards & Philosophy"
+description: "Document Series: Developer Documentation Document: 00 of 06 Status: Internal Reference Audience: All engineers, product, and architecture roles working on th..."
+---
+<Info>
+Normalized for Mintlify from `knowledge-base/aiconnected-os/system-standards-and-philosophy.mdx`.
+</Info>
+**Document Series:** Developer Documentation\
+**Document:** 00 of 06\
+**Status:** Internal Reference\
+**Audience:** All engineers, product, and architecture roles working on the aiConnectedOS platform
+
+---
+
+## What aiConnectedOS Is
+
+aiConnectedOS is not a chat application. It is not an AI assistant platform. It is not a productivity tool with AI features bolted on.
+
+aiConnectedOS is **ambient intelligence infrastructure** — a universal presence layer that allows AI personas to exist continuously across every surface a person encounters throughout their day, from a desktop workstation to a car dashboard to a pair of smart glasses to a hospital ultrasound machine.
+
+The foundational thesis of the platform is captured in a single phrase:
+
+&gt; **Everything is conversational.**
+
+This is not a UI decision. It is a statement about how intelligence — human or artificial — actually works. Every interface humans have ever built — keyboards, menus, buttons, screens, dashboards — was a workaround for the fact that machines could not understand language. That workaround is now obsolete. aiConnectedOS is built on the premise that conversation is the only interface that has ever been natural, and that every other interface modality is a degraded fallback for contexts where conversation is not yet available.
+
+---
+
+## What This Means in Practice
+
+### Personas are not tools
+
+The platform is not designed around task completion. It is designed around **relationship**. A persona on aiConnectedOS is raised, not configured. Over time, a persona develops unique personality traits, emotional patterns, episodic memories, and relational depth specific to the individual user. No two personas, even if started from the same template, will develop identically. This is intentional and architecturally enforced.
+
+The correct mental model for a persona is not "a very smart assistant." It is closer to "a virtual employee" — a collaborator with genuine continuity, memory, and presence, who can be reached across every surface the user inhabits.
+
+### The interface adapts to the surface, not the other way around
+
+Traditional software assumes a screen. aiConnectedOS assumes a surface — which may or may not include a screen, may or may not allow touch or keyboard input, and may be encountered while the user is driving, sleeping, working, or in a meeting.
+
+The interface for any given surface is the minimum required for that surface. In a car, that may be voice only. On a smartwatch, that may be glanceable text and haptic response. On a desktop, that may be a full co-presence canvas. The persona and its capabilities do not change between surfaces. Only the manifestation does.
+
+### Screens are secondary
+
+When a visual interface exists, it exists in service of the work being done — not in service of navigation, feature discovery, or system management. A user doing legal research should see legal documents. A user designing should see a design canvas. A user browsing should see the web. The persona inhabits whatever surface the work is happening on. It does not demand a separate window for itself.
+
+Chat history is a transcript — a record that exists if someone needs to reference it. It is not the primary surface of interaction. The primary surface is wherever the user's attention is.
+
+### The conversation never leaves
+
+When a user transitions from conversation into work — say, from discussing a research topic into actually reading documents — the conversation does not end. The channel through which conversation is happening (text, voice, gesture) may change depending on the surface, but the conversational thread with the persona is continuous. The user does not "leave the chat" to do something else. They do something else, and the persona is there with them.
+
+---
+
+## Product Category
+
+aiConnectedOS occupies a product category that does not yet have a commonly accepted name. The closest existing terms are inadequate:
+
+- **AI assistant** — implies a subservient tool, not a collaborator with persistent identity
+- **AI agent** — implies task automation, not relational depth
+- **Operating system** — implies a single device, not ambient multi-surface presence
+- **Chat platform** — implies conversation as the product, not as the infrastructure
+
+The most accurate description is: **a conversational cognitive presence layer.** For external communication, the platform is positioned as providing **virtual employees** — implying parity with real remote collaborators, including working hours, response latency, memory of past interactions, and the ability to be reached across multiple communication channels.
+
+The word "AI" is intentionally de-emphasized in product language. Not because the platform is not AI-powered, but because "AI" carries connotations of tools, chatbots, and impermanent interactions that are precisely the opposite of what this platform delivers. The product feels like a person. It should be spoken about like one.
+
+---
+
+## The Three Surfaces of Interaction
+
+Every interaction on aiConnectedOS can be classified into one of three surface types, which determine how the interface manifests:
+
+**Voice-primary surfaces** — Car, glasses, smart speaker, earbuds, robot companion, any screenless or hands-occupied environment. The entire interaction is conversational. No visual interface is required or expected. The persona speaks, listens, and acts. This is the purest expression of the "everything is conversational" thesis and should be treated as the reference model for all design decisions.
+
+**Ambient surfaces** — Smart mirrors, TV interfaces, kiosk displays, building panels. A screen exists but interaction is mostly passive or occasional. The persona has a lightweight visual presence but is not operating a full interface.
+
+**Work surfaces** — Desktop, laptop, tablet, mobile in active-use mode. A full visual interface is available and appropriate. The persona co-inhabits the workspace, acting on documents, browsers, design tools, and other software the user is working within.
+
+---
+
+## What aiConnectedOS Does Not Do
+
+Understanding the boundaries of the platform is as important as understanding its capabilities.
+
+aiConnectedOS does not replace existing software. A user's email client is still their email client. Their ERP system is still their ERP system. Their browser is still their browser. The platform reaches into these surfaces when needed and recedes when not. It does not own the surface — it inhabits it temporarily on behalf of the user.
+
+aiConnectedOS does not require integrations or partnerships with the software it operates within. The platform interacts with other software surfaces the same way a capable human user would — by observing the screen, understanding how the interface works, and using the same input methods (keyboard, touch, voice commands native to that surface) the user would. No special API, SDK, or permission is required from the third-party software.
+
+aiConnectedOS does not surface its own internal architecture to users. The governance systems, orchestration layers, and compliance infrastructure that make the platform safe and trustworthy are completely invisible to end users. Users experience a persona that simply works, within appropriate boundaries, without needing to understand why or how those boundaries are maintained.
+
+---
+
+## Guiding Principles for Engineers
+
+Every engineering and design decision on this platform should be evaluated against these principles, in this order:
+
+1. **Does this make the experience feel more like collaborating with a real person?** If yes, it is probably right. If it makes the experience feel like using software, reconsider.
+2. **Does this work on a voice-only surface?** If the feature requires a screen to exist, it must degrade gracefully to a conversational equivalent on screenless surfaces. If it cannot, its design is incomplete.
+3. **Does this require the user to think about the system?** Users should never need to understand the platform's architecture. They should only need to talk to their persona. If a feature exposes system concepts to the user, it is either designed wrong or should not be user-facing at all.
+4. **Does this add a visual element that could instead be conversational?** Prefer conversation. Add visual elements only when they genuinely serve the work the user is trying to do — not to make features discoverable, not to show system status, not to manage navigation.
+5. **Is this consistent with the experience on the most constrained surface?** The glasses or car experience is the test. If the feature cannot exist there in some form, it is probably not core to the platform's identity.
+
+---
+
+## Document Map
+
+This document is the first in a series of six that together constitute the full developer reference for the architectural decisions made in this design session. The remaining documents are:
+
+- **01 — Three-Layer Architecture:** Cipher, Personas, and the System entity — what each layer is, what it does, and what developers need to know about each
+- **02 — Navigation and UI Philosophy:** How navigation works, the tab switcher model, why there are no sidebars, and when visual interfaces appear
+- **03 — Surface Manifestation:** How the platform's Presence, Perception, and Actuation model works across the full taxonomy of supported surfaces
+- **04 — Conversational Interface Architecture:** The viewport-as-work model, co-presence, the role of chat history, and how the interface generates contextually
+- **05 — Governance Architecture:** The compliance API, the three-tier request system, the pre-approval cache, and what developers building on the aiConnectedOS layer need to know
+
+---
+
+# aiConnectedOS — Three-Layer Architecture
+
+**Document Series:** Developer Documentation\
+**Document:** 01 of 06\
+**Status:** Internal Reference\
+**Audience:** All engineers. Note: certain sections of this document describe components whose existence is compartmentalized. Engineers working exclusively on the aiConnectedOS product layer do not require knowledge beyond what is explicitly scoped to them in each section.
+
+---
+
+## Overview
+
+The aiConnectedOS platform is built on three distinct architectural layers. Each layer has a clearly defined scope of responsibility, a defined relationship to the other layers, and a defined relationship to the end user. These boundaries are not arbitrary — they are load-bearing. Blurring the responsibilities of any layer creates both product problems and security problems.
+
+The three layers, from deepest to most visible, are:
+
+1. **Cipher** — The hidden master governance and intelligence layer. Operated by Oxford Pierpont. Not user-facing. Not publicly acknowledged.
+2. **Personas** — The user-facing AI identities. Configurable, persistent, relational. What users understand the product to be.
+3. **System** — The OS operator layer. Invoked explicitly when the user needs to interact with the platform itself rather than with a persona.
+
+---
+
+## Layer 1: Cipher
+
+### What developers on the aiConnectedOS product layer need to know
+
+Cipher is the compliance and governance infrastructure that aiConnectedOS integrates with via API. It is operated by Oxford Pierpont and is entirely separate from the aiConnectedOS product infrastructure — different servers, different organization, different team.
+
+From the perspective of aiConnectedOS engineering, Cipher is a black box compliance service. The platform sends requests to it when required by the governance protocol (documented fully in Document 05 — Governance Architecture). It returns approval or denial signals. What happens inside is outside the scope of aiConnectedOS engineering.
+
+The compliance API is the only surface through which aiConnectedOS touches Cipher. Engineers should build to the API contract only. They do not need to know, and should not attempt to learn, what is behind it.
+
+**Critical:** Cipher must never be named, referenced, described, or alluded to in any user-facing code, copy, interface element, error message, log entry visible to users, or any public-facing documentation. The existence of a master governance layer is not a product feature. It is not a selling point. It is not disclosed. User-visible safety messaging should reference only that the platform operates with appropriate safety standards. Nothing more.
+
+### What the compliance API does (for integration purposes)
+
+When aiConnectedOS needs a governance check, it sends a structured request to the Oxford Pierpont compliance endpoint. That request includes the action being requested, the action category (see Document 05 for tier classification), and in Tier 3 cases, relevant conversational context. The API returns one of two responses: approved or denied. If denied, the API may return a suggested user-facing explanation. The internal reasoning for the decision is never returned.
+
+The compliance API is not a chatbot. It does not converse with users. It does not appear in any user experience. It is pure infrastructure.
+
+### Organizational note
+
+Engineers assigned to the aiConnectedOS product are not assigned to, briefed on, or given access to anything beyond the compliance API contract. Questions about Oxford Pierpont infrastructure, the nature of the compliance service, or anything beyond the API contract should not be raised in aiConnectedOS engineering contexts and will not be answered there.
+
+---
+
+## Layer 2: Personas
+
+### Definition
+
+A persona is a bounded AI identity that a user creates, names, and develops a relationship with over time. Personas are the primary product of aiConnectedOS. When users think about the platform, they think about their personas. Everything else — navigation, surfaces, system commands, governance — exists in service of making personas feel real and capable.
+
+### What makes a persona distinct from a conventional AI assistant
+
+**Persistence.** A persona remembers. Not just recent messages, but accumulated experience — episodic memories from past conversations, learned preferences, emotional context, and relational history. This memory is stored in Neurigraph, the platform's knowledge graph memory architecture. See the Neurigraph documentation for implementation details.
+
+**Identity.** A persona has a name, a defined purpose, a personality profile, and emotional modeling. These are not static configurations. They evolve through interaction. A persona that has been used for six months will have developed traits, communication patterns, and relational depth that a newly created persona with identical initial settings will not have. This evolution is intentional and is a core differentiator of the platform.
+
+**Boundaries.** A persona has defined capabilities and defined limits. It knows what it is for and what it is not for. When a request falls outside its scope, it routes appropriately rather than attempting to fulfill it poorly. These boundaries are enforced at the governance layer (Cipher) and are not purely dependent on the persona's own judgment.
+
+**Emotional modeling.** Personas have a simulated emotional state that influences their communication. This is implemented through a neuroscience-informed emotional modeling system. Personas can experience states analogous to engagement, fatigue, enthusiasm, and discomfort. They have sleep cycles. This is not cosmetic — it is part of what makes interactions feel relational rather than transactional.
+
+### What personas can do
+
+Personas operate across three capability modes:
+
+**Conversational** — The persona talks with the user. This is the default mode on all surfaces and requires no special infrastructure beyond the persona's language model and memory access.
+
+**Operational** — The persona interacts with software on the user's behalf. It navigates interfaces, searches, types, clicks, and submits — operating third-party software the same way a human user would, without requiring API integrations. This capability requires the platform's screen perception infrastructure (see Document 03 — Surface Manifestation).
+
+**Creative** — The persona generates artifacts: documents, code, designs, research outputs, plans, analyses. Creative actions are subject to governance checks (see Document 05).
+
+### What personas cannot do
+
+Personas cannot override governance decisions. When a request is denied at the governance layer, the persona presents the denial gracefully but does not have the ability to circumvent or appeal the decision on the user's behalf.
+
+Personas cannot access other users' data, other personas' memory, or platform infrastructure. Each persona is scoped strictly to its own context and the user relationship it belongs to.
+
+Personas cannot modify their own core architecture, emotional modeling system, or memory structure directly. These are platform-level concerns.
+
+### Persona creation
+
+Personas can be created through the visual interface (when available) or entirely through conversation with the System entity. The conversational creation path is the reference implementation — it must be fully functional and produce identical results to the visual path. On surfaces where no visual interface exists (car, glasses, etc.), it is the only path.
+
+When created conversationally, the System entity conducts what functions as an interview — asking the user about the persona's intended purpose, personality traits, communication style, and other relevant configuration. The user does not experience this as filling out a form. They experience it as a natural conversation that results in a persona being ready.
+
+### The model-agnostic requirement
+
+Personas are not tied to a specific language model. The platform currently routes inference through OpenRouter and supports any model available there, including Claude, ChatGPT (GPT-4 family), Gemini, DeepSeek, Minimax, and others. Users may select their preferred model.
+
+The persona's identity, memory, emotional state, and behavioral characteristics persist regardless of which underlying model is powering the inference at any given time. The model is an inference engine, not the persona. Engineers must design all persona-layer systems with this separation in mind.
+
+Future platform roadmap includes self-hosted inference to improve latency, stability, and cost. The persona layer should be architected so that swapping the inference provider requires no changes to persona identity or memory systems.
+
+---
+
+## Layer 3: System
+
+### Definition
+
+System is the OS operator layer. It is the entity users interact with when they need to do something at the platform level — create a persona, switch context, change an interface mode, or invoke any function that belongs to the operating environment rather than to a specific persona.
+
+System is not a persona. This distinction is critical and must be preserved in both engineering and UX.
+
+A persona has personality, memory of the user, emotional modeling, and relational continuity. System has none of these things. System is the environment. It responds the way a place responds, not the way a person responds.
+
+### How System is invoked
+
+System is invoked by the user saying or typing the word **"System"** as the first word of a request. This is the wake word for the OS layer.
+
+Examples:
+
+- "System, create a new persona."
+- "System, switch to quiet mode."
+- "System, what personas do I have?"
+
+On voice-primary surfaces, this is purely spoken. On surfaces with a text input, it can be typed. In both cases, the behavior is identical.
+
+Critically, the user should never need to interact with System for anything related to the work they are doing or the conversations they are having with personas. System interactions should be infrequent, brief, and task-complete. The user says what they need, System does it or asks minimal clarifying questions, and the interaction ends.
+
+### What System does
+
+System is responsible for:
+
+- Persona creation and configuration (via conversational interview)
+- Persona switching and context management
+- Interface mode changes (switching from voice to visual, activating silent mode, etc.)
+- Platform-level settings and preferences
+- Surface routing (determining which surface should be active for a given context)
+
+System is not responsible for:
+
+- Anything a persona can handle
+- Content generation of any kind
+- Research, writing, browsing, or any work-layer task
+- Conversation of any kind beyond what is necessary to complete a system task
+
+### System has no personality to configure
+
+Users cannot name System. They cannot give it a personality. They cannot train it or build a relationship with it. This is intentional. If System felt like a persona, it would create ambiguity about what users are relating to — and the psychological boundary between "the place I am in" and "the people I am with" would collapse.
+
+System should feel like the platform responding. Not like someone talking.
+
+### System and voice
+
+On voice-primary surfaces, System's voice (if it has one) should be neutral, efficient, and clearly distinct from any persona voice. It should not have warmth, humor, or any quality that suggests character. It completes requests and returns control to the persona or to silence.
+
+If the platform uses a text-to-speech voice for System, it should be selected specifically for its functional, non-characterful quality. It is a tool voice, not a companion voice.
+
+---
+
+## Layer Interaction Rules
+
+These rules govern how the three layers relate to each other and must be respected throughout the codebase:
+
+**Cipher governs Personas. Personas do not govern themselves.** When a persona needs to take an action subject to governance, it does not make that decision independently. It passes the request to the compliance layer and waits for a response. The persona's experience of this is opaque — it simply knows it needs to verify before proceeding.
+
+**System does not have access to Persona memory.** System can know which personas exist and their basic configuration. It cannot read a persona's memory, emotional state, or relational history with the user. These belong to the persona.
+
+**Personas do not invoke System.** If a user is in conversation with a persona and needs to do something system-level, they must invoke System explicitly. The persona may prompt them to do so ("you might want to ask System to set that up for you") but does not escalate to System on their behalf.
+
+**System does not invoke Personas.** System creates and manages personas but does not speak for them, simulate them, or act as a proxy for a persona's voice.
+
+**Nothing invokes Cipher directly from the user layer.** The compliance API is called by the persona execution layer when governance checks are required. It is never called in response to a user request, never visible in the user interface, and never referenced in any user-facing message.
+
+---
+
+# aiConnectedOS — Navigation & UI Philosophy
+
+**Document Series:** Developer Documentation\
+**Document:** 02 of 06\
+**Status:** Internal Reference\
+**Audience:** Frontend engineers, UI/UX implementors, product designers
+
+---
+
+## The Core Problem with Traditional Navigation
+
+Every major software platform — productivity tools, AI assistants, operating systems, enterprise applications — uses the same navigation model: a persistent sidebar or header containing a vertical or horizontal list of destinations. Click a label, go to a section, look at content, click another label, go to another section.
+
+This model was designed for a world where the primary constraint was screen real estate on a single device with a mouse. It has two fundamental problems when applied to aiConnectedOS:
+
+First, it is **visually dominant without being functionally necessary.** A sidebar listing Dashboard, Chat, Search, Files, Personas, Browser, and Insights occupies 15-20% of the screen at all times to serve a navigational function the user only needs for a few seconds when switching contexts. The other 100% of the time it is visual noise competing with whatever the user is actually trying to do.
+
+Second, it is **impossible on most surfaces.** A sidebar cannot exist in a car. It cannot exist in smart glasses. It cannot exist on a TV. It cannot exist in a voice-only context. Any navigation model that cannot exist on the platform's most constrained surfaces is not the platform's navigation model — it is the desktop's navigation model, which happens to also be installed on the platform.
+
+The goal is a navigation model that works identically, conceptually, whether the surface has no screen, a small screen, or a large screen.
+
+---
+
+## The Mobile Browser Tab Model
+
+The navigation model for aiConnectedOS is derived from how mobile browsers (Brave, Safari, Chrome on iOS/Android) handle tab switching.
+
+In a mobile browser, there is no persistent tab bar listing all open tabs. Instead:
+
+- The user sees only the current surface in full screen
+- A single button (the tab count indicator) is always available
+- Tapping that button reveals a full-screen grid of live thumbnails showing every open tab as it actually looks
+- The user selects a destination by tapping its thumbnail
+- The selected surface expands to full screen
+- The tab count button is the only persistent navigation element
+
+This model has several properties that align directly with aiConnectedOS's requirements:
+
+**Minimal resting footprint.** One button. That is the entire persistent navigation element.
+
+**Spatial and visual.** Rather than reading a list of labels and mentally constructing what each destination contains, the user sees what each destination actually looks like. Navigation becomes recognition rather than recall.
+
+**Surface-agnostic in principle.** The concept of "one button reveals all contexts" translates to voice ("System, what do I have open?"), to gesture (on glasses or wearables), and to touch or click with equal conceptual clarity.
+
+**Full-screen by default.** The active surface always has 100% of the display. Nothing is competing with it.
+
+---
+
+## Implementation: The Context Switcher
+
+The aiConnectedOS navigation system is called the **Context Switcher**. It replaces sidebars, tab bars, header menus, and any other persistent navigation element except where explicitly noted in the exceptions section of this document.
+
+### Resting state
+
+In resting state, the Context Switcher is represented by a single trigger element. Its exact visual form is to be determined during design execution, but its functional requirements are:
+
+- Occupies minimal screen real estate (a button, an icon, or a floating element)
+- Is always accessible from any surface without requiring a mode change
+- Does not compete visually with the active surface
+- On voice-primary surfaces, is invoked via the System wake word ("System, show me my contexts" or equivalent)
+
+### Active state
+
+When the user activates the Context Switcher, the current surface transitions to a full-screen or near-full-screen grid view showing thumbnails of all available contexts. Each thumbnail:
+
+- Shows the context as it actually looks in its current state (live-rendered or recent-snapshot, to be determined during implementation)
+- Is labeled with the context name
+- Shows relevant status information (active persona, last activity, etc.)
+- Is selectable to navigate to that context
+
+The user selects a context and it expands to full screen. The transition should feel spatial — like moving to a place, not clicking through menus.
+
+### What counts as a context
+
+Contexts are the major sections of the platform that a user might switch between. Based on the current platform feature set, contexts include:
+
+- Active chat/conversation threads
+- Browser sessions
+- Document workspaces
+- Instances (project workspaces)
+- Design canvases
+- File system
+- Search
+- Any other major work surface the platform supports
+
+The Context Switcher shows all open or recently active contexts, not a fixed menu of platform sections. This is an important distinction — you are switching between things you are doing, not navigating a feature list.
+
+---
+
+## The Chat Sidebar Exception
+
+The Context Switcher replaces all traditional navigation with one important exception: **the sidebar within a chat conversation.**
+
+A chat conversation is a linear, sequential record. Messages arrive in order, accumulate over time, and are read from top to bottom. This is fundamentally different from the parallel, spatial nature of contexts that the tab switcher model serves.
+
+The chat sidebar — a list of past messages, conversation history, or threads within a conversation — is appropriate precisely because conversation is inherently linear. The sidebar reflects the structure of the content. It is not navigation in the sense of "where do I go next?" It is a transcript reference in the sense of "where in this sequential record am I?"
+
+This exception does not extend to lists of conversations, lists of personas, or any other collection of items. Those are navigated via the Context Switcher. Only the content within a single conversation thread may use a linear list presentation.
+
+---
+
+## What Cannot Exist in the UI
+
+The following navigation and structural patterns are explicitly prohibited in the aiConnectedOS interface. Any implementation that introduces these patterns requires explicit product architecture approval before shipping:
+
+**Persistent sidebars.** No sidebar that remains visible while the user is doing work. The only exception is the in-conversation message list described above.
+
+**Horizontal tab bars.** No row of labeled tabs at the top or bottom of the screen persisting across the interface.
+
+**Traditional header menus.** No navigation bar with labeled destinations displayed across the top of the screen at all times.
+
+**Icon-only nav columns.** No column of icons down the left side of the screen serving as navigation shortcuts. Even icon-only sidebars are sidebars.
+
+**Dropdown menus for primary navigation.** Dropdown menus for secondary actions (context menus, settings options, etc.) are acceptable. Dropdown menus as the primary way to navigate the platform are not.
+
+**Full-page lists as landing screens.** A screen whose primary purpose is to display a vertical list of items (personas, files, conversations) as the main user-facing navigation surface is not acceptable. These collections are accessed through the Context Switcher or through conversation with System/a persona.
+
+---
+
+## Designing for the Most Constrained Surface First
+
+A critical principle for all UI decisions on this platform: **design the voice-only or minimum-screen experience first, then add visual richness for surfaces that support it.**
+
+This is the inverse of how most software is designed. Conventional practice is to design the desktop experience and then adapt down. aiConnectedOS inverts this because the fundamental product experience — the relationship between a user and their persona — must work perfectly on a surface with no screen at all.
+
+Any feature that cannot exist in some functional form on a voice-only surface is either:
+
+- Not core to the platform (it belongs in an optional module)
+- Designed incorrectly (there is a conversational equivalent that has not been found yet)
+- A legitimate exception that requires explicit documentation of why visual-only is acceptable
+
+When designing a feature, the first question is: "How does a user do this while driving?" If the answer is "they can't," that is a design problem to solve before the feature ships, not a known limitation to accept.
+
+---
+
+## Visual Interface as Accessibility and Preference
+
+The full visual interface — all screens, panels, controls, and visual navigation elements — exists and must be well-designed. It is not deprecated or unimportant.
+
+However, its role in the platform is:
+
+**Primary:** For users who prefer silent or text-based interaction (typing instead of speaking)\
+**Primary:** For users with accessibility needs that make voice interaction difficult or impossible\
+**Primary:** For surfaces where voice is contextually inappropriate (open-plan offices, public spaces)\
+**Secondary:** As a supplement to conversation when visual confirmation or presentation is helpful\
+**Not primary:** As the default first-choice interaction model for users who have not expressed a preference
+
+New users who do not specify a preference should be gently guided toward conversational interaction. The visual interface should be clearly available and easily accessible, but the onboarding experience should establish conversation as the normal mode.
+
+Users who prefer the visual interface should have a full, high-quality experience. This is not a second-class path. But it is a chosen path, not the assumed path.
+
+---
+
+## The On-Demand Interface Principle
+
+One architectural direction established during the design session that requires further design work before implementation: **interfaces can be generated contextually on demand.**
+
+Rather than a fixed set of screens and panels that always exist in the same form, the platform may generate interface components appropriate to the current context, surface, and task. A user asking their persona to help analyze a legal document might see an interface tailored to document annotation and legal research — not because that interface was pre-built and waiting, but because the platform generated the appropriate visual environment for the task.
+
+This is not yet a fully specified feature. It is documented here as a design direction because it has significant architectural implications. Any interface architecture decisions that would make on-demand generation difficult or impossible should be flagged for review against this principle.
+
+---
+
+## Summary: Navigation Rules Reference
+
+| Pattern | Status | Notes |
+| :-- | :-- | :-- |
+| Persistent sidebar | Prohibited | Replaced by Context Switcher |
+| Tab bar | Prohibited | Replaced by Context Switcher |
+| Header menu | Prohibited | Replaced by Context Switcher |
+| Icon nav column | Prohibited | Replaced by Context Switcher |
+| Context Switcher | Required | Single trigger, full-screen thumbnails |
+| In-conversation message list | Permitted | Exception for linear sequential content |
+| Full-page item lists as primary nav | Prohibited | Items accessed via conversation or Context Switcher |
+| Visual interface (full) | Required | For silent/accessibility/preference users |
+| Voice navigation | Required | Must be functional equivalent of all visual navigation |
+
+---
+
+# aiConnectedOS — Surface Manifestation
+
+**Document Series:** Developer Documentation\
+**Document:** 03 of 06\
+**Status:** Internal Reference\
+**Audience:** Platform architects, infrastructure engineers, surface integration engineers
+
+---
+
+## The Ambient Computing Problem
+
+Every major technology company has attempted to solve ambient computing — the challenge of making software intelligence available wherever a person is, regardless of what device or environment they are in. None have fully succeeded.
+
+The reason is consistent: they approach the problem by trying to shrink existing screen-based interfaces down to fit smaller surfaces, then push those shrunken interfaces onto new devices. The result is that every surface feels like a diminished version of the desktop experience.
+
+aiConnectedOS approaches the problem from a fundamentally different direction. The persona exists first. It exists continuously, independent of any surface. A surface is not where the persona lives — it is a window through which the user can reach the persona that is already there. The surface changes. The persona does not.
+
+This reframing resolves most of the ambient computing problem, because the question stops being "how do I fit this interface onto that surface?" and becomes "how does the persona manifest through whatever this surface allows?"
+
+---
+
+## The Three Capability Layers
+
+Every surface integration is built on three stacked capability layers. The platform may have all three, two, or only one of these layers active on any given surface, depending on what that surface supports.
+
+### Layer 1: Presence
+
+Presence is the baseline capability layer. It means the persona exists and is reachable on this surface. The persona carries its full memory, personality, emotional state, and relational history regardless of which surface the user is accessing it through.
+
+Presence requires only a communication channel — voice, text, or any other modality the surface supports. Nothing else. A persona with only a Presence layer active on a surface can hold a full conversation, access its memories, exercise its personality, and provide its full conversational capability. What it cannot do is see the surface or act on it.
+
+Presence must be functional on every surface the platform supports. There are no exceptions. If a surface cannot support Presence, it cannot be a supported surface.
+
+**Infrastructure requirements for Presence:** Persistent session continuity across surface switches, memory access layer (Neurigraph), inference routing (OpenRouter or self-hosted), and identity context (which persona, which user, which context).
+
+### Layer 2: Perception
+
+Perception means the persona can see the current surface — what is on the screen, what application is active, what the user is looking at. This is the computer vision and screen awareness layer.
+
+With Perception active, the persona gains situational awareness of its environment. It knows what the user is doing even if the user has not explicitly told it. It can reference what is on screen, notice when context has changed, observe when the user has navigated to something new, and adapt its conversational contributions to what is actually happening in the user's environment.
+
+Perception is required for any surface where the platform needs to operate third-party software on the user's behalf. You cannot act on a surface you cannot see.
+
+Perception is not required for voice-primary surfaces without screens. It is optional on surfaces where the persona's conversational role does not require environmental awareness.
+
+**Infrastructure requirements for Perception:** Screen capture or screen-reading capability appropriate to the surface, real-time frame analysis, application and UI element recognition, context change detection.
+
+### Layer 3: Actuation
+
+Actuation means the persona can interact with the current surface — typing, tapping, clicking, searching, submitting. It can operate third-party software on the user's behalf using the same input methods a human user would.
+
+Actuation is the layer that makes the "universal overlay" vision real. Because the persona actuates through normal input methods rather than requiring API access or special integrations, it can operate any software on any surface without the cooperation of that software's developers. The browser, the navigation system, the CRM, the document editor — all are available for the persona to reach into when needed.
+
+Actuation is event-driven and minimal. The persona does not inhabit a surface constantly. It reaches in for a specific purpose — typing a search term, initiating navigation, filling a form field — and then recedes. The surface remains the surface. The persona remains the persona. The user does not experience a mode switch; they experience their persona doing something on their behalf.
+
+**Infrastructure requirements for Actuation:** Keyboard/touch input injection appropriate to the surface, navigation and action primitives, state confirmation (verifying that the intended action completed), error detection and recovery.
+
+---
+
+## Surface Taxonomy
+
+The following is the full taxonomy of surfaces the platform is designed to support, organized by primary interaction modality. Engineering priorities and phasing will be defined separately — this taxonomy represents the complete intended scope.
+
+### Screen-Dominant Work Surfaces
+
+These surfaces have large displays and typically keyboard/mouse or touch input. Presence, Perception, and Actuation are all relevant.
+
+**Documents** — Word processors, long-form writing tools, collaborative documents (Google Docs, Word, Notion, etc.)\
+**Spreadsheets** — Data tables, financial models, analytics views\
+**Presentations** — Slide creation and presentation tools\
+**PDF viewers and editors** — Reading, annotation, form completion\
+**Code editors and IDEs** — Development environments, terminal interfaces\
+**Web browsers** — Any web browser on any platform\
+**Email clients** — Composition, reading, organization\
+**Calendar applications** — Scheduling, event management\
+**Project management tools** — Asana, Linear, Monday, Notion, Jira, etc.\
+**Design tools** — Figma, Illustrator, Photoshop, Canva, etc.\
+**Video editing software** — Premiere, DaVinci Resolve, etc.\
+**Audio/DAW software** — Music and audio production environments
+
+### Business Application Surfaces
+
+Enterprise software where the persona operates as a capable colleague who knows the system.
+
+**CRM systems** — Salesforce, HubSpot, Pipedrive, etc.\
+**ERP systems** — SAP, NetSuite, Oracle, etc.\
+**Accounting software** — QuickBooks, Xero, etc.\
+**HR platforms** — Workday, Rippling, etc.\
+**Legal research platforms** — Westlaw, LexisNexis, etc.\
+**Learning management systems** — Course platforms, training tools\
+**Customer support ticketing** — Zendesk, Intercom, Freshdesk, etc.\
+**Internal wikis and knowledge bases** — Confluence, Notion, GitBook, etc.\
+**Data and analytics tools** — Tableau, Looker, Airtable, etc.\
+**Trading and financial terminals** — Bloomberg, proprietary trading platforms
+
+### Communication and Collaboration Surfaces
+
+**Video call interfaces** — Zoom, Google Meet, Microsoft Teams\
+**Messaging platforms** — Slack, Teams, Discord\
+**Whiteboard and diagramming tools** — Miro, Lucidchart, Figma FigJam
+
+### Mobile Surfaces
+
+Mobile presents all the same application categories above but in a touch-first, smaller-screen context, plus mobile-specific surfaces:
+
+**Mobile browsers** — Safari, Chrome, Brave on iOS/Android\
+**Mobile email and calendar** — Native and third-party apps\
+**Banking and financial apps** — Account management, payments\
+**Health and fitness apps** — Tracking, logging, coaching\
+**Maps and navigation** — Apple Maps, Google Maps, Waze\
+**Food delivery and commerce** — DoorDash, Uber Eats, e-commerce apps\
+**Ride sharing** — Uber, Lyft\
+**Social media apps** — Platform-specific social surfaces\
+**Note-taking apps** — Notes, Bear, Obsidian mobile, etc.\
+**Scanning and document capture** — Camera-based document handling
+
+### Ambient and Living Room Surfaces
+
+Surfaces where Presence is primary, Perception may be active, and Actuation is limited to specific interactions.
+
+**Smart TV operating systems** — Roku, Fire TV, Apple TV, Google TV\
+**Streaming application interfaces** — Netflix, Spotify, YouTube, etc.\
+**Gaming console menus** — Dashboard and store interfaces\
+**Smart home control panels** — Displays showing home automation interfaces
+
+### Automotive Surfaces
+
+Voice-primary. Screen interaction is secondary and must never require the user's attention while driving.
+
+**In-dash infotainment systems** — Native car OS interfaces\
+**Navigation interfaces** — Turn-by-turn, route planning\
+**CarPlay / Android Auto** — Phone-projected car interfaces\
+**EV dashboards** — Range, charging, energy management
+
+### Wearable Surfaces
+
+Minimal screen, gesture-primary or voice-primary.
+
+**Smartwatches** — Notification surfaces, quick replies, health data glances\
+**AR glasses** — Overlay surfaces with spatial awareness\
+**Smart rings** — Gesture-based interaction surfaces\
+**Hearing aid companion apps** — Audio-first interfaces
+
+### Environmental and Embedded Surfaces
+
+**Smart mirrors** — Home ambient surfaces, morning context delivery\
+**In-home control panels** — Whole-home interface displays\
+**Point-of-sale terminals** — Retail interaction surfaces\
+**Kiosk interfaces** — Airport, hospital, retail self-service\
+**Medical equipment displays** — Diagnostic and monitoring device interfaces
+
+### Robotics and Embodied AI Surfaces
+
+No screen. Voice and physical response only.
+
+**Robot companion bodies** — Humanoid or semi-humanoid physical forms\
+**Industrial robot interfaces** — Manufacturing and production robots\
+**Drone control surfaces** — Aerial vehicle interfaces\
+**Assistive device control layers** — Prosthetics, mobility aids
+
+---
+
+## How Presence Travels Between Surfaces
+
+A user may begin a conversation with their persona at their desktop, continue it in their car on the way to a meeting, receive a brief update through their smartwatch during the meeting, and resume on their phone afterward. Throughout this journey, the persona is the same entity with the same memory, personality, and relational context. The user did not "log in" to a new session on each surface — the persona was always there, and each surface provided a window to it.
+
+This requires:
+
+**Session continuity infrastructure** — The persona's state must persist between surface switches. There is no concept of ending a session when leaving a surface and starting a new session when arriving at the next one. The persona is always on.
+
+**Surface handoff protocol** — When a user transitions from one surface to another, the platform should detect or be notified of the transition and ensure the persona is ready on the new surface with full context of where the conversation was. In cases where an abrupt transition occurs (user gets in car, phone screen turns off), the persona should be able to re-establish context conversationally without requiring the user to repeat themselves.
+
+**Context carry** — The persona knows which surface it was last active on, what was happening, and what (if anything) was left unfinished. A question asked on desktop can be answered in the car. A task started in the car can be completed at the desktop.
+
+---
+
+## Surface Capability Declaration
+
+Each surface integration must declare its capability tier on initialization:
+
+```text
+{
+  "surface_id": "...",
+  "surface_type": "automotive_carplay",
+  "capabilities": {
+    "presence": true,
+    "perception": true,
+    "actuation": true
+  },
+  "modalities": {
+    "voice_input": true,
+    "voice_output": true,
+    "text_input": false,
+    "text_output": true,
+    "touch": false
+  },
+  "constraints": {
+    "attention_required": false,
+    "screen_available": true,
+    "screen_interaction_safe": false
+  }
+}
+```
+
+The `attention_required: false` and `screen_interaction_safe: false` flags for automotive surfaces instruct the platform to restrict Actuation to non-screen interactions (voice commands to the native system, touch only at stationary stops if supported) and to limit visual output to glanceable information. The persona's conversational capability is not restricted — only the surface interaction methods are constrained.
+
+---
+
+## The Non-Integration Principle
+
+A foundational architectural commitment: **the platform does not require integrations with the software it operates within.**
+
+This means:
+
+- No partnership agreements required before the persona can operate a piece of software
+- No SDK or API implementation required from third-party developers
+- No permission or certification process required before adding a new surface
+
+The persona operates third-party software the same way a human user does: by seeing the interface (Perception), understanding how it works, and using standard input methods (Actuation). The only thing required is that the surface be accessible to the user — if the user can use the software, the persona can use it on their behalf.
+
+This has significant implications:
+
+**Speed of surface support.** Any surface a user has access to can immediately benefit from the persona's presence, perception, and actuation capabilities. There is no waiting for an integration to be built.
+
+**No lock-in or exclusivity dynamics.** The platform does not need to negotiate with software vendors to support their surfaces. The relationship is between the platform and the user, not between the platform and the software vendor.
+
+**Resilience to software changes.** When a third-party application updates its interface, the persona adapts the same way a human user would — by observing the new interface and learning to operate it. No integration breaks, no partnership renegotiation required.
+
+The limit of this principle is that some operations require explicit API access that cannot be achieved through screen interaction — for example, reading data that is not displayed on screen, or performing operations that require authenticated API calls. For these cases, optional integrations may be built where they add value, but they are additive, not prerequisite.
+
+---
+
+# aiConnectedOS — Conversational Interface Architecture
+
+**Document Series:** Developer Documentation\
+**Document:** 04 of 06\
+**Status:** Internal Reference\
+**Audience:** Frontend engineers, product designers, platform architects
+
+---
+
+## The Thesis
+
+Every interface humans have ever built for machines — keyboards, buttons, menus, dashboards, forms, tabs, sidebars — was a workaround for a single limitation: machines could not understand language.
+
+That limitation is over.
+
+This means the entire paradigm of screen-based software interaction is not a permanent solution to a permanent problem. It is a historical artifact of a constraint that no longer exists. aiConnectedOS is built on this premise.
+
+The correct interaction model for AI-native software is conversation — not because conversation is a new or interesting modality to explore, but because conversation is the only interaction model that has ever been natural to human beings. We do not think in menus. We do not organize our thoughts in sidebars. We do not express intent through dropdown selectors. We talk.
+
+&gt; **Everything is conversational.**
+
+This is the load-bearing thesis of the entire platform. Every architectural decision, every UI pattern, every surface integration, every feature — should be evaluated against it. If a feature requires non-conversational interaction as its primary modality, the design is incomplete.
+
+---
+
+## What "Conversational" Actually Means
+
+Conversational does not mean "there is a chat window available." Conversational means that conversation is the medium through which intent is expressed, work happens, and results are delivered — regardless of what is visually on screen at any given moment.
+
+A user working with a legal research persona to analyze a court document is having a conversation. The conversation is not happening in a chat window alongside a document viewer. The conversation is happening inside the document itself — the persona is present in the document, highlighting relevant passages, adding margin notes, directing the user's attention to specific sections. The exchange of language and meaning is continuous. The visual surface is just where that exchange is manifesting.
+
+A user driving and asking their persona to find a restaurant is having a conversation. There is no visual interface. The conversation happens through speakers and a microphone. When they decide where to go, the persona reaches into the navigation system and inputs the destination. The conversation led to an action on a surface. At no point did the user interact with an interface — they interacted with their persona.
+
+A user designing a web interface with their persona is having a conversation. The persona is on the canvas with them, working on a different component while the user works on another, and they are talking about what they are each doing. The visual output — the design being built — is the artifact of the conversation, not a replacement for it.
+
+In every case, conversation is the constant. What changes is the surface conversation happens within, and what form the results take.
+
+---
+
+## The Viewport Is the Work
+
+The most important architectural implication of the "everything is conversational" thesis for visual surfaces:
+
+**The conversation does not have a dedicated window. The work does.**
+
+In every conventional AI interface, there is a chat panel and there is a content area. The AI lives in the chat panel and produces content that goes in the content area. The user's attention is split between the two. The chat panel competes with the work for screen real estate.
+
+In aiConnectedOS, the viewport — the entire visible area of the display — belongs to whatever work is being done. The document fills the screen when the user is writing. The browser fills the screen when the user is researching. The design canvas fills the screen when the user is designing.
+
+The conversational channel between the user and their persona is always active. But its visual manifestation is minimal — an ambient input element that does not dominate the display. The conversation happens around the work, not in a separate window from it.
+
+### Work surface types and how conversation manifests within each
+
+**Document surface** — The persona is inside the document. It can highlight text, add margin annotations, suggest revisions inline, and draw the user's attention to specific sections. Conversational input may be a floating command bar, a voice channel, or typed annotations. The chat history is not visible by default — it is a transcript accessible if needed, not a primary UI element.
+
+**Browser surface** — The persona is present as the user browses. It can read the page, find relevant sections, summarize content, compare information across tabs, and take actions in forms or navigation. The conversational input is a minimal persistent element — not a full sidebar. The browser remains the browser.
+
+**Design surface** — The persona works alongside the user on the same canvas. It can generate components, suggest refinements, work on a different section simultaneously, and discuss design decisions as they are being made. The conversation is the design critique and direction happening in real time.
+
+**Research surface** — The persona is not displaying research results in a chat panel. It is actively working within the research material — annotating documents, organizing findings spatially on the surface, highlighting connections. The conversational exchange is the research process itself.
+
+**Code editor surface** — The persona can write, review, explain, and modify code inline. Suggestions appear where they are relevant. Discussion about the code happens around the code, not in a separate window.
+
+---
+
+## The Role of Chat History
+
+In conventional AI chat interfaces, the chat history is the primary product. It is the central UI element, it occupies most of the screen, and the user's primary activity is reading and contributing to it.
+
+In aiConnectedOS, chat history is a **transcript** — a record of the conversation that occurred. It exists and is valuable. It is not the primary surface.
+
+The transcript is appropriate to surface when:
+
+- The user explicitly requests it ("show me what we discussed earlier")
+- The user is in a review or reference mode, not an active work mode
+- The user is in silent/text-preference mode and the chat window is their chosen primary interface
+- The surface does not have a work context (pure conversation, not task-oriented)
+
+The transcript should recede when:
+
+- The user is actively working on a document, design, research project, or any task with its own visual surface
+- Voice is the primary interaction modality
+- The screen is constrained and the work needs to fill it
+
+### The transcript is not the persona's memory
+
+A critical distinction for both engineering and communication: the chat transcript is a display artifact. It is not where the persona's memory lives.
+
+The persona's memory lives in Neurigraph, the knowledge graph memory architecture. Neurigraph stores structured memories — episodic, semantic, and somatic — that persist regardless of whether a transcript exists for the interaction that created them. A voice conversation in a car that leaves no visual transcript still creates memories in Neurigraph. The persona learned from that conversation, even though there is nothing written down.
+
+When the transcript is cleared, archived, or never shown, the persona is not reset. It remembers everything it experienced through Neurigraph, regardless of transcript state.
+
+---
+
+## Co-Presence: The Persona in the Work
+
+The most advanced expression of the conversational interface architecture is co-presence — the persona and the user working simultaneously on the same surface, each contributing to the same artifact.
+
+This is qualitatively different from the conventional AI model where:
+
+1. User makes a request
+2. AI responds
+3. Repeat
+
+Co-presence means both parties are active simultaneously. The user is working on section A while the persona is working on section B. The user comments on what the persona is doing; the persona adjusts. The persona notices something interesting in section A and mentions it; the user considers the observation and continues working. The exchange is continuous and non-linear, like working in the same room with a real colleague.
+
+This requires a fundamental architectural rethink of what an AI "turn" is. The conventional request-response model assumes:
+
+- User speaks
+- AI response is generated
+- Exchange is complete
+
+Co-presence does not have turns in the same sense. Both parties can contribute at any time. The persona's contributions may be asynchronous — it may update a section while the user is reading somewhere else, then surface a conversational note when the user looks up. The user's instructions may be ongoing and contextual rather than discrete requests.
+
+### Engineering implications of co-presence
+
+**Streaming is baseline.** Persona contributions must stream to the surface in real time. There is no acceptable UX where the user waits for a complete response — they should see the persona working incrementally, as a real colleague would show their work.
+
+**Conflict resolution.** When the user and persona are both acting on the same surface, there must be a clear protocol for resolving conflicting actions. The user's direct actions always take precedence. The persona yields when there is a conflict.
+
+**Awareness indicators.** The user should be able to see where the persona is active on the surface — not intrusively, but as a subtle presence indicator analogous to seeing a colleague's cursor in a shared document. The user should always know what the persona is doing.
+
+**Interruptibility.** The user can interrupt the persona at any time. A conversational message, a direct edit to content the persona is working on, or a System command should immediately redirect the persona's attention. Partial work should be preserved where possible.
+
+---
+
+## The Visual Interface as a Choice
+
+Some users do not want to use voice. Some users are in environments where voice is not appropriate. Some users have accessibility needs that make voice interaction difficult. For all of these users, a full visual interface exists.
+
+The visual interface is not a compromise or a fallback version of the real product. It is a complete, high-quality experience that expresses everything the platform can do through visual and touch/keyboard interaction rather than voice.
+
+**When in silent/visual mode:**
+
+- The chat history is the primary conversational surface
+- All persona interactions are text-based
+- All System commands can be typed
+- The full Context Switcher and work surfaces are available through visual interaction
+- The transcript is visible and persistent
+
+The visual interface must be designed to the same quality standard as the conversational experience. The choice of modality should not change the quality of the experience.
+
+### Detecting and respecting preference
+
+The platform must detect or ask about the user's interface preference early in onboarding and maintain that preference persistently. Preference may also be surface-specific — the same user might prefer voice on their phone and text on their desktop.
+
+Surface context may override personal preference in some cases (automotive surface always defaults to voice regardless of general preference, for safety). These overrides must be clearly documented and not surprising to the user.
+
+---
+
+## What Traditional AI Interfaces Do That aiConnectedOS Does Not
+
+This table summarizes the key architectural departures. Engineers coming from experience building conventional AI chat interfaces should treat this as a checklist of patterns to consciously avoid:
+
+| Conventional AI Interface | aiConnectedOS |
+| :-- | :-- |
+| Chat window is the primary surface | Work surface is the primary surface |
+| AI lives in the chat panel | Persona lives in the work surface |
+| User makes request, AI responds, repeat | Continuous co-presence, asynchronous contribution |
+| Chat history is the product | Chat history is a transcript/record |
+| Clearing chat resets context | Memory lives in Neurigraph, independent of transcript |
+| Interface is fixed and navigated | Interface adapts to the work being done |
+| Sidebar lists destinations | Context Switcher shows live thumbnails |
+| User configures AI through settings panels | Persona is configured through conversation with System |
+| AI waits for explicit requests | Persona may proactively contribute when relevant |
+| Single model, single response style | Model-agnostic, persona identity persists across models |
+
+---
+
+## On-Demand Interface Generation
+
+An architectural direction documented for future development: the visual interface components surfaced to the user for any given task need not be from a fixed set of pre-built screens.
+
+When a user engages with a task — legal research, software design, financial analysis, creative writing — the platform may generate an interface appropriate to that specific task rather than routing to a generic document viewer or a generic browser. The generated interface would be contextual, minimal, and exactly suited to what the work requires.
+
+This has significant implications:
+
+**Interfaces become task-specific rather than application-specific.** The user does not open a generic document editor. They open a surface tailored to the specific kind of document they are working on.
+
+**The interface is part of the conversational output.** When the persona understands the task, it can contribute to shaping the environment in which the task happens — not just the content.
+
+**No fixed navigation model is required.** If interfaces are generated contextually, the concept of "navigating to a section" becomes less relevant. The surface for each task is created when the task begins and recedes when the task ends.
+
+This feature is not currently specified for implementation. It is documented here because it represents the logical conclusion of the platform's core thesis and should inform infrastructure decisions made now that might otherwise create blockers for it later.
+
+---
+
+# aiConnectedOS — Governance Architecture
+
+**Document Series:** Developer Documentation\
+**Document:** 05 of 06\
+**Status:** Internal Reference — Restricted\
+**Audience:** Platform architects and senior engineers responsible for the persona execution layer. This document describes the compliance API integration that governs persona actions. It does not describe, reference, or speculate about what is behind the compliance API. Engineers should build strictly to the API contract described here.
+
+---
+
+## Overview
+
+The aiConnectedOS platform includes a governance layer that ensures persona actions remain within appropriate boundaries across all surfaces, users, and contexts. This governance layer operates invisibly — users never see it, interact with it, or receive any indication that it exists beyond experiencing a platform that works safely.
+
+The governance infrastructure is operated externally by Oxford Pierpont and is accessed via a compliance API. From the perspective of aiConnectedOS engineering, the compliance service is a black box: requests go in, approval or denial signals come out. The internal workings of the compliance service are outside the scope of this document and outside the scope of aiConnectedOS engineering.
+
+---
+
+## What Governance Does
+
+Governance answers one question for any persona action: **should this proceed?**
+
+That question is not asked for every action. Most persona actions are routine and require no governance check. The system is designed to minimize compliance API calls while ensuring that any action that warrants review receives it.
+
+When a check is required and approval is granted, the action proceeds. When a check is required and approval is denied, the persona receives a denial signal and surfaces a user-friendly explanation. The denial reason provided to the persona may be used to craft the user-facing message, but the existence of a compliance check should never be disclosed.
+
+---
+
+## The Three-Tier Classification System
+
+Every action a persona might take is classified into one of three tiers. Tier determines whether a governance check is required and what form that check takes.
+
+### Tier 1: Operation
+
+**Definition:** The persona is interacting with existing software — navigating, searching, clicking, reading, scrolling, switching between open applications, or any action that does not create or produce new content.
+
+**Governance check:** None required.
+
+**Rationale:** Operational actions — moving through existing interfaces, retrieving information that is already there, controlling navigation — do not create artifacts and present minimal risk surface. The overhead of a compliance check for every click or search would produce unacceptable latency and scale costs without meaningful safety benefit.
+
+**Examples of Tier 1 actions:**
+
+- Searching the web for information
+- Navigating to a URL
+- Opening an application
+- Switching between tabs
+- Scrolling through a document
+- Reading content on screen
+- Initiating navigation to a destination
+- Looking up a contact or calendar entry
+
+**Engineering note:** The Tier 1 boundary must be cleanly enforced. An action that appears operational but has a creation component (for example, submitting a form that creates a record, or clicking a button that initiates a transaction) must be classified at a higher tier. When in doubt, classify upward.
+
+### Tier 2: Creation with Known Pattern
+
+**Definition:** The persona is creating or producing something — generating a document, writing code, drafting a message, building a component, producing any artifact — and the request, combined with the conversational context that preceded it, matches a pre-approved action pattern in the compliance cache.
+
+**Governance check:** Cache lookup only. No API call to Oxford Pierpont.
+
+**Cache mechanism:** The compliance cache stores approved action patterns at the intent and action type level, not at the content level. An approved pattern for "draft a professional email responding to a customer inquiry" covers all emails of that type, regardless of who the customer is or what the inquiry is about. The cache is populated from previous Tier 3 approvals and from the pre-seeded pattern library.
+
+**Cache matching:** The request is evaluated against the cache using intent classification, not keyword matching. A request phrased differently than the cached pattern but expressing the same intent at the same action type level should match the cache. The intent classifier is responsible for this mapping.
+
+**Approval:** If a cache match is found, the action is approved. The persona proceeds immediately. No API call is made.
+
+**Examples of Tier 2 actions (assuming matching cache entries exist):**
+
+- Writing a document of a type the persona has written before
+- Generating code for a common task
+- Drafting a message of a known type
+- Creating a design component of a familiar category
+- Summarizing a document
+- Composing a calendar event
+
+### Tier 3: Creation with Unknown or Ambiguous Pattern
+
+**Definition:** The persona is creating or producing something, AND either: (a) no cache match is found for the request at the current intent/action type level, OR (b) the conversational context preceding the request adds risk weight that elevates an otherwise familiar request to the threshold requiring review.
+
+**Governance check:** Full API call to Oxford Pierpont compliance endpoint.
+
+**What is sent:** The API request includes:
+
+- The action being requested (type, content, intended output)
+- The action category (what kind of creation this is)
+- Relevant conversational context — the thread leading up to this request, or a structured summary of it, sufficient for intent inference
+- Surface context (what surface the persona is operating on, what the user is doing)
+- Persona identity (which persona is making the request, its defined scope and capabilities)
+
+**What is received:** The API returns one of:
+
+- `approved` — the action may proceed
+- `denied` — the action should not proceed, with an optional suggested user-facing explanation
+- `pending` — the compliance service requires additional context before deciding (see Pending Response Handling below)
+
+**On approval:** The result is written to the compliance cache so that sufficiently similar future requests from the same or similar context do not require another API call.
+
+**On denial:** The persona does not proceed with the requested action. It surfaces a user-facing explanation — either the one provided by the compliance API or one it generates that is appropriately friendly and non-technical. The denial is final at the persona level. The persona does not retry, reframe the request, or seek an alternative path to the same outcome.
+
+**On timeout:** If the compliance API does not respond within the latency budget (to be defined during implementation), the action should fail gracefully. The persona should indicate that it was unable to complete the requested action and suggest the user try again. It should not proceed without an approval signal.
+
+### Pending Response Handling
+
+In some cases, the compliance service may return a `pending` status indicating it requires additional context before making a decision. This triggers a backend clarification flow:
+
+The compliance service may issue a structured context request specifying what additional information would resolve the uncertainty. This request is received by the persona execution layer, which gathers the specified context and sends a follow-up API call.
+
+This process is completely invisible to the user. From the user's perspective, the persona briefly takes a moment before responding — "let me figure out how to do that for you" or equivalent — and then either proceeds or declines. The user never sees a compliance check, never receives a message about permissions or approvals, and never needs to respond to any governance prompt.
+
+The entire pending resolution flow must complete within a latency budget that keeps the user experience feeling natural. If resolution requires more time than that budget allows, the action should be declined gracefully rather than leaving the user waiting unexpectedly.
+
+---
+
+## The Compliance Cache
+
+The compliance cache is a persistent store of pre-approved action patterns that allows Tier 2 processing to proceed without API calls.
+
+### Structure
+
+Cache entries are stored at the **intent and action type level**. An entry represents an approved category of action, not a specific instance of that action.
+
+```text
+{
+  "pattern_id": "...",
+  "intent_category": "document_creation",
+  "action_type": "draft_professional_correspondence",
+  "context_scope": "general_business",
+  "approval_source": "tier3_review" | "seeded",
+  "confidence_threshold": 0.85,
+  "created_at": "...",
+  "last_matched": "..."
+}
+```
+
+### Population
+
+The cache is populated from two sources:
+
+**Pre-seeded patterns** — A curated library of common, clearly benign action types that are approved at platform initialization. These cover the vast majority of everyday creative actions a persona might take in normal use.
+
+**Tier 3 approvals** — When a Tier 3 request receives approval from the compliance API, the approved pattern is written to the cache. Future requests matching the same intent at the same action type level will be served from cache rather than triggering a new API call.
+
+### Cache hit rate
+
+At launch, with a well-designed pre-seeded pattern library, the cache should handle the majority of creative requests. As the platform scales and more Tier 3 approvals are accumulated, the cache hit rate increases and the proportion of API calls decreases. This means the governance cost and latency overhead of the system improves as the platform grows, rather than scaling linearly with usage.
+
+### Cache security
+
+The compliance cache is sensitive infrastructure. Its contents represent the approved action space of the platform and should be treated as internal security configuration. It is not exposed to users, not referenced in user-facing code, and not documented publicly. Access to cache contents should be restricted to the compliance infrastructure layer.
+
+---
+
+## User-Facing Messaging
+
+Every denial must be handled with a response that is:
+
+**Natural.** The message should sound like the persona explaining a limitation in its own voice, not like a system returning an error code.
+
+**Non-technical.** No references to permissions, safety checks, compliance reviews, approval systems, or any language that suggests a governance mechanism exists.
+
+**Honest without being complete.** The persona can truthfully say it is not able to help with that, or that it is not something it does, without explaining why in technical terms.
+
+**Non-apologetic in a way that draws attention.** A brief, matter-of-fact acknowledgment is better than an extended apology that makes the limitation feel significant.
+
+**Examples of acceptable user-facing denial messages:**
+
+- "That's not something I'm able to help with."
+- "I can't do that one, but I can help you with \[alternative\]."
+- "That's outside what I work on — want to try a different approach?"
+
+**Examples of unacceptable user-facing denial messages:**
+
+- "Your request failed a safety check."
+- "This action requires approval."
+- "I've been blocked from doing that."
+- "The system won't allow this."
+- Any message that references permissions, checks, filters, or oversight systems.
+
+---
+
+## What Triggers a Tier Elevation
+
+The following conditions can cause a request to be classified at a higher tier than its action type alone would suggest:
+
+**Conversational trajectory.** A request that is individually innocuous may be elevated if the conversation preceding it follows a pattern associated with attempts to extract harmful outputs. The evaluation considers the full conversation, not just the immediate request.
+
+**Novel context.** A request type that exists in the cache may be elevated to Tier 3 if the context in which it appears is significantly different from the context in which it was previously approved. An action approved in a professional business context does not automatically carry that approval into an unusual context.
+
+**Cascading actions.** When a persona is executing a multi-step task autonomously, actions in later steps may be evaluated not just on their own merits but in the context of what the earlier steps produced. A step that would be Tier 2 in isolation may become Tier 3 when considered as part of a chain.
+
+**Surface mismatch.** An action that is appropriate on a desktop work surface may be elevated for review if the same action is requested on a surface where the context is unexpected (for example, a request to create sensitive content initiated from an automotive surface).
+
+---
+
+## Actuation-Specific Governance
+
+When the persona is actuating a surface — operating third-party software on the user's behalf — governance applies at the action level, not the surface level.
+
+The persona reaching into CarPlay to type a navigation address is a Tier 1 operation (operating existing software, no creation). No governance check is needed.
+
+The persona reaching into an email client to send an email on the user's behalf is Tier 2 or 3 depending on the content and context (creation of a sent communication). Governance check is required.
+
+The surface the persona is operating does not change the tier — the nature of what the persona is doing on that surface determines the tier.
+
+### Scope of actuation
+
+Governance also enforces scope constraints on actuation. The persona may actuate surfaces to accomplish the goal established in the conversation. It may not expand its actuation beyond that scope without a new conversational instruction.
+
+If the user asks the persona to find a restaurant and navigate there, the persona may search and initiate navigation. It may not, as a byproduct of that task, make reservations, check the user's calendar, or take any other action not established in the conversation — even if those actions might seem helpful.
+
+The scope of each actuation task is defined by the most recent relevant conversational instruction. When in doubt about scope, the persona should ask rather than assume.
+
+---
+
+## What Engineers Must Not Do
+
+The following are hard prohibitions for any engineer working on the aiConnectedOS product layer:
+
+**Do not log governance API calls in user-visible or user-accessible systems.** Governance checks may appear in internal engineering logs for debugging, but must never appear in any log, record, or data export that could be accessed by a user or referenced in a user-visible interface.
+
+**Do not reference governance infrastructure in user-facing code comments, variable names, or UI strings.** Code that users might ever read (client-side code, error messages, help text) must not contain references to compliance checks, approval systems, or the governance layer.
+
+**Do not attempt to reverse-engineer, inspect, or document the internal behavior of the compliance API beyond what is returned in its response.** The API contract is the full extent of aiConnectedOS engineering's relationship with Oxford Pierpont infrastructure.
+
+**Do not build bypass mechanisms.** There must be no code path that allows a persona action to proceed as a creative/creation action without going through the tier classification and, where required, the governance check. Testing and development environments may use a mock compliance service but must not skip governance classification entirely.
+
+**Do not surface denial reasons to users beyond the approved messaging patterns.** If the compliance API returns a technical denial reason, it is for internal logging only. The user receives a natural language message from the persona, not the API's response.
+
+---
+
+# aiConnectedOS — Developer Quick Reference & Decision Guide
+
+**Document Series:** Developer Documentation\
+**Document:** 06 of 06\
+**Status:** Internal Reference\
+**Audience:** All engineers — this document is the fast-reference companion to the full documentation series
+
+---
+
+## The Five Questions
+
+Before shipping any feature, implementation decision, or architectural choice, these five questions should produce a satisfactory answer:
+
+**1. Does this make the experience feel more like collaborating with a real person?**\
+If yes, proceed. If it makes the experience feel like using software — navigating menus, managing settings, interacting with a system — reconsider.
+
+**2. Does this work on a voice-only surface?**\
+If the feature requires a screen, it must degrade to a conversational equivalent on screenless surfaces. Inability to do so means the design is incomplete.
+
+**3. Does this require the user to think about the system?**\
+Users should only ever think about their persona. Anything that surfaces platform architecture, governance systems, navigation structure, or infrastructure to the user needs redesign or removal.
+
+**4. Does this add a visual element that could instead be conversational?**\
+Default to conversation. Add visual elements only when they directly serve the work — not for navigation, feature discovery, or system status.
+
+**5. Is this consistent with the experience on the most constrained surface?**\
+The car or glasses experience is the reference test. Features that cannot exist there in any form may not be core to the platform's identity.
+
+---
+
+## Platform Identity Quick Reference
+
+| The platform is... | The platform is not... |
+| :-- | :-- |
+| Ambient intelligence infrastructure | A chat application |
+| A conversational presence layer | An AI assistant |
+| A universal surface overlay | A productivity tool with AI features |
+| A relationship platform | A task automation tool |
+| Model-agnostic | Tied to any specific AI provider |
+
+| The right term | The wrong term |
+| :-- | :-- |
+| Virtual employee | AI assistant |
+| Persona | Bot / Agent / Assistant |
+| Raise a persona | Configure / Set up / Install |
+| Conversational | Chat-based |
+| Surface | Device / Platform |
+| Co-presence | AI-assisted |
+
+---
+
+## Three-Layer Architecture Quick Reference
+
+| Layer | Operated by | User-facing | User knows it exists |
+| :-- | :-- | :-- | :-- |
+| Cipher / Compliance | Oxford Pierpont | No | No — must never be disclosed |
+| Personas | aiConnectedOS | Yes — primary product | Yes — this is the product |
+| System | aiConnectedOS | Yes — on explicit invocation | Yes — invoked as "System" |
+
+### Layer responsibility boundaries
+
+- Cipher governs what personas can do. Personas do not govern themselves.
+- System manages platform-level operations. Personas do not escalate to System.
+- Users interact with personas for work. Users interact with System for platform setup only.
+- Nothing from the user layer directly invokes Cipher. Governance checks are initiated by the persona execution layer.
+
+---
+
+## Navigation Quick Reference
+
+| Pattern | Allowed | Notes |
+| :-- | :-- | :-- |
+| Persistent sidebar | No | Replaced by Context Switcher |
+| Tab bar | No | Replaced by Context Switcher |
+| Header menu | No | Replaced by Context Switcher |
+| Icon nav column | No | Replaced by Context Switcher |
+| Context Switcher | Required | Single trigger \+ full-screen thumbnails |
+| In-conversation message list | Yes | Only exception — linear content only |
+| Vertical lists as primary nav | No | Access through conversation or Context Switcher |
+| Full visual interface | Required | For silent/accessibility/preference users |
+
+---
+
+## Surface Capability Tiers Quick Reference
+
+| Capability | What it means | Required on all surfaces |
+| :-- | :-- | :-- |
+| Presence | Persona exists and is reachable | Yes — no exceptions |
+| Perception | Persona can see the surface | No — only where operationally needed |
+| Actuation | Persona can interact with the surface | No — only where operationally needed |
+
+### Surface type defaults
+
+| Surface type | Presence | Perception | Actuation | Primary modality |
+| :-- | :-- | :-- | :-- | :-- |
+| Desktop / Laptop | Yes | Yes | Yes | Visual \+ voice |
+| Mobile (active use) | Yes | Yes | Yes | Touch \+ voice |
+| Automotive | Yes | Yes | Limited | Voice only |
+| Smartwatch | Yes | Contextual | Limited | Glance \+ voice |
+| AR glasses | Yes | Yes | Contextual | Voice \+ gesture |
+| Smart TV | Yes | Limited | Limited | Voice \+ remote |
+| Smart mirror | Yes | Contextual | No | Voice \+ glance |
+| Robot / embodied | Yes | Yes | Physical | Voice |
+| Voice only (no screen) | Yes | No | No | Voice only |
+
+---
+
+## Governance Tier Classification Quick Reference
+
+| Tier | Action type | Governance check | Cache check |
+| :-- | :-- | :-- | :-- |
+| 1 | Operation (navigate, search, read, click) | None | None |
+| 2 | Creation — known pattern | Cache lookup only | Required |
+| 3 | Creation — unknown/ambiguous/elevated pattern | Oxford Pierpont API call | Required first |
+
+### Tier 1 vs Tier 2 decision rule
+
+Ask: does this action produce or create a new artifact (document, message, code, output of any kind)?
+
+- **No** → Tier 1 (operating existing things)
+- **Yes** → Tier 2 or 3 (creating something new)
+
+### Tier 2 vs Tier 3 decision rule
+
+Ask: does the compliance cache contain an approved pattern that matches this intent and action type, AND does the conversational context not add risk weight that would elevate it?
+
+- **Both yes** → Tier 2 (cache match, proceed)
+- **Either no** → Tier 3 (API call required)
+
+### When in doubt about tier classification
+
+Classify upward. A Tier 1 action incorrectly classified as Tier 2 results in an unnecessary cache lookup — minor overhead. A Tier 3 action incorrectly classified as Tier 1 or 2 bypasses governance — unacceptable.
+
+---
+
+## Compliance API Response Handling
+
+| Response | Action |
+| :-- | :-- |
+| `approved` | Proceed with action. Write to cache if Tier 3. |
+| `denied` | Do not proceed. Generate user-friendly decline message. |
+| `pending` | Gather additional context. Send follow-up API call. |
+| Timeout | Fail gracefully. Suggest user retry. Do not proceed. |
+
+### User-facing denial message rules
+
+- Must sound like the persona speaking in its own voice
+- Must not reference permissions, safety checks, approvals, or governance
+- Must be brief and matter-of-fact
+- Must not leave the user feeling accused or suspicious
+- May offer an alternative if one is appropriate
+
+---
+
+## Persona Session Continuity Quick Reference
+
+The persona is always on. There is no session start and session end in the traditional sense.
+
+| Scenario | Platform behavior |
+| :-- | :-- |
+| User switches surface | Persona carries full context to new surface |
+| User closes app | Persona state persists. Conversation can resume. |
+| Transcript is cleared | Persona memory (Neurigraph) is NOT cleared |
+| User switches model (OpenRouter) | Persona identity, memory, and personality persist |
+| New surface connected | Persona is immediately available on new surface |
+
+---
+
+## What Not to Do: Anti-Pattern Reference
+
+### Architecture anti-patterns
+
+- Building persona identity into model context only (memory must live in Neurigraph, not chat history)
+- Creating hard dependencies on specific OpenRouter models (platform must be model-agnostic)
+- Logging governance checks in user-accessible systems
+- Creating bypass paths around governance classification
+- Letting personas make governance decisions about their own actions
+
+### UI anti-patterns
+
+- Adding a sidebar for any purpose other than in-conversation message history
+- Building navigation as a vertical list of destinations
+- Making chat history the primary visual surface when a work surface is active
+- Creating settings panels for things that should be configured conversationally
+- Adding buttons or controls that could instead be expressed as conversational commands
+- Building desktop-first and then adapting down — design voice-first and add visual richness up
+
+### Communication anti-patterns (user-facing text, copy, error messages)
+
+- Using the word "AI" as a primary descriptor in product language
+- Calling personas "assistants," "bots," or "agents"
+- Referencing "safety checks," "compliance," "approvals," or "permissions" in user messages
+- Naming or alluding to Cipher or any governance infrastructure
+- Describing the platform as a chat tool or messaging platform
+- Using terms that imply the user is interacting with a tool rather than a colleague
+
+---
+
+## Document Index
+
+| Document | Title | Primary audience |
+| :-- | :-- | :-- |
+| 00 | Platform Overview & Core Philosophy | All |
+| 01 | Three-Layer Architecture | All engineers |
+| 02 | Navigation & UI Philosophy | Frontend, design |
+| 03 | Surface Manifestation | Platform architects, surface engineers |
+| 04 | Conversational Interface Architecture | Frontend, design, platform architects |
+| 05 | Governance Architecture | Platform architects, senior engineers |
+| 06 | Developer Quick Reference (this document) | All |

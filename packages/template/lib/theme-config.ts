@@ -1,5 +1,5 @@
 /**
- * Unmint Theme Configuration
+ * aiConnected docs theme configuration
  *
  * Customize your documentation's look and feel by modifying this file.
  * All colors, branding, and styling can be adjusted here.
@@ -7,32 +7,34 @@
 
 export const siteConfig = {
   // Site metadata
-  name: 'Unmint',
-  description: 'A free, open-source Mintlify-style documentation system',
-  url: 'https://docs.example.com',
+  name: 'aiConnected',
+  description: 'Documentation, API references, planning docs, and knowledge base for aiConnected.',
+  url: 'https://secure-docs.aiconnected.ai',
 
   // Logo configuration
   logo: {
-    src: '/logo.svg',
-    alt: 'Unmint',
-    width: 40,
+    src: '/logo/light.svg',
+    darkSrc: '/logo/dark.svg',
+    alt: 'aiConnected',
+    width: 174,
     height: 40,
   },
 
   // Navigation links
   links: {
-    github: 'https://github.com/your-org/your-repo',
-    discord: 'https://discord.gg/your-invite',
-    twitter: 'https://twitter.com/yourhandle',
-    support: 'mailto:support@example.com',
+    github: 'https://github.com/oxfordpierpont/docs',
+    discord: '',
+    twitter: 'https://x.com/aiconnected',
+    support: 'mailto:support@aiconnected.ai',
   },
 
   // Footer configuration
   footer: {
-    companyName: 'Your Company',
+    companyName: 'aiConnected',
     links: [
-      { label: 'Website', href: 'https://example.com' },
-      { label: 'GitHub', href: 'https://github.com/your-org' },
+      { label: 'Website', href: 'https://aiconnected.ai' },
+      { label: 'Sign In', href: 'https://aiconnected.io/login' },
+      { label: 'Get Started', href: 'https://aiconnected.io/signup' },
     ],
   },
 }
@@ -42,15 +44,15 @@ export const themeConfig = {
   colors: {
     // Light mode
     light: {
-      accent: '#0891b2',        // Primary accent color
+      accent: '#1c75bc',        // Primary accent color
       accentForeground: '#ffffff',
-      accentMuted: 'rgba(8, 145, 178, 0.1)',
+      accentMuted: 'rgba(28, 117, 188, 0.1)',
     },
     // Dark mode
     dark: {
-      accent: '#22d3ee',        // Brighter for dark backgrounds
-      accentForeground: '#0f172a',
-      accentMuted: 'rgba(34, 211, 238, 0.1)',
+      accent: '#2e95f3',        // Brighter for dark backgrounds
+      accentForeground: '#021220',
+      accentMuted: 'rgba(46, 149, 243, 0.14)',
     },
   },
 
@@ -69,12 +71,12 @@ export const themeConfig = {
   // OG Image generation settings
   ogImage: {
     // Gradient background (CSS gradient string)
-    gradient: 'linear-gradient(135deg, #ffffff 0%, #e0f7fa 50%, #67e8f9 100%)',
+    gradient: 'linear-gradient(135deg, #fafcff 0%, #d7ecff 52%, #2e95f3 100%)',
     // Text colors
-    titleColor: '#0f172a',
-    sectionColor: '#0891b2',
+    titleColor: '#021220',
+    sectionColor: '#1c75bc',
     // Logo URL (absolute URL required for OG images)
-    logoUrl: 'https://example.com/logo.png',
+    logoUrl: 'https://secure-docs.aiconnected.ai/logo/light.svg',
   },
 }
 

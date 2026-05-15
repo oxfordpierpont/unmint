@@ -1,0 +1,92 @@
+---
+title: "macEngine"
+description: "Routine, persona, and local-automation data contracts for macEngine."
+---
+## Contract status
+
+`Canonical interface contract`
+
+The macEngine PRD provides concrete data schemas and operating behavior, but it is not written as a finalized HTTP API. This page captures the implementation contract developers can rely on.
+
+## Source document
+
+- [macEngine comprehensive PRD](/docs/knowledge-base/aiconnected-apps-and-modules/mac-engine-prd)
+
+## Module purpose
+
+macEngine is a local or desktop-oriented AI operating layer centered on routines, persona management, in-task automation, and LLM routing.
+
+## Canonical data schemas
+
+### Routine file schema
+
+The PRD defines a routine artifact format with fields such as:
+
+- `id`
+- `name`
+- `created_at`
+- `trigger_phrases`
+- `steps`
+- `variables`
+- `author`
+- `signature`
+- `version`
+
+Routine steps support structured action objects like `open_url`, `type_text`, `click`, and `extract_table`.
+
+### Persona file schema
+
+The PRD defines persona records with fields such as:
+
+- `id`
+- `name`
+- `wakeword`
+- `tts_voice`
+- `style`
+- `llm_pref`
+- `schedule`
+- `version`
+
+### LLM routing policy
+
+The PRD also defines a routing policy object with:
+
+- `routing_policy_version`
+- `default` intent routing
+- `personas`
+- `overrides`
+
+## Required service domains
+
+### Routine management
+
+- Create, import, export, and version routines
+- Trigger routines from phrases or UI actions
+- Secure variables and signature validation
+- Track execution results and failures
+
+### Persona management
+
+- Create and edit personas
+- Switch active personas
+- Preview persona behavior and voice settings
+- Apply persona schedules
+
+### In-task UI
+
+The PRD defines a floating bubble interface with:
+
+- Docked or draggable behavior
+- Wake and listen animations
+- Output overlay text
+- Success or failure indicators
+- Clarification overlays
+- Confirmation dialogs
+
+## Event model
+
+The PRD includes examples of execution events such as `routine_executed`. Build the module so routine and persona actions can emit auditable lifecycle events.
+
+## Build guidance
+
+macEngine is schema-heavy. Preserve the documented routine and persona artifact shapes even if the HTTP or IPC transport evolves later.

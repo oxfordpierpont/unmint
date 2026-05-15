@@ -1,0 +1,157 @@
+---
+title: "Additional Considerations for Platform PRD"
+---
+This document captures the topics deliberately set aside from the Layout Manager PRD so they can be addressed in the broader platform PRD.
+
+## **Purpose**
+
+The Layout Manager PRD will focus on the builder itself: visual layout composition, component selection, component properties, data-source binding, AI-guided functionality creation, edit history, preview, testing flow, and publish behavior.
+
+The topics below are platform-level concerns that affect how the builder operates inside the larger multi-tenant shell, but they are not part of the builder's core specification.
+
+## **1\. Plugin / Module Lifecycle**
+
+These topics belong to the broader platform architecture, not the builder PRD:
+
+* Module installation  
+* Activation and deactivation  
+* Uninstall behavior  
+* Upgrade and migration rules  
+* Dependency handling  
+* Missing extension-point handling  
+* Failure recovery when a module is removed or replaced  
+* Long-term compatibility management
+
+## **2\. Screen Ownership and Editable Zones**
+
+These topics define what parts of the shell can be edited by which classes of users:
+
+* Shell-owned areas versus module-owned areas  
+* Super User full-screen edit powers  
+* Agency Admin edit limits  
+* Future developer-specific edit rules  
+* Locked regions, protected regions, and extension-point regions
+
+## **3\. Scope of Change**
+
+These topics define where edits apply once published:
+
+* Global shell-wide changes  
+* Module-wide default changes  
+* Agency-level changes  
+* Agency-client inherited changes  
+* Tenant-specific overrides  
+* Page-instance-specific overrides  
+* Environment-specific differences
+
+## **4\. Inheritance and Override Model**
+
+These topics define how changes trickle down through the platform:
+
+* Global defaults  
+* Module defaults  
+* Agency-level overrides  
+* Tenant or client-type overrides  
+* Page-level overrides  
+* Resolution order when multiple override layers exist
+
+## **5\. Collaboration and Concurrency**
+
+These topics govern how multiple people interact with the same artifacts:
+
+* Single-editor versus multi-editor model  
+* Record locking  
+* Live presence indicators  
+* Conflict handling  
+* Review or approval workflows  
+* Comments and internal collaboration features
+
+## **6\. Event Model and Platform Observability**
+
+These topics belong to the shell and platform telemetry layer:
+
+* Runtime module events  
+* Builder action events for auditing  
+* Publish events  
+* Rollback events  
+* Monitoring and tracing across modules  
+* Event bus governance and observability standards
+
+## **7\. Security and Governance at the Platform Level**
+
+These topics affect the entire shell and should be specified globally:
+
+* Sensitive capability access rules  
+* Secret handling policy  
+* Permission inheritance rules  
+* Restricted modules or non-editable system surfaces  
+* AI prompt exposure and data masking policies  
+* Approval thresholds for high-risk changes
+
+## **8\. Exportability, Portability, and Reuse Across Environments**
+
+These topics apply to the platform's broader module strategy:
+
+* Packaging modules for reuse outside the platform  
+* Duplicating modules across environments  
+* Copying layouts across agencies or tenants  
+* Template packaging and distribution  
+* Version portability and deployment targets
+
+## **9\. Navigation and Information Architecture Registration**
+
+These topics belong to the shell and routing system:
+
+* How new pages register in navigation  
+* Sidebar label control  
+* Route generation  
+* Hidden pages and internal pages  
+* Icon assignment  
+* Cleanup behavior when pages are deleted or disabled
+
+## **10\. Naming and Object Vocabulary Across the Platform**
+
+These topics should be resolved in the broader platform PRD so terminology remains consistent:
+
+* Module vs plugin vs app  
+* Page vs screen vs surface  
+* Capability vs function vs service  
+* Data source vs binding vs contract  
+* Draft vs version vs published release  
+* Extension point vs slot vs mount point
+
+## **11\. Recovery and Failure UX Outside the Builder Core**
+
+These topics concern platform-wide resilience:
+
+* What happens when a module is removed  
+* What happens when a dependency is missing  
+* How the shell handles broken bindings after upgrades  
+* How users are notified about missing capabilities  
+* Recovery options across the broader system
+
+## **12\. Long-Term Platform Policy for External Component Ecosystems**
+
+The Layout Manager PRD will assume shadcn/ui is the UI foundation and that broader shadcn-compatible components may be used.
+
+The broader platform PRD should later define:
+
+* How external component sources are approved  
+* How component updates are governed across the platform  
+* Versioning and compatibility policy for imported component packs  
+* Trust and review workflow for third-party additions
+
+## **Notes for the Layout Manager PRD**
+
+The following items remain in scope for the Layout Manager PRD and should not be moved here:
+
+* Source of truth for layouts and functionality bindings  
+* Builder edit history, undo/redo, draft, preview, publish, rollback behavior  
+* AI permissions and AI workflow stages inside the builder  
+* Component registration rules needed specifically for builder compatibility  
+* Data-source binding UX and AI-guided capability creation inside the component properties flow  
+* Validation gates required before builder publish  
+* Builder testing flow  
+* Builder performance expectations
+
+This document exists only to keep the Layout Manager PRD focused while preserving the unresolved platform-level concerns for the future platform PRD.

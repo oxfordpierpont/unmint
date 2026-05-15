@@ -1,0 +1,708 @@
+---
+title: "Build plan review"
+description: "Prompt: The planning phase is complete, and it’s now time to start building the aiConnected Chat UI. Please review the project’s chats and make a plan for co..."
+---
+<Info>
+Converted from `14. aiConnected OS Build plan review.md`.
+</Info>
+# Build plan review
+
+**User:** Oxford Pierpont  
+**Created:** 12/20/2025 16:43:46  
+**Updated:** 12/20/2025 16:54:42  
+**Exported:** 2/11/2026 7:20:10  
+**Link:** [https://chatgpt.com/g/g-p-69395d9991108191841f1dac1fd8d1a1-oxpi-aiconnected-ui-features/c/6947187e-2584-8333-8424-4662206cb798](https://chatgpt.com/g/g-p-69395d9991108191841f1dac1fd8d1a1-oxpi-aiconnected-ui-features/c/6947187e-2584-8333-8424-4662206cb798)  
+
+## Prompt:
+The planning phase is complete, and it’s now time to start building the aiConnected Chat UI.
+
+Please review the project’s chats and make a plan for completing the job. 
+
+Then let me know what you think of the system.
+
+## Response:
+Got it. Based on the project chats you’ve already locked in, here’s the build plan I’d use to take **aiConnected Chat UI** from “designed” to “shippable,” plus my take on the system as a whole.
+
+What we have so far (distilled from the project chats)
+------------------------------------------------------
+
+You’ve effectively defined a chat product that’s different from standard “one thread = one model” chat apps:
+
+*   **Dashboard-first “Instance”** (like a Project/Space): the dashboard is the _home_ where chat happens, including a persistent “open forum” chat area.
+*   **Personas are constrained** (skill slots / capability limits) to prevent the “all-knowing AI” expectation and reduce hallucination pressure.
+*   **Cipher is the God layer** above Personas: powerful, unrestricted, largely hidden from general users; used for routing, orchestration, oversight.
+*   **Collaborative chats**: one chat can involve multiple Personas (and/or Cipher supervising).
+*   **Chat management is first-class**: clean up chats, multi-select, move chats between Personas/Instances, and similar bulk actions for memories (delete/archive/recently deleted).
+*   **Expectation management is central**: the UI and rules teach users “any Persona can be great at some things, none can do everything.”
+
+That’s enough to start building cleanly.
+
+* * *
+
+Build plan (ordered to reduce rework)
+-------------------------------------
+
+### Phase 1: Lock the product “contract” (schemas + permissions)
+
+Before UI polish, define the data model and permissions. This prevents redesign later.
+
+**Core entities**
+
+*   **Instance** (dashboard/workspace)
+*   **Persona** (with skill slots, limits, identity, policy)
+*   **ChatThread** (belongs to Instance; can be private-to-persona or collaborative)
+*   **Message** (role, author persona/system/cipher, attachments, tool calls)
+*   **MemoryItem** (scoped to Persona and/or Instance; with states: active/archived/deleted)
+*   **Move/BatchAction** (audit record for multi-select operations)
+
+**Permissions + scopes**
+
+*   What a Persona can see/do inside an Instance
+*   What Cipher can override
+*   What “private persona chat” vs “instance forum chat” means in storage and UI
+
+Deliverable: a small internal spec that the UI and backend both follow.
+
+* * *
+
+### Phase 2: Build the “Chat Kernel” UI (the part everything depends on)
+
+This is the reusable chat engine used in:
+
+*   Instance forum chat
+*   Private Persona chat
+*   Collaborative multi-persona chat
+
+**Kernel features**
+
+*   Message list rendering (streaming-ready)
+*   Composer with attachments + tool output blocks
+*   Participant bar (which Personas are in this thread; who’s “speaking”)
+*   System messages for capability limits (“I can’t do X; I can do Y” style)
+*   Thread metadata (title, tags, pinned items)
+
+Deliverable: one working chat surface that can be embedded anywhere.
+
+* * *
+
+### Phase 3: Implement the Instance Dashboard (your “home base”)
+
+This is where aiConnected becomes “fluid,” not just a list of chats.
+
+**Dashboard layout**
+
+*   Left: Instances
+*   Inside Instance:
+    *   Threads list (filters: forum, private, collaborative)
+    *   Persistent “Open Forum” chat panel (always accessible)
+    *   Persona panel (available personas + their skill slots/limits)
+    *   Quick actions: New chat, Add Persona to chat, Move chats
+
+Deliverable: user can live inside an Instance and operate naturally without hunting.
+
+* * *
+
+### Phase 4: Collaborative Personas (multi-agent chat) + Cipher oversight
+
+This is where your system separates from everyone else.
+
+**Mechanics**
+
+*   Add/remove personas mid-thread
+*   Explicit “who answers next” control:
+    *   Auto-routing (Cipher chooses)
+    *   Manual routing (user picks Persona)
+*   Cipher “supervision” mode:
+    *   silent router
+    *   visible moderator (optional, depending on tier)
+
+Deliverable: chats feel like a team, not a single bot.
+
+* * *
+
+### Phase 5: Chat cleanup + bulk operations (your “power user” advantage)
+
+You’ve already identified this as a pain point in other products—so ship it well.
+
+**Chat cleanup**
+
+*   Multi-select threads
+*   Move threads to:
+    *   another Persona (re-scope ownership)
+    *   another Instance
+*   Archive / delete with “Recently Deleted”
+*   Search + filters + date ranges
+
+**Memory cleanup**
+
+*   Multi-select memory items
+*   Archive/delete/recover
+*   “Why is this memory here?” visibility (source thread/message)
+
+Deliverable: users can reorganize reality as their projects evolve.
+
+* * *
+
+### Phase 6: Persona Skill Slots UI (capability constraints made visible and usable)
+
+This must be _obvious_ in the product, or users will revert to “do everything.”
+
+**UI elements**
+
+*   Persona “skill slot cards” (what they do / don’t do)
+*   Request guardrails:
+    *   inline warnings when the request exceeds Persona scope
+    *   suggested reroute to a better Persona
+*   “Capability receipts” in responses:
+    *   brief statement of assumptions + known limits when relevant
+
+Deliverable: the UI trains the user without lecturing them.
+
+* * *
+
+### Phase 7: Production hardening (the stuff that makes it real)
+
+*   Streaming reliability + retry logic
+*   Message ordering guarantees
+*   Audit logs (moves/deletes, Cipher interventions)
+*   Telemetry:
+    *   reroute rate
+    *   “I don’t know” rate
+    *   hallucination reports
+    *   time-to-resolution per thread type
+*   RBAC for business/enterprise
+*   Export/backup per Instance
+
+Deliverable: stable, defensible product behavior.
+
+* * *
+
+Suggested implementation approach (so you can actually ship)
+------------------------------------------------------------
+
+If you want the fastest path to “usable”:
+
+1.  **Ship Phase 2 + Phase 3 first** (Chat Kernel + Instance Dashboard).
+2.  Add **Collaborative Personas** next (Phase 4).
+3.  Then ship **bulk cleanup + moving** (Phase 5) because it’s your differentiator.
+4.  Then deepen **Skill Slots** (Phase 6) once usage reveals what users misunderstand.
+
+This sequence keeps you from spending weeks perfecting guardrails before the core UX exists.
+
+* * *
+
+What I think of the system (straight answer)
+--------------------------------------------
+
+### What’s strong
+
+*   **You’re fixing the core failure mode of modern AI UX**: users expect omniscience, models respond with confident nonsense. Skill slots + constrained Personas is a structural solution, not a prompt solution.
+*   **Cipher-as-orchestrator is the right abstraction**: it lets you keep “god power” for routing, safety, and quality without exposing that capability as the default user experience.
+*   **Dashboard-first is correct** for long-running work. Threads alone don’t map to how real projects evolve.
+*   **Bulk move/cleanup is underrated** and will become one of those “once you have it, you can’t go back” features.
+
+### The main risk
+
+*   **Complexity creep in the mental model.** If users don’t instantly understand:
+    *   what an Instance is,
+    *   what a Persona is,
+    *   why some Personas can’t do certain things,
+    *   when Cipher is involved,
+    …they’ll feel friction. This is solvable, but the UI has to _teach by interaction_, not documentation.
+
+### The key design principle to protect
+
+*   **Make “constraints” feel like clarity, not limitation.**
+    *   “This Persona is specialized for X” should feel premium and intentional.
+    *   Rerouting should feel like “good management,” not failure.
+
+If you execute that, you’ll have something meaningfully different from ChatGPT/Claude-style interfaces.
+
+* * *
+
+The one decision that will make or break build speed
+----------------------------------------------------
+
+Treat the **Chat Kernel** as a product inside the product. If you build it cleanly (thread-agnostic, streaming-ready, supports multi-author), everything else becomes composition instead of reinvention.
+
+* * *
+
+If you want, paste your intended stack for the chat UI (Next.js app router vs pages, Tailwind/shadcn, state approach, backend choice), and I’ll translate the plan above into a concrete build checklist with component names, routes, and data contracts so it’s “start coding now” ready.
+
+## Prompt:
+Please make a master list of features and capabilities
+
+## Response:
+Below is a **master feature & capability list** for the **aiConnected Chat UI**, organized as a product-level reference. This is written at the level you’d later hand to a PM, lead engineer, or use directly to derive PRDs, tickets, and milestones.
+
+I’m intentionally being exhaustive and explicit so nothing “falls through the cracks” during implementation.
+
+* * *
+
+aiConnected Chat UI
+===================
+
+Master Feature & Capability List
+--------------------------------
+
+* * *
+
+1\. Core Structural Concepts
+----------------------------
+
+### 1.1 Instance (Workspace / Dashboard)
+
+*   Instance acts as the **primary container** for:
+    *   Personas
+    *   Chats
+    *   Memories
+    *   Tools & permissions
+*   One user can have multiple Instances
+*   Instances are isolated by default
+*   Instances can be:
+    *   Personal
+    *   Business
+    *   Team / Collaborative (future-ready)
+
+**Capabilities**
+
+*   Create / rename / archive / delete Instances
+*   Instance-level settings
+*   Instance-level permissions (future: team roles)
+*   Instance-level activity history
+
+* * *
+
+### 1.2 Personas
+
+*   Personas represent **bounded digital roles**, not omniscient agents
+*   Each Persona has:
+    *   Identity (name, description)
+    *   Defined purpose
+    *   Skill slots (capabilities)
+    *   Explicit limitations
+    *   Memory scope
+
+**Capabilities**
+
+*   Create Persona within an Instance
+*   Edit Persona identity & purpose
+*   Assign / remove skill slots
+*   Define hard limits (what the Persona will refuse)
+*   Enable / disable Persona
+*   Delete or archive Persona
+*   Persona visibility controls (private vs shared)
+
+* * *
+
+### 1.3 Cipher (System-Level Orchestrator)
+
+*   Cipher is the **unrestricted supervisory layer**
+*   Cipher is not a normal Persona
+*   Cipher may be:
+    *   Invisible (silent routing)
+    *   Semi-visible (system notes)
+    *   Visible (explicit moderator)
+
+**Capabilities**
+
+*   Route requests to appropriate Personas
+*   Enforce Persona constraints
+*   Detect capability mismatch
+*   Prevent hallucination via refusal/escalation
+*   Mediate multi-persona conversations
+*   Generate system messages and clarifications
+*   Audit actions invisibly (logs, decisions)
+
+* * *
+
+2\. Chat System (Chat Kernel)
+-----------------------------
+
+### 2.1 Chat Threads
+
+*   Chats exist **inside Instances**
+*   A chat can be:
+    *   Instance Forum Chat (persistent, shared)
+    *   Private Persona Chat
+    *   Collaborative Multi-Persona Chat
+
+**Capabilities**
+
+*   Create new chat
+*   Rename chat
+*   Auto-generate titles
+*   Tag chats
+*   Pin chats
+*   Archive chats
+*   Delete chats
+*   Restore chats from Recently Deleted
+
+* * *
+
+### 2.2 Messages
+
+*   Messages support multiple authors:
+    *   User
+    *   Persona
+    *   Cipher (system)
+*   Messages are immutable once sent (edited copies allowed later if needed)
+
+**Capabilities**
+
+*   Streaming responses
+*   System messages (non-user-visible logic explanations)
+*   Tool output blocks
+*   Structured content blocks (lists, tables, code)
+*   Attachments (files, links, references)
+*   Message-level metadata
+*   Message-level citations (future)
+
+* * *
+
+### 2.3 Chat Composition
+
+*   Unified message composer across all chat types
+
+**Capabilities**
+
+*   Text input
+*   Attachments
+*   Tool-triggered input
+*   Persona targeting (explicit “ask X”)
+*   Multi-persona addressing
+*   Draft persistence
+*   Cancel / stop generation
+*   Regenerate last response
+
+* * *
+
+3\. Instance Dashboard Experience
+---------------------------------
+
+### 3.1 Persistent Open Forum Chat
+
+*   Always available inside the Instance
+*   Serves as:
+    *   Brainstorming space
+    *   General discussion
+    *   Entry point to new threads
+
+**Capabilities**
+
+*   Persistent history
+*   Add Personas dynamically
+*   Fork into dedicated chat
+*   Promote messages to memory
+
+* * *
+
+### 3.2 Chat Navigation & Organization
+
+*   Chat list scoped to Instance
+
+**Capabilities**
+
+*   Search chats
+*   Filter by:
+    *   Persona
+    *   Chat type
+    *   Date
+    *   Tags
+*   Sort chats
+*   Bulk select chats
+*   Drag-and-drop (optional)
+
+* * *
+
+### 3.3 Persona Panel
+
+*   Visual list of available Personas in the Instance
+
+**Capabilities**
+
+*   View Persona skill slots
+*   View Persona limits
+*   Activate/deactivate Personas
+*   Add Persona to chat
+*   Start private chat with Persona
+
+* * *
+
+4\. Collaborative & Multi-Persona Chat
+--------------------------------------
+
+### 4.1 Multi-Persona Participation
+
+*   Multiple Personas can exist in a single thread
+
+**Capabilities**
+
+*   Add Persona mid-conversation
+*   Remove Persona mid-conversation
+*   View active participants
+*   See who authored each response
+
+* * *
+
+### 4.2 Response Routing
+
+*   How replies are chosen
+
+**Capabilities**
+
+*   Automatic routing (Cipher decides)
+*   Manual routing (user selects Persona)
+*   Hybrid routing (Cipher suggests, user confirms)
+*   Explicit “Persona turn-taking”
+*   Persona refusal handling with explanation
+
+* * *
+
+### 4.3 Persona Awareness
+
+*   Personas know _who else is present_, but not internal system logic
+
+**Capabilities**
+
+*   Context awareness of other Personas’ responses
+*   Non-overlapping responses
+*   Clarification requests between Personas (if allowed)
+
+* * *
+
+5\. Skill Slots & Capability Constraints
+----------------------------------------
+
+### 5.1 Skill Slots
+
+*   Skill slots define what a Persona _can_ do
+
+**Capabilities**
+
+*   Fixed number of slots per Persona
+*   Slot categories (e.g. writing, analysis, coding, planning)
+*   Slot descriptions
+*   Slot-level limits
+*   Slot-level confidence signaling
+
+* * *
+
+### 5.2 Capability Enforcement
+
+*   Requests are validated before execution
+
+**Capabilities**
+
+*   Inline warnings for out-of-scope requests
+*   Persona refusal with explanation
+*   Suggested reroute to another Persona
+*   Cipher escalation for ambiguous cases
+
+* * *
+
+### 5.3 User Education via UI
+
+*   Constraints are visible, not hidden
+
+**Capabilities**
+
+*   “What this Persona can help with” panels
+*   “Why this request was refused” explanations
+*   Suggested Persona matching
+
+* * *
+
+6\. Memory System (Chat-Integrated)
+-----------------------------------
+
+### 6.1 Memory Items
+
+*   Memories are **structured artifacts**, not raw chat logs
+
+**Capabilities**
+
+*   Create memory from:
+    *   Message
+    *   Chat summary
+    *   User input
+*   Memory metadata (source, date, Persona)
+
+* * *
+
+### 6.2 Memory Scope
+
+*   Memory can belong to:
+    *   Persona
+    *   Instance
+    *   System (Cipher-only)
+
+**Capabilities**
+
+*   Scope assignment
+*   Visibility controls
+*   Read-only vs editable memory
+
+* * *
+
+### 6.3 Memory Management
+
+*   First-class UI, not hidden automation
+
+**Capabilities**
+
+*   Browse memories
+*   Search memories
+*   Filter memories
+*   Multi-select memories
+*   Archive memories
+*   Delete memories
+*   Restore from Recently Deleted
+*   Explain “why this memory exists”
+
+* * *
+
+7\. Bulk Actions & Cleanup (Power Features)
+-------------------------------------------
+
+### 7.1 Chat Bulk Operations
+
+*   Solve the “chat sprawl” problem
+
+**Capabilities**
+
+*   Multi-select chats
+*   Move chats between Personas
+*   Move chats between Instances
+*   Archive multiple chats
+*   Delete multiple chats
+*   Undo / recover actions
+
+* * *
+
+### 7.2 Memory Bulk Operations
+
+*   Treat memory like real data
+
+**Capabilities**
+
+*   Multi-select memory items
+*   Archive/delete/recover
+*   Move memory scope
+*   Export memory (future)
+
+* * *
+
+8\. System Transparency & Trust
+-------------------------------
+
+### 8.1 System Feedback
+
+*   The system explains itself when needed
+
+**Capabilities**
+
+*   System notes (non-intrusive)
+*   Capability mismatch explanations
+*   Routing explanations (when enabled)
+*   Confidence disclaimers (optional)
+
+* * *
+
+### 8.2 Audit & History
+
+*   Especially important for business users
+
+**Capabilities**
+
+*   Action logs (moves, deletes, reroutes)
+*   Cipher decision logs (internal)
+*   User-visible change history (limited)
+
+* * *
+
+9\. Reliability & Production Features
+-------------------------------------
+
+### 9.1 Performance & Stability
+
+*   Required for long-running conversations
+
+**Capabilities**
+
+*   Streaming resilience
+*   Retry logic
+*   Message ordering guarantees
+*   Partial failure recovery
+
+* * *
+
+### 9.2 Telemetry & Metrics
+
+*   Needed to improve the system over time
+
+**Capabilities**
+
+*   Hallucination refusal rate
+*   Persona reroute rate
+*   Time-to-resolution per chat
+*   Persona utilization stats
+*   User correction frequency
+
+* * *
+
+10\. Extensibility & Future-Proofing
+------------------------------------
+
+### 10.1 Tools & Integrations (Future-Ready)
+
+*   Designed to plug in later
+
+**Capabilities**
+
+*   Tool call blocks
+*   External service hooks
+*   File processors
+*   API-triggered messages
+
+* * *
+
+### 10.2 Enterprise & Team Readiness
+
+*   Not required Day 1, but architected in
+
+**Capabilities**
+
+*   Role-based access control
+*   Shared Instances
+*   Persona sharing
+*   Compliance-friendly logs
+*   Data export
+
+* * *
+
+High-Level Summary
+------------------
+
+At a system level, **aiConnected Chat UI** provides:
+
+*   A **dashboard-first, project-centric chat experience**
+*   **Bounded Personas** instead of omniscient bots
+*   A **hidden but powerful orchestration layer (Cipher)**
+*   **Collaborative, multi-agent conversations**
+*   **First-class memory and cleanup tools**
+*   A UI that **teaches correct expectations through interaction**
+
+This is not “a chat app with features.”  
+It’s a **coordination interface for digital intelligence**.
+
+If you want, next we can:
+
+*   Convert this into a **feature-to-component map**, or
+*   Turn this into a **Phase 1 MVP cut** (what _must_ ship vs what can wait), or
+*   Translate it directly into a **PRD outline** section-by-section.
+
+
+
+---
+Powered by [ChatGPT Exporter](https://www.chatgptexporter.com)

@@ -1,0 +1,3089 @@
+---
+title: "Voice by aiConnected — System Architecture Overview voice by aiconnected — system architecture overview"
+description: "Document Information & 123; document information& 125; Field Value : : Document ID ARCH 001 Version 1.0 Last Updated 2026 01 16 ..."
+---
+<Info>
+Normalized for Mintlify from `knowledge-base/aiconnected-apps-and-modules/modules/aiConnected-voice/system-architecture.mdx`.
+</Info>
+# Voice by aiConnected — System Architecture Overview &#123;#voice-by-aiconnected-—-system-architecture-overview&#125;
+
+## Document Information &#123;#document-information&#125;
+
+| Field | Value |
+| :---- | :---- |
+| **Document ID** | ARCH-001 |
+| **Version** | 1.0 |
+| **Last Updated** | 2026-01-16 |
+| **Status** | Draft |
+| **Owner** | Engineering |
+
+---
+
+## Table of Contents &#123;#table-of-contents&#125;
+
+[Voice by aiConnected — System Architecture Overview](#voice-by-aiconnected-—-system-architecture-overview)
+
+[Document Information](#document-information)
+
+[Table of Contents](#table-of-contents)
+
+[1\. Introduction](#1.-introduction)
+
+[1.1 Purpose](#1.1-purpose)
+
+[1.2 Scope](#1.2-scope)
+
+[1.3 Architecture Principles](#1.3-architecture-principles)
+
+[1.4 Terminology](#1.4-terminology)
+
+[2\. System Overview](#2.-system-overview)
+
+[2.1 What the System Does](#2.1-what-the-system-does)
+
+[2.2 High-Level Architecture Diagram](#2.2-high-level-architecture-diagram)
+
+[2.3 Component Summary](#2.3-component-summary)
+
+[3\. Component Architecture](#3.-component-architecture)
+
+[3.1 API Gateway](#3.1-api-gateway)
+
+[3.1.1 Overview](#3.1.1-overview)
+
+[3.1.2 Responsibilities](#3.1.2-responsibilities)
+
+[3.1.3 Architecture](#3.1.3-architecture)
+
+[3.1.4 Key Endpoints](#3.1.4-key-endpoints)
+
+[3.1.5 Configuration](#3.1.5-configuration)
+
+[3.2 WebRTC Bridge](#3.2-webrtc-bridge)
+
+[3.2.1 Overview](#3.2.1-overview)
+
+[3.2.2 Responsibilities](#3.2.2-responsibilities)
+
+[3.2.3 Architecture](#3.2.3-architecture)
+
+[3.2.4 Audio Flow](#3.2.4-audio-flow)
+
+[3.2.5 Call State Machine](#3.2.5-call-state-machine)
+
+[3.2.6 Configuration](#3.2.6-configuration)
+
+[3.3 Agent Service](#3.3-agent-service)
+
+[3.3.1 Overview](#3.3.1-overview)
+
+[3.3.2 Responsibilities](#3.3.2-responsibilities)
+
+[3.3.3 Architecture](#3.3.3-architecture)
+
+[3.3.4 Voice Pipeline Detail](#3.3.4-voice-pipeline-detail)
+
+[3.3.5 Configuration](#3.3.5-configuration)
+
+[3.4 Worker Service](#3.4-worker-service)
+
+[3.4.1 Overview](#3.4.1-overview)
+
+[3.4.2 Responsibilities](#3.4.2-responsibilities)
+
+[3.4.3 Architecture](#3.4.3-architecture)
+
+[3.4.4 Task Definitions](#3.4.4-task-definitions)
+
+[3.4.5 Configuration](#3.4.5-configuration)
+
+[3.5 Chatterbox TTS Service](#3.5-chatterbox-tts-service)
+
+[3.5.1 Overview](#3.5.1-overview)
+
+[3.5.2 Responsibilities](#3.5.2-responsibilities)
+
+[3.5.3 Architecture](#3.5.3-architecture)
+
+[3.5.4 API Endpoints](#3.5.4-api-endpoints)
+
+[3.5.5 Configuration](#3.5.5-configuration)
+
+[4\. Data Flow Architecture](#4.-data-flow-architecture)
+
+[4.1 Inbound Call Flow](#4.1-inbound-call-flow)
+
+[4.2 Outbound Call Flow](#4.2-outbound-call-flow)
+
+[4.3 Transfer Flow](#4.3-transfer-flow)
+
+[4.4 Tool Calling Flow](#4.4-tool-calling-flow)
+
+[5\. Service Boundaries](#5.-service-boundaries)
+
+[5.1 Service Responsibility Matrix](#5.1-service-responsibility-matrix)
+
+[5.2 Service Communication](#5.2-service-communication)
+
+[5.3 Event Catalog](#5.3-event-catalog)
+
+[5.4 API Contracts Between Services](#5.4-api-contracts-between-services)
+
+[5.4.1 WebRTC Bridge → Agent Service](#5.4.1-webrtc-bridge-→-agent-service)
+
+[5.4.2 Agent Service → WebRTC Bridge](#5.4.2-agent-service-→-webrtc-bridge)
+
+[5.4.3 Agent Service → Chatterbox TTS](#5.4.3-agent-service-→-chatterbox-tts)
+
+[6\. Network Topology](#6.-network-topology)
+
+[6.1 Network Diagram](#6.1-network-diagram)
+
+[6.2 Port Matrix](#6.2-port-matrix)
+
+[6.3 Firewall Rules](#6.3-firewall-rules)
+
+[6.4 DNS Configuration](#6.4-dns-configuration)
+
+[7\. External Service Dependencies](#7.-external-service-dependencies)
+
+[7.1 Dependency Map](#7.1-dependency-map)
+
+[7.2 Service Level Objectives](#7.2-service-level-objectives)
+
+[7.3 Authentication and Credentials](#7.3-authentication-and-credentials)
+
+[7.4 Rate Limits](#7.4-rate-limits)
+
+[8\. Internal Service Architecture](#8.-internal-service-architecture)
+
+[8.1 Service Template](#8.1-service-template)
+
+[8.2 Shared Libraries](#8.2-shared-libraries)
+
+[8.3 Configuration Management](#8.3-configuration-management)
+
+[9\. Data Architecture](#9.-data-architecture)
+
+[9.1 Database Schema Overview](#9.1-database-schema-overview)
+
+[9.2 Core Tables](#9.2-core-tables)
+
+[tenants](#tenants)
+
+[agents](#agents)
+
+[calls](#calls)
+
+[transcripts](#transcripts)
+
+[9.3 Redis Data Structures](#9.3-redis-data-structures)
+
+[9.4 Data Retention Policy](#9.4-data-retention-policy)
+
+[10\. Security Architecture](#10.-security-architecture)
+
+[10.1 Security Layers](#10.1-security-layers)
+
+[10.2 Authentication Flow](#10.2-authentication-flow)
+
+[10.3 Data Encryption](#10.3-data-encryption)
+
+[11\. Scalability Architecture](#11.-scalability-architecture)
+
+[11.1 Horizontal Scaling Strategy](#11.1-horizontal-scaling-strategy)
+
+[11.2 Capacity Planning](#11.2-capacity-planning)
+
+[11.3 Auto-Scaling Configuration](#11.3-auto-scaling-configuration)
+
+[12\. Failure Modes and Recovery](#12.-failure-modes-and-recovery)
+
+[12.1 Failure Scenarios](#12.1-failure-scenarios)
+
+[12.2 Circuit Breaker Configuration](#12.2-circuit-breaker-configuration)
+
+[12.3 Graceful Degradation Hierarchy](#12.3-graceful-degradation-hierarchy)
+
+[13\. Monitoring and Observability](#13.-monitoring-and-observability)
+
+[13.1 Metrics Architecture](#13.1-metrics-architecture)
+
+[13.2 Key Metrics](#13.2-key-metrics)
+
+[13.3 Logging Strategy](#13.3-logging-strategy)
+
+[13.4 Alerting Rules](#13.4-alerting-rules)
+
+[14\. Deployment Architecture](#14.-deployment-architecture)
+
+[14.1 Container Architecture](#14.1-container-architecture)
+
+[14.2 Dokploy Configuration](#14.2-dokploy-configuration)
+
+[14.3 Environment Promotion](#14.3-environment-promotion)
+
+[15\. Architecture Decision Records](#15.-architecture-decision-records)
+
+[ADR-001: Use GoToConnect for Telephony](#adr-001:-use-gotoconnect-for-telephony)
+
+[ADR-002: Use LiveKit for Real-Time Audio](#adr-002:-use-livekit-for-real-time-audio)
+
+[ADR-003: Self-Host TTS on RunPod](#adr-003:-self-host-tts-on-runpod)
+
+[ADR-004: Use Redis for Call State](#adr-004:-use-redis-for-call-state)
+
+[ADR-005: PostgreSQL for Persistent Data](#adr-005:-postgresql-for-persistent-data)
+
+[Appendix A: Glossary](#appendix-a:-glossary)
+
+[Appendix B: Document History](#appendix-b:-document-history)
+
+---
+
+## 1\. Introduction &#123;#1.-introduction&#125;
+
+### 1.1 Purpose &#123;#1.1-purpose&#125;
+
+This document provides a comprehensive technical overview of the Voice by aiConnected platform architecture. It serves as the authoritative reference for understanding how the system is structured, how components interact, and the rationale behind key architectural decisions.
+
+This document is intended for:
+
+- Engineers implementing the system  
+- Technical reviewers evaluating the architecture  
+- Operations teams deploying and maintaining the platform  
+- Future maintainers who need to understand the system design
+
+### 1.2 Scope &#123;#1.2-scope&#125;
+
+This document covers:
+
+- High-level system architecture and component relationships  
+- Detailed data flows for all major operations  
+- Service boundaries and responsibilities  
+- Network topology and communication patterns  
+- Integration points with external services  
+- Scalability and reliability considerations
+
+This document does not cover:
+
+- Detailed API specifications (see Document ARCH-023: API Specification)  
+- Implementation-level code design (see individual service documents)  
+- Operational procedures (see Document OPS-025: Deployment Runbook)
+
+### 1.3 Architecture Principles &#123;#1.3-architecture-principles&#125;
+
+The Voice by aiConnected architecture is guided by the following principles:
+
+**1\. Latency is King** Every architectural decision prioritizes minimizing end-to-end latency. Voice conversations require sub-second response times to feel natural. We stream everything, avoid batching, and minimize network hops.
+
+**2\. Graceful Degradation** The system must continue operating when components fail. Each service has fallback behaviors, and partial functionality is preferred over complete failure.
+
+**3\. Horizontal Scalability** The system scales by adding instances, not by making instances larger. State is externalized to shared stores (PostgreSQL, Redis) so any instance can handle any request.
+
+**4\. Tenant Isolation** Multiple businesses share the same infrastructure, but their data and configurations are strictly isolated. A failure or misconfiguration for one tenant must not affect others.
+
+**5\. Observable by Default** Every component emits metrics, logs, and traces. We can understand system behavior in production without deploying debugging code.
+
+**6\. Infrastructure Ownership Where It Matters** We own infrastructure for components where it provides cost or capability advantages (TTS), but use managed services where operational burden outweighs benefits (telephony routing, real-time audio).
+
+### 1.4 Terminology &#123;#1.4-terminology&#125;
+
+| Term | Definition |
+| :---- | :---- |
+| **Tenant** | A business customer using the platform |
+| **Agent** | An AI configuration for a specific use case (e.g., "Appointment Scheduler") |
+| **Call** | A single phone conversation, inbound or outbound |
+| **Session** | The runtime state of an active call |
+| **Pipeline** | The STT → LLM → TTS processing chain |
+| **Bridge** | The component connecting GoToConnect to LiveKit |
+| **Room** | A LiveKit virtual space where call participants connect |
+| **Turn** | One speaker's contribution to a conversation |
+| **Barge-in** | When a caller interrupts the AI mid-speech |
+
+---
+
+## 2\. System Overview &#123;#2.-system-overview&#125;
+
+### 2.1 What the System Does &#123;#2.1-what-the-system-does&#125;
+
+Voice by aiConnected is a multi-tenant Voice AI platform that enables businesses to deploy AI agents capable of handling phone conversations. The system:
+
+1. **Receives phone calls** via integration with GoToConnect PBX  
+2. **Transcribes speech** using Deepgram's streaming STT  
+3. **Generates responses** using Anthropic's Claude LLM  
+4. **Synthesizes speech** using self-hosted Chatterbox TTS  
+5. **Executes actions** via webhook-based tool calling  
+6. **Transfers calls** to human agents when appropriate  
+7. **Tracks usage** for billing and analytics
+
+### 2.2 High-Level Architecture Diagram &#123;#2.2-high-level-architecture-diagram&#125;
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│                                                                                         │
+│                              VOICE BY AICONNECTED                                       │
+│                              SYSTEM ARCHITECTURE                                        │
+│                                                                                         │
+├─────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                         │
+│  ┌─────────────────────────────────────────────────────────────────────────────────┐   │
+│  │                           EXTERNAL LAYER                                        │   │
+│  │                                                                                 │   │
+│  │   ┌─────────┐    ┌─────────┐    ┌─────────┐    ┌─────────┐    ┌─────────┐     │   │
+│  │   │  PSTN   │    │   GoTo  │    │ LiveKit │    │Deepgram │    │Anthropic│     │   │
+│  │   │Callers  │───▶│Connect  │    │  Cloud  │    │   API   │    │   API   │     │   │
+│  │   └─────────┘    └────┬────┘    └────┬────┘    └────┬────┘    └────┬────┘     │   │
+│  │                       │              │              │              │          │   │
+│  └───────────────────────┼──────────────┼──────────────┼──────────────┼──────────┘   │
+│                          │              │              │              │              │
+│  ┌───────────────────────┼──────────────┼──────────────┼──────────────┼──────────┐   │
+│  │                       │    PLATFORM LAYER           │              │          │   │
+│  │                       │              │              │              │          │   │
+│  │   ┌───────────────────▼──────────────▼──────────────┴──────────────┴────┐    │   │
+│  │   │                                                                      │    │   │
+│  │   │                        DIGITALOCEAN / DOKPLOY                        │    │   │
+│  │   │                                                                      │    │   │
+│  │   │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐               │    │   │
+│  │   │  │     API      │  │    WebRTC    │  │    Agent     │               │    │   │
+│  │   │  │   Gateway    │  │    Bridge    │  │   Service    │               │    │   │
+│  │   │  │  (FastAPI)   │  │   (aiortc)   │  │  (LiveKit)   │               │    │   │
+│  │   │  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘               │    │   │
+│  │   │         │                 │                 │                        │    │   │
+│  │   │         │                 │                 │                        │    │   │
+│  │   │  ┌──────▼─────────────────▼─────────────────▼───────┐               │    │   │
+│  │   │  │                  EVENT BUS                        │               │    │   │
+│  │   │  │                   (Redis)                         │               │    │   │
+│  │   │  └──────┬─────────────────┬─────────────────┬───────┘               │    │   │
+│  │   │         │                 │                 │                        │    │   │
+│  │   │  ┌──────▼───────┐  ┌──────▼───────┐  ┌──────▼───────┐               │    │   │
+│  │   │  │    Worker    │  │  PostgreSQL  │  │    Redis     │               │    │   │
+│  │   │  │   Service    │  │  (Database)  │  │   (Cache)    │               │    │   │
+│  │   │  └──────────────┘  └──────────────┘  └──────────────┘               │    │   │
+│  │   │                                                                      │    │   │
+│  │   └──────────────────────────────────────────────────────────────────────┘    │   │
+│  │                                                                               │   │
+│  └───────────────────────────────────────────────────────────────────────────────┘   │
+│                                                                                       │
+│  ┌───────────────────────────────────────────────────────────────────────────────┐   │
+│  │                           GPU LAYER (RUNPOD)                                  │   │
+│  │                                                                               │   │
+│  │   ┌─────────────────────────────────────────────────────────────────────┐    │   │
+│  │   │                      CHATTERBOX TTS                                  │    │   │
+│  │   │                      (RTX A5000)                                     │    │   │
+│  │   └─────────────────────────────────────────────────────────────────────┘    │   │
+│  │                                                                               │   │
+│  └───────────────────────────────────────────────────────────────────────────────┘   │
+│                                                                                       │
+│  ┌───────────────────────────────────────────────────────────────────────────────┐   │
+│  │                         INTEGRATION LAYER                                     │   │
+│  │                                                                               │   │
+│  │   ┌─────────┐    ┌─────────┐    ┌─────────┐    ┌─────────┐                   │   │
+│  │   │   n8n   │    │Knowledge│    │   CRM   │    │Calendar │                   │   │
+│  │   │Webhooks │    │  Base   │    │  APIs   │    │  APIs   │                   │   │
+│  │   └─────────┘    └─────────┘    └─────────┘    └─────────┘                   │   │
+│  │                                                                               │   │
+│  └───────────────────────────────────────────────────────────────────────────────┘   │
+│                                                                                       │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 2.3 Component Summary &#123;#2.3-component-summary&#125;
+
+| Component | Technology | Location | Purpose |
+| :---- | :---- | :---- | :---- |
+| API Gateway | FastAPI | DigitalOcean | Public API, authentication, routing |
+| WebRTC Bridge | Python/aiortc | DigitalOcean | GoToConnect ↔ LiveKit audio bridging |
+| Agent Service | Python/LiveKit SDK | DigitalOcean | AI conversation management |
+| Worker Service | Python/Celery | DigitalOcean | Background job processing |
+| PostgreSQL | PostgreSQL 15 | DigitalOcean | Relational data storage |
+| Redis | Redis 7 | DigitalOcean | Cache, state, pub/sub |
+| Chatterbox TTS | Python/PyTorch | RunPod (A5000) | Speech synthesis |
+| GoToConnect | SaaS | External | Telephony/PBX |
+| LiveKit Cloud | SaaS | External | Real-time audio infrastructure |
+| Deepgram | SaaS | External | Speech-to-text |
+| Anthropic | SaaS | External | LLM (Claude) |
+
+---
+
+## 3\. Component Architecture &#123;#3.-component-architecture&#125;
+
+### 3.1 API Gateway &#123;#3.1-api-gateway&#125;
+
+#### 3.1.1 Overview &#123;#3.1.1-overview&#125;
+
+The API Gateway is the public-facing entry point for all HTTP traffic. It handles authentication, request routing, rate limiting, and serves as the control plane for tenant and agent management.
+
+#### 3.1.2 Responsibilities &#123;#3.1.2-responsibilities&#125;
+
+- **Authentication**: Validate API keys, issue and verify JWT tokens  
+- **Authorization**: Enforce tenant-scoped access control  
+- **Request Routing**: Direct requests to appropriate internal services  
+- **Rate Limiting**: Protect against abuse and ensure fair resource allocation  
+- **Request Validation**: Validate payloads against OpenAPI schemas  
+- **Response Formatting**: Ensure consistent API response structure  
+- **Audit Logging**: Record all API operations for compliance
+
+#### 3.1.3 Architecture &#123;#3.1.3-architecture&#125;
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                              API GATEWAY                                    │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │                         MIDDLEWARE STACK                             │   │
+│  │                                                                      │   │
+│  │  Request ──▶ [CORS] ──▶ [Auth] ──▶ [RateLimit] ──▶ [Tenant] ──▶ ... │   │
+│  │                                                                      │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+│                                                                             │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │                           ROUTERS                                    │   │
+│  │                                                                      │   │
+│  │  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐            │   │
+│  │  │ /tenants │  │ /agents  │  │  /calls  │  │ /webhooks│            │   │
+│  │  └──────────┘  └──────────┘  └──────────┘  └──────────┘            │   │
+│  │                                                                      │   │
+│  │  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐            │   │
+│  │  │ /voices  │  │ /numbers │  │  /usage  │  │ /health  │            │   │
+│  │  └──────────┘  └──────────┘  └──────────┘  └──────────┘            │   │
+│  │                                                                      │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+│                                                                             │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │                        DEPENDENCIES                                  │   │
+│  │                                                                      │   │
+│  │  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐            │   │
+│  │  │    DB    │  │  Redis   │  │  Event   │  │  Config  │            │   │
+│  │  │ Session  │  │  Client  │  │   Bus    │  │  Store   │            │   │
+│  │  └──────────┘  └──────────┘  └──────────┘  └──────────┘            │   │
+│  │                                                                      │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+#### 3.1.4 Key Endpoints &#123;#3.1.4-key-endpoints&#125;
+
+| Endpoint | Method | Purpose |
+| :---- | :---- | :---- |
+| `/v1/agents` | GET, POST | List and create AI agents |
+| `/v1/agents/{id}` | GET, PUT, DELETE | Manage specific agent |
+| `/v1/calls` | GET, POST | List calls and initiate outbound calls |
+| `/v1/calls/{id}` | GET | Get call details and transcript |
+| `/v1/calls/{id}/transfer` | POST | Initiate call transfer |
+| `/v1/numbers` | GET, POST | Manage phone number assignments |
+| `/v1/voices` | GET, POST | Manage voice configurations |
+| `/v1/usage` | GET | Retrieve usage metrics for billing |
+| `/v1/webhooks` | GET, POST | Configure webhook endpoints |
+| `/health` | GET | Health check endpoint |
+
+#### 3.1.5 Configuration &#123;#3.1.5-configuration&#125;
+
+```
+api_gateway:
+  host: 0.0.0.0
+  port: 8000
+  workers: 4
+  
+  cors:
+    allowed_origins:
+      - "https://app.aiconnected.io"
+      - "https://admin.aiconnected.io"
+    allowed_methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+    allowed_headers: ["Authorization", "Content-Type", "X-Request-ID"]
+  
+  rate_limiting:
+    default_limit: 100  # requests per minute
+    burst_limit: 20     # concurrent requests
+    by_tenant: true     # limits applied per tenant
+  
+  authentication:
+    api_key_header: "X-API-Key"
+    jwt_algorithm: "HS256"
+    jwt_expiry_minutes: 60
+```
+
+---
+
+### 3.2 WebRTC Bridge &#123;#3.2-webrtc-bridge&#125;
+
+#### 3.2.1 Overview &#123;#3.2.1-overview&#125;
+
+The WebRTC Bridge is the critical component that connects the traditional telephone network (via GoToConnect) to the real-time AI processing infrastructure (via LiveKit). It handles bidirectional audio streaming, protocol translation, and call lifecycle management.
+
+#### 3.2.2 Responsibilities &#123;#3.2.2-responsibilities&#125;
+
+- **WebRTC Signaling**: Handle SDP offer/answer exchange with GoToConnect  
+- **Audio Reception**: Receive audio frames from GoToConnect WebRTC connection  
+- **Audio Transmission**: Send synthesized audio back to GoToConnect  
+- **LiveKit Integration**: Publish and subscribe to audio tracks in LiveKit rooms  
+- **Call Control**: Execute transfers, holds, and other call control operations  
+- **State Management**: Maintain call state and handle state transitions
+
+#### 3.2.3 Architecture &#123;#3.2.3-architecture&#125;
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                             WEBRTC BRIDGE                                   │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │                     GOTOCONNECT INTERFACE                            │   │
+│  │                                                                      │   │
+│  │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐               │   │
+│  │  │   WebRTC     │  │  Call Event  │  │ Call Control │               │   │
+│  │  │  Signaling   │  │  Subscriber  │  │    Client    │               │   │
+│  │  │   Handler    │  │  (WebSocket) │  │   (REST)     │               │   │
+│  │  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘               │   │
+│  │         │                 │                 │                        │   │
+│  └─────────┼─────────────────┼─────────────────┼────────────────────────┘   │
+│            │                 │                 │                            │
+│  ┌─────────▼─────────────────▼─────────────────▼────────────────────────┐   │
+│  │                        BRIDGE CORE                                   │   │
+│  │                                                                      │   │
+│  │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐               │   │
+│  │  │  Connection  │  │    Audio     │  │    State     │               │   │
+│  │  │   Manager    │  │   Pipeline   │  │   Machine    │               │   │
+│  │  └──────────────┘  └──────────────┘  └──────────────┘               │   │
+│  │                                                                      │   │
+│  │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐               │   │
+│  │  │    Codec     │  │   Resampler  │  │    Buffer    │               │   │
+│  │  │   Handler    │  │              │  │   Manager    │               │   │
+│  │  └──────────────┘  └──────────────┘  └──────────────┘               │   │
+│  │                                                                      │   │
+│  └─────────┬─────────────────┬─────────────────┬────────────────────────┘   │
+│            │                 │                 │                            │
+│  ┌─────────▼─────────────────▼─────────────────▼────────────────────────┐   │
+│  │                      LIVEKIT INTERFACE                               │   │
+│  │                                                                      │   │
+│  │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐               │   │
+│  │  │    Room      │  │    Track     │  │   Participant│               │   │
+│  │  │   Manager    │  │  Publisher   │  │   Manager    │               │   │
+│  │  └──────────────┘  └──────────────┘  └──────────────┘               │   │
+│  │                                                                      │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+#### 3.2.4 Audio Flow &#123;#3.2.4-audio-flow&#125;
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           AUDIO FLOW DETAIL                                 │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  INBOUND (Caller → AI):                                                     │
+│                                                                             │
+│    GoToConnect        Bridge              LiveKit            Agent          │
+│         │                │                   │                 │            │
+│         │  Opus/48kHz    │                   │                 │            │
+│         │───────────────▶│                   │                 │            │
+│         │                │  Decode Opus      │                 │            │
+│         │                │  ────────────▶    │                 │            │
+│         │                │  Resample if      │                 │            │
+│         │                │  needed           │                 │            │
+│         │                │  ────────────▶    │                 │            │
+│         │                │  Encode Opus      │                 │            │
+│         │                │  ────────────▶    │                 │            │
+│         │                │                   │                 │            │
+│         │                │  Publish Track    │                 │            │
+│         │                │──────────────────▶│                 │            │
+│         │                │                   │  Subscribe      │            │
+│         │                │                   │────────────────▶│            │
+│         │                │                   │                 │            │
+│                                                                             │
+│  OUTBOUND (AI → Caller):                                                    │
+│                                                                             │
+│    Agent              LiveKit            Bridge           GoToConnect       │
+│         │                │                   │                 │            │
+│         │  Publish Track │                   │                 │            │
+│         │───────────────▶│                   │                 │            │
+│         │                │  Subscribe        │                 │            │
+│         │                │──────────────────▶│                 │            │
+│         │                │                   │  Decode Opus    │            │
+│         │                │                   │  ────────────▶  │            │
+│         │                │                   │  Resample if    │            │
+│         │                │                   │  needed         │            │
+│         │                │                   │  ────────────▶  │            │
+│         │                │                   │  Encode Opus    │            │
+│         │                │                   │  ────────────▶  │            │
+│         │                │                   │                 │            │
+│         │                │                   │  Send via       │            │
+│         │                │                   │  WebRTC         │            │
+│         │                │                   │────────────────▶│            │
+│         │                │                   │                 │            │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+#### 3.2.5 Call State Machine &#123;#3.2.5-call-state-machine&#125;
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                          CALL STATE MACHINE                                 │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│                              ┌───────────┐                                  │
+│                              │  INITIAL  │                                  │
+│                              └─────┬─────┘                                  │
+│                                    │                                        │
+│                    ┌───────────────┴───────────────┐                       │
+│                    │                               │                        │
+│                    ▼                               ▼                        │
+│             ┌───────────┐                   ┌───────────┐                   │
+│             │  RINGING  │                   │  DIALING  │                   │
+│             │ (inbound) │                   │ (outbound)│                   │
+│             └─────┬─────┘                   └─────┬─────┘                   │
+│                   │                               │                         │
+│                   │ answer                        │ connect                 │
+│                   │                               │                         │
+│                   └───────────────┬───────────────┘                        │
+│                                   │                                         │
+│                                   ▼                                         │
+│                            ┌───────────┐                                    │
+│                            │ CONNECTED │                                    │
+│                            └─────┬─────┘                                    │
+│                                  │                                          │
+│                                  │ agent_joined                             │
+│                                  │                                          │
+│                                  ▼                                          │
+│                           ┌────────────┐                                    │
+│                           │ CONVERSING │◀──────────────────┐               │
+│                           └──────┬─────┘                   │               │
+│                                  │                         │               │
+│              ┌───────────────────┼───────────────────┐     │               │
+│              │                   │                   │     │               │
+│              ▼                   ▼                   ▼     │               │
+│       ┌───────────┐       ┌───────────┐       ┌───────────┐│               │
+│       │  ON_HOLD  │       │TRANSFERRING       │   ERROR   ││               │
+│       └─────┬─────┘       └─────┬─────┘       └─────┬─────┘│               │
+│             │                   │                   │      │               │
+│             │ resume            │                   │      │               │
+│             │                   │                   │      │               │
+│             └───────────────────┴───────────────────┘      │               │
+│                                 │                          │               │
+│                                 │ transfer_complete        │               │
+│                                 │ (to different agent)     │               │
+│                                 │                          │               │
+│                                 └──────────────────────────┘               │
+│                                                                             │
+│                                                                             │
+│              All states can transition to ENDED:                            │
+│                                                                             │
+│                            ┌───────────┐                                    │
+│                            │   ENDED   │                                    │
+│                            └───────────┘                                    │
+│                                                                             │
+│  Triggers: hangup, timeout, error, transfer_to_human                        │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+#### 3.2.6 Configuration &#123;#3.2.6-configuration&#125;
+
+```
+webrtc_bridge:
+  host: 0.0.0.0
+  port: 8001
+  
+  gotoconnect:
+    api_base_url: "https://api.goto.com"
+    websocket_url: "wss://realtime.goto.com"
+    oauth:
+      client_id: "${GOTO_CLIENT_ID}"
+      client_secret: "${GOTO_CLIENT_SECRET}"
+      scopes:
+        - "webrtc.v1.write"
+        - "call-events.v1.notifications.manage"
+        - "call-control.v1.calls.write"
+    
+  livekit:
+    url: "${LIVEKIT_URL}"
+    api_key: "${LIVEKIT_API_KEY}"
+    api_secret: "${LIVEKIT_API_SECRET}"
+  
+  audio:
+    input_sample_rate: 48000
+    output_sample_rate: 48000
+    channels: 1
+    frame_duration_ms: 20
+    codec: "opus"
+  
+  timeouts:
+    call_setup_timeout_seconds: 30
+    idle_timeout_seconds: 300
+    max_call_duration_seconds: 3600
+```
+
+---
+
+### 3.3 Agent Service &#123;#3.3-agent-service&#125;
+
+#### 3.3.1 Overview &#123;#3.3.1-overview&#125;
+
+The Agent Service hosts the AI agents that participate in phone conversations. It uses the LiveKit Agents SDK to manage the voice pipeline (STT → LLM → TTS) and handles conversation logic, tool calling, and transfer decisions.
+
+#### 3.3.2 Responsibilities &#123;#3.3.2-responsibilities&#125;
+
+- **Agent Lifecycle**: Spawn, manage, and terminate AI agent instances  
+- **Voice Pipeline**: Orchestrate STT, LLM, and TTS components  
+- **Conversation Management**: Maintain conversation context and history  
+- **Tool Execution**: Handle function calling and webhook dispatch  
+- **Transfer Logic**: Determine when and how to transfer to humans  
+- **Interruption Handling**: Manage barge-in and conversation flow
+
+#### 3.3.3 Architecture &#123;#3.3.3-architecture&#125;
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                            AGENT SERVICE                                    │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │                       AGENT MANAGER                                  │   │
+│  │                                                                      │   │
+│  │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐               │   │
+│  │  │    Agent     │  │    Agent     │  │    Agent     │               │   │
+│  │  │   Factory    │  │    Pool      │  │   Registry   │               │   │
+│  │  └──────────────┘  └──────────────┘  └──────────────┘               │   │
+│  │                                                                      │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+│                                                                             │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │                        AGENT INSTANCE                                │   │
+│  │                                                                      │   │
+│  │  ┌─────────────────────────────────────────────────────────────┐    │   │
+│  │  │                    VOICE PIPELINE                            │    │   │
+│  │  │                                                              │    │   │
+│  │  │  ┌─────────┐    ┌─────────┐    ┌─────────┐    ┌─────────┐  │    │   │
+│  │  │  │   VAD   │───▶│   STT   │───▶│   LLM   │───▶│   TTS   │  │    │   │
+│  │  │  │         │    │(Deepgram│    │(Claude) │    │(Chatter │  │    │   │
+│  │  │  │         │    │         │    │         │    │  box)   │  │    │   │
+│  │  │  └─────────┘    └─────────┘    └─────────┘    └─────────┘  │    │   │
+│  │  │                                                              │    │   │
+│  │  └─────────────────────────────────────────────────────────────┘    │   │
+│  │                                                                      │   │
+│  │  ┌─────────────────────────────────────────────────────────────┐    │   │
+│  │  │                  CONVERSATION ENGINE                         │    │   │
+│  │  │                                                              │    │   │
+│  │  │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐       │    │   │
+│  │  │  │   Context    │  │    Tool      │  │   Transfer   │       │    │   │
+│  │  │  │   Manager    │  │   Handler    │  │   Decision   │       │    │   │
+│  │  │  └──────────────┘  └──────────────┘  └──────────────┘       │    │   │
+│  │  │                                                              │    │   │
+│  │  │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐       │    │   │
+│  │  │  │  Knowledge   │  │  Interrupt   │  │   Greeting   │       │    │   │
+│  │  │  │    Base      │  │   Handler    │  │   Handler    │       │    │   │
+│  │  │  └──────────────┘  └──────────────┘  └──────────────┘       │    │   │
+│  │  │                                                              │    │   │
+│  │  └─────────────────────────────────────────────────────────────┘    │   │
+│  │                                                                      │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+│                                                                             │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │                      LIVEKIT INTEGRATION                             │   │
+│  │                                                                      │   │
+│  │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐               │   │
+│  │  │    Room      │  │    Track     │  │    Event     │               │   │
+│  │  │   Handler    │  │   Handler    │  │   Handler    │               │   │
+│  │  └──────────────┘  └──────────────┘  └──────────────┘               │   │
+│  │                                                                      │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+#### 3.3.4 Voice Pipeline Detail &#123;#3.3.4-voice-pipeline-detail&#125;
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                        VOICE PIPELINE DETAIL                                │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  Audio Input (from LiveKit)                                                 │
+│       │                                                                     │
+│       ▼                                                                     │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │                    VOICE ACTIVITY DETECTION                          │   │
+│  │                                                                      │   │
+│  │  - Silero VAD model                                                  │   │
+│  │  - Detects speech start/end                                          │   │
+│  │  - Triggers pipeline stages                                          │   │
+│  │  - Handles barge-in detection                                        │   │
+│  │                                                                      │   │
+│  └───────────────────────────────┬─────────────────────────────────────┘   │
+│                                  │                                          │
+│                                  ▼                                          │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │                    SPEECH-TO-TEXT (Deepgram)                         │   │
+│  │                                                                      │   │
+│  │  - Streaming transcription                                           │   │
+│  │  - Interim results for early processing                              │   │
+│  │  - Final results trigger LLM                                         │   │
+│  │  - Language: en-US                                                   │   │
+│  │  - Model: nova-2                                                     │   │
+│  │                                                                      │   │
+│  └───────────────────────────────┬─────────────────────────────────────┘   │
+│                                  │                                          │
+│                                  ▼                                          │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │                    CONTEXT ASSEMBLY                                  │   │
+│  │                                                                      │   │
+│  │  - System prompt (agent configuration)                               │   │
+│  │  - Knowledge base retrieval (RAG)                                    │   │
+│  │  - Conversation history                                              │   │
+│  │  - Tool definitions                                                  │   │
+│  │  - Current user message                                              │   │
+│  │                                                                      │   │
+│  └───────────────────────────────┬─────────────────────────────────────┘   │
+│                                  │                                          │
+│                                  ▼                                          │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │                    LARGE LANGUAGE MODEL (Claude)                     │   │
+│  │                                                                      │   │
+│  │  - Streaming response generation                                     │   │
+│  │  - Function calling for tools                                        │   │
+│  │  - Model: claude-sonnet-4-20250514                                   │   │
+│  │  - Temperature: 0.7                                                  │   │
+│  │  - Max tokens: 1024                                                  │   │
+│  │                                                                      │   │
+│  └───────────────────────────────┬─────────────────────────────────────┘   │
+│                                  │                                          │
+│                    ┌─────────────┴─────────────┐                           │
+│                    │                           │                            │
+│                    ▼                           ▼                            │
+│  ┌──────────────────────────┐   ┌──────────────────────────┐               │
+│  │      TEXT RESPONSE       │   │      TOOL CALL           │               │
+│  │                          │   │                          │               │
+│  │  - Token buffering       │   │  - Extract function      │               │
+│  │  - Sentence detection    │   │  - Execute via webhook   │               │
+│  │  - TTS dispatch          │   │  - Inject result         │               │
+│  │                          │   │  - Continue generation   │               │
+│  └────────────┬─────────────┘   └──────────────────────────┘               │
+│               │                                                             │
+│               ▼                                                             │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │                    TEXT-TO-SPEECH (Chatterbox)                       │   │
+│  │                                                                      │   │
+│  │  - Streaming synthesis                                               │   │
+│  │  - Voice cloning support                                             │   │
+│  │  - Paralinguistic tags ([laugh], [cough])                            │   │
+│  │  - Model: Chatterbox-Turbo                                           │   │
+│  │                                                                      │   │
+│  └───────────────────────────────┬─────────────────────────────────────┘   │
+│                                  │                                          │
+│                                  ▼                                          │
+│                         Audio Output (to LiveKit)                           │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+#### 3.3.5 Configuration &#123;#3.3.5-configuration&#125;
+
+```
+agent_service:
+  host: 0.0.0.0
+  port: 8002
+  
+  livekit:
+    url: "${LIVEKIT_URL}"
+    api_key: "${LIVEKIT_API_KEY}"
+    api_secret: "${LIVEKIT_API_SECRET}"
+  
+  stt:
+    provider: "deepgram"
+    model: "nova-2"
+    language: "en-US"
+    interim_results: true
+    punctuate: true
+    smart_format: true
+  
+  llm:
+    provider: "anthropic"
+    model: "claude-sonnet-4-20250514"
+    temperature: 0.7
+    max_tokens: 1024
+    streaming: true
+  
+  tts:
+    provider: "chatterbox"
+    endpoint: "${CHATTERBOX_URL}"
+    model: "turbo"
+    default_voice_id: "default_female_1"
+  
+  vad:
+    model: "silero"
+    threshold: 0.5
+    min_speech_duration_ms: 250
+    min_silence_duration_ms: 300
+  
+  conversation:
+    max_history_tokens: 8000
+    summarize_after_turns: 20
+    greeting_enabled: true
+    transfer_enabled: true
+  
+  tools:
+    webhook_timeout_seconds: 10
+    max_concurrent_tools: 3
+```
+
+---
+
+### 3.4 Worker Service &#123;#3.4-worker-service&#125;
+
+#### 3.4.1 Overview &#123;#3.4.1-overview&#125;
+
+The Worker Service handles asynchronous background jobs that don't need to happen in real-time. This includes usage aggregation, transcript processing, webhook retries, and scheduled tasks.
+
+#### 3.4.2 Responsibilities &#123;#3.4.2-responsibilities&#125;
+
+- **Usage Aggregation**: Compile per-tenant usage statistics for billing  
+- **Transcript Processing**: Post-process and store call transcripts  
+- **Webhook Delivery**: Retry failed webhook deliveries  
+- **Scheduled Tasks**: Execute periodic maintenance jobs  
+- **Report Generation**: Generate usage reports and analytics
+
+#### 3.4.3 Architecture &#123;#3.4.3-architecture&#125;
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           WORKER SERVICE                                    │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │                        TASK QUEUES                                   │   │
+│  │                                                                      │   │
+│  │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐               │   │
+│  │  │   default    │  │   webhooks   │  │   reports    │               │   │
+│  │  │    queue     │  │    queue     │  │    queue     │               │   │
+│  │  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘               │   │
+│  │         │                 │                 │                        │   │
+│  └─────────┼─────────────────┼─────────────────┼────────────────────────┘   │
+│            │                 │                 │                            │
+│  ┌─────────▼─────────────────▼─────────────────▼────────────────────────┐   │
+│  │                        TASK HANDLERS                                 │   │
+│  │                                                                      │   │
+│  │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐               │   │
+│  │  │   Usage      │  │   Webhook    │  │  Transcript  │               │   │
+│  │  │ Aggregation  │  │   Delivery   │  │  Processing  │               │   │
+│  │  └──────────────┘  └──────────────┘  └──────────────┘               │   │
+│  │                                                                      │   │
+│  │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐               │   │
+│  │  │   Report     │  │   Cleanup    │  │   Billing    │               │   │
+│  │  │  Generation  │  │    Tasks     │  │    Sync      │               │   │
+│  │  └──────────────┘  └──────────────┘  └──────────────┘               │   │
+│  │                                                                      │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+│                                                                             │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │                        SCHEDULER                                     │   │
+│  │                                                                      │   │
+│  │  ┌──────────────────────────────────────────────────────────────┐   │   │
+│  │  │  Cron Jobs:                                                   │   │   │
+│  │  │    - Hourly usage aggregation                                 │   │   │
+│  │  │    - Daily report generation                                  │   │   │
+│  │  │    - Weekly cleanup of old sessions                           │   │   │
+│  │  │    - Monthly billing sync                                     │   │   │
+│  │  └──────────────────────────────────────────────────────────────┘   │   │
+│  │                                                                      │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+#### 3.4.4 Task Definitions &#123;#3.4.4-task-definitions&#125;
+
+| Task | Queue | Schedule | Description |
+| :---- | :---- | :---- | :---- |
+| `aggregate_usage` | default | Hourly | Compile minute counts per tenant |
+| `process_transcript` | default | On event | Store and index call transcript |
+| `deliver_webhook` | webhooks | On event | Send webhook with retry |
+| `generate_daily_report` | reports | Daily 00:00 UTC | Generate usage reports |
+| `cleanup_sessions` | default | Weekly | Remove expired session data |
+| `sync_billing` | default | Monthly | Sync usage to billing system |
+
+#### 3.4.5 Configuration &#123;#3.4.5-configuration&#125;
+
+```
+worker_service:
+  concurrency: 4
+  
+  queues:
+    default:
+      concurrency: 2
+    webhooks:
+      concurrency: 4
+      rate_limit: 100/m
+    reports:
+      concurrency: 1
+  
+  retry:
+    max_retries: 5
+    backoff_base: 60  # seconds
+    backoff_max: 3600
+  
+  scheduler:
+    timezone: "UTC"
+    jobs:
+      - name: "aggregate_usage"
+        cron: "0 * * * *"  # Every hour
+      - name: "generate_daily_report"
+        cron: "0 0 * * *"  # Midnight UTC
+      - name: "cleanup_sessions"
+        cron: "0 2 * * 0"  # Sunday 2am UTC
+```
+
+---
+
+### 3.5 Chatterbox TTS Service &#123;#3.5-chatterbox-tts-service&#125;
+
+#### 3.5.1 Overview &#123;#3.5.1-overview&#125;
+
+The Chatterbox TTS Service runs on a dedicated GPU instance (RunPod RTX A5000) and provides speech synthesis for all agents. It exposes a simple HTTP API that the Agent Service calls to convert text to audio.
+
+#### 3.5.2 Responsibilities &#123;#3.5.2-responsibilities&#125;
+
+- **Speech Synthesis**: Convert text to natural-sounding speech  
+- **Voice Management**: Load and cache voice models  
+- **Streaming Output**: Support chunked audio output for low latency  
+- **Paralinguistics**: Process tags like `[laugh]`, `[cough]`
+
+#### 3.5.3 Architecture &#123;#3.5.3-architecture&#125;
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                        CHATTERBOX TTS SERVICE                               │
+│                           (RunPod A5000)                                    │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │                         API LAYER                                    │   │
+│  │                                                                      │   │
+│  │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐               │   │
+│  │  │   FastAPI    │  │   Health     │  │   Metrics    │               │   │
+│  │  │   Server     │  │   Check      │  │   Endpoint   │               │   │
+│  │  └──────┬───────┘  └──────────────┘  └──────────────┘               │   │
+│  │         │                                                            │   │
+│  └─────────┼────────────────────────────────────────────────────────────┘   │
+│            │                                                                │
+│  ┌─────────▼────────────────────────────────────────────────────────────┐   │
+│  │                      SYNTHESIS ENGINE                                │   │
+│  │                                                                      │   │
+│  │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐               │   │
+│  │  │    Text      │  │   Model      │  │   Audio      │               │   │
+│  │  │ Preprocessor │  │  Inference   │  │  Encoder     │               │   │
+│  │  │              │  │  (Turbo)     │  │              │               │   │
+│  │  └──────────────┘  └──────────────┘  └──────────────┘               │   │
+│  │                                                                      │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+│                                                                             │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │                      VOICE MANAGEMENT                                │   │
+│  │                                                                      │   │
+│  │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐               │   │
+│  │  │    Voice     │  │    Voice     │  │   Reference  │               │   │
+│  │  │   Registry   │  │    Cache     │  │   Storage    │               │   │
+│  │  └──────────────┘  └──────────────┘  └──────────────┘               │   │
+│  │                                                                      │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+│                                                                             │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │                      GPU RESOURCES                                   │   │
+│  │                                                                      │   │
+│  │  ┌─────────────────────────────────────────────────────────────┐    │   │
+│  │  │                    RTX A5000 (24GB VRAM)                     │    │   │
+│  │  │                                                              │    │   │
+│  │  │    Model: ~4GB    │    Inference: ~8GB    │   Headroom      │    │   │
+│  │  │                                                              │    │   │
+│  │  └─────────────────────────────────────────────────────────────┘    │   │
+│  │                                                                      │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+#### 3.5.4 API Endpoints &#123;#3.5.4-api-endpoints&#125;
+
+| Endpoint | Method | Purpose |
+| :---- | :---- | :---- |
+| `/synthesize` | POST | Generate speech from text |
+| `/synthesize/stream` | POST | Stream audio chunks |
+| `/voices` | GET | List available voices |
+| `/voices/{id}` | GET | Get voice details |
+| `/health` | GET | Health check |
+| `/metrics` | GET | Prometheus metrics |
+
+#### 3.5.5 Configuration &#123;#3.5.5-configuration&#125;
+
+```
+chatterbox_service:
+  host: 0.0.0.0
+  port: 8080
+  
+  model:
+    name: "chatterbox-turbo"
+    device: "cuda"
+    precision: "float16"
+  
+  synthesis:
+    sample_rate: 24000
+    default_exaggeration: 0.5
+    default_cfg_weight: 0.5
+  
+  voices:
+    storage_path: "/data/voices"
+    cache_size: 10  # voices in memory
+  
+  streaming:
+    chunk_duration_ms: 100
+    buffer_chunks: 3
+```
+
+---
+
+## 4\. Data Flow Architecture &#123;#4.-data-flow-architecture&#125;
+
+### 4.1 Inbound Call Flow &#123;#4.1-inbound-call-flow&#125;
+
+This section details the complete data flow for an inbound phone call, from the moment it arrives at GoToConnect to when the conversation ends.
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                        INBOUND CALL DATA FLOW                               │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  1. CALL ARRIVES                                                            │
+│     ─────────────                                                           │
+│                                                                             │
+│     Caller ──PSTN──▶ GoToConnect                                            │
+│                           │                                                 │
+│                           │ WebSocket Event: "call.ringing"                 │
+│                           │ {                                               │
+│                           │   "call_id": "abc123",                          │
+│                           │   "from": "+15551234567",                       │
+│                           │   "to": "+15559876543",                         │
+│                           │   "direction": "inbound"                        │
+│                           │ }                                               │
+│                           ▼                                                 │
+│                      WebRTC Bridge                                          │
+│                           │                                                 │
+│                           │ 1. Lookup tenant by phone number                │
+│                           │ 2. Load agent configuration                     │
+│                           │ 3. Create call record in PostgreSQL             │
+│                           │ 4. Store initial state in Redis                 │
+│                           │                                                 │
+│                                                                             │
+│  2. CALL ANSWERED                                                           │
+│     ─────────────                                                           │
+│                                                                             │
+│                      WebRTC Bridge                                          │
+│                           │                                                 │
+│                           │ POST /web-calls/v1/calls/{id}/answer            │
+│                           │                                                 │
+│                           ▼                                                 │
+│                      GoToConnect                                            │
+│                           │                                                 │
+│                           │ Returns SDP offer                               │
+│                           │                                                 │
+│                           ▼                                                 │
+│                      WebRTC Bridge                                          │
+│                           │                                                 │
+│                           │ 1. Create RTCPeerConnection                     │
+│                           │ 2. Set remote description (offer)               │
+│                           │ 3. Create answer                                │
+│                           │ 4. Set local description (answer)               │
+│                           │ 5. Return SDP answer to GoToConnect             │
+│                           │                                                 │
+│                           │ Parallel: Create LiveKit room                   │
+│                           │ Room name: "call-{tenant_id}-{call_id}"         │
+│                           │                                                 │
+│                                                                             │
+│  3. AUDIO STREAMING ESTABLISHED                                             │
+│     ────────────────────────────                                            │
+│                                                                             │
+│     GoToConnect ──WebRTC──▶ Bridge ──LiveKit──▶ Room                        │
+│                                                     │                       │
+│                                                     │ Publish Event:        │
+│                                                     │ "room.ready"          │
+│                                                     │                       │
+│                                                     ▼                       │
+│                                              Agent Service                  │
+│                                                     │                       │
+│                                                     │ 1. Load agent config  │
+│                                                     │ 2. Initialize pipeline│
+│                                                     │ 3. Join LiveKit room  │
+│                                                     │ 4. Subscribe to audio │
+│                                                     │                       │
+│                                                                             │
+│  4. CONVERSATION LOOP                                                       │
+│     ─────────────────                                                       │
+│                                                                             │
+│     ┌───────────────────────────────────────────────────────────────┐      │
+│     │                                                               │      │
+│     │  Caller Audio ──▶ Bridge ──▶ LiveKit ──▶ Agent               │      │
+│     │       │                                     │                 │      │
+│     │       │                          ┌──────────┴──────────┐     │      │
+│     │       │                          │                     │     │      │
+│     │       │                          ▼                     │     │      │
+│     │       │                     ┌─────────┐                │     │      │
+│     │       │                     │   STT   │                │     │      │
+│     │       │                     │Deepgram │                │     │      │
+│     │       │                     └────┬────┘                │     │      │
+│     │       │                          │                     │     │      │
+│     │       │                          │ Transcript          │     │      │
+│     │       │                          ▼                     │     │      │
+│     │       │                     ┌─────────┐                │     │      │
+│     │       │                     │   LLM   │                │     │      │
+│     │       │                     │ Claude  │──┐             │     │      │
+│     │       │                     └────┬────┘  │             │     │      │
+│     │       │                          │       │ Tool Call   │     │      │
+│     │       │                          │       ▼             │     │      │
+│     │       │                          │  ┌─────────┐        │     │      │
+│     │       │                          │  │ Webhook │        │     │      │
+│     │       │                          │  │  (n8n)  │        │     │      │
+│     │       │                          │  └────┬────┘        │     │      │
+│     │       │                          │       │             │     │      │
+│     │       │                          │◀──────┘             │     │      │
+│     │       │                          │ Response            │     │      │
+│     │       │                          ▼                     │     │      │
+│     │       │                     ┌─────────┐                │     │      │
+│     │       │                     │   TTS   │                │     │      │
+│     │       │                     │Chatterbox                │     │      │
+│     │       │                     └────┬────┘                │     │      │
+│     │       │                          │                     │     │      │
+│     │       │                          │ Audio               │     │      │
+│     │       │                          ▼                     │     │      │
+│     │       │              Agent ──▶ LiveKit ──▶ Bridge ──▶ Caller│      │
+│     │       │                                                │     │      │
+│     │       └────────────────────────────────────────────────┘     │      │
+│     │                                                               │      │
+│     │  (Repeat until call ends)                                     │      │
+│     │                                                               │      │
+│     └───────────────────────────────────────────────────────────────┘      │
+│                                                                             │
+│  5. CALL ENDS                                                               │
+│     ─────────                                                               │
+│                                                                             │
+│     Trigger: Caller hangup / Agent transfer / Timeout                       │
+│                                                                             │
+│     WebRTC Bridge                                                           │
+│          │                                                                  │
+│          │ 1. Close WebRTC connection                                       │
+│          │ 2. Leave LiveKit room                                            │
+│          │ 3. Update call state to ENDED                                    │
+│          │                                                                  │
+│          │ Publish Event: "call.ended"                                      │
+│          │ {                                                                │
+│          │   "call_id": "abc123",                                           │
+│          │   "duration_seconds": 127,                                       │
+│          │   "end_reason": "caller_hangup"                                  │
+│          │ }                                                                │
+│          ▼                                                                  │
+│     Worker Service                                                          │
+│          │                                                                  │
+│          │ 1. Process transcript                                            │
+│          │ 2. Aggregate usage                                               │
+│          │ 3. Send completion webhook                                       │
+│          │ 4. Archive call data                                             │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 4.2 Outbound Call Flow &#123;#4.2-outbound-call-flow&#125;
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                        OUTBOUND CALL DATA FLOW                              │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  1. API REQUEST                                                             │
+│     ───────────                                                             │
+│                                                                             │
+│     Client ──HTTP POST──▶ API Gateway                                       │
+│                               │                                             │
+│     POST /v1/calls            │                                             │
+│     {                         │                                             │
+│       "agent_id": "agent_1",  │                                             │
+│       "to": "+15551234567",   │                                             │
+│       "context": {            │                                             │
+│         "customer_name": "John",                                            │
+│         "appointment_id": "apt_123"                                         │
+│       }                       │                                             │
+│     }                         │                                             │
+│                               │                                             │
+│                               │ 1. Validate request                         │
+│                               │ 2. Check tenant credits                     │
+│                               │ 3. Create call record                       │
+│                               │ 4. Enqueue call initiation                  │
+│                               │                                             │
+│                               │ Response: 202 Accepted                      │
+│                               │ {                                           │
+│                               │   "call_id": "xyz789",                      │
+│                               │   "status": "initiating"                    │
+│                               │ }                                           │
+│                                                                             │
+│  2. CALL INITIATION                                                         │
+│     ────────────────                                                        │
+│                                                                             │
+│     WebRTC Bridge                                                           │
+│          │                                                                  │
+│          │ POST /web-calls/v1/calls                                         │
+│          │ {                                                                │
+│          │   "dial_string": "tel:+15551234567",                             │
+│          │   "caller_id": "+15559876543"                                    │
+│          │ }                                                                │
+│          │                                                                  │
+│          ▼                                                                  │
+│     GoToConnect                                                             │
+│          │                                                                  │
+│          │ Initiates outbound call via PSTN                                 │
+│          │                                                                  │
+│          │ WebSocket Event: "call.dialing"                                  │
+│          │                                                                  │
+│                                                                             │
+│  3. CALL CONNECTED                                                          │
+│     ──────────────                                                          │
+│                                                                             │
+│     Callee answers phone                                                    │
+│          │                                                                  │
+│          │ WebSocket Event: "call.connected"                                │
+│          │                                                                  │
+│          ▼                                                                  │
+│     (Same flow as inbound call from step 2 onwards)                         │
+│                                                                             │
+│  4. CALL NOT ANSWERED                                                       │
+│     ──────────────────                                                      │
+│                                                                             │
+│     Timeout or voicemail detected                                           │
+│          │                                                                  │
+│          │ WebSocket Event: "call.failed"                                   │
+│          │ {                                                                │
+│          │   "reason": "no_answer" | "voicemail" | "busy"                   │
+│          │ }                                                                │
+│          │                                                                  │
+│          ▼                                                                  │
+│     Worker Service                                                          │
+│          │                                                                  │
+│          │ 1. Update call status                                            │
+│          │ 2. Send failure webhook                                          │
+│          │ 3. Optionally schedule retry                                     │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 4.3 Transfer Flow &#123;#4.3-transfer-flow&#125;
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           TRANSFER DATA FLOW                                │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  BLIND TRANSFER                                                             │
+│  ──────────────                                                             │
+│                                                                             │
+│  AI determines transfer is needed                                           │
+│       │                                                                     │
+│       │ "Let me transfer you to our billing department."                    │
+│       │                                                                     │
+│       ▼                                                                     │
+│  Agent Service                                                              │
+│       │                                                                     │
+│       │ Publish Event: "call.transfer_requested"                            │
+│       │ {                                                                   │
+│       │   "type": "blind",                                                  │
+│       │   "target": "ext:1001"                                              │
+│       │ }                                                                   │
+│       │                                                                     │
+│       ▼                                                                     │
+│  WebRTC Bridge                                                              │
+│       │                                                                     │
+│       │ POST /web-calls/v1/calls/{id}/blind-transfer                        │
+│       │ { "dial_string": "ext:1001" }                                       │
+│       │                                                                     │
+│       ▼                                                                     │
+│  GoToConnect                                                                │
+│       │                                                                     │
+│       │ 1. Connects to extension 1001                                       │
+│       │ 2. Bridges caller to new party                                      │
+│       │ 3. Disconnects AI                                                   │
+│       │                                                                     │
+│       │ WebSocket Event: "call.transferred"                                 │
+│       │                                                                     │
+│                                                                             │
+│  ─────────────────────────────────────────────────────────────────────────  │
+│                                                                             │
+│  WARM TRANSFER                                                              │
+│  ─────────────                                                              │
+│                                                                             │
+│  AI determines transfer is needed                                           │
+│       │                                                                     │
+│       │ "I'll connect you with a specialist. One moment please."            │
+│       │                                                                     │
+│       ▼                                                                     │
+│  Agent Service                                                              │
+│       │                                                                     │
+│       │ Publish Event: "call.transfer_requested"                            │
+│       │ {                                                                   │
+│       │   "type": "warm",                                                   │
+│       │   "target": "ext:1002",                                             │
+│       │   "context": "Customer John calling about billing issue #123"       │
+│       │ }                                                                   │
+│       │                                                                     │
+│       ▼                                                                     │
+│  WebRTC Bridge                                                              │
+│       │                                                                     │
+│       │ 1. PUT /web-calls/v1/calls/{id}/hold                                │
+│       │    (Customer hears hold music)                                      │
+│       │                                                                     │
+│       │ 2. POST /web-calls/v1/calls                                         │
+│       │    { "dial_string": "ext:1002" }                                    │
+│       │    (Call agent)                                                     │
+│       │                                                                     │
+│       │ 3. AI briefs agent: "Transferring John, billing issue #123"         │
+│       │                                                                     │
+│       │ 4. Agent accepts transfer                                           │
+│       │                                                                     │
+│       │ 5. POST /web-calls/v1/calls/{id}/warm-transfer                      │
+│       │    { "refer_id": "{agent_call_id}" }                                │
+│       │                                                                     │
+│       ▼                                                                     │
+│  GoToConnect                                                                │
+│       │                                                                     │
+│       │ 1. Connects customer to agent                                       │
+│       │ 2. Disconnects AI                                                   │
+│       │                                                                     │
+│       │ WebSocket Event: "call.transferred"                                 │
+│       │                                                                     │
+│                                                                             │
+│  ─────────────────────────────────────────────────────────────────────────  │
+│                                                                             │
+│  CONFERENCE (3-WAY)                                                         │
+│  ──────────────────                                                         │
+│                                                                             │
+│  Supervisor wants to join call                                              │
+│       │                                                                     │
+│       ▼                                                                     │
+│  WebRTC Bridge                                                              │
+│       │                                                                     │
+│       │ 1. POST /web-calls/v1/calls                                         │
+│       │    { "dial_string": "ext:1003" }                                    │
+│       │    (Call supervisor)                                                │
+│       │                                                                     │
+│       │ 2. POST /web-calls/v1/calls/{id}/merge                              │
+│       │    { "refer_id": "{supervisor_call_id}" }                           │
+│       │                                                                     │
+│       ▼                                                                     │
+│  GoToConnect                                                                │
+│       │                                                                     │
+│       │ All three parties (customer, AI, supervisor) in conference          │
+│       │                                                                     │
+│       │ Supervisor can:                                                     │
+│       │   - Listen silently                                                 │
+│       │   - Coach AI (via separate channel)                                 │
+│       │   - Take over conversation                                          │
+│       │                                                                     │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 4.4 Tool Calling Flow &#123;#4.4-tool-calling-flow&#125;
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         TOOL CALLING DATA FLOW                              │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  Caller: "Can you check if Dr. Smith has availability next Tuesday?"        │
+│                                                                             │
+│  1. LLM DECIDES TO USE TOOL                                                 │
+│     ──────────────────────────                                              │
+│                                                                             │
+│     Claude Response (streaming):                                            │
+│     {                                                                       │
+│       "type": "tool_use",                                                   │
+│       "name": "check_availability",                                         │
+│       "input": {                                                            │
+│         "provider": "Dr. Smith",                                            │
+│         "date": "2026-01-21"                                                │
+│       }                                                                     │
+│     }                                                                       │
+│                                                                             │
+│  2. TOOL EXECUTION                                                          │
+│     ──────────────                                                          │
+│                                                                             │
+│     Agent Service                                                           │
+│          │                                                                  │
+│          │ 1. Extract tool call from LLM response                           │
+│          │ 2. Validate against tool schema                                  │
+│          │ 3. Generate filler speech: "Let me check that for you..."        │
+│          │ 4. Send filler to TTS (non-blocking)                             │
+│          │                                                                  │
+│          │ Parallel execution:                                              │
+│          │                                                                  │
+│          │ ┌─────────────────┐    ┌─────────────────┐                      │
+│          │ │  TTS: Filler    │    │  Webhook Call   │                      │
+│          │ │  "Let me check" │    │                 │                      │
+│          │ └────────┬────────┘    └────────┬────────┘                      │
+│          │          │                      │                               │
+│          │          ▼                      ▼                               │
+│          │     LiveKit Room           n8n Webhook                          │
+│          │          │                      │                               │
+│          │          ▼                      │                               │
+│          │     Caller hears                │                               │
+│          │     filler speech               │                               │
+│          │                                 │                               │
+│          │                                 ▼                               │
+│          │                          Calendar API                           │
+│          │                                 │                               │
+│          │                                 │ {                             │
+│          │                                 │   "available_slots": [        │
+│          │                                 │     "9:00 AM",                │
+│          │                                 │     "2:00 PM",                │
+│          │                                 │     "4:30 PM"                 │
+│          │                                 │   ]                           │
+│          │                                 │ }                             │
+│          │                                 │                               │
+│          │◀────────────────────────────────┘                               │
+│          │                                                                  │
+│                                                                             │
+│  3. CONTINUE CONVERSATION                                                   │
+│     ─────────────────────                                                   │
+│                                                                             │
+│     Agent Service                                                           │
+│          │                                                                  │
+│          │ Inject tool result into conversation:                            │
+│          │ {                                                                │
+│          │   "role": "tool_result",                                         │
+│          │   "content": "{\"available_slots\": [\"9:00 AM\", ...]}"         │
+│          │ }                                                                │
+│          │                                                                  │
+│          │ Continue LLM generation with result                              │
+│          │                                                                  │
+│          ▼                                                                  │
+│     Claude                                                                  │
+│          │                                                                  │
+│          │ "Dr. Smith has three openings on Tuesday:                        │
+│          │  9 AM, 2 PM, and 4:30 PM. Which works best for you?"             │
+│          │                                                                  │
+│          ▼                                                                  │
+│     TTS ──▶ LiveKit ──▶ Bridge ──▶ Caller                                   │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 5\. Service Boundaries &#123;#5.-service-boundaries&#125;
+
+### 5.1 Service Responsibility Matrix &#123;#5.1-service-responsibility-matrix&#125;
+
+| Service | Creates | Reads | Updates | Deletes |
+| :---- | :---- | :---- | :---- | :---- |
+| **API Gateway** | Tenants, Agents, Numbers, Voices, Webhooks | All | All (via API) | Soft delete |
+| **WebRTC Bridge** | Calls, CallEvents | Tenants, Agents, Numbers | CallState | \- |
+| **Agent Service** | Transcripts, ToolCalls | Tenants, Agents, KnowledgeBase | Calls (status) | \- |
+| **Worker Service** | UsageRecords, Reports | Calls, Transcripts | Calls (archive) | Expired sessions |
+| **Chatterbox** | \- | Voices | \- | \- |
+
+### 5.2 Service Communication &#123;#5.2-service-communication&#125;
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                       SERVICE COMMUNICATION MAP                             │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│                           SYNCHRONOUS (HTTP/gRPC)                           │
+│                           ──────────────────────                            │
+│                                                                             │
+│     ┌─────────────┐         ┌─────────────┐         ┌─────────────┐        │
+│     │ API Gateway │────────▶│   WebRTC    │────────▶│ GoToConnect │        │
+│     │             │         │   Bridge    │         │     API     │        │
+│     └─────────────┘         └─────────────┘         └─────────────┘        │
+│                                    │                                        │
+│                                    │                                        │
+│                                    ▼                                        │
+│                             ┌─────────────┐                                 │
+│                             │   LiveKit   │                                 │
+│                             │    Cloud    │                                 │
+│                             └─────────────┘                                 │
+│                                    │                                        │
+│                                    │                                        │
+│                                    ▼                                        │
+│     ┌─────────────┐         ┌─────────────┐         ┌─────────────┐        │
+│     │  Deepgram   │◀────────│    Agent    │────────▶│  Anthropic  │        │
+│     │     API     │         │   Service   │         │     API     │        │
+│     └─────────────┘         └─────────────┘         └─────────────┘        │
+│                                    │                                        │
+│                                    │                                        │
+│                                    ▼                                        │
+│                             ┌─────────────┐                                 │
+│                             │ Chatterbox  │                                 │
+│                             │  (RunPod)   │                                 │
+│                             └─────────────┘                                 │
+│                                                                             │
+│                                                                             │
+│                          ASYNCHRONOUS (Redis Pub/Sub)                       │
+│                          ───────────────────────────                        │
+│                                                                             │
+│                              ┌───────────┐                                  │
+│                              │   Redis   │                                  │
+│                              │  Pub/Sub  │                                  │
+│                              └─────┬─────┘                                  │
+│                                    │                                        │
+│              ┌─────────────────────┼─────────────────────┐                 │
+│              │                     │                     │                  │
+│              ▼                     ▼                     ▼                  │
+│     ┌─────────────┐       ┌─────────────┐       ┌─────────────┐            │
+│     │ API Gateway │       │   WebRTC    │       │   Worker    │            │
+│     │             │       │   Bridge    │       │   Service   │            │
+│     └─────────────┘       └─────────────┘       └─────────────┘            │
+│                                                        │                    │
+│                                                        │                    │
+│                                                        ▼                    │
+│                                                ┌─────────────┐              │
+│                                                │     n8n     │              │
+│                                                │  (Webhooks) │              │
+│                                                └─────────────┘              │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 5.3 Event Catalog &#123;#5.3-event-catalog&#125;
+
+| Event | Publisher | Subscribers | Payload |
+| :---- | :---- | :---- | :---- |
+| `call.ringing` | WebRTC Bridge | Agent Service | call\_id, tenant\_id, from, to, direction |
+| `call.connected` | WebRTC Bridge | Agent Service, Worker | call\_id, tenant\_id, answered\_at |
+| `call.ended` | WebRTC Bridge | Agent Service, Worker | call\_id, duration, end\_reason |
+| `call.transfer_requested` | Agent Service | WebRTC Bridge | call\_id, type, target, context |
+| `call.transferred` | WebRTC Bridge | Worker | call\_id, transferred\_to |
+| `room.ready` | WebRTC Bridge | Agent Service | room\_name, call\_id |
+| `agent.joined` | Agent Service | WebRTC Bridge | call\_id, agent\_id |
+| `transcript.turn` | Agent Service | Worker | call\_id, speaker, text, timestamp |
+| `tool.called` | Agent Service | Worker | call\_id, tool\_name, input, output |
+| `usage.minute` | Agent Service | Worker | tenant\_id, call\_id, minute\_count |
+
+### 5.4 API Contracts Between Services &#123;#5.4-api-contracts-between-services&#125;
+
+#### 5.4.1 WebRTC Bridge → Agent Service &#123;#5.4.1-webrtc-bridge-→-agent-service&#125;
+
+```
+Event: room.ready
+Channel: call:{call_id}:events
+
+{
+  "event": "room.ready",
+  "timestamp": "2026-01-16T10:30:00Z",
+  "data": {
+    "room_name": "call-tenant123-call456",
+    "call_id": "call456",
+    "tenant_id": "tenant123",
+    "agent_id": "agent789",
+    "caller_number": "+15551234567",
+    "context": {
+      "customer_name": "John Doe",
+      "account_id": "acct_123"
+    }
+  }
+}
+```
+
+#### 5.4.2 Agent Service → WebRTC Bridge &#123;#5.4.2-agent-service-→-webrtc-bridge&#125;
+
+```
+Event: call.transfer_requested
+Channel: call:{call_id}:events
+
+{
+  "event": "call.transfer_requested",
+  "timestamp": "2026-01-16T10:35:00Z",
+  "data": {
+    "call_id": "call456",
+    "transfer_type": "warm",
+    "target": "ext:1001",
+    "context": "Customer John asking about billing, issue #123",
+    "reason": "customer_request"
+  }
+}
+```
+
+#### 5.4.3 Agent Service → Chatterbox TTS &#123;#5.4.3-agent-service-→-chatterbox-tts&#125;
+
+```
+POST /synthesize
+Content-Type: application/json
+
+{
+  "text": "I'd be happy to help you with that [chuckle]. Let me check your account.",
+  "voice_id": "voice_female_01",
+  "options": {
+    "exaggeration": 0.5,
+    "cfg_weight": 0.5,
+    "streaming": true
+  }
+}
+
+Response (streaming):
+Transfer-Encoding: chunked
+Content-Type: audio/wav
+
+[binary audio chunks]
+```
+
+---
+
+## 6\. Network Topology &#123;#6.-network-topology&#125;
+
+### 6.1 Network Diagram &#123;#6.1-network-diagram&#125;
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           NETWORK TOPOLOGY                                  │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │                         INTERNET                                     │   │
+│  └───────┬─────────────────┬─────────────────┬─────────────────┬───────┘   │
+│          │                 │                 │                 │           │
+│          │ HTTPS           │ HTTPS           │ WebRTC          │ HTTPS     │
+│          │ (API)           │ (Webhooks)      │ (Audio)         │ (APIs)    │
+│          │                 │                 │                 │           │
+│          ▼                 ▼                 ▼                 ▼           │
+│  ┌───────────────────────────────────────────────────────────────────┐    │
+│  │                    CLOUDFLARE (CDN/WAF)                           │    │
+│  │                                                                    │    │
+│  │  - DDoS protection                                                 │    │
+│  │  - SSL termination                                                 │    │
+│  │  - Rate limiting                                                   │    │
+│  │  - Geographic routing                                              │    │
+│  │                                                                    │    │
+│  └───────────────────────────────┬───────────────────────────────────┘    │
+│                                  │                                         │
+│                                  │ HTTPS (internal)                        │
+│                                  │                                         │
+│  ┌───────────────────────────────▼───────────────────────────────────┐    │
+│  │                    DIGITALOCEAN VPC                                │    │
+│  │                    10.0.0.0/16                                     │    │
+│  │                                                                    │    │
+│  │  ┌────────────────────────────────────────────────────────────┐   │    │
+│  │  │                  LOAD BALANCER                              │   │    │
+│  │  │                  10.0.1.1                                   │   │    │
+│  │  └──────────┬─────────────────┬─────────────────┬─────────────┘   │    │
+│  │             │                 │                 │                  │    │
+│  │             ▼                 ▼                 ▼                  │    │
+│  │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐            │    │
+│  │  │ API Gateway  │  │ API Gateway  │  │ API Gateway  │            │    │
+│  │  │  10.0.2.1    │  │  10.0.2.2    │  │  10.0.2.3    │            │    │
+│  │  └──────────────┘  └──────────────┘  └──────────────┘            │    │
+│  │                                                                    │    │
+│  │  ┌──────────────┐  ┌──────────────┐                               │    │
+│  │  │WebRTC Bridge │  │WebRTC Bridge │                               │    │
+│  │  │  10.0.3.1    │  │  10.0.3.2    │                               │    │
+│  │  └──────────────┘  └──────────────┘                               │    │
+│  │                                                                    │    │
+│  │  ┌──────────────┐  ┌──────────────┐                               │    │
+│  │  │Agent Service │  │Agent Service │                               │    │
+│  │  │  10.0.4.1    │  │  10.0.4.2    │                               │    │
+│  │  └──────────────┘  └──────────────┘                               │    │
+│  │                                                                    │    │
+│  │  ┌──────────────┐                                                 │    │
+│  │  │Worker Service│                                                 │    │
+│  │  │  10.0.5.1    │                                                 │    │
+│  │  └──────────────┘                                                 │    │
+│  │                                                                    │    │
+│  │  ┌────────────────────────────────────────────────────────────┐   │    │
+│  │  │                  DATA SUBNET                                │   │    │
+│  │  │                  10.0.10.0/24                               │   │    │
+│  │  │                                                             │   │    │
+│  │  │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐     │   │    │
+│  │  │  │  PostgreSQL  │  │    Redis     │  │  DO Spaces   │     │   │    │
+│  │  │  │  10.0.10.1   │  │  10.0.10.2   │  │   (S3 API)   │     │   │    │
+│  │  │  │  (Primary)   │  │  (Primary)   │  │              │     │   │    │
+│  │  │  └──────────────┘  └──────────────┘  └──────────────┘     │   │    │
+│  │  │                                                             │   │    │
+│  │  │  ┌──────────────┐  ┌──────────────┐                        │   │    │
+│  │  │  │  PostgreSQL  │  │    Redis     │                        │   │    │
+│  │  │  │  10.0.10.3   │  │  10.0.10.4   │                        │   │    │
+│  │  │  │  (Replica)   │  │  (Replica)   │                        │   │    │
+│  │  │  └──────────────┘  └──────────────┘                        │   │    │
+│  │  │                                                             │   │    │
+│  │  └─────────────────────────────────────────────────────────────┘   │    │
+│  │                                                                    │    │
+│  └────────────────────────────────────────────────────────────────────┘    │
+│                                                                             │
+│                                                                             │
+│  ┌────────────────────────────────────────────────────────────────────┐    │
+│  │                         RUNPOD                                      │    │
+│  │                                                                     │    │
+│  │  ┌──────────────────────────────────────────────────────────────┐  │    │
+│  │  │                    CHATTERBOX TTS                             │  │    │
+│  │  │                    GPU: RTX A5000                             │  │    │
+│  │  │                    Public IP: x.x.x.x                         │  │    │
+│  │  └──────────────────────────────────────────────────────────────┘  │    │
+│  │                                                                     │    │
+│  └────────────────────────────────────────────────────────────────────┘    │
+│                                                                             │
+│                                                                             │
+│  ┌────────────────────────────────────────────────────────────────────┐    │
+│  │                    EXTERNAL SERVICES                                │    │
+│  │                                                                     │    │
+│  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌──────────┐  │    │
+│  │  │ GoToConnect │  │   LiveKit   │  │  Deepgram   │  │Anthropic │  │    │
+│  │  │api.goto.com │  │livekit.cloud│  │deepgram.com │  │claude.ai │  │    │
+│  │  └─────────────┘  └─────────────┘  └─────────────┘  └──────────┘  │    │
+│  │                                                                     │    │
+│  └────────────────────────────────────────────────────────────────────┘    │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 6.2 Port Matrix &#123;#6.2-port-matrix&#125;
+
+| Service | Internal Port | External Port | Protocol | Purpose |
+| :---- | :---- | :---- | :---- | :---- |
+| API Gateway | 8000 | 443 | HTTPS | Public API |
+| WebRTC Bridge | 8001 | \- | Internal | Service mesh |
+| WebRTC Bridge | 10000-10100 | 10000-10100 | UDP | WebRTC media |
+| Agent Service | 8002 | \- | Internal | Service mesh |
+| Worker Service | 8003 | \- | Internal | Service mesh |
+| PostgreSQL | 5432 | \- | TCP | Database |
+| Redis | 6379 | \- | TCP | Cache/Pub-Sub |
+| Chatterbox | 8080 | 443 | HTTPS | TTS API |
+
+### 6.3 Firewall Rules &#123;#6.3-firewall-rules&#125;
+
+```
+firewall_rules:
+  # Inbound to load balancer
+  - name: "allow-https-inbound"
+    direction: inbound
+    protocol: tcp
+    port: 443
+    source: 0.0.0.0/0
+    destination: load_balancer
+
+  # WebRTC media (UDP)
+  - name: "allow-webrtc-media"
+    direction: inbound
+    protocol: udp
+    port: 10000-10100
+    source: 0.0.0.0/0
+    destination: webrtc_bridge
+
+  # Internal VPC communication
+  - name: "allow-vpc-internal"
+    direction: both
+    protocol: all
+    source: 10.0.0.0/16
+    destination: 10.0.0.0/16
+
+  # Outbound to external services
+  - name: "allow-outbound-https"
+    direction: outbound
+    protocol: tcp
+    port: 443
+    source: 10.0.0.0/16
+    destination: 0.0.0.0/0
+
+  # Block all other inbound
+  - name: "deny-all-inbound"
+    direction: inbound
+    protocol: all
+    source: 0.0.0.0/0
+    action: deny
+```
+
+### 6.4 DNS Configuration &#123;#6.4-dns-configuration&#125;
+
+```
+dns_records:
+  # Public endpoints
+  - name: api.aiconnected.io
+    type: A
+    value: [cloudflare_proxy_ip]
+    proxied: true
+
+  - name: tts.aiconnected.io
+    type: A
+    value: [runpod_public_ip]
+    proxied: false  # Direct for latency
+
+  # Internal endpoints (private DNS)
+  - name: db.internal.aiconnected.io
+    type: A
+    value: 10.0.10.1
+    zone: internal
+
+  - name: redis.internal.aiconnected.io
+    type: A
+    value: 10.0.10.2
+    zone: internal
+```
+
+---
+
+## 7\. External Service Dependencies &#123;#7.-external-service-dependencies&#125;
+
+### 7.1 Dependency Map &#123;#7.1-dependency-map&#125;
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                     EXTERNAL SERVICE DEPENDENCIES                           │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │                          CRITICAL PATH                               │   │
+│  │                    (Required for call handling)                      │   │
+│  │                                                                      │   │
+│  │  ┌─────────────┐                                                     │   │
+│  │  │ GoToConnect │  Telephony                                          │   │
+│  │  │             │  - WebRTC signaling                                 │   │
+│  │  │             │  - Call control                                     │   │
+│  │  │             │  - PSTN connectivity                                │   │
+│  │  └─────────────┘                                                     │   │
+│  │         │                                                            │   │
+│  │         │ Failure Impact: Cannot make/receive calls                  │   │
+│  │         │ Fallback: None (critical)                                  │   │
+│  │                                                                      │   │
+│  │  ┌─────────────┐                                                     │   │
+│  │  │   LiveKit   │  Real-time Audio                                    │   │
+│  │  │    Cloud    │  - Room management                                  │   │
+│  │  │             │  - Audio routing                                    │   │
+│  │  │             │  - Participant management                           │   │
+│  │  └─────────────┘                                                     │   │
+│  │         │                                                            │   │
+│  │         │ Failure Impact: Cannot process calls                       │   │
+│  │         │ Fallback: None (critical)                                  │   │
+│  │                                                                      │   │
+│  │  ┌─────────────┐                                                     │   │
+│  │  │  Deepgram   │  Speech-to-Text                                     │   │
+│  │  │             │  - Streaming transcription                          │   │
+│  │  │             │  - Interim results                                  │   │
+│  │  └─────────────┘                                                     │   │
+│  │         │                                                            │   │
+│  │         │ Failure Impact: Cannot understand caller                   │   │
+│  │         │ Fallback: Whisper (self-hosted, higher latency)            │   │
+│  │                                                                      │   │
+│  │  ┌─────────────┐                                                     │   │
+│  │  │  Anthropic  │  Language Model                                     │   │
+│  │  │  (Claude)   │  - Response generation                              │   │
+│  │  │             │  - Tool calling                                     │   │
+│  │  └─────────────┘                                                     │   │
+│  │         │                                                            │   │
+│  │         │ Failure Impact: Cannot generate responses                  │   │
+│  │         │ Fallback: Cached responses, graceful transfer              │   │
+│  │                                                                      │   │
+│  │  ┌─────────────┐                                                     │   │
+│  │  │ Chatterbox  │  Text-to-Speech                                     │   │
+│  │  │  (RunPod)   │  - Speech synthesis                                 │   │
+│  │  │             │  - Voice cloning                                    │   │
+│  │  └─────────────┘                                                     │   │
+│  │         │                                                            │   │
+│  │         │ Failure Impact: Cannot speak to caller                     │   │
+│  │         │ Fallback: Resemble AI API, pre-recorded audio              │   │
+│  │                                                                      │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+│                                                                             │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │                         NON-CRITICAL PATH                            │   │
+│  │                    (Required for full functionality)                 │   │
+│  │                                                                      │   │
+│  │  ┌─────────────┐                                                     │   │
+│  │  │     n8n     │  Webhook Automation                                 │   │
+│  │  │             │  - Tool execution                                   │   │
+│  │  │             │  - CRM integration                                  │   │
+│  │  │             │  - Calendar integration                             │   │
+│  │  └─────────────┘                                                     │   │
+│  │         │                                                            │   │
+│  │         │ Failure Impact: Tools unavailable                          │   │
+│  │         │ Fallback: Inform caller, continue conversation             │   │
+│  │                                                                      │   │
+│  │  ┌─────────────┐                                                     │   │
+│  │  │ Knowledge   │  Context Retrieval                                  │   │
+│  │  │    Base     │  - RAG queries                                      │   │
+│  │  │             │  - FAQ lookup                                       │   │
+│  │  └─────────────┘                                                     │   │
+│  │         │                                                            │   │
+│  │         │ Failure Impact: Generic responses only                     │   │
+│  │         │ Fallback: Base system prompt                               │   │
+│  │                                                                      │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 7.2 Service Level Objectives &#123;#7.2-service-level-objectives&#125;
+
+| Service | Expected Uptime | Latency Target | Our SLA Impact |
+| :---- | :---- | :---- | :---- |
+| GoToConnect | 99.99% | \&lt;100ms API | Critical |
+| LiveKit Cloud | 99.95% | \&lt;50ms routing | Critical |
+| Deepgram | 99.9% | \&lt;300ms STT | High |
+| Anthropic | 99.9% | \&lt;500ms TTFT | High |
+| RunPod | 99.5% | \&lt;200ms TTS | High |
+| n8n | 99.0% | \&lt;1000ms webhook | Medium |
+
+### 7.3 Authentication and Credentials &#123;#7.3-authentication-and-credentials&#125;
+
+| Service | Auth Method | Credential Storage | Rotation Policy |
+| :---- | :---- | :---- | :---- |
+| GoToConnect | OAuth 2.0 | Environment vars | Auto-refresh |
+| LiveKit | API Key/Secret | Environment vars | Manual, quarterly |
+| Deepgram | API Key | Environment vars | Manual, quarterly |
+| Anthropic | API Key | Environment vars | Manual, quarterly |
+| RunPod | API Key | Environment vars | Manual, quarterly |
+
+### 7.4 Rate Limits &#123;#7.4-rate-limits&#125;
+
+| Service | Rate Limit | Our Expected Usage | Buffer |
+| :---- | :---- | :---- | :---- |
+| GoToConnect | 1000 req/min | \~100 req/min | 10x |
+| LiveKit | Unlimited (paid) | N/A | N/A |
+| Deepgram | 100 concurrent | \~50 concurrent | 2x |
+| Anthropic | 4000 RPM | \~500 RPM | 8x |
+| Chatterbox (self) | Hardware limited | \~100 concurrent | GPU-bound |
+
+---
+
+## 8\. Internal Service Architecture &#123;#8.-internal-service-architecture&#125;
+
+### 8.1 Service Template &#123;#8.1-service-template&#125;
+
+All internal services follow a consistent structure:
+
+```
+service-name/
+├── app/
+│   ├── __init__.py
+│   ├── main.py              # Application entry point
+│   ├── config.py            # Configuration management
+│   ├── dependencies.py      # Dependency injection
+│   │
+│   ├── api/                 # HTTP endpoints (if applicable)
+│   │   ├── __init__.py
+│   │   ├── routes.py
+│   │   └── schemas.py
+│   │
+│   ├── core/                # Business logic
+│   │   ├── __init__.py
+│   │   └── [domain].py
+│   │
+│   ├── integrations/        # External service clients
+│   │   ├── __init__.py
+│   │   └── [service].py
+│   │
+│   └── models/              # Data models
+│       ├── __init__.py
+│       └── [entity].py
+│
+├── tests/
+│   ├── unit/
+│   ├── integration/
+│   └── conftest.py
+│
+├── Dockerfile
+├── requirements.txt
+└── pyproject.toml
+```
+
+### 8.2 Shared Libraries &#123;#8.2-shared-libraries&#125;
+
+```
+shared/
+├── database/
+│   ├── __init__.py
+│   ├── connection.py        # Connection pooling
+│   ├── models.py            # SQLAlchemy models
+│   └── migrations/          # Alembic migrations
+│
+├── cache/
+│   ├── __init__.py
+│   └── redis_client.py      # Redis client wrapper
+│
+├── events/
+│   ├── __init__.py
+│   ├── bus.py               # Event bus abstraction
+│   └── schemas.py           # Event payload schemas
+│
+├── auth/
+│   ├── __init__.py
+│   ├── api_key.py           # API key validation
+│   └── jwt.py               # JWT handling
+│
+├── observability/
+│   ├── __init__.py
+│   ├── logging.py           # Structured logging
+│   ├── metrics.py           # Prometheus metrics
+│   └── tracing.py           # Distributed tracing
+│
+└── utils/
+    ├── __init__.py
+    └── helpers.py           # Common utilities
+```
+
+### 8.3 Configuration Management &#123;#8.3-configuration-management&#125;
+
+```py
+# shared/config/base.py
+
+from pydantic_settings import BaseSettings
+from functools import lru_cache
+
+class Settings(BaseSettings):
+    # Application
+    app_name: str = "voice-aiconnected"
+    environment: str = "development"
+    debug: bool = False
+    
+    # Database
+    database_url: str
+    database_pool_size: int = 10
+    database_max_overflow: int = 20
+    
+    # Redis
+    redis_url: str
+    redis_pool_size: int = 10
+    
+    # External Services
+    gotoconnect_client_id: str
+    gotoconnect_client_secret: str
+    livekit_url: str
+    livekit_api_key: str
+    livekit_api_secret: str
+    deepgram_api_key: str
+    anthropic_api_key: str
+    chatterbox_url: str
+    
+    # Observability
+    log_level: str = "INFO"
+    metrics_enabled: bool = True
+    tracing_enabled: bool = True
+    
+    class Config:
+        env_file = ".env"
+        env_file_encoding = "utf-8"
+
+@lru_cache()
+def get_settings() -> Settings:
+    return Settings()
+```
+
+---
+
+## 9\. Data Architecture &#123;#9.-data-architecture&#125;
+
+### 9.1 Database Schema Overview &#123;#9.1-database-schema-overview&#125;
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         DATABASE SCHEMA OVERVIEW                            │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │                          TENANT DOMAIN                               │   │
+│  │                                                                      │   │
+│  │  ┌──────────────┐       ┌──────────────┐       ┌──────────────┐    │   │
+│  │  │   tenants    │──────▶│    agents    │──────▶│    voices    │    │   │
+│  │  └──────────────┘       └──────────────┘       └──────────────┘    │   │
+│  │         │                      │                                    │   │
+│  │         │                      │                                    │   │
+│  │         ▼                      ▼                                    │   │
+│  │  ┌──────────────┐       ┌──────────────┐                           │   │
+│  │  │phone_numbers │       │   webhooks   │                           │   │
+│  │  └──────────────┘       └──────────────┘                           │   │
+│  │                                                                      │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+│                                                                             │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │                           CALL DOMAIN                                │   │
+│  │                                                                      │   │
+│  │  ┌──────────────┐       ┌──────────────┐       ┌──────────────┐    │   │
+│  │  │    calls     │──────▶│ transcripts  │       │  call_events │    │   │
+│  │  └──────────────┘       └──────────────┘       └──────────────┘    │   │
+│  │         │                                              │            │   │
+│  │         │                                              │            │   │
+│  │         ▼                                              │            │   │
+│  │  ┌──────────────┐                                      │            │   │
+│  │  │  tool_calls  │◀─────────────────────────────────────┘            │   │
+│  │  └──────────────┘                                                   │   │
+│  │                                                                      │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+│                                                                             │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │                          BILLING DOMAIN                              │   │
+│  │                                                                      │   │
+│  │  ┌──────────────┐       ┌──────────────┐       ┌──────────────┐    │   │
+│  │  │usage_records │──────▶│credit_buckets│       │   invoices   │    │   │
+│  │  └──────────────┘       └──────────────┘       └──────────────┘    │   │
+│  │                                                                      │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 9.2 Core Tables &#123;#9.2-core-tables&#125;
+
+#### tenants &#123;#tenants&#125;
+
+```sql
+CREATE TABLE tenants (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name VARCHAR(255) NOT NULL,
+    slug VARCHAR(100) UNIQUE NOT NULL,
+    status VARCHAR(50) DEFAULT 'active',
+    settings JSONB DEFAULT '{}',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    deleted_at TIMESTAMP WITH TIME ZONE
+);
+
+CREATE INDEX idx_tenants_slug ON tenants(slug);
+CREATE INDEX idx_tenants_status ON tenants(status);
+```
+
+#### agents &#123;#agents&#125;
+
+```sql
+CREATE TABLE agents (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID NOT NULL REFERENCES tenants(id),
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    status VARCHAR(50) DEFAULT 'active',
+    voice_id UUID REFERENCES voices(id),
+    system_prompt TEXT NOT NULL,
+    greeting_message TEXT,
+    tools JSONB DEFAULT '[]',
+    settings JSONB DEFAULT '{}',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    deleted_at TIMESTAMP WITH TIME ZONE
+);
+
+CREATE INDEX idx_agents_tenant ON agents(tenant_id);
+CREATE INDEX idx_agents_status ON agents(status);
+```
+
+#### calls &#123;#calls&#125;
+
+```sql
+CREATE TABLE calls (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID NOT NULL REFERENCES tenants(id),
+    agent_id UUID NOT NULL REFERENCES agents(id),
+    direction VARCHAR(20) NOT NULL, -- 'inbound' or 'outbound'
+    status VARCHAR(50) NOT NULL,
+    from_number VARCHAR(50),
+    to_number VARCHAR(50),
+    external_call_id VARCHAR(255), -- GoToConnect call ID
+    room_name VARCHAR(255), -- LiveKit room
+    started_at TIMESTAMP WITH TIME ZONE,
+    answered_at TIMESTAMP WITH TIME ZONE,
+    ended_at TIMESTAMP WITH TIME ZONE,
+    duration_seconds INTEGER,
+    end_reason VARCHAR(100),
+    metadata JSONB DEFAULT '{}',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX idx_calls_tenant ON calls(tenant_id);
+CREATE INDEX idx_calls_agent ON calls(agent_id);
+CREATE INDEX idx_calls_status ON calls(status);
+CREATE INDEX idx_calls_direction ON calls(direction);
+CREATE INDEX idx_calls_started_at ON calls(started_at);
+CREATE INDEX idx_calls_external_id ON calls(external_call_id);
+```
+
+#### transcripts &#123;#transcripts&#125;
+
+```sql
+CREATE TABLE transcripts (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    call_id UUID NOT NULL REFERENCES calls(id),
+    turn_number INTEGER NOT NULL,
+    speaker VARCHAR(50) NOT NULL, -- 'caller', 'agent', 'system'
+    text TEXT NOT NULL,
+    confidence FLOAT,
+    started_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    ended_at TIMESTAMP WITH TIME ZONE,
+    metadata JSONB DEFAULT '{}'
+);
+
+CREATE INDEX idx_transcripts_call ON transcripts(call_id);
+CREATE INDEX idx_transcripts_call_turn ON transcripts(call_id, turn_number);
+```
+
+### 9.3 Redis Data Structures &#123;#9.3-redis-data-structures&#125;
+
+```
+redis_structures:
+  # Call State
+  call:{call_id}:state:
+    type: hash
+    fields:
+      status: "conversing"
+      tenant_id: "tenant_123"
+      agent_id: "agent_456"
+      room_name: "call-tenant123-call456"
+      started_at: "2026-01-16T10:30:00Z"
+    ttl: 3600  # 1 hour after call ends
+
+  # Session Context
+  call:{call_id}:context:
+    type: hash
+    fields:
+      conversation_history: "[{...}]"  # JSON array
+      extracted_entities: "{...}"      # JSON object
+      pending_tool_calls: "[...]"      # JSON array
+    ttl: 3600
+
+  # Active Calls per Tenant
+  tenant:{tenant_id}:active_calls:
+    type: set
+    members:
+      - "call_123"
+      - "call_456"
+    ttl: none
+
+  # Rate Limiting
+  ratelimit:{tenant_id}:{window}:
+    type: string
+    value: "42"  # request count
+    ttl: 60  # window duration
+
+  # Event Channels
+  channels:
+    - call:{call_id}:events
+    - tenant:{tenant_id}:events
+    - system:events
+```
+
+### 9.4 Data Retention Policy &#123;#9.4-data-retention-policy&#125;
+
+| Data Type | Hot Storage | Warm Storage | Archive | Deletion |
+| :---- | :---- | :---- | :---- | :---- |
+| Call records | 30 days | 90 days | 2 years | 7 years |
+| Transcripts | 30 days | 90 days | 2 years | 7 years |
+| Audio recordings | 7 days | 30 days | 1 year | 1 year |
+| Usage records | 90 days | 1 year | 7 years | 7 years |
+| Session state | Call duration \+ 1h | \- | \- | Immediate |
+| Audit logs | 90 days | 1 year | 7 years | 7 years |
+
+---
+
+## 10\. Security Architecture &#123;#10.-security-architecture&#125;
+
+### 10.1 Security Layers &#123;#10.1-security-layers&#125;
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                          SECURITY ARCHITECTURE                              │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │                      PERIMETER SECURITY                              │   │
+│  │                                                                      │   │
+│  │  • Cloudflare DDoS protection                                        │   │
+│  │  • Web Application Firewall (WAF)                                    │   │
+│  │  • Rate limiting at edge                                             │   │
+│  │  • Geographic restrictions (optional)                                │   │
+│  │                                                                      │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+│                                    │                                        │
+│                                    ▼                                        │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │                      TRANSPORT SECURITY                              │   │
+│  │                                                                      │   │
+│  │  • TLS 1.3 for all external connections                              │   │
+│  │  • Certificate management via Let's Encrypt                          │   │
+│  │  • HSTS enabled                                                      │   │
+│  │  • Internal service mesh encryption                                  │   │
+│  │                                                                      │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+│                                    │                                        │
+│                                    ▼                                        │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │                     APPLICATION SECURITY                             │   │
+│  │                                                                      │   │
+│  │  • API key authentication                                            │   │
+│  │  • JWT for session management                                        │   │
+│  │  • Role-based access control (RBAC)                                  │   │
+│  │  • Input validation and sanitization                                 │   │
+│  │  • Output encoding                                                   │   │
+│  │                                                                      │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+│                                    │                                        │
+│                                    ▼                                        │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │                        DATA SECURITY                                 │   │
+│  │                                                                      │   │
+│  │  • Encryption at rest (AES-256)                                      │   │
+│  │  • Database column encryption for PII                                │   │
+│  │  • Tenant data isolation                                             │   │
+│  │  • Secure credential storage                                         │   │
+│  │                                                                      │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 10.2 Authentication Flow &#123;#10.2-authentication-flow&#125;
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         API AUTHENTICATION FLOW                             │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  Client Request                                                             │
+│       │                                                                     │
+│       │ Headers:                                                            │
+│       │   X-API-Key: sk_live_xxxxx                                          │
+│       │   Content-Type: application/json                                    │
+│       │                                                                     │
+│       ▼                                                                     │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │                      API GATEWAY                                     │   │
+│  │                                                                      │   │
+│  │  1. Extract API key from header                                      │   │
+│  │  2. Hash and lookup in database                                      │   │
+│  │  3. Verify key is active and not expired                             │   │
+│  │  4. Load tenant context from key                                     │   │
+│  │  5. Check rate limits                                                │   │
+│  │  6. Inject tenant context into request                               │   │
+│  │                                                                      │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+│       │                                                                     │
+│       │ Request Context:                                                    │
+│       │   tenant_id: "tenant_123"                                           │
+│       │   permissions: ["read", "write", "admin"]                           │
+│       │   rate_limit_remaining: 95                                          │
+│       │                                                                     │
+│       ▼                                                                     │
+│  Route Handler                                                              │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 10.3 Data Encryption &#123;#10.3-data-encryption&#125;
+
+| Data Type | At Rest | In Transit | Key Management |
+| :---- | :---- | :---- | :---- |
+| API Keys | SHA-256 hashed | TLS 1.3 | Not stored (hash only) |
+| User data | AES-256 | TLS 1.3 | AWS KMS / DO Spaces |
+| Audio recordings | AES-256 | TLS 1.3 | Per-tenant keys |
+| Database | Transparent encryption | TLS 1.3 | Managed PostgreSQL |
+| Redis | Not encrypted | TLS | In-memory only |
+
+---
+
+## 11\. Scalability Architecture &#123;#11.-scalability-architecture&#125;
+
+### 11.1 Horizontal Scaling Strategy &#123;#11.1-horizontal-scaling-strategy&#125;
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                       HORIZONTAL SCALING STRATEGY                           │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  SCALE TRIGGER: Active calls > (instances × 50)                             │
+│                                                                             │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │                      LOAD BALANCER                                   │   │
+│  │                                                                      │   │
+│  │  • Round-robin distribution                                          │   │
+│  │  • Health check: /health every 10s                                   │   │
+│  │  • Sticky sessions: Not required (stateless)                         │   │
+│  │                                                                      │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+│                                    │                                        │
+│              ┌─────────────────────┼─────────────────────┐                 │
+│              │                     │                     │                  │
+│              ▼                     ▼                     ▼                  │
+│  ┌──────────────────┐  ┌──────────────────┐  ┌──────────────────┐         │
+│  │   API Gateway    │  │   API Gateway    │  │   API Gateway    │         │
+│  │   Instance 1     │  │   Instance 2     │  │   Instance N     │         │
+│  └──────────────────┘  └──────────────────┘  └──────────────────┘         │
+│                                                                             │
+│                                                                             │
+│  ┌──────────────────┐  ┌──────────────────┐  ┌──────────────────┐         │
+│  │  WebRTC Bridge   │  │  WebRTC Bridge   │  │  WebRTC Bridge   │         │
+│  │   Instance 1     │  │   Instance 2     │  │   Instance N     │         │
+│  │   (50 calls)     │  │   (50 calls)     │  │   (50 calls)     │         │
+│  └──────────────────┘  └──────────────────┘  └──────────────────┘         │
+│                                                                             │
+│                                                                             │
+│  ┌──────────────────┐  ┌──────────────────┐  ┌──────────────────┐         │
+│  │  Agent Service   │  │  Agent Service   │  │  Agent Service   │         │
+│  │   Instance 1     │  │   Instance 2     │  │   Instance N     │         │
+│  │   (50 calls)     │  │   (50 calls)     │  │   (50 calls)     │         │
+│  └──────────────────┘  └──────────────────┘  └──────────────────┘         │
+│                                                                             │
+│                                                                             │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │                     SHARED STATE (Redis Cluster)                     │   │
+│  │                                                                      │   │
+│  │  • Call state accessible from any instance                           │   │
+│  │  • Event pub/sub for cross-instance communication                    │   │
+│  │                                                                      │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 11.2 Capacity Planning &#123;#11.2-capacity-planning&#125;
+
+| Component | Capacity per Instance | Scaling Metric | Scale Threshold |
+| :---- | :---- | :---- | :---- |
+| API Gateway | 1000 req/s | CPU utilization | \&gt;70% |
+| WebRTC Bridge | 50 concurrent calls | Active connections | \&gt;80% |
+| Agent Service | 50 concurrent calls | Active agents | \&gt;80% |
+| Worker Service | 100 jobs/minute | Queue depth | \&gt;1000 |
+| PostgreSQL | 500 connections | Connection count | \&gt;80% |
+| Redis | 10,000 ops/s | Memory usage | \&gt;80% |
+| Chatterbox | 100 concurrent synth | GPU utilization | \&gt;80% |
+
+### 11.3 Auto-Scaling Configuration &#123;#11.3-auto-scaling-configuration&#125;
+
+```
+autoscaling:
+  api_gateway:
+    min_instances: 2
+    max_instances: 10
+    target_cpu_utilization: 70
+    scale_up_cooldown: 60
+    scale_down_cooldown: 300
+
+  webrtc_bridge:
+    min_instances: 2
+    max_instances: 20
+    target_metric: active_connections
+    target_value: 40
+    scale_up_cooldown: 30
+    scale_down_cooldown: 300
+
+  agent_service:
+    min_instances: 2
+    max_instances: 20
+    target_metric: active_agents
+    target_value: 40
+    scale_up_cooldown: 30
+    scale_down_cooldown: 300
+
+  worker_service:
+    min_instances: 1
+    max_instances: 5
+    target_metric: queue_depth
+    target_value: 500
+    scale_up_cooldown: 60
+    scale_down_cooldown: 300
+```
+
+---
+
+## 12\. Failure Modes and Recovery &#123;#12.-failure-modes-and-recovery&#125;
+
+### 12.1 Failure Scenarios &#123;#12.1-failure-scenarios&#125;
+
+| Scenario | Detection | Impact | Recovery |
+| :---- | :---- | :---- | :---- |
+| GoToConnect outage | Health check failure | No new calls | Wait for recovery, alert |
+| LiveKit outage | Health check failure | Active calls drop | Reconnect, apologize |
+| Deepgram outage | API error rate | Can't transcribe | Fallback to Whisper |
+| Claude outage | API error rate | Can't generate | Cached responses, transfer |
+| Chatterbox crash | Health check failure | Can't speak | Fallback to Resemble |
+| Database failure | Connection errors | Full outage | Failover to replica |
+| Redis failure | Connection errors | State loss | Rebuild from events |
+| Single instance crash | Health check failure | Minimal | Auto-restart, rebalance |
+
+### 12.2 Circuit Breaker Configuration &#123;#12.2-circuit-breaker-configuration&#125;
+
+```py
+# shared/resilience/circuit_breaker.py
+
+from circuitbreaker import CircuitBreaker
+
+deepgram_breaker = CircuitBreaker(
+    failure_threshold=5,
+    recovery_timeout=30,
+    expected_exception=DeepgramError
+)
+
+claude_breaker = CircuitBreaker(
+    failure_threshold=3,
+    recovery_timeout=60,
+    expected_exception=AnthropicError
+)
+
+chatterbox_breaker = CircuitBreaker(
+    failure_threshold=3,
+    recovery_timeout=30,
+    expected_exception=ChatterboxError
+)
+```
+
+### 12.3 Graceful Degradation Hierarchy &#123;#12.3-graceful-degradation-hierarchy&#125;
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                      GRACEFUL DEGRADATION HIERARCHY                         │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  STT DEGRADATION:                                                           │
+│                                                                             │
+│    Primary: Deepgram Nova-2 (streaming)                                     │
+│         │                                                                   │
+│         │ If unavailable                                                    │
+│         ▼                                                                   │
+│    Fallback 1: Deepgram Nova-1 (streaming)                                  │
+│         │                                                                   │
+│         │ If unavailable                                                    │
+│         ▼                                                                   │
+│    Fallback 2: Whisper (self-hosted, higher latency)                        │
+│         │                                                                   │
+│         │ If unavailable                                                    │
+│         ▼                                                                   │
+│    Final: "I'm having trouble hearing you. Please hold for an agent."       │
+│                                                                             │
+│  ─────────────────────────────────────────────────────────────────────────  │
+│                                                                             │
+│  LLM DEGRADATION:                                                           │
+│                                                                             │
+│    Primary: Claude Sonnet (streaming)                                       │
+│         │                                                                   │
+│         │ If unavailable                                                    │
+│         ▼                                                                   │
+│    Fallback 1: Claude Haiku (streaming, less capable)                       │
+│         │                                                                   │
+│         │ If unavailable                                                    │
+│         ▼                                                                   │
+│    Fallback 2: Cached responses for common queries                          │
+│         │                                                                   │
+│         │ If no match                                                       │
+│         ▼                                                                   │
+│    Final: "I apologize, let me transfer you to someone who can help."       │
+│                                                                             │
+│  ─────────────────────────────────────────────────────────────────────────  │
+│                                                                             │
+│  TTS DEGRADATION:                                                           │
+│                                                                             │
+│    Primary: Chatterbox Turbo (self-hosted)                                  │
+│         │                                                                   │
+│         │ If unavailable                                                    │
+│         ▼                                                                   │
+│    Fallback 1: Resemble AI API                                              │
+│         │                                                                   │
+│         │ If unavailable                                                    │
+│         ▼                                                                   │
+│    Fallback 2: Pre-recorded audio clips                                     │
+│         │                                                                   │
+│         │ If no suitable clip                                               │
+│         ▼                                                                   │
+│    Final: Transfer to human (cannot communicate)                            │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 13\. Monitoring and Observability &#123;#13.-monitoring-and-observability&#125;
+
+### 13.1 Metrics Architecture &#123;#13.1-metrics-architecture&#125;
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         METRICS ARCHITECTURE                                │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐   │
+│  │ API Gateway  │  │WebRTC Bridge │  │Agent Service │  │   Worker     │   │
+│  │              │  │              │  │              │  │              │   │
+│  │  /metrics    │  │  /metrics    │  │  /metrics    │  │  /metrics    │   │
+│  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘   │
+│         │                 │                 │                 │            │
+│         └─────────────────┴─────────────────┴─────────────────┘            │
+│                                    │                                        │
+│                                    ▼                                        │
+│                           ┌──────────────┐                                  │
+│                           │  Prometheus  │                                  │
+│                           │              │                                  │
+│                           │  - Scraping  │                                  │
+│                           │  - Storage   │                                  │
+│                           │  - Alerting  │                                  │
+│                           └──────┬───────┘                                  │
+│                                  │                                          │
+│                                  ▼                                          │
+│                           ┌──────────────┐                                  │
+│                           │   Grafana    │                                  │
+│                           │              │                                  │
+│                           │  - Dashboards│                                  │
+│                           │  - Alerts    │                                  │
+│                           │  - Reports   │                                  │
+│                           └──────────────┘                                  │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 13.2 Key Metrics &#123;#13.2-key-metrics&#125;
+
+| Category | Metric | Type | Labels |
+| :---- | :---- | :---- | :---- |
+| **Calls** | `calls_total` | Counter | tenant, direction, status |
+|  | `calls_active` | Gauge | tenant |
+|  | `call_duration_seconds` | Histogram | tenant, direction |
+| **Latency** | `stt_latency_seconds` | Histogram | tenant |
+|  | `llm_latency_seconds` | Histogram | tenant, model |
+|  | `tts_latency_seconds` | Histogram | tenant, voice |
+|  | `e2e_latency_seconds` | Histogram | tenant |
+| **Errors** | `errors_total` | Counter | service, type |
+|  | `circuit_breaker_state` | Gauge | service |
+| **Resources** | `http_requests_total` | Counter | method, path, status |
+|  | `http_request_duration_seconds` | Histogram | method, path |
+|  | `db_connections_active` | Gauge | \- |
+|  | `redis_connections_active` | Gauge | \- |
+
+### 13.3 Logging Strategy &#123;#13.3-logging-strategy&#125;
+
+```py
+# Structured logging format
+{
+    "timestamp": "2026-01-16T10:30:00.123Z",
+    "level": "INFO",
+    "service": "agent-service",
+    "instance": "agent-service-abc123",
+    "trace_id": "trace-xyz789",
+    "span_id": "span-def456",
+    "tenant_id": "tenant_123",
+    "call_id": "call_456",
+    "message": "LLM response generated",
+    "data": {
+        "model": "claude-sonnet",
+        "tokens": 150,
+        "latency_ms": 342
+    }
+}
+```
+
+### 13.4 Alerting Rules &#123;#13.4-alerting-rules&#125;
+
+```
+alerts:
+  - name: HighErrorRate
+    condition: rate(errors_total[5m]) > 0.01
+    severity: warning
+    action: Notify on-call
+
+  - name: CallDropRate
+    condition: rate(calls_total{status="error"}[5m]) / rate(calls_total[5m]) > 0.05
+    severity: critical
+    action: Page on-call
+
+  - name: HighLatency
+    condition: histogram_quantile(0.95, e2e_latency_seconds) > 2.0
+    severity: warning
+    action: Notify on-call
+
+  - name: ServiceDown
+    condition: up == 0
+    for: 1m
+    severity: critical
+    action: Page on-call
+
+  - name: DatabaseConnectionsHigh
+    condition: db_connections_active > 400
+    severity: warning
+    action: Notify on-call
+
+  - name: GPUMemoryHigh
+    condition: gpu_memory_used_bytes / gpu_memory_total_bytes > 0.9
+    severity: warning
+    action: Notify on-call
+```
+
+---
+
+## 14\. Deployment Architecture &#123;#14.-deployment-architecture&#125;
+
+### 14.1 Container Architecture &#123;#14.1-container-architecture&#125;
+
+```
+# Base image for all services
+FROM python:3.11-slim as base
+
+WORKDIR /app
+
+# Install common dependencies
+RUN apt-get update && apt-get install -y \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy shared libraries
+COPY shared/ /app/shared/
+
+# Service-specific stage
+FROM base as service
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY app/ /app/app/
+
+# Non-root user
+RUN useradd -m appuser
+USER appuser
+
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+```
+
+### 14.2 Dokploy Configuration &#123;#14.2-dokploy-configuration&#125;
+
+```
+# dokploy.yaml
+version: "1"
+
+services:
+  api-gateway:
+    image: registry.aiconnected.io/api-gateway:${VERSION}
+    replicas: 2
+    resources:
+      cpu: "0.5"
+      memory: "512Mi"
+    healthcheck:
+      path: /health
+      interval: 10s
+    env:
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=${REDIS_URL}
+
+  webrtc-bridge:
+    image: registry.aiconnected.io/webrtc-bridge:${VERSION}
+    replicas: 2
+    resources:
+      cpu: "1"
+      memory: "1Gi"
+    ports:
+      - "10000-10100:10000-10100/udp"
+    healthcheck:
+      path: /health
+      interval: 10s
+    env:
+      - GOTOCONNECT_CLIENT_ID=${GOTOCONNECT_CLIENT_ID}
+      - LIVEKIT_URL=${LIVEKIT_URL}
+
+  agent-service:
+    image: registry.aiconnected.io/agent-service:${VERSION}
+    replicas: 2
+    resources:
+      cpu: "1"
+      memory: "2Gi"
+    healthcheck:
+      path: /health
+      interval: 10s
+    env:
+      - DEEPGRAM_API_KEY=${DEEPGRAM_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - CHATTERBOX_URL=${CHATTERBOX_URL}
+
+  worker-service:
+    image: registry.aiconnected.io/worker-service:${VERSION}
+    replicas: 1
+    resources:
+      cpu: "0.5"
+      memory: "512Mi"
+    env:
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=${REDIS_URL}
+```
+
+### 14.3 Environment Promotion &#123;#14.3-environment-promotion&#125;
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                        ENVIRONMENT PROMOTION                                │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  ┌──────────────┐      ┌──────────────┐      ┌──────────────┐              │
+│  │ Development  │─────▶│   Staging    │─────▶│  Production  │              │
+│  │              │      │              │      │              │              │
+│  │ • Local      │      │ • DO Region 1│      │ • DO Region 1│              │
+│  │ • Docker     │      │ • Full stack │      │ • Full stack │              │
+│  │ • Mock APIs  │      │ • Test data  │      │ • Live data  │              │
+│  └──────────────┘      └──────────────┘      └──────────────┘              │
+│         │                     │                     │                       │
+│         │ PR merge            │ Manual approval     │                       │
+│         │ Auto deploy         │ Deploy              │                       │
+│         ▼                     ▼                     ▼                       │
+│  ┌──────────────────────────────────────────────────────────────────────┐  │
+│  │                        CI/CD PIPELINE                                │  │
+│  │                                                                      │  │
+│  │  1. Run tests                                                        │  │
+│  │  2. Build images                                                     │  │
+│  │  3. Push to registry                                                 │  │
+│  │  4. Deploy to target environment                                     │  │
+│  │  5. Run smoke tests                                                  │  │
+│  │  6. Notify team                                                      │  │
+│  │                                                                      │  │
+│  └──────────────────────────────────────────────────────────────────────┘  │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 15\. Architecture Decision Records &#123;#15.-architecture-decision-records&#125;
+
+```text
+### ADR-001: Use GoToConnect for Telephony {#adr-001:-use-gotoconnect-for-telephony}
+
+```
+**Status**: Accepted
+
+**Context**: We need a telephony provider for PSTN connectivity and call control.
+
+**Decision**: Use GoToConnect because:
+
+- Existing grandfathered unlimited plan at $17/user  
+- Full WebRTC API with call control  
+- No per-minute charges
+
+**Consequences**:
+
+- Locked into GoToConnect infrastructure  
+- Need to build custom WebRTC bridge  
+- Dependent on GoToConnect API stability
+
+---
+
+```text
+### ADR-002: Use LiveKit for Real-Time Audio {#adr-002:-use-livekit-for-real-time-audio}
+
+```
+**Status**: Accepted
+
+**Context**: We need infrastructure for real-time audio routing between the phone bridge and AI agents.
+
+**Decision**: Use LiveKit Cloud because:
+
+- Purpose-built Agents SDK for voice AI  
+- Handles WebRTC complexity  
+- Scalable managed infrastructure
+
+**Consequences**:
+
+- Monthly LiveKit costs (\~$0.01/min)  
+- Dependent on LiveKit availability  
+- Need to integrate with their SDK
+
+---
+
+```text
+### ADR-003: Self-Host TTS on RunPod {#adr-003:-self-host-tts-on-runpod}
+
+```
+**Status**: Accepted
+
+**Context**: TTS is a significant per-minute cost at scale.
+
+**Decision**: Self-host Chatterbox on RunPod RTX A5000 because:
+
+- Zero per-minute cost after fixed infrastructure  
+- MIT license, full control  
+- Competitive quality with paralinguistics
+
+**Consequences**:
+
+- Operational overhead for GPU management  
+- Need fallback provider (Resemble)  
+- Slightly higher latency than Cartesia
+
+---
+
+```text
+### ADR-004: Use Redis for Call State {#adr-004:-use-redis-for-call-state}
+
+```
+**Status**: Accepted
+
+**Context**: Call state needs to be accessible from any service instance with low latency.
+
+**Decision**: Use Redis because:
+
+- Sub-millisecond access  
+- Built-in pub/sub for events  
+- Ephemeral data doesn't need durability
+
+**Consequences**:
+
+- State lost on Redis failure (acceptable for call state)  
+- Need to handle reconnection gracefully  
+- Memory limits on state size
+
+---
+
+```text
+### ADR-005: PostgreSQL for Persistent Data {#adr-005:-postgresql-for-persistent-data}
+
+```
+**Status**: Accepted
+
+**Context**: We need a database for tenant configuration, call history, and billing data.
+
+**Decision**: Use PostgreSQL because:
+
+- Relational model fits our data  
+- Excellent JSON support for flexible schemas  
+- Managed offering available on DigitalOcean
+
+**Consequences**:
+
+- Need to manage migrations  
+- Horizontal scaling more complex than NoSQL  
+- Connection pooling required
+
+---
+
+```text
+## Appendix A: Glossary {#appendix-a:-glossary}
+
+```
+| Term | Definition |
+| :---- | :---- |
+| **Agent** | An AI configuration that handles calls for a specific purpose |
+| **Barge-in** | When a caller interrupts the AI mid-speech |
+| **Bridge** | Component connecting GoToConnect to LiveKit |
+| **Call** | A single phone conversation |
+| **Circuit Breaker** | Pattern to prevent cascading failures |
+| **Context Window** | The LLM's working memory for a conversation |
+| **ICE** | Interactive Connectivity Establishment (WebRTC) |
+| **LiveKit** | Real-time audio/video infrastructure |
+| **LLM** | Large Language Model (Claude) |
+| **PBX** | Private Branch Exchange (phone system) |
+| **PSTN** | Public Switched Telephone Network |
+| **Room** | A LiveKit virtual space for participants |
+| **SDP** | Session Description Protocol (WebRTC) |
+| **Session** | Runtime state of an active call |
+| **SIP** | Session Initiation Protocol (VoIP) |
+| **STT** | Speech-to-Text |
+| **Tenant** | A customer business using the platform |
+| **TTS** | Text-to-Speech |
+| **Turn** | One speaker's contribution to a conversation |
+| **VAD** | Voice Activity Detection |
+| **WebRTC** | Web Real-Time Communication |
+
+---
+
+```text
+## Appendix B: Document History {#appendix-b:-document-history}
+
+```
+| Version | Date | Author | Changes |
+| :---- | :---- | :---- | :---- |
+| 1.0 | 2026-01-16 | Claude | Initial document |
+
+---
+
+*End of Document*

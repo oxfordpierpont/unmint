@@ -1,0 +1,1101 @@
+---
+title: "Clean Room Specification: SQL Native Entity Memory Layer with Vector Search"
+description: "Purpose of This Document This document specifies the complete architecture, data model, and API surface of an SQL native entity memory system for AI assistan..."
+---
+<Info>
+Normalized for Mintlify from `knowledge-base/neurigraph-memory-architecture/neurigraph-tool-references/05-SQL-Native-Entity-Memory-Layer.mdx`.
+</Info>
+# Clean-Room Specification: SQL-Native Entity Memory Layer with Vector Search
+
+## Purpose of This Document
+
+This document specifies the complete architecture, data model, and API surface of an **SQL-native entity memory system** for AI assistants. Unlike JSONL-file approaches, this system uses a relational database (PostgreSQL with pgvector, or SQLite with sqlite-vec) as the primary store, providing ACID transactions, proper indexing, vector similarity search, confidence scoring, memory type classification, and temporal decay. The system is exposed via both MCP tools and a REST API with Server-Sent Events.
+
+This specification is detailed enough that a professional AI coding model can produce a functionally identical working system without reference to any existing codebase.
+
+---
+
+## 1. System Overview
+
+### 1.1 Core Concept
+
+An AI assistant accumulates memories during conversations — facts about users, decisions made, patterns observed, errors encountered, and lessons learned. This system provides:
+
+1. **Structured storage**: Memories stored in SQL tables with proper types, tags, and confidence scores
+2. **Semantic search**: Vector embeddings enable meaning-based retrieval
+3. **Knowledge graph**: Entities connected by typed, weighted relations
+4. **Temporal management**: Confidence decay over time, reinforcement on access
+5. **Memory consolidation**: Automatic deduplication and merging of overlapping memories
+6. **Multi-client**: Supports concurrent AI assistant connections
+
+### 1.2 Architecture
+
+```
+┌─────────────────────────────────────────────────┐
+│              MCP Transport (stdio)               │
+│         9 core tools + graph tools               │
+├─────────────────────────────────────────────────┤
+│              REST API (HTTP)                      │
+│     /api/memories  /api/analytics  /api/events   │
+├─────────────────────────────────────────────────┤
+│              Service Layer                        │
+│  MemoryService, EntityService, SearchService,    │
+│  ConsolidationService, EmbeddingService          │
+├─────────────────────────────────────────────────┤
+│              Repository Layer                     │
+│  MemoryRepo, EntityRepo, RelationRepo            │
+├─────────────────────────────────────────────────┤
+│         Database (PostgreSQL + pgvector)          │
+│         or (SQLite + sqlite-vec + FTS5)          │
+└─────────────────────────────────────────────────┘
+```
+
+### 1.3 Design Principles
+
+1. **SQL-native**: All data in proper relational tables with constraints and indexes
+2. **Dual access**: Both MCP tools (for AI assistants) and REST API (for applications)
+3. **Embedding-first**: Every memory gets a vector embedding for semantic retrieval
+4. **Confidence-scored**: Every memory and relation has a confidence value that decays over time
+5. **Type-classified**: Memories are categorized for targeted retrieval
+
+---
+
+## 2. Database Schema
+
+### 2.1 Memories Table
+
+The core storage for all atomic memory units.
+
+```sql
+CREATE TABLE memories (
+    id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    external_id UUID UNIQUE NOT NULL DEFAULT gen_random_uuid(),
+    content TEXT NOT NULL,
+    memory_type VARCHAR(50) NOT NULL DEFAULT 'observation',
+    tags TEXT[] DEFAULT '{}',
+    confidence DECIMAL(3,2) NOT NULL DEFAULT 1.00,
+    importance DECIMAL(3,2) DEFAULT 0.50,
+    source VARCHAR(100),
+    context TEXT,
+    metadata JSONB DEFAULT '{}',
+    embedding VECTOR(384),
+    access_count INTEGER DEFAULT 0,
+    last_accessed_at TIMESTAMP,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+-- Indexes
+CREATE INDEX idx_memories_type ON memories(memory_type);
+CREATE INDEX idx_memories_tags ON memories USING GIN(tags);
+CREATE INDEX idx_memories_confidence ON memories(confidence);
+CREATE INDEX idx_memories_created ON memories(created_at);
+CREATE INDEX idx_memories_metadata ON memories USING GIN(metadata);
+```
+
+**Vector index** (PostgreSQL with pgvector):
+```sql
+CREATE INDEX idx_memories_embedding ON memories
+    USING ivfflat (embedding vector_cosine_ops) WITH (lists = 100);
+```
+
+**Memory types** (enumerated, extensible):
+
+| Type | Description | Example |
+|------|-------------|---------|
+| `observation` | Passive fact about the world | "User prefers dark mode" |
+| `decision` | Choice made by user or agent | "Chose React over Vue for frontend" |
+| `learning` | Knowledge gained from experience | "JSON parsing fails on trailing commas" |
+| `error` | Mistakes and their causes | "Deploy failed due to missing env var" |
+| `pattern` | Recurring trends identified | "User always asks for TypeScript examples" |
+| `preference` | User preferences and habits | "Prefers concise answers over detailed ones" |
+| `fact` | Objective, verifiable information | "Company founded in 2019" |
+| `procedure` | Step-by-step processes | "Deploy sequence: build → test → push → deploy" |
+
+### 2.2 Entities Table
+
+Named entities that memories can be associated with.
+
+```sql
+CREATE TABLE entities (
+    id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    external_id UUID UNIQUE NOT NULL DEFAULT gen_random_uuid(),
+    name VARCHAR(255) NOT NULL,
+    entity_type VARCHAR(100) NOT NULL,
+    description TEXT,
+    metadata JSONB DEFAULT '{}',
+    embedding VECTOR(384),
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    UNIQUE(name, entity_type)
+);
+
+CREATE INDEX idx_entities_type ON entities(entity_type);
+CREATE INDEX idx_entities_name ON entities(name);
+```
+
+**Entity types**: `person`, `organization`, `project`, `concept`, `location`, `technology`, `event`
+
+### 2.3 Relations Table
+
+Directed, typed connections between entities.
+
+```sql
+CREATE TABLE relations (
+    id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    external_id UUID UNIQUE NOT NULL DEFAULT gen_random_uuid(),
+    source_id BIGINT NOT NULL REFERENCES entities(id) ON DELETE CASCADE,
+    target_id BIGINT NOT NULL REFERENCES entities(id) ON DELETE CASCADE,
+    relation_type VARCHAR(100) NOT NULL,
+    strength DECIMAL(3,2) NOT NULL DEFAULT 0.50,
+    confidence DECIMAL(3,2) NOT NULL DEFAULT 1.00,
+    context TEXT,
+    metadata JSONB DEFAULT '{}',
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    UNIQUE(source_id, target_id, relation_type)
+);
+
+CREATE INDEX idx_relations_source ON relations(source_id);
+CREATE INDEX idx_relations_target ON relations(target_id);
+CREATE INDEX idx_relations_type ON relations(relation_type);
+```
+
+**Relation types** (active voice):
+- `works_at`, `manages`, `reports_to`, `collaborates_with`
+- `uses`, `implements`, `depends_on`, `related_to`
+- `located_in`, `part_of`, `created_by`
+
+### 2.4 Entity-Memory Association
+
+Many-to-many mapping between entities and memories.
+
+```sql
+CREATE TABLE entity_memories (
+    entity_id BIGINT NOT NULL REFERENCES entities(id) ON DELETE CASCADE,
+    memory_id BIGINT NOT NULL REFERENCES memories(id) ON DELETE CASCADE,
+    relevance DECIMAL(3,2) DEFAULT 1.00,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (entity_id, memory_id)
+);
+```
+
+### 2.5 Memory Versions Table
+
+Track history of memory modifications.
+
+```sql
+CREATE TABLE memory_versions (
+    id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    memory_id BIGINT NOT NULL REFERENCES memories(id) ON DELETE CASCADE,
+    content TEXT NOT NULL,
+    confidence DECIMAL(3,2),
+    metadata JSONB,
+    version_number INTEGER NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_versions_memory ON memory_versions(memory_id);
+```
+
+### 2.6 Full-Text Search (SQLite Alternative)
+
+When using SQLite instead of PostgreSQL:
+
+```sql
+-- FTS5 virtual table
+CREATE VIRTUAL TABLE memories_fts USING fts5(
+    content,
+    memory_type,
+    tags,
+    context,
+    content=memories,
+    content_rowid=id
+);
+
+-- Triggers to keep FTS in sync
+CREATE TRIGGER memories_ai AFTER INSERT ON memories BEGIN
+    INSERT INTO memories_fts(rowid, content, memory_type, tags, context)
+    VALUES (new.id, new.content, new.memory_type,
+            (SELECT group_concat(value) FROM json_each(new.tags)),
+            new.context);
+END;
+
+CREATE TRIGGER memories_ad AFTER DELETE ON memories BEGIN
+    INSERT INTO memories_fts(memories_fts, rowid, content, memory_type, tags, context)
+    VALUES ('delete', old.id, old.content, old.memory_type,
+            (SELECT group_concat(value) FROM json_each(old.tags)),
+            old.context);
+END;
+
+CREATE TRIGGER memories_au AFTER UPDATE ON memories BEGIN
+    INSERT INTO memories_fts(memories_fts, rowid, content, memory_type, tags, context)
+    VALUES ('delete', old.id, old.content, old.memory_type,
+            (SELECT group_concat(value) FROM json_each(old.tags)),
+            old.context);
+    INSERT INTO memories_fts(rowid, content, memory_type, tags, context)
+    VALUES (new.id, new.content, new.memory_type,
+            (SELECT group_concat(value) FROM json_each(new.tags)),
+            new.context);
+END;
+```
+
+**Vector storage** (SQLite with sqlite-vec):
+```sql
+CREATE VIRTUAL TABLE memory_vectors USING vec0(
+    memory_id INTEGER PRIMARY KEY,
+    embedding FLOAT[384]
+);
+```
+
+---
+
+## 3. Embedding System
+
+### 3.1 Provider Interface
+
+```typescript
+interface EmbeddingProvider {
+    embed(text: string): Promise<number[]>;
+    embedBatch(texts: string[]): Promise<number[][]>;
+    dimensions: number;
+    modelName: string;
+}
+```
+
+### 3.2 Supported Providers
+
+| Provider | Model | Dimensions | Requires API Key |
+|----------|-------|------------|------------------|
+| Local (default) | all-MiniLM-L6-v2 | 384 | No |
+| OpenAI | text-embedding-3-small | 1536 | Yes |
+
+### 3.3 Embedding Generation
+
+Embeddings are generated automatically:
+- On memory creation: embed the `content` field
+- On entity creation: embed `name + " " + description`
+- On memory update: re-embed if content changed
+- Batch processing: Queue new memories, embed in batches of 32
+
+### 3.4 Similarity Computation
+
+**PostgreSQL (pgvector)**:
+```sql
+SELECT id, content, 1 - (embedding <=> $1::vector) AS similarity
+FROM memories
+WHERE 1 - (embedding <=> $1::vector) > $2
+ORDER BY embedding <=> $1::vector
+LIMIT $3;
+```
+
+The `<=>` operator computes cosine distance. Similarity = 1 - distance.
+
+**SQLite (sqlite-vec)**:
+```sql
+SELECT memory_id, distance
+FROM memory_vectors
+WHERE embedding MATCH $1
+ORDER BY distance
+LIMIT $2;
+```
+
+Convert L2 distance to cosine similarity: `similarity = 1 - (distance² / 2)` (for normalized vectors).
+
+---
+
+## 4. Confidence and Temporal Decay
+
+### 4.1 Confidence Model
+
+Every memory has a `confidence` score in [0.0, 1.0]:
+- **1.0**: Just created, highly confident
+- **0.5**: Moderate confidence
+- **0.0**: No confidence, candidate for pruning
+
+### 4.2 Decay Formula
+
+Confidence decays exponentially over time since last access:
+
+```
+confidence(t) = initial_confidence × 0.5^(t / half_life)
+
+Where:
+  t = time since last_accessed_at (or created_at if never accessed)
+  half_life = 30 days (configurable)
+```
+
+### 4.3 Reinforcement
+
+When a memory is accessed (read, searched, or returned in results):
+1. Increment `access_count`
+2. Update `last_accessed_at` to now
+3. Boost confidence: `confidence = min(1.0, confidence + 0.1)`
+
+This creates a "use it or lose it" dynamic where frequently-accessed memories stay strong.
+
+### 4.4 Decay Application
+
+Decay is computed at read time, not continuously updated:
+```sql
+SELECT id, content,
+    confidence * POWER(0.5, EXTRACT(EPOCH FROM (NOW() - COALESCE(last_accessed_at, created_at))) / (30 * 86400))
+    AS effective_confidence
+FROM memories
+WHERE /* effective_confidence > threshold */;
+```
+
+### 4.5 Pruning
+
+A periodic background job removes memories with effective confidence below a threshold:
+- Default threshold: 0.05
+- Run interval: daily
+- Pruned memories are permanently deleted (or moved to archive table if configured)
+
+---
+
+## 5. Search System
+
+### 5.1 Search Modes
+
+| Mode | Method | Best For |
+|------|--------|----------|
+| `keyword` | FTS5 / tsvector | Exact term matching |
+| `semantic` | Vector cosine similarity | Meaning-based retrieval |
+| `hybrid` | Weighted combination | General purpose (default) |
+| `graph` | Entity relation traversal | Connected knowledge discovery |
+
+### 5.2 Keyword Search
+
+**PostgreSQL**:
+```sql
+SELECT id, content, ts_rank(to_tsvector('english', content), plainto_tsquery('english', $1)) AS rank
+FROM memories
+WHERE to_tsvector('english', content) @@ plainto_tsquery('english', $1)
+ORDER BY rank DESC
+LIMIT $2;
+```
+
+**SQLite (FTS5)**:
+```sql
+SELECT m.id, m.content, f.rank
+FROM memories_fts f
+JOIN memories m ON m.id = f.rowid
+WHERE memories_fts MATCH $1
+ORDER BY f.rank
+LIMIT $2;
+```
+
+### 5.3 Semantic Search
+
+1. Embed the query text
+2. Find nearest neighbors by cosine similarity
+3. Filter by minimum similarity threshold (default: 0.5)
+4. Return top-k results (default: 20)
+
+### 5.4 Hybrid Search
+
+```
+hybrid_score = α × keyword_score + (1 - α) × semantic_score
+
+Default α = 0.4 (semantic-weighted)
+```
+
+**Normalization**: Both keyword and semantic scores are min-max normalized to [0, 1] within their respective result sets before combination.
+
+**Merging**: Union of results from both searches. If a memory appears in both, use hybrid score. If only in one, scale by its weight.
+
+### 5.5 Graph Search
+
+Given a starting entity:
+1. Find all directly connected entities (1-hop)
+2. Collect all memories associated with those entities
+3. Optionally expand to 2-hop or N-hop neighbors
+4. Rank results by relation strength × confidence
+
+### 5.6 Search Filters
+
+All modes support these filters:
+
+| Filter | Type | Description |
+|--------|------|-------------|
+| `memory_types` | string[] | Filter by memory type |
+| `tags` | string[] | Must contain all specified tags |
+| `min_confidence` | float | Minimum effective confidence |
+| `after_date` | datetime | Created after this date |
+| `before_date` | datetime | Created before this date |
+| `entity_id` | int | Associated with this entity |
+| `source` | string | Originating source |
+| `limit` | int | Max results (default 20, max 100) |
+| `offset` | int | Pagination offset |
+
+---
+
+## 6. Memory Consolidation
+
+### 6.1 Deduplication
+
+When creating a new memory, check for duplicates:
+
+1. **Exact match**: SHA-256 hash of content matches existing memory → skip creation
+2. **Near-duplicate**: Cosine similarity &gt; 0.95 with existing memory → merge
+
+**Merge strategy**:
+- Keep the older memory (lower ID)
+- Update confidence: `max(old.confidence, new.confidence)`
+- Merge tags: union of both tag sets
+- Update metadata: shallow merge (new values override old)
+- Increment version
+
+### 6.2 Consolidation Engine
+
+A periodic process that combines related memories:
+
+1. Find clusters of memories with high pairwise similarity (&gt; 0.85)
+2. For each cluster:
+   a. Select the memory with highest confidence as the "primary"
+   b. Merge observations from other memories into primary
+   c. Create version records for audit trail
+   d. Delete absorbed memories
+   e. Reassign entity associations
+
+### 6.3 Consolidation Triggers
+
+- **Manual**: Via MCP tool or API call
+- **Automatic**: After every N memory insertions (default: 50)
+- **Scheduled**: Configurable cron interval (default: daily)
+
+---
+
+## 7. MCP Server
+
+### 7.1 Server Setup
+
+**Transport**: stdio (JSON-RPC 2.0 over stdin/stdout)
+
+**Initialization**:
+1. Connect to database
+2. Run migrations if needed
+3. Initialize embedding provider
+4. Register tools
+
+### 7.2 MCP Tools
+
+#### 7.2.1 `store_memory`
+
+Create a new memory with automatic embedding and deduplication.
+
+**Parameters**:
+| Name | Type | Required | Default | Description |
+|------|------|----------|---------|-------------|
+| content | string | yes | | Memory content text |
+| memory_type | string | no | "observation" | One of the memory types |
+| tags | string[] | no | [] | Classification tags |
+| confidence | number | no | 1.0 | Initial confidence [0-1] |
+| source | string | no | | Origin identifier |
+| context | string | no | | Surrounding context |
+| metadata | object | no | &#123;&#125; | Arbitrary metadata |
+| entity_names | string[] | no | [] | Associate with named entities |
+
+**Behavior**:
+1. Check for duplicates (exact hash, then semantic similarity)
+2. If duplicate found: merge and return existing memory
+3. Generate embedding for content
+4. Insert memory record
+5. Associate with entities (create entities if they don't exist)
+6. Return created memory with ID
+
+#### 7.2.2 `recall_memories`
+
+Search for relevant memories.
+
+**Parameters**:
+| Name | Type | Required | Default | Description |
+|------|------|----------|---------|-------------|
+| query | string | yes | | Search query |
+| search_mode | string | no | "hybrid" | keyword, semantic, hybrid, graph |
+| memory_types | string[] | no | | Filter by types |
+| tags | string[] | no | | Filter by tags |
+| min_confidence | number | no | 0.1 | Minimum confidence threshold |
+| limit | int | no | 20 | Max results |
+| entity_name | string | no | | Filter by entity association |
+
+**Returns**: Array of memories with scores, sorted by relevance.
+
+#### 7.2.3 `create_entities`
+
+Create one or more named entities.
+
+**Parameters**:
+```json
+{
+    "entities": [
+        {
+            "name": "string (required)",
+            "entity_type": "string (required)",
+            "description": "string (optional)",
+            "metadata": "object (optional)"
+        }
+    ]
+}
+```
+
+**Behavior**: Create entities, generate embeddings, deduplicate by (name, entity_type).
+
+#### 7.2.4 `create_relations`
+
+Create typed connections between entities.
+
+**Parameters**:
+```json
+{
+    "relations": [
+        {
+            "source": "string (entity name, required)",
+            "target": "string (entity name, required)",
+            "relation_type": "string (required)",
+            "strength": "number 0-1 (optional, default 0.5)",
+            "confidence": "number 0-1 (optional, default 1.0)",
+            "context": "string (optional)"
+        }
+    ]
+}
+```
+
+**Behavior**: Look up entities by name, create relation records. If source or target entity doesn't exist, auto-create with type "unknown".
+
+#### 7.2.5 `delete_memories`
+
+Delete memories by ID or filter.
+
+**Parameters**:
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| memory_ids | string[] | no | Specific memory IDs to delete |
+| before_date | string | no | Delete all memories before this date |
+| min_confidence_below | number | no | Delete all with confidence below this |
+| memory_types | string[] | no | Delete all of these types |
+
+**Behavior**: Delete matching memories and cascade to entity_memories associations. At least one filter must be provided.
+
+#### 7.2.6 `delete_entities`
+
+Delete entities and optionally their associated memories.
+
+**Parameters**:
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| entity_names | string[] | yes | Names of entities to delete |
+| cascade_memories | boolean | no | Also delete associated memories (default false) |
+
+#### 7.2.7 `delete_relations`
+
+Delete specific relations.
+
+**Parameters**:
+```json
+{
+    "relations": [
+        {
+            "source": "string (required)",
+            "target": "string (required)",
+            "relation_type": "string (required)"
+        }
+    ]
+}
+```
+
+#### 7.2.8 `get_entity_graph`
+
+Retrieve a subgraph centered on an entity.
+
+**Parameters**:
+| Name | Type | Required | Default | Description |
+|------|------|----------|---------|-------------|
+| entity_name | string | yes | | Center entity |
+| depth | int | no | 1 | Hop count for traversal |
+| min_strength | number | no | 0.0 | Minimum relation strength |
+| include_memories | boolean | no | true | Include associated memories |
+
+**Returns**: Graph structure with nodes (entities), edges (relations), and optionally memories per node.
+
+#### 7.2.9 `consolidate_memories`
+
+Trigger manual consolidation.
+
+**Parameters**:
+| Name | Type | Required | Default | Description |
+|------|------|----------|---------|-------------|
+| similarity_threshold | number | no | 0.85 | Clustering threshold |
+| dry_run | boolean | no | false | Preview without applying |
+
+**Returns**: Consolidation report (clusters found, memories merged, memories deleted).
+
+#### 7.2.10 `get_memory_stats`
+
+Get analytics about the memory store.
+
+**Parameters**: None.
+
+**Returns**:
+```json
+{
+    "total_memories": 1234,
+    "total_entities": 56,
+    "total_relations": 78,
+    "memories_by_type": {"observation": 500, "decision": 200, ...},
+    "average_confidence": 0.72,
+    "oldest_memory": "2025-01-01T00:00:00Z",
+    "newest_memory": "2026-03-08T12:00:00Z",
+    "low_confidence_count": 45
+}
+```
+
+---
+
+## 8. REST API
+
+### 8.1 Memory Endpoints
+
+```
+POST   /api/memories              Create memory (same params as store_memory)
+GET    /api/memories              List memories with filters
+GET    /api/memories/:id          Get single memory
+PUT    /api/memories/:id          Update memory
+DELETE /api/memories/:id          Delete memory
+GET    /api/memories/search       Search (query params: q, mode, types, tags, limit)
+POST   /api/memories/consolidate  Trigger consolidation
+```
+
+### 8.2 Entity Endpoints
+
+```
+POST   /api/entities              Create entity
+GET    /api/entities              List entities
+GET    /api/entities/:id          Get entity with relations
+PUT    /api/entities/:id          Update entity
+DELETE /api/entities/:id          Delete entity
+GET    /api/entities/:id/graph    Get entity subgraph
+GET    /api/entities/:id/memories Get entity's memories
+```
+
+### 8.3 Relation Endpoints
+
+```
+POST   /api/relations             Create relation
+GET    /api/relations             List relations
+DELETE /api/relations/:id         Delete relation
+```
+
+### 8.4 Analytics Endpoints
+
+```
+GET    /api/analytics/overview    Memory statistics
+GET    /api/analytics/growth      Growth over time (memories per day/week/month)
+GET    /api/analytics/types       Distribution by memory type
+GET    /api/analytics/tags        Tag frequency
+GET    /api/analytics/confidence  Confidence distribution histogram
+```
+
+### 8.5 Server-Sent Events
+
+```
+GET    /api/events                SSE stream
+```
+
+**Event types**:
+| Event | Payload | Trigger |
+|-------|---------|---------|
+| `memory_created` | `{id, content, type}` | New memory stored |
+| `memory_updated` | `{id, changes}` | Memory modified |
+| `memory_deleted` | `{id}` | Memory removed |
+| `entity_created` | `{id, name, type}` | New entity |
+| `consolidation_complete` | `{merged, deleted}` | Consolidation finished |
+| `sync_complete` | `{timestamp}` | Background sync done |
+
+---
+
+## 9. Configuration
+
+### 9.1 Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `DATABASE_URL` | `sqlite:///memory.db` | Database connection string |
+| `DATABASE_BACKEND` | `sqlite` | `sqlite` or `postgres` |
+| `EMBEDDING_PROVIDER` | `local` | `local` or `openai` |
+| `EMBEDDING_MODEL` | `all-MiniLM-L6-v2` | Model name |
+| `EMBEDDING_DIMENSIONS` | `384` | Vector dimensions |
+| `OPENAI_API_KEY` | | Required if provider is openai |
+| `CONFIDENCE_HALF_LIFE_DAYS` | `30` | Days until confidence halves |
+| `CONFIDENCE_PRUNE_THRESHOLD` | `0.05` | Auto-prune below this |
+| `CONSOLIDATION_THRESHOLD` | `0.85` | Similarity for merging |
+| `CONSOLIDATION_INTERVAL` | `50` | Memories between auto-consolidation |
+| `SEARCH_DEFAULT_LIMIT` | `20` | Default search results |
+| `SEARCH_MIN_SIMILARITY` | `0.5` | Minimum vector similarity |
+| `HYBRID_KEYWORD_WEIGHT` | `0.4` | Keyword weight in hybrid (semantic = 1 - this) |
+| `API_PORT` | `3333` | REST API port |
+| `API_HOST` | `0.0.0.0` | REST API host |
+| `LOG_LEVEL` | `info` | Logging level |
+
+### 9.2 Claude Desktop Integration
+
+```json
+{
+    "mcpServers": {
+        "memory": {
+            "command": "node",
+            "args": ["path/to/server.js"],
+            "env": {
+                "DATABASE_URL": "postgresql://user:pass@localhost:5432/memory",
+                "DATABASE_BACKEND": "postgres"
+            }
+        }
+    }
+}
+```
+
+---
+
+## 10. Behavioral Test Specifications
+
+### 10.1 Memory CRUD Tests
+
+```
+TEST: Store basic memory
+  Call store_memory(content="User prefers TypeScript", memory_type="preference")
+  EXPECT: Memory created with id, confidence=1.0, embedding generated
+
+TEST: Store memory with entity association
+  Call store_memory(content="Alice manages the frontend team", entity_names=["Alice", "Frontend Team"])
+  EXPECT: Memory created, entities auto-created if not existing, entity_memories rows created
+
+TEST: Exact duplicate detection
+  Store "User prefers dark mode" twice
+  EXPECT: Second call returns existing memory, no duplicate created
+
+TEST: Near-duplicate detection
+  Store "User prefers dark mode"
+  Store "The user likes dark mode" (semantic similarity > 0.95)
+  EXPECT: Second memory merged into first, tags combined, confidence boosted
+
+TEST: Update memory
+  Create memory, then update content
+  EXPECT: Content updated, new version record created, embedding re-generated
+
+TEST: Delete memory cascades
+  Create memory associated with entities
+  Delete memory
+  EXPECT: Memory deleted, entity_memories rows deleted, entities preserved
+```
+
+### 10.2 Search Tests
+
+```
+TEST: Keyword search
+  Store memories about "machine learning" and "web development"
+  Search "machine learning"
+  EXPECT: ML memory returned, web dev memory not returned
+
+TEST: Semantic search
+  Store "canine behavior training tips"
+  Search "how to train dogs" with mode=semantic
+  EXPECT: Memory returned based on semantic similarity
+
+TEST: Hybrid search combines results
+  Store 10 varied memories
+  Search with mode=hybrid
+  EXPECT: Results reflect both keyword and semantic relevance
+
+TEST: Filter by memory type
+  Store observation, decision, and pattern memories
+  Search with memory_types=["decision"]
+  EXPECT: Only decision-type memories returned
+
+TEST: Filter by tags
+  Store memories with various tags
+  Search with tags=["typescript", "frontend"]
+  EXPECT: Only memories containing ALL specified tags
+
+TEST: Filter by confidence
+  Store memories, wait for some to decay
+  Search with min_confidence=0.5
+  EXPECT: Only memories with effective confidence >= 0.5
+
+TEST: Pagination
+  Store 50 memories
+  Search with limit=10, offset=20
+  EXPECT: Results 21-30 returned
+```
+
+### 10.3 Confidence and Decay Tests
+
+```
+TEST: Initial confidence
+  Store memory without explicit confidence
+  EXPECT: confidence = 1.0
+
+TEST: Confidence decay over time
+  Store memory, simulate 30 days passing
+  Query effective confidence
+  EXPECT: ~0.5 (half-life = 30 days)
+
+TEST: Confidence decay at 60 days
+  Store memory, simulate 60 days
+  EXPECT: ~0.25
+
+TEST: Access reinforcement
+  Store memory, simulate 15 days, then access it
+  EXPECT: last_accessed_at updated, confidence boosted by 0.1
+
+TEST: Confidence cap at 1.0
+  Store memory with confidence 0.95, access it
+  EXPECT: confidence = 1.0, not 1.05
+
+TEST: Prune low-confidence memories
+  Store memories, simulate long decay below threshold
+  Run pruning job
+  EXPECT: Memories with effective confidence < 0.05 deleted
+```
+
+### 10.4 Entity and Graph Tests
+
+```
+TEST: Create entity
+  Create entity(name="Alice", entity_type="person", description="Software engineer")
+  EXPECT: Entity created with embedding
+
+TEST: Create relation
+  Create entities Alice and Bob
+  Create relation(source="Alice", target="Bob", relation_type="collaborates_with", strength=0.8)
+  EXPECT: Relation created, lookup by entity names succeeds
+
+TEST: Duplicate relation prevention
+  Create same relation twice
+  EXPECT: Unique constraint error or upsert
+
+TEST: Get entity graph (depth=1)
+  Create A→B, A→C, B→D
+  Get graph for A with depth=1
+  EXPECT: Returns A, B, C (not D)
+
+TEST: Get entity graph (depth=2)
+  Same setup
+  Get graph for A with depth=2
+  EXPECT: Returns A, B, C, D
+
+TEST: Entity deletion cascade
+  Create entity with relations
+  Delete entity
+  EXPECT: Entity deleted, relations cascade-deleted, associated memories preserved
+
+TEST: Auto-create entities from store_memory
+  Call store_memory with entity_names=["NewPerson"]
+  EXPECT: Entity "NewPerson" auto-created with type "unknown"
+```
+
+### 10.5 Consolidation Tests
+
+```
+TEST: Cluster detection
+  Store 5 memories about "React hooks" with slight variations
+  Run consolidation with threshold=0.85
+  EXPECT: Cluster detected, memories merged into primary
+
+TEST: Dry run
+  Same setup, run with dry_run=true
+  EXPECT: Report generated but no changes applied
+
+TEST: Version trail
+  Merge two memories
+  EXPECT: Version record created for the absorbed memory
+
+TEST: Entity reassignment
+  Memory A associated with Entity X
+  Memory B associated with Entity Y
+  Merge A into B
+  EXPECT: B now associated with both X and Y
+```
+
+### 10.6 REST API Tests
+
+```
+TEST: POST /api/memories
+  Send valid memory JSON
+  EXPECT: 201 Created with memory object
+
+TEST: GET /api/memories/search?q=test
+  EXPECT: 200 with array of matching memories
+
+TEST: SSE event on memory creation
+  Connect to /api/events, then create memory via API
+  EXPECT: Receive memory_created event with memory data
+
+TEST: GET /api/analytics/overview
+  EXPECT: 200 with stats object containing counts and averages
+```
+
+---
+
+## 11. Key Implementation Algorithms
+
+### 11.1 Hybrid Score Computation
+
+```
+Input: query string, search filters
+Step 1: Run keyword search → results_kw with BM25 scores
+Step 2: Run semantic search → results_vec with similarity scores
+Step 3: Normalize keyword scores to [0,1] via min-max
+Step 4: Normalize semantic scores to [0,1] (already in this range)
+Step 5: Union all memory IDs
+Step 6: For each ID:
+  - If in both: score = α × kw_norm + (1-α) × vec_norm
+  - If keyword only: score = α × kw_norm
+  - If vector only: score = (1-α) × vec_norm
+Step 7: Sort by score descending
+Step 8: Apply effective confidence as final multiplier:
+  final_score = hybrid_score × effective_confidence
+```
+
+### 11.2 Graph Traversal (BFS)
+
+```
+function getSubgraph(startEntity, maxDepth, minStrength):
+    visited = Set()
+    queue = [(startEntity, 0)]
+    nodes = []
+    edges = []
+
+    while queue not empty:
+        (entity, depth) = queue.pop(0)
+        if entity in visited or depth > maxDepth:
+            continue
+        visited.add(entity)
+        nodes.push(entity)
+
+        for relation in entity.outgoing + entity.incoming:
+            if relation.strength >= minStrength:
+                edges.push(relation)
+                neighbor = relation.other_end(entity)
+                if neighbor not in visited:
+                    queue.push((neighbor, depth + 1))
+
+    return {nodes, edges}
+```
+
+### 11.3 Deduplication Check
+
+```
+function checkDuplicate(newContent):
+    // Exact check
+    hash = sha256(newContent)
+    existing = db.query("SELECT * FROM memories WHERE sha256(content) = ?", hash)
+    if existing: return {type: "exact", memory: existing}
+
+    // Semantic check
+    embedding = embed(newContent)
+    similar = db.query(
+        "SELECT *, 1-(embedding <=> ?) AS sim FROM memories WHERE 1-(embedding <=> ?) > 0.95 LIMIT 1",
+        embedding, embedding
+    )
+    if similar: return {type: "near", memory: similar}
+
+    return null
+```
+
+### 11.4 Confidence Decay Computation
+
+```
+function effectiveConfidence(memory):
+    lastActive = memory.last_accessed_at ?? memory.created_at
+    elapsedDays = (now() - lastActive).totalDays
+    halfLife = config.CONFIDENCE_HALF_LIFE_DAYS  // 30
+    return memory.confidence * Math.pow(0.5, elapsedDays / halfLife)
+```
+
+---
+
+## 12. Dependencies
+
+### 12.1 Required (TypeScript/Node.js)
+
+| Package | Purpose |
+|---------|---------|
+| @modelcontextprotocol/sdk | MCP server framework |
+| zod | Schema validation |
+| better-sqlite3 | SQLite driver (if SQLite backend) |
+| pg | PostgreSQL driver (if Postgres backend) |
+| express | REST API server |
+| uuid | External ID generation |
+
+### 12.2 Optional
+
+| Package | Purpose |
+|---------|---------|
+| pgvector | PostgreSQL vector operations |
+| sqlite-vec | SQLite vector extension |
+| @xenova/transformers | Local embeddings (ONNX Runtime) |
+| openai | Remote embeddings |
+| cron | Scheduled consolidation |
+| eventsource | SSE support |
+
+---
+
+## 13. Directory Structure
+
+```
+project_root/
+├── src/
+│   ├── index.ts              # Entry point, server setup
+│   ├── config.ts             # Configuration loading
+│   ├── database/
+│   │   ├── schema.ts         # Table definitions
+│   │   ├── migrations/       # Schema migrations
+│   │   ├── sqlite.ts         # SQLite implementation
+│   │   └── postgres.ts       # PostgreSQL implementation
+│   ├── models/
+│   │   ├── memory.ts         # Memory type/interface
+│   │   ├── entity.ts         # Entity type/interface
+│   │   └── relation.ts       # Relation type/interface
+│   ├── services/
+│   │   ├── memory.ts         # Memory CRUD + dedup
+│   │   ├── entity.ts         # Entity CRUD
+│   │   ├── search.ts         # Search dispatch (keyword/semantic/hybrid)
+│   │   ├── consolidation.ts  # Dedup + merge engine
+│   │   ├── embedding.ts      # Embedding generation
+│   │   └── decay.ts          # Confidence management
+│   ├── mcp/
+│   │   ├── server.ts         # MCP tool registration
+│   │   └── tools.ts          # Tool implementations
+│   ├── api/
+│   │   ├── router.ts         # Express routes
+│   │   ├── middleware.ts      # Auth, logging, error handling
+│   │   └── sse.ts            # Server-Sent Events
+│   └── utils/
+│       ├── hash.ts           # SHA-256 hashing
+│       └── normalize.ts      # Text normalization
+├── tests/
+├── migrations/
+└── package.json
+```
+
+---
+
+## 14. Startup Sequence
+
+1. Load configuration from environment variables
+2. Initialize database connection (SQLite or PostgreSQL)
+3. Run pending migrations
+4. Initialize embedding provider (test with a sample embed call)
+5. Initialize MCP server with stdio transport
+6. Register all MCP tools
+7. Start REST API server (if enabled)
+8. Start background workers:
+   - Confidence decay pruning (daily)
+   - Consolidation (after every N insertions or on schedule)
+   - Embedding backfill (for any memories missing embeddings)
+9. Begin accepting connections
+
+---
+
+*This specification provides complete architectural and behavioral detail for independent implementation of an SQL-native entity memory layer with vector search, confidence decay, memory consolidation, and dual MCP/REST access.*

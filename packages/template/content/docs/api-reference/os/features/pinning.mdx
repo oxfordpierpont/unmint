@@ -1,0 +1,35 @@
+---
+title: "Pinning"
+description: "Feature-level API contract for pinning messages and artifacts and exposing pinned-filter views in aiConnectedOS."
+---
+## Contract status
+
+`Derived implementation contract`
+
+## Source document
+
+- [Pinning](/docs/knowledge-base/aiconnected-os/aiconnected-os-7-pin-message-feature)
+
+## Feature purpose
+
+Defines pinning as a durable promotion layer for important messages and outputs.
+
+## Required operations
+
+- Pin and unpin messages or artifacts
+- List pinned items by conversation, space, or workspace
+- Use pins as export and organization inputs
+- Preserve pin metadata for later search and filtering
+
+## Suggested resources
+
+- `pins`
+- `pin_targets`
+- `pin_collections`
+- `pin_activity`
+
+## Implementation notes
+
+- Keep this feature workspace-scoped and persona-aware where applicable.
+- Preserve authorship, timestamps, and auditability for all state changes.
+- Treat the source doc as the behavioral specification even where final route names remain open.

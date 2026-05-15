@@ -1,0 +1,380 @@
+---
+title: "Conversation reference feature"
+description: "Prompt: Please create a conversation referencing feature. I guess so let's say that I'm in a new chat and I'm trying to pick up on something that I talked ab..."
+---
+<Info>
+Converted from `aiConnected OS - 6. Conversation reference feature.md`.
+</Info>
+# Conversation reference feature
+
+**User:** Oxford Pierpont  
+**Created:** 12/10/2025 6:11:22  
+**Updated:** 12/10/2025 6:49:55  
+**Exported:** 2/11/2026 7:08:29  
+**Link:** [https://chatgpt.com/g/g-p-69395d9991108191841f1dac1fd8d1a1-oxpi-aiconnected-ui-features/c/69395559-8250-8325-a227-f067d82fc336](https://chatgpt.com/g/g-p-69395d9991108191841f1dac1fd8d1a1-oxpi-aiconnected-ui-features/c/69395559-8250-8325-a227-f067d82fc336)  
+
+## Prompt:
+Please create a conversation referencing feature. I guess so let's say that I'm in a new chat and I'm trying to pick up on something that I talked about several months ago, or maybe it's even something that I was discussing in a completely unrelated way, project, or unrelated chat. I should be able to link or not even link, but reference a previous chat. So I click on the "Add Reference" or "Add Chat Reference" button somewhere, and from there I'm given an option to search for the previous chat and then I find it. From there, that's now pinned as a reference. Once that reference is added, the chat that I'm currently in (the new one) is able to go read through that entire conversation and basically get caught up on what I was talking about so that I can now continue to expand on those ideas. This is different from linking because linking is basically an automatic "hey, this is just this was copied from a previous conversation", but a reference would be me deliberately saying "please go and read this conversation that I had outside of this current one".
+
+## Response:
+Nice, this is a clean concept and it fits perfectly with everything you’ve been building around linked chats, pinning, and whiteboards.
+
+Below is a concrete design for a **Conversation Reference** feature: UX, behavior, and how it differs from linking.
+
+* * *
+
+1\. Concept in one sentence
+---------------------------
+
+A **Conversation Reference** is an explicit instruction in a new chat that says:
+
+> “Treat that entire past conversation as context for this one. Go read it, understand it, and use it as background while we continue here.”
+
+It’s not just a link. It’s a **context attachment**.
+
+* * *
+
+2\. Where it lives in the UI
+----------------------------
+
+In any chat (new or existing), you’d have:
+
+*   A button near the top or above the composer:
+    *   **\[＋ Add Reference\]**
+*   Or inside a small toolbar next to “Attach file / Add whiteboard / etc.”
+
+When clicked, it opens a **“Select a Conversation”** modal.
+
+* * *
+
+3\. The “Add Reference” flow
+----------------------------
+
+### 3.1. Open the “Add Reference” picker
+
+User clicks **Add Reference** → modal slides in:
+
+**Header:**
+
+> Add Conversation Reference
+
+**Search bar:**
+
+*   Keyword search over:
+    *   Conversation titles
+    *   Auto-generated summaries
+    *   Your own notes/tags
+*   Filters:
+    *   Date range (Last 7 days / 30 days / Custom)
+    *   Project / Workspace (if you group chats)
+    *   Model / Persona (optional filter)
+    *   “Has pins” / “Has whiteboards” / “Has files” toggles
+
+**Results list (each row):**
+
+*   Title (or first user message if untitled)
+*   Short summary (auto-generated, 1–2 sentences)
+*   Date range (“May 4 – May 12, 2025”)
+*   Tag chips (e.g., `Cognigraph`, `browserENGINE`, `Medical`, etc.)
+
+Clicking a result:
+
+*   Shows a **right-hand preview panel**:
+    *   Summary
+    *   A few key pinned messages
+    *   “View full conversation” button
+
+At the bottom of the modal:
+
+*   **\[Add as Reference\]** button
+
+You can also support **multi-select**:
+
+*   Checkboxes on the left of each chat
+*   Add multiple references in one go.
+
+* * *
+
+4\. How references appear in the current chat
+---------------------------------------------
+
+Once selected, you drop **Reference pills** into the current chat context, near the top (or in a dedicated “Context” area):
+
+Example:
+
+> **References**  
+> ▢ _Cognigraph Learning Sub-Architecture – Sept 2025_  
+> ▢ _browserENGINE PRD Draft – v1_
+
+Each reference pill:
+
+*   Shows:
+    *   Title
+    *   Short label like “Conversation · 142 messages”
+*   Actions on hover / kebab menu:
+    *   **View** (open original conversation in a side panel or new tab)
+    *   **Rename label** (for human-friendly tagging like “Medical notes for CRNA research”)
+    *   **Change scope** (see Section 6)
+    *   **Remove reference**
+
+They behave like **active attachments**: on = used; off = ignored.  
+You could even allow a toggle:
+
+*   \[On/Off switch\] per reference pill to temporarily disable it without deleting.
+
+* * *
+
+5\. What “Reference” actually does under the hood
+-------------------------------------------------
+
+This is the important part: referencing must change how the system thinks, not just how it looks.
+
+### 5.1. On add: index and summarize
+
+When a conversation is referenced for the first time (or if its index is stale):
+
+1.  **Generate a master summary** of that conversation:
+    *   Overall purpose
+    *   Decisions made
+    *   Open questions / unresolved threads
+    *   Key definitions and entities
+2.  **Generate sub-summaries** by theme or time slices:
+    *   “Phase 1: Brainstorm”
+    *   “Phase 2: Narrowing requirements”
+    *   “Phase 3: Final decisions”
+3.  **Embed** each message (or chunk) into your vector store, with metadata:
+    *   `conversation_id`
+    *   `timestamp`
+    *   `speaker`
+    *   `topic tags`
+    *   `decision / question / example / story` type, etc.
+
+You’ll likely already be doing something like this for Cognigraph anyway; a reference simply says:
+
+> “For this current chat, prioritize retrieval from this conversation’s region of the graph.”
+
+### 5.2. On each user message in the _new_ chat
+
+When the user sends a message in the current chat that has active references:
+
+1.  Take the **user’s latest message** (and maybe 1–2 previous turns as context).
+2.  For each active reference:
+    *   Run similarity search against that conversation’s embeddings.
+    *   Pull back the top **N relevant snippets** (e.g., 10–20 chunks).
+3.  Assemble a **context bundle**:
+    *   Current chat history (recent turns).
+    *   One global summary per reference.
+    *   Relevant snippets per reference.
+4.  Optionally add a **meta-instruction** to the model:
+    *   “You have been given background from the following referenced conversations: X, Y. Treat them as prior thinking and decisions made by the same user. Respect newer instructions in this chat when conflicts arise, but use referenced material to:
+        *   maintain continuity,
+        *   reuse prior definitions,
+        *   avoid repeating already-covered ground.”
+
+Then the model generates its answer using all of that.
+
+So the user’s experience is exactly what you described:
+
+> “Please go and read this conversation that I had outside of this current one and get caught up so we can continue expanding.”
+
+…but in a way that’s context-budget-aware and targeted, not naive.
+
+* * *
+
+6\. Reference “Scope” settings
+------------------------------
+
+Some references are just background. Others are canonical. Let the user specify that.
+
+For each reference pill, you can have a **Scope** drop-down:
+
+1.  **Background Only**
+    *   Use it as loose context.
+    *   Don’t treat anything as binding decisions.
+2.  **Canonical Plan**
+    *   Treat the referenced conversation as “what we decided earlier.”
+    *   If the user asks for something that conflicts, model should:
+        *   Either prompt: “Earlier we decided X; do you want to change that?”
+        *   Or adapt but signal the change.
+3.  **Style / Voice Reference**
+    *   Only pull examples of tone, phrasing, or structure.
+    *   Used when the user wants “same style as that previous chat.”
+4.  **Strict Context**
+    *   Treat this reference as the primary context, almost like a project file.
+    *   The model should anchor heavily to it and avoid diverging.
+
+You don’t have to expose all of these immediately, but the architecture should allow for it.
+
+* * *
+
+7\. How this differs from “Linking”
+-----------------------------------
+
+To keep your mental model clean:
+
+### Linking
+
+*   **Graph-level relationship** between conversations.
+*   Primarily for **navigation and organization**.
+*   Examples:
+    *   “This is a continuation of that chat.”
+    *   “This chat is a fork from message #72 of that chat.”
+*   UI: “View Linked Conversations,” breadcrumb trails, conversation map.
+*   Linking does _not_ automatically feed context into the model. It just connects nodes in your meta-graph.
+
+### Referencing
+
+*   **Context-level relationship**, not just a pointer.
+*   Explicitly says: “Use that conversation’s content to inform this one.”
+*   Has behavior:
+    *   Summarization
+    *   Retrieval from referenced conversations for each turn
+    *   Scope settings
+*   Referencing can **optionally create a link** in the graph:
+    *   “This conversation references \[X, Y, Z\].”
+    *   But the core meaning is “read and understand that stuff.”
+
+In other words:
+
+*   **Link** → relationship for you (the human) to navigate.
+*   **Reference** → relationship for the **AI** to think with.
+
+* * *
+
+8\. Multiple references at once
+-------------------------------
+
+You absolutely should support multiple.
+
+Example:
+
+> References:  
+> ▢ _Cognigraph Core Architecture – Feb 2025_ (Canonical Plan)  
+> ▢ _Learning Sub-Architecture brainstorming – Dec 2025_ (Background Only)  
+> ▢ _Medical Pod concept notes – Aug 2025_ (Background Only)
+
+Behavior:
+
+*   All three are indexed.
+*   On each new message, retrieval runs across all three but with different weights:
+    *   Canonical references get priority.
+    *   Background-only provide additional context.
+
+You could define internal logic like:
+
+*   Canonical: up to 50% of retrieval slots
+*   Background: share remaining capacity
+
+This gives you nice emergent behavior when you’re combining old lines of thought.
+
+* * *
+
+9\. Visibility and trust for the user
+-------------------------------------
+
+You don’t want this to feel like a black box. Two pieces:
+
+1.  **“Context Inspector”** button
+    *   User clicks and sees:
+        *   Which references were used
+        *   Which snippets from each reference were pulled
+    *   Example display:
+        *   “Used 7 excerpts from ‘Cognigraph Learning Sub-Architecture – Sept 2025’”
+        *   List them with timestamps and a highlight of the relevant text.
+2.  **“Refresh Understanding”** option on each reference
+    *   If the referenced chat is still ongoing or was updated after indexing:
+        *   Button to regenerate its summaries and embeddings.
+
+This keeps the experience explainable and debuggable.
+
+* * *
+
+10\. Extend this to other object types
+--------------------------------------
+
+You can generalize the concept:
+
+*   **Add Reference** could let you choose:
+    *   Conversations
+    *   Whiteboards
+    *   Documents
+    *   Files / PDFs
+    *   Project nodes (e.g., “Cognigraph / Learning Module” as an entity)
+
+From the AI’s perspective, these are all just **source contexts** with different metadata. The same referencing mechanism applies: summarize, embed, retrieve, respect scope.
+
+* * *
+
+11\. Data model sketch
+----------------------
+
+At a high level:
+
+### Entities
+
+*   `Conversation`
+*   `Message`
+*   `Reference`:
+    *   `id`
+    *   `from_conversation_id`
+    *   `to_conversation_id` (or `to_object_id` + `object_type`)
+    *   `created_by_user_id`
+    *   `display_label`
+    *   `scope` (enum: `BACKGROUND`, `CANONICAL`, `STYLE`, etc.)
+    *   `created_at`
+
+### Indices
+
+For each referenced conversation:
+
+*   `conversation_summary` (text)
+*   `conversation_sections` (array of sub-summaries with ranges)
+*   `message_embeddings` (vector store entries keyed by `conversation_id` and `message_id`)
+
+### Runtime
+
+On each message:
+
+*   Request payload includes:
+    *   `current_conversation_id`
+    *   `active_reference_ids`
+*   Backend:
+    *   Fetch reference metadata
+    *   Query vector store with `active_reference_ids` filter
+    *   Build the final prompt with:
+        *   Summaries
+        *   Selected snippets
+        *   Scope-aware system instructions
+
+* * *
+
+12\. How this feels in real use
+-------------------------------
+
+You open a brand new chat in June 2026 and say:
+
+> “I want to revisit that whole idea about a dedicated learning sub-architecture in Cognigraph and now formalize it into a PRD section.”
+
+You click **Add Reference**:
+
+*   Search “learning sub-architecture”
+*   Select: “Cognigraph Learning Sub-Architecture – Dec 2025”
+*   Add as reference (scope: Canonical Plan)
+
+Then simply say:
+
+> “Okay, you’re fully caught up on that thread. Let’s define the high-level goals and constraints for the learning sub-architecture in formal PRD language.”
+
+From your POV, the assistant just _knows_ the old conversation again. That’s exactly the behavior you described.
+
+* * *
+
+If you want, in the next message I can:
+
+*   Turn this into a compact spec (e.g., a “Conversation Reference” feature section for your PRD), or
+*   Break it down into implementation milestones for your devs (frontend + backend tasks).
+
+
+
+---
+Powered by [ChatGPT Exporter](https://www.chatgptexporter.com)

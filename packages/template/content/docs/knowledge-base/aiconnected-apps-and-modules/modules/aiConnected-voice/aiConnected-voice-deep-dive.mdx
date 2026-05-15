@@ -1,0 +1,631 @@
+---
+title: "Voice by aiConnected — A Technical Deep Dive for the AI Community"
+description: "What This Document Is This document is written for practitioners in the AI/ML space — engineers, researchers, and builders who understand the current state o..."
+---
+<Info>
+Normalized for Mintlify from `knowledge-base/aiconnected-apps-and-modules/modules/aiConnected-voice/aiConnected-voice-deep-dive.mdx`.
+</Info>
+# Voice by aiConnected — A Technical Deep Dive for the AI Community
+
+## What This Document Is
+
+This document is written for practitioners in the AI/ML space — engineers, researchers, and builders who understand the current state of large language models, their capabilities, and their limitations. You know what context windows are, why latency matters, and how fragile the magic of "AI that just works" really is.
+
+This document explains what we're building, the hard problems we're solving, and the architectural decisions that make real-time voice AI actually work.
+
+---
+
+## The Challenge: AI in Real-Time
+
+### Why Voice AI Is Hard
+
+Most AI applications have a luxury that voice doesn't: time.
+
+When you're using ChatGPT, Claude, or any chat interface, a 2-3 second response time is acceptable. You're looking at a screen, maybe typing something else, and when the response appears, you read it. No problem.
+
+Voice doesn't work that way.
+
+In a phone conversation, humans expect responses within 300-500ms. Anything longer feels like lag. Anything over 1.5 seconds feels like the other person isn't listening. Over 2 seconds, people start saying "Hello? Are you there?"
+
+The entire voice AI pipeline — speech recognition, language model inference, and speech synthesis — needs to complete in under a second. Every time. With no batching, no retry loops, no "please wait."
+
+### The Latency Budget
+
+Here's what we're working with:
+
+```
+┌────────────────────────────────────────────────────────────────────────────┐
+│                                                                            │
+│   CALLER STOPS SPEAKING                                                    │
+│         │                                                                  │
+│         │  ~100ms  Voice Activity Detection (VAD)                          │
+│         ▼          Detecting end of speech                                 │
+│   ┌───────────┐                                                            │
+│   │    STT    │  ~300ms  Deepgram streaming                                │
+│   │           │          (interim results available earlier)               │
+│   └─────┬─────┘                                                            │
+│         │                                                                  │
+│         │  ~50ms   Text post-processing, context injection                 │
+│         ▼                                                                  │
+│   ┌───────────┐                                                            │
+│   │    LLM    │  ~350ms  Claude time-to-first-token                        │
+│   │           │          (streaming, so we don't wait for completion)      │
+│   └─────┬─────┘                                                            │
+│         │                                                                  │
+│         │  ~50ms   Token buffering for TTS (need ~20 tokens to start)      │
+│         ▼                                                                  │
+│   ┌───────────┐                                                            │
+│   │    TTS    │  ~100ms  Chatterbox/Cartesia TTFB                          │
+│   │           │          (audio synthesis begins)                          │
+│   └─────┬─────┘                                                            │
+│         │                                                                  │
+│         │  ~70ms   Audio encoding + network transmission                   │
+│         ▼                                                                  │
+│   CALLER HEARS RESPONSE                                                    │
+│                                                                            │
+│   TOTAL: ~970ms target                                                     │
+│                                                                            │
+└────────────────────────────────────────────────────────────────────────────┘
+```
+
+Notice that nowhere in this pipeline can we afford to wait for a full response. Everything streams.
+
+---
+
+## The Architecture
+
+### High-Level Overview
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                                                                             │
+│   PSTN ←──→ GoToConnect PBX ←──→ WebRTC Bridge ←──→ LiveKit Room           │
+│                                     (aiortc)              │                 │
+│                                                           │                 │
+│                                           ┌───────────────┼───────────────┐│
+│                                           │               │               ││
+│                                           ▼               ▼               ▼│
+│                                     ┌──────────┐   ┌──────────┐   ┌───────┐│
+│                                     │ Deepgram │   │  Claude  │   │Chatter││
+│                                     │   STT    │──▶│   LLM    │──▶│  box  ││
+│                                     │(streaming│   │(streaming│   │ TTS   ││
+│                                     └──────────┘   └──────────┘   └───────┘│
+│                                                          │                 │
+│                                                          ▼                 │
+│                                                    ┌──────────┐            │
+│                                                    │   Tools  │            │
+│                                                    │(webhooks)│            │
+│                                                    └──────────┘            │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Why This Stack?
+
+**GoToConnect** — We have a grandfathered unlimited plan at $17/user. The critical insight is that GoToConnect exposes a full WebRTC API with call control. We don't need Twilio or Telnyx as intermediaries.
+
+**LiveKit** — The LiveKit Agents SDK is purpose-built for voice AI. It handles the gnarly parts: room management, track subscription, audio encoding, participant state. We focus on the AI logic.
+
+**Deepgram** — Lowest latency streaming STT available. They provide interim results (partial transcriptions) which we use to pre-warm the LLM context before the speaker finishes.
+
+**Claude** — Best reasoning capabilities for complex conversations. Streaming support. Native function calling. The system prompt \+ conversation history approach maps well to phone calls.
+
+**Chatterbox** — MIT-licensed, self-hostable on RunPod. Zero per-minute cost at scale. Sub-200ms TTFB with the Turbo model. Native paralinguistic tags (`[laugh]`, `[cough]`).
+
+---
+
+## The Hard Problems
+
+### 1\. Context Management
+
+**The problem**: Phone calls can last 30 minutes or more. A typical customer service call might involve:
+
+- Initial greeting and identification  
+- Problem description  
+- Multiple back-and-forth clarifications  
+- Information lookup (account details, availability, etc.)  
+- Resolution or transfer  
+- Confirmation and goodbye
+
+That's a lot of conversation turns. At \~100 tokens per exchange, a 20-minute call could accumulate 8,000+ tokens of conversation history — and that's before we add the system prompt, knowledge base content, and function calling schemas.
+
+**Our approach**:
+
+```
+┌────────────────────────────────────────────────────────────────────────────┐
+│                        CONTEXT WINDOW STRUCTURE                            │
+├────────────────────────────────────────────────────────────────────────────┤
+│                                                                            │
+│   SYSTEM PROMPT (fixed, ~1,000 tokens)                                     │
+│   ├── Agent personality and constraints                                    │
+│   ├── Business-specific instructions                                       │
+│   └── Tool definitions                                                     │
+│                                                                            │
+│   KNOWLEDGE BASE (dynamic, ~2,000-4,000 tokens)                            │
+│   ├── Retrieved via RAG based on conversation                              │
+│   ├── Refreshed periodically as topics change                              │
+│   └── Includes: FAQs, pricing, hours, policies                             │
+│                                                                            │
+│   CALL METADATA (small, ~200 tokens)                                       │
+│   ├── Caller ID (if available)                                             │
+│   ├── Time of call                                                         │
+│   ├── Previous interaction summary (if returning caller)                   │
+│   └── Current call state                                                   │
+│                                                                            │
+│   CONVERSATION HISTORY (sliding window, ~4,000-8,000 tokens)               │
+│   ├── Recent turns in full                                                 │
+│   ├── Older turns summarized                                               │
+│   └── Always includes: last tool calls/results                             │
+│                                                                            │
+│   RESERVED FOR RESPONSE (~2,000 tokens)                                    │
+│                                                                            │
+└────────────────────────────────────────────────────────────────────────────┘
+```
+
+For long calls, we implement a **summarization strategy**:
+
+```py
+async def manage_context(conversation: list[Message]) -> list[Message]:
+    total_tokens = count_tokens(conversation)
+    
+    if total_tokens > MAX_CONTEXT_TOKENS:
+        # Keep recent messages intact
+        recent = conversation[-RECENT_TURN_COUNT:]
+        older = conversation[:-RECENT_TURN_COUNT]
+        
+        # Summarize older messages
+        summary = await summarize_conversation(older)
+        
+        # Return: [summary_message] + recent
+        return [Message(role="system", content=f"Previous conversation summary: {summary}")] + recent
+    
+    return conversation
+```
+
+This keeps the context window manageable while preserving the information needed for coherent conversation.
+
+### 2\. Barge-In (Interruption Handling)
+
+**The problem**: Humans interrupt each other constantly. If the AI is mid-sentence and the caller starts talking, we need to:
+
+1. Stop the AI's audio immediately  
+2. Capture what the caller is saying  
+3. Incorporate the interruption naturally
+
+**Our approach**:
+
+```py
+class InterruptionHandler:
+    def __init__(self):
+        self.current_response_task: asyncio.Task | None = None
+        self.audio_player: AudioPlayer = None
+        
+    async def on_voice_activity_detected(self):
+        """Called when VAD detects the caller started speaking."""
+        if self.is_ai_speaking():
+            # Immediate audio cutoff
+            await self.audio_player.stop()
+            
+            # Cancel pending TTS generation
+            if self.current_response_task:
+                self.current_response_task.cancel()
+            
+            # Log partial response for context
+            partial = self.get_partial_response()
+            await self.add_to_context(f"[AI was interrupted while saying: '{partial}...']")
+    
+    def is_ai_speaking(self) -> bool:
+        return self.audio_player and self.audio_player.is_playing
+```
+
+The key insight is that interruption is **not an error**. It's natural conversational flow. The AI should handle it gracefully:
+
+```
+AI: "Your appointment is scheduled for Tuesday at—"
+Caller: "Wait, not Tuesday, I need Wednesday"
+AI: "No problem, let me check Wednesday availability for you."
+```
+
+### 3\. Tool Calling Without Blocking
+
+**The problem**: The AI needs to perform actions during the conversation — check calendars, look up account info, update CRM records. But API calls take time. If we wait for the tool to complete before responding, we introduce unacceptable latency.
+
+**Our approach**: Async tool execution with conversational bridging.
+
+```py
+async def handle_tool_call(tool_name: str, args: dict) -> None:
+    # Start tool execution in background
+    task = asyncio.create_task(execute_tool(tool_name, args))
+    
+    # Generate filler response while waiting
+    filler = generate_filler(tool_name)  # "Let me check that for you..."
+    await speak(filler)
+    
+    # Wait for tool result
+    result = await task
+    
+    # Generate response with result
+    response = await generate_response_with_tool_result(result)
+    await speak(response)
+
+def generate_filler(tool_name: str) -> str:
+    fillers = {
+        "check_availability": "Let me look at the schedule...",
+        "lookup_account": "I'm pulling up your account now...",
+        "create_appointment": "I'm booking that for you..."
+    }
+    return fillers.get(tool_name, "One moment please...")
+```
+
+For truly slow operations, we use a **conversational stall pattern**:
+
+```
+Caller: "Can you check if Dr. Smith has availability next week?"
+AI: "Of course, I'm checking Dr. Smith's schedule for next week now."
+[2 second API call]
+AI: "I see several openings. Would you prefer morning or afternoon?"
+```
+
+### 4\. Multi-Turn Conversation Coherence
+
+**The problem**: Phone conversations meander. The caller might:
+
+- Start with one topic, switch to another, then return to the first  
+- Refer to things mentioned 5 minutes ago with pronouns ("Can you change that?")  
+- Provide information incrementally across multiple turns
+
+The AI needs to maintain coherent understanding across all of this.
+
+**Our approach**: Structured conversation state alongside raw history.
+
+```py
+@dataclass
+class ConversationState:
+    # Explicit entities mentioned
+    entities: dict[str, Any] = field(default_factory=dict)
+    # e.g., {"appointment": {"date": "Tuesday", "time": "3pm", "doctor": "Smith"}}
+    
+    # Current conversation topic
+    current_topic: str | None = None
+    
+    # Unresolved questions or pending actions
+    pending: list[str] = field(default_factory=list)
+    
+    # Information we still need from the caller
+    needed_info: list[str] = field(default_factory=list)
+    
+    # Call objective tracking
+    objectives: list[Objective] = field(default_factory=list)
+
+async def update_state(state: ConversationState, turn: Turn) -> ConversationState:
+    """Extract structured information from each conversation turn."""
+    
+    # Use Claude to extract entities and update state
+    extraction_prompt = f"""
+    Given this conversation turn: "{turn.text}"
+    And current state: {state}
+    
+    Extract any new entities, topic changes, or resolved/new pending items.
+    Return as JSON.
+    """
+    
+    updates = await claude.extract(extraction_prompt)
+    return state.merge(updates)
+```
+
+This structured state is injected into the system prompt, giving Claude explicit access to "what we know so far" beyond just the raw conversation history.
+
+### 5\. Graceful Degradation
+
+**The problem**: In production, things fail. APIs time out. Services go down. Network connections drop. Unlike a web app where you can show an error page, a phone call has to keep going.
+
+**Our approach**: Multiple fallback layers for each component.
+
+```py
+class ResilientPipeline:
+    async def transcribe(self, audio: bytes) -> str:
+        try:
+            return await self.deepgram.transcribe(audio)
+        except DeepgramError:
+            logger.warning("Deepgram failed, trying Whisper")
+            return await self.whisper_fallback.transcribe(audio)
+        except Exception:
+            # Last resort: apologize to caller
+            await self.speak("I'm having a little trouble hearing you. Could you repeat that?")
+            raise RetryableError()
+    
+    async def generate_response(self, context: list[Message]) -> AsyncIterator[str]:
+        try:
+            async for token in self.claude.stream(context):
+                yield token
+        except AnthropicError:
+            logger.warning("Claude failed, using fallback responses")
+            yield self.get_fallback_response(context)
+    
+    async def synthesize(self, text: str) -> bytes:
+        try:
+            return await self.chatterbox.synthesize(text)
+        except ChatterboxError:
+            logger.warning("Chatterbox failed, trying Resemble API")
+            return await self.resemble.synthesize(text)
+        except Exception:
+            # Play pre-recorded message
+            return self.load_fallback_audio("technical_difficulty.wav")
+```
+
+The goal is that **the caller never knows something went wrong**. They might experience slightly degraded quality (slower response, different voice), but the call continues.
+
+### 6\. The "Streaming Waterfall"
+
+**The problem**: Each stage of the pipeline produces output incrementally. Connecting these stages efficiently is non-trivial.
+
+**Our approach**: asyncio queues connecting each stage.
+
+```py
+async def run_pipeline(audio_in: AsyncIterator[bytes]) -> AsyncIterator[bytes]:
+    # Queues connecting pipeline stages
+    transcript_queue = asyncio.Queue()
+    response_queue = asyncio.Queue()
+    audio_queue = asyncio.Queue()
+    
+    # Stage 1: STT (audio → text)
+    async def stt_stage():
+        async for chunk in audio_in:
+            text = await deepgram.transcribe_chunk(chunk)
+            if text:
+                await transcript_queue.put(text)
+    
+    # Stage 2: LLM (text → response text)
+    async def llm_stage():
+        buffer = ""
+        while True:
+            text = await transcript_queue.get()
+            buffer += text
+            
+            if is_end_of_utterance(buffer):
+                async for token in claude.stream(buffer):
+                    await response_queue.put(token)
+                buffer = ""
+    
+    # Stage 3: TTS (response text → audio)
+    async def tts_stage():
+        token_buffer = []
+        while True:
+            token = await response_queue.get()
+            token_buffer.append(token)
+            
+            # Wait for enough tokens to synthesize naturally
+            if len(token_buffer) >= MIN_TOKENS_FOR_TTS:
+                text = "".join(token_buffer)
+                audio = await chatterbox.synthesize(text)
+                await audio_queue.put(audio)
+                token_buffer = []
+    
+    # Run all stages concurrently
+    await asyncio.gather(
+        stt_stage(),
+        llm_stage(),
+        tts_stage()
+    )
+```
+
+The tricky part is **token buffering for TTS**. You can't synthesize a single token like "The" — you need enough text for natural prosody. But you also can't wait too long or latency suffers. We've found \~20 tokens is a good balance.
+
+---
+
+## Why Self-Host TTS?
+
+A quick note on our TTS choice, since this often comes up.
+
+The hosted TTS providers (ElevenLabs, Cartesia, PlayHT) charge $0.01-0.18 per minute. At scale, this dominates your cost structure.
+
+Chatterbox, self-hosted on an RTX A5000 ($0.27/hour \= \~$197/month), gives us effectively unlimited TTS for a fixed cost. At 50,000 minutes/month:
+
+| Option | Monthly Cost |
+| :---- | :---- |
+| ElevenLabs | \~$9,000 |
+| Cartesia | \~$500 |
+| Chatterbox (self-hosted) | \~$197 |
+
+The A5000 runs Chatterbox-Turbo at better than real-time (RTF \&lt; 1.0), so a single GPU can handle many concurrent calls.
+
+The tradeoff is operational complexity (we manage the GPU instance) and slightly higher latency than Cartesia (\~150ms vs \~50ms TTFB). For our use case, the cost savings justify it.
+
+---
+
+## Multi-Tenancy Considerations
+
+This is a platform, not a single-use application. Multiple businesses use the same infrastructure, each with:
+
+- Their own phone numbers  
+- Their own AI personality and instructions  
+- Their own knowledge base  
+- Their own tools and integrations  
+- Their own usage limits and billing
+
+**Isolation strategy**:
+
+```
+┌────────────────────────────────────────────────────────────────────────────┐
+│                            REQUEST LIFECYCLE                               │
+├────────────────────────────────────────────────────────────────────────────┤
+│                                                                            │
+│   1. Call arrives at phone number                                          │
+│      └── Phone number → Tenant lookup                                      │
+│                                                                            │
+│   2. Tenant context loaded                                                 │
+│      ├── System prompt template + tenant customizations                    │
+│      ├── Knowledge base connection                                         │
+│      ├── Tool configurations (which webhooks, what permissions)            │
+│      └── Voice settings (which Chatterbox voice ID)                        │
+│                                                                            │
+│   3. LiveKit room created                                                  │
+│      └── Room name includes tenant ID for observability                    │
+│                                                                            │
+│   4. Agent instance spawned                                                │
+│      └── Agent receives tenant-specific configuration                      │
+│                                                                            │
+│   5. All database writes include tenant_id                                 │
+│      └── Query filters always include tenant scope                         │
+│                                                                            │
+│   6. Usage metered per tenant                                              │
+│      └── Minutes tracked, billed against credit bucket                     │
+│                                                                            │
+└────────────────────────────────────────────────────────────────────────────┘
+```
+
+**Resource isolation**:
+
+For now, tenants share infrastructure (same LiveKit Cloud, same RunPod instance). If a tenant needs guaranteed capacity or isolation, we duplicate the infrastructure stack for them (at premium pricing).
+
+---
+
+## Observability
+
+Voice AI is hard to debug. When something goes wrong, you can't just look at logs — you need to hear what happened.
+
+**What we capture**:
+
+```py
+@dataclass
+class CallTrace:
+    call_id: str
+    tenant_id: str
+    started_at: datetime
+    ended_at: datetime | None
+    
+    # The raw audio (optional, configurable)
+    audio_recording: bytes | None
+    
+    # Full transcript with timestamps
+    transcript: list[TranscriptSegment]
+    
+    # Every LLM request/response
+    llm_traces: list[LLMTrace]
+    
+    # Every tool call
+    tool_calls: list[ToolCallTrace]
+    
+    # Latency measurements per turn
+    latency_measurements: list[LatencyMeasurement]
+    
+    # State machine transitions
+    state_transitions: list[StateTransition]
+    
+    # Any errors or anomalies
+    events: list[CallEvent]
+```
+
+**Latency dashboards** show:
+
+- P50/P90/P99 mouth-to-ear latency  
+- Breakdown by stage (STT, LLM, TTS)  
+- Latency by tenant (to identify problematic configurations)  
+- Latency over time (to catch regressions)
+
+**Conversation quality metrics**:
+
+- Turn count (more turns might indicate confusion)  
+- Interruption rate  
+- Transfer rate  
+- Call resolution rate (did we solve their problem?)
+
+---
+
+## What We're Not Building
+
+To be clear about scope:
+
+**Not a general-purpose voice assistant** — We're focused on business phone calls with structured objectives, not open-ended chat.
+
+**Not a real-time translation service** — English only for MVP. Multilingual is on the roadmap but not initial scope.
+
+**Not a transcription service** — We transcribe for our own use; we don't expose STT as a standalone product.
+
+**Not an LLM provider** — We use Claude. We're not training our own models.
+
+**Not a TTS provider** — We use Chatterbox. We're not building voice synthesis technology.
+
+We're building the **integration layer** that makes all of these work together for the specific use case of business phone calls.
+
+---
+
+## Open Research Questions
+
+Things we're still figuring out:
+
+### 1\. Optimal token buffer size for TTS
+
+We're currently using \~20 tokens before triggering TTS. This is a tradeoff:
+
+- Too few tokens → Unnatural prosody, choppy speech  
+- Too many tokens → Higher latency
+
+Is there a smarter approach? Sentence boundary detection? Prosodic phrase detection?
+
+### 2\. Pre-warming with interim transcripts
+
+Deepgram provides interim (partial) transcripts before the speaker finishes. We could:
+
+- Pre-fetch relevant knowledge base content  
+- Prime the LLM context  
+- Speculatively start generating (and discard if the transcript changes)
+
+How aggressive should we be? What's the wasted compute vs. latency savings tradeoff?
+
+### 3\. Conversation summarization triggers
+
+When do we summarize older turns? Options:
+
+- Fixed window (every N turns)  
+- Token budget exceeded  
+- Topic change detected  
+- Explicit "let me summarize" moment in conversation
+
+What preserves coherence best?
+
+### 4\. Voice Activity Detection tuning
+
+VAD determines when the caller stopped speaking. Too aggressive → We cut them off. Too conservative → Added latency.
+
+The optimal setting likely varies by:
+
+- Call type (quick Q\&A vs. detailed explanation)  
+- Caller speech patterns (fast talker vs. slow)  
+- Audio quality (noisy environment vs. quiet)
+
+Can we adapt dynamically?
+
+---
+
+## Conclusion
+
+Voice AI sits at the intersection of several hard problems:
+
+- Real-time systems (everything has to be fast)  
+- LLM applications (context management, tool use, coherence)  
+- Distributed systems (multiple services, failure handling)  
+- Telecommunications (audio codecs, telephony protocols)
+
+The current generation of AI models (Claude, GPT-4) are good enough to have useful conversations. The speech technology (Deepgram, Chatterbox) is good enough to sound natural. The infrastructure (LiveKit, WebRTC) is good enough for real-time.
+
+What's been missing is the integration layer that puts it all together with the right latency, reliability, and cost structure for production use.
+
+That's what we're building.
+
+---
+
+## Further Reading
+
+If you want to go deeper:
+
+- **LiveKit Agents documentation**: [https://docs.livekit.io/agents/](https://docs.livekit.io/agents/)  
+- **Deepgram streaming guide**: [https://developers.deepgram.com/docs/streaming](https://developers.deepgram.com/docs/streaming)  
+- **Anthropic streaming API**: [https://docs.anthropic.com/claude/reference/streaming](https://docs.anthropic.com/claude/reference/streaming)  
+- **Chatterbox GitHub**: [https://github.com/resemble-ai/chatterbox](https://github.com/resemble-ai/chatterbox)  
+- **WebRTC fundamentals**: [https://webrtc.org/getting-started/overview](https://webrtc.org/getting-started/overview)  
+- **aiortc (Python WebRTC)**: [https://github.com/aiortc/aiortc](https://github.com/aiortc/aiortc)
+
+---
+
+*This document reflects the architecture as of 2026-01-16. Voice AI is moving fast — some details may evolve as we learn more in production.*

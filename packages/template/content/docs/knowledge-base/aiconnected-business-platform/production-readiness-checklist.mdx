@@ -1,0 +1,470 @@
+---
+title: "Production Readiness Checklist: The Definitive Definition of Done"
+---
+**No software ships to production without every applicable section of this document reviewed, verified, and signed off by the designated owner.** This checklist codifies the minimum bar for production release across frontend, backend, security, compliance, infrastructure, and business readiness. Each item includes a brief rationale and clear ownership. Items marked ◻ are universal requirements; items marked ◇ are conditional based on platform type (noted in parentheses).
+
+Use this as a living SOP: the release manager confirms all sign-offs before authorizing deployment. Archive completed checklists for audit trails.
+
+---
+
+## Sign-off authority matrix
+
+| Domain | Primary Owner | Approver |
+| --- | --- | --- |
+| Frontend Stability | Frontend Engineering Lead | Engineering Manager |
+| Backend Stability | Backend Engineering Lead | Engineering Manager |
+| Security | Security Engineer / AppSec Lead | CISO or Security Manager |
+| Data Protection & Privacy | Privacy Officer / Legal | DPO or General Counsel |
+| Compliance | Compliance Officer | Legal / Executive Sponsor |
+| Scalability & Performance | SRE / Platform Engineer | Engineering Manager |
+| Reliability & Availability | SRE / Platform Engineer | VP Engineering |
+| Infrastructure & DevOps | DevOps / Platform Engineer | SRE Lead |
+| Testing | QA Lead | Engineering Manager |
+| Documentation | Engineering Lead \+ Tech Writer | Product Manager |
+| Business Continuity | SRE \+ Legal \+ Operations | VP Engineering / COO |
+| Launch Readiness | Release Manager / Product Manager | Executive Sponsor |
+
+---
+
+## 1. Frontend stability
+
+**Owner: Frontend Engineering Lead | Approver: Engineering Manager**
+
+### Core Web Vitals and performance
+
+All metrics measured at the **75th percentile of real user data** (Chrome UX Report), not just lab scores. Sites failing Core Web Vitals lose **8–35% in conversions** and search rankings.
+
+◻ **Largest Contentful Paint (LCP) ≤ 2.5 seconds.** Measures perceived load speed. 53% of mobile users abandon sites slower than 3 seconds. The hero/LCP image must never be lazy-loaded and should use `fetchpriority="high"`.
+
+◻ **Interaction to Next Paint (INP) ≤ 200 milliseconds.** Replaced First Input Delay in March 2024. Measures responsiveness across the entire page session, not just first interaction. Long tasks in the main thread are the primary culprit — break them up with `requestIdleCallback` or `scheduler.yield()`.
+
+◻ **Cumulative Layout Shift (CLS) \< 0.1.** Visual stability directly affects user trust. Every image and media element must have explicit `width`/`height` or `aspect-ratio` set. Font loading uses `font-display: swap` with critical fonts preloaded.
+
+◻ **Lighthouse scores ≥ 90 across Performance, Accessibility, Best Practices, and SEO.** Run via Lighthouse CI in the pipeline with per-PR thresholds based on measured baselines. Critical caveat: Lighthouse is lab-only — supplement with Real User Monitoring (RUM) via CrUX, SpeedCurve, or DebugBear for field data.
+
+◻ **JavaScript bundle \< 300 KB compressed (gzipped) on initial load.** JS is the most computationally expensive resource per byte. Enforce with performance budgets in CI via webpack-bundle-analyzer or Lighthouse CI. Code-split into route-level chunks of ~50 KB or less. Replace heavy libraries (moment.js → dayjs, lodash → native ES methods or lodash-es with tree shaking).
+
+◻ **Images served in WebP or AVIF with fallbacks** via `<picture>` element. AVIF is 50% smaller than JPEG. Self-host fonts with subsetting to only required character sets. Use `<link rel="preload">` for critical fonts.
+
+### UI/UX completeness and cross-platform testing
+
+◻ **Cross-browser testing completed on minimum matrix:** Chrome, Firefox, Safari, Edge on desktop; Chrome and Safari on mobile (iOS Safari is critical due to its unique rendering engine). Use Playwright or Cypress for automated cross-browser E2E testing, supplemented with real-device testing via BrowserStack or Sauce Labs for touch interactions.
+
+◻ **Responsive design verified across breakpoints:** 320px (small mobile), 375px (mobile), 768px (tablet), 1024px (laptop), 1440px (desktop). Mobile-first CSS with `min-width` media queries. Touch targets minimum **44×44px** (Apple HIG) or **48×48dp** (Material Design).
+
+◻ **Error boundaries implemented per feature section** (React Error Boundaries, Vue `errorCaptured`, Next.js `error.tsx`). No user-facing blank screens — every crash shows meaningful fallback UI and logs to monitoring service. Granular boundaries per feature, not a single global catch-all.
+
+◻ **All UI states accounted for:** loading, empty, error, partial data, success, offline. Skeleton screens preferred over spinners for perceived performance. Graceful degradation when JavaScript fails or third-party scripts are blocked.
+
+◻ **No console errors or warnings in production build.** Source maps uploaded to error monitoring (Sentry) but not served to end users.
+
+### Accessibility (WCAG 2.2 Level AA)
+
+One in four US adults has a disability, and ADA lawsuits are increasing year over year. The European Accessibility Act took effect June 2025. Automated tools catch only **~40% of accessibility issues** — manual testing with screen readers is required.
+
+◻ **WCAG 2.2 Level AA compliance verified** — 86 success criteria across perceivable, operable, understandable, and robust principles. Key additions in 2.2: interactive targets ≥ 24×24 CSS pixels (2.5.8), focus not obscured by sticky headers (2.4.11), drag actions have single-pointer alternatives (2.5.7), login must not rely solely on cognitive function tests (3.3.8).
+
+◻ **Keyboard navigation works for all interactive elements.** Tab order is logical. Focus indicators are visible with sufficient contrast. No keyboard traps.
+
+◻ **Color contrast ratio ≥ 4.5:1** for normal text, ≥ 3:1 for large text. Tested with axe DevTools and WAVE.
+
+◻ **Screen reader testing completed** with NVDA (Windows) and VoiceOver (macOS/iOS). All images have meaningful `alt` text or are marked decorative. ARIA roles used correctly where semantic HTML is insufficient.
+
+◻ **VPAT (Voluntary Product Accessibility Template) 2.5 generated** if selling to government or enterprise. Documents conformance level for each WCAG criterion.
+
+---
+
+## 2. Backend stability
+
+**Owner: Backend Engineering Lead | Approver: Engineering Manager**
+
+### API design and standards
+
+◻ **OpenAPI 3.1 specification is the single source of truth** — committed to version control, validated in CI via Spectral linting, and used to auto-generate documentation, client SDKs, and request validation. Treat the spec as first-class source code. Spec-reality drift is caught by contract tests in CI.
+
+◻ **Consistent REST conventions enforced:** plural resource nouns (`/users`, `/orders`), correct HTTP status codes (200, 201, 204, 400, 401, 403, 404, 409, 422, 429, 500), cursor-based pagination for large datasets, versioning strategy documented (URL path `/v1/` or header-based), rate limiting headers (`X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset`).
+
+◇ **GraphQL production hardening completed** (if applicable): introspection disabled in production, query complexity analysis and depth limiting configured to prevent DoS, Automatic Persisted Queries (APQ) enabled, DataLoader implemented for N\+1 prevention, resolver timeouts set, federated tracing active, schema checks integrated into CI via `rover subgraph check`.
+
+### Input validation, error handling, and logging
+
+◻ **Server-side input validation on every endpoint** using a schema-first library (Zod, Joi, class-validator). Input validation is the first line of defense against injection attacks, data corruption, and logical errors. Use Zod with `zod-to-openapi` to generate OpenAPI specs from validation schemas, eliminating schema drift.
+
+◻ **Structured logging (JSON) with consistent schema** following the OpenTelemetry Log Data Model. Every log entry includes: `timestamp`, `severity`, `service.name`, `trace_id`, `span_id`, `message`, and relevant attributes. Logs correlated with distributed traces and metrics. **No PII in logs.** Log levels used appropriately: DEBUG (dev only), INFO (business events), WARN (recoverable issues), ERROR (failures requiring attention).
+
+◻ **Centralized error handling middleware** returns consistent error response format across all endpoints. Internal error details never exposed to clients in production. All unhandled exceptions caught, logged, and reported to monitoring.
+
+### Background jobs and data integrity
+
+◻ **Every background job is idempotent** — safe to execute multiple times with identical results. Uses idempotency keys for operations like payments, emails, and notifications. Dead Letter Queues (DLQ) configured with max retries (3–5) and exponential backoff. DLQ size monitored and alerted. Poison message detection quarantines permanently failing messages.
+
+◻ **Database migrations follow the expand/contract pattern** for zero-downtime deploys. New columns added as NULL first, backfilled in batches of ~1,000 rows, NOT NULL constraint added only after validation. `CREATE INDEX CONCURRENTLY` used for PostgreSQL. Both old and new application code must work with the schema at every step. Rollback migration scripts prepared and tested. Tools: pgroll, strong\_migrations, Flyway, or Liquibase.
+
+◻ **Seed data and test data completely isolated from production.** No production credentials in test environments. Test data reset between runs via transaction rollback or database snapshots. External services mocked in test environments using WireMock, MSW, or Pact contract tests.
+
+### Graceful shutdown
+
+◻ **Application handles SIGTERM correctly** in containerized environments: stops accepting new requests, finishes in-flight requests, closes database connections, flushes logs and metrics. Kubernetes `preStop` hook includes `sleep 10-15` to allow load balancer deregistration. `terminationGracePeriodSeconds` set to accommodate drain time (60 seconds typical for APIs). Application runs as PID 1 using exec form in Dockerfile (`CMD ["node", "server.js"]`). Readiness probe returns 503 during shutdown. This prevents **5xx errors during deployments**, scaling events, and node maintenance.
+
+---
+
+## 3. Security
+
+**Owner: Security Engineer / AppSec Lead | Approver: CISO**
+
+### Authentication and authorization
+
+◻ **OAuth 2.1 compliance** (RFC 9700, published January 2025): PKCE mandatory for all clients (public and confidential), implicit grant eliminated, Resource Owner Password Credentials grant eliminated, refresh token rotation on every use, exact redirect URI matching (no wildcards).
+
+◻ **JWT best practices enforced:** access token lifetime **≤ 15 minutes**, refresh token lifetime ≤ 7 days with rotation, asymmetric algorithm (RS256 or ES256, never HS256 for distributed systems), tokens stored in httpOnly secure cookies (never localStorage due to XSS risk), claims include `iss`, `aud`, `exp`, `iat`, `jti`. All five fields validated on every request.
+
+◻ **Passkeys/WebAuthn offered as primary authentication method** where applicable. Phishing-resistant by design. Password as fallback only. Recommended: use managed identity providers (Auth0, Clerk, Okta, AWS Cognito) rather than building from scratch.
+
+◻ **Authorization model implemented and enforced server-side.** Start with RBAC for coarse-grained access (admin/editor/viewer), add ABAC via a policy engine (OPA/Rego, Cedar, Casbin) for fine-grained resource-level decisions. Deny by default. Authorization checks on every API endpoint, not just at the router level. Broken Access Control is **OWASP #1** — the most common and exploited vulnerability category.
+
+### OWASP Top 10 mitigations
+
+Each of the OWASP Top 10 (2021) must be explicitly addressed with documented controls:
+
+◻ **A01 Broken Access Control:** Server-side enforcement, deny by default, RBAC/ABAC, session invalidation on logout, directory listing disabled.
+
+◻ **A02 Cryptographic Failures:** AES-256 encryption at rest, TLS 1.3 in transit, no deprecated algorithms (MD5, SHA-1), data classified by sensitivity, sensitive data never cached.
+
+◻ **A03 Injection (including XSS):** Parameterized queries/prepared statements exclusively, output encoding, Content Security Policy enforced, ORM usage preferred, WAF deployed.
+
+◻ **A04 Insecure Design:** Threat modeling completed during design phase, abuse cases tested, secure design patterns applied.
+
+◻ **A05 Security Misconfiguration:** Hardened defaults, unused features removed, configuration verification automated, cloud security posture management active.
+
+◻ **A06 Vulnerable Components:** SCA scanning in CI/CD, SBOM generated per release (SPDX or CycloneDX format), continuous dependency monitoring, patch management SLAs enforced.
+
+◻ **A07 Authentication Failures:** MFA enforced for privileged access, strong password policies, brute-force protection via rate limiting, secure session management.
+
+◻ **A08 Software/Data Integrity Failures:** CI/CD pipeline secured, signed packages from trusted repositories, container images signed (Cosign), software supply chain verified.
+
+◻ **A09 Logging/Monitoring Failures:** Comprehensive audit logging, real-time alerting, tamper-proof log storage, incident response procedures tested.
+
+◻ **A10 SSRF:** URL allowlisting, input validation for all user-supplied URLs, egress filtering, IMDSv2 enforced in cloud environments, network segmentation.
+
+### Dependency scanning and secret management
+
+◻ **Dependency vulnerability scanning runs in every CI build.** Critical (CVSS ≥ 9.0) and High (CVSS ≥ 7.0) vulnerabilities block the build. Tools: Trivy (fastest, universal), Snyk (reachability analysis reduces false positives by 80%), Dependabot or Renovate for automated PRs. **Remediation SLAs: Critical within 24–72 hours, High within 7 days, Medium within 30 days, Low within 90 days.** Reality check: only 28% of organizations fix critical CVEs within 30 days.
+
+◻ **No hardcoded secrets anywhere.** 23 million secrets were found in public GitHub commits in 2024. Pre-commit hooks scan for leaked secrets (GitGuardian, TruffleHog, gitleaks). All secrets managed via a centralized vault (HashiCorp Vault, AWS Secrets Manager, Azure Key Vault). Dynamic/ephemeral credentials preferred over static secrets. Automatic rotation on ≤ 90-day schedule. Every secret access logged with full audit trail.
+
+◻ **API keys scoped by endpoint, IP, and HTTP method.** Support concurrent keys during rotation with 24–48 hour overlap. Instant revocation capability maintained. Keys rotated every 90 days minimum; 30 days for high-sensitivity keys.
+
+### Network and transport security
+
+◻ **TLS 1.3 enforced; TLS 1.2 allowed only as fallback.** TLS 1.0, 1.1, and SSLv3 completely disabled. Certificate management automated via Let's Encrypt / ACME protocol with 90-day lifetime. Full certificate inventory maintained. HSTS preload submitted.
+
+◻ **Security headers configured on all responses:**
+
+```text
+Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
+Content-Security-Policy: default-src 'self'; script-src 'self' 'nonce-{random}'; object-src 'none'; frame-ancestors 'none'
+X-Content-Type-Options: nosniff
+Referrer-Policy: strict-origin-when-cross-origin
+Permissions-Policy: camera=(), microphone=(), geolocation=()
+Cross-Origin-Opener-Policy: same-origin
+X-XSS-Protection: 0  (disabled — rely on CSP; this header can create XSS in otherwise safe sites)
+```
+
+Deploy CSP in `Report-Only` mode first, then enforce after tuning.
+
+◻ **Rate limiting implemented per endpoint type.** Starting baselines: general API 100 req/min per user, authentication **5 req/15 min per IP** (prevents credential stuffing), write operations 50 req/min, payment endpoints 10 req/min. Sliding window or token bucket algorithm. HTTP 429 response includes `Retry-After` header. DDoS protection via CDN/WAF (Cloudflare, AWS Shield, Akamai).
+
+### Data isolation and penetration testing
+
+◻ **Multi-tenant data isolation enforced at the database level** via Row-Level Security policies, separate schemas, or separate databases (for regulated industries). Tenant ID included in every query. **Never rely solely on application-level filtering** — a single missed WHERE clause leaks data. Tenant data encrypted with tenant-specific keys where compliance requires it.
+
+◻ **Penetration testing completed annually at minimum** (required by PCI DSS, SOC 2, ISO 27001, FedRAMP). Quarterly for high-risk environments. Retested after major releases or infrastructure changes. Scope: network, application, API, cloud infrastructure. Standards: PTES, OWASP Testing Guide.
+
+◻ **Audit logging captures all security-relevant events:** authentication success/failure, authorization decisions, data access and modifications, admin actions, API calls, configuration changes. Structured JSON format with timestamp (UTC), user ID, action, resource, source IP, and result. **Retention: 1 year hot storage, 7 years cold/archive** (covers SOC 2, PCI DSS, HIPAA, and most regulatory requirements). Tamper-proof via write-once storage or centralized SIEM.
+
+---
+
+## 4. Data protection and privacy
+
+**Owner: Privacy Officer / Legal | Approver: DPO or General Counsel**
+
+### GDPR compliance (EU users)
+
+Penalties reach up to **€20 million or 4% of annual global turnover**, whichever is greater. These requirements apply if you process data of EU residents, regardless of where your company is based.
+
+◻ **Lawful basis documented for every processing activity** (consent, contract, legitimate interest, legal obligation). Consent is explicit opt-in (no pre-ticked boxes), granular per purpose, and as easy to withdraw as to give.
+
+◻ **Data subject rights implemented as self-service features:** right of access (data export in CSV/JSON), right to rectification (user self-service editing), right to erasure including cascaded deletion across all systems (databases, caches, search indexes, CDNs, analytics, third-party processors), right to data portability (machine-readable export), right to restrict processing, right to object to automated decision-making.
+
+◻ **Data Protection Impact Assessment (DPIA) completed** for any high-risk processing: profiling, automated decision-making, large-scale processing of sensitive data, systematic monitoring.
+
+◻ **Records of Processing Activities (ROPA) maintained.** Mandatory for organizations with 250\+ employees. Data Processing Agreements (DPAs) executed with all third-party processors.
+
+◻ **Breach notification process documented and tested:** supervisory authority notified within **72 hours**, affected individuals notified without undue delay if high risk.
+
+### CCPA/CPRA compliance (California users)
+
+Applies if annual gross revenue exceeds **\$26.625 million** (2025 threshold), or you buy/sell/share personal information of 100,000\+ consumers, or 50%\+ revenue derives from selling/sharing PI.
+
+◻ **Consumer rights implemented:** right to know, right to delete, right to correct, right to opt-out of sale/sharing. **Global Privacy Control (GPC) browser signals honored** — required by regulation.
+
+◻ **"Do Not Sell or Share My Personal Information" link** prominently displayed. Dark patterns prohibited — closing a cookie banner does not constitute valid consent.
+
+◇ **Cybersecurity audits and risk assessments completed** (required for qualifying businesses under 2026 regulations). Automated Decision-Making Technology (ADMT) restrictions implemented if making significant decisions in employment, credit, healthcare, or housing.
+
+### Cross-cutting privacy requirements
+
+◻ **Data minimization enforced** — collect only what is necessary for the stated purpose. Review every form field. Anonymize or pseudonymize where full identification is unnecessary. Aggregate analytics instead of storing individual records.
+
+◻ **Data retention policy defined per data category** with automated enforcement (TTLs, scheduled purge jobs). Example framework: transaction data 7 years (tax), support tickets 3 years, marketing consent until withdrawn. Legal hold capability overrides retention for litigation.
+
+◻ **Privacy policy published, reviewed by legal, and linked from registration and checkout flows.** Cookie consent mechanism implemented with equal-prominence accept/reject buttons, granular preferences, and consent proof storage.
+
+◻ **Data breach response plan documented, rehearsed, and ready to execute** within required timelines: GDPR 72 hours, HIPAA 60 days, SEC 4 business days for material incidents. Response plan includes: detection → classification → containment → notification → remediation → post-incident review.
+
+---
+
+## 5. Compliance
+
+**Owner: Compliance Officer | Approver: Legal / Executive Sponsor**
+
+Applicability depends on your platform type, user base, and data handled. Mark non-applicable frameworks as "N/A — \[reason\]" in your sign-off documentation.
+
+### SOC 2 Type II readiness
+
+SOC 2 is the most commonly required compliance framework for B2B SaaS. Type II requires controls to demonstrate effectiveness over a **3–12 month observation period** — start early.
+
+◻ **Security controls (mandatory Common Criteria CC1–CC9) implemented and evidenced:** MFA on all access, RBAC with quarterly access reviews, encryption at rest and in transit, vulnerability scanning with patch management, SIEM with log retention, written incident response plan with tabletop exercises, documented SDLC with code review and approval workflows, vendor security due diligence, employee background checks and security awareness training.
+
+◻ **Continuous evidence collection automated** via compliance platforms (Drata, Vanta, Sprinto, Secureframe). Cost with automation: $3K–$**8K** vs. $50K–$100K traditional. Evidence includes: access review logs, scan results, incident response exercise records, training completion records, change management approvals.
+
+◇ **Additional Trust Services Criteria selected and implemented** as needed: Availability, Processing Integrity, Confidentiality, Privacy.
+
+### Industry-specific compliance
+
+◇ **HIPAA technical safeguards implemented** (health platforms handling PHI): unique user identification, emergency access procedures, automatic logoff, encryption at rest and in transit, audit controls recording all ePHI access, integrity controls, person/entity authentication. Business Associate Agreements (BAAs) executed with all vendors handling PHI. Documentation retained for **6 years**. Penalties up to \$2.1 million per violation category per year.
+
+◇ **PCI DSS 4.0 compliance achieved** (payment platforms): All 12 core requirements addressed. Key 2025 changes: MFA required for all access to cardholder data environment (not just remote), anti-phishing controls (DMARC/SPF/DKIM), WAF mandatory with e-skimming detection (checked at least every 7 days), keyed cryptographic hashes required (plain hashing insufficient), full software inventory of custom code, certificate inventory for PAN transmission, scope validation every 12 months.
+
+◇ **FedRAMP authorization pursued at appropriate impact level** (government platforms): Low (~156 controls), Moderate (~323 controls, most common), or High (~410 controls). Based on NIST SP 800-53 Rev. 5. Requires Third Party Assessment Organization (3PAO) assessment. Timeline: **12–18 months** end-to-end. Continuous monitoring: monthly vulnerability scans, quarterly POA&M submissions, annual assessments.
+
+◇ **ISO 27001:2022 certification pursued** (enterprise/international): 93 controls across organizational (37), people (8), physical (14), and technological (34) categories. 11 new controls added in 2022 update including threat intelligence, cloud services security, data leakage prevention, and secure coding. Three-year certification cycle with annual surveillance audits.
+
+◇ **ADA / Section 508 compliance verified** (government contracts, public-facing services): WCAG 2.1 AA minimum, WCAG 2.2 AA recommended. ADA Title II 2024 rule requires state/local government web and mobile apps to meet WCAG 2.1 AA by **April 2026** (large entities) or **April 2027** (smaller). VPAT 2.5 generated for procurement.
+
+◇ **COPPA compliance implemented** (platforms serving children under 13): verifiable parental consent before collecting any personal information, clear privacy notice to parents, data minimization, no behavioral advertising, parental access and deletion rights. Penalties up to **\$51,744 per violation**.
+
+◇ **KYC/AML program implemented** (fintech): Customer Due Diligence (CDD) with identity verification, Enhanced Due Diligence (EDD) for high-risk customers, Know Your Business (KYB) for beneficial ownership (25%\+ threshold), real-time transaction monitoring, sanctions screening (OFAC, EU, UN), SAR filing within 30 days, CTR filing for transactions \>\$10,000, designated AML compliance officer, annual independent testing, **5-year record retention**.
+
+---
+
+## 6. Scalability and performance
+
+**Owner: SRE / Platform Engineer | Approver: Engineering Manager**
+
+### Load and stress testing
+
+◻ **Load test completed at 1.5× the 90-day peak traffic** with documented pass/fail thresholds. Use measured production baselines, not arbitrary numbers. Standard thresholds: **P95 response time \< 500ms, P99 \< 1,000ms, error rate \< 0.1%.** Tool recommendation: k6 (Grafana) for CI-native teams with thresholds-as-code, Gatling for high-concurrency JVM environments. Run smoke tests on every PR, full load tests pre-release.
+
+◻ **Stress test completed to identify breaking point.** Gradual increase until failure — document the exact point where the system degrades (response times spike, errors increase, resources saturate). This defines the operational ceiling. Spike test additionally validates resilience against sudden 10× traffic bursts.
+
+◻ **Soak test completed** — sustained load for 4–12 hours to detect memory leaks, connection pool exhaustion, and degradation over time.
+
+### Caching and database optimization
+
+◻ **Multi-layer caching strategy implemented.** Each layer reduces load by **70–80%**. CDN/edge layer (Cloudflare, CloudFront) for static assets and cacheable API responses. Application-level cache (Redis) for session data, computed results, and hot queries — sub-millisecond response times achievable. Cache-aside (lazy loading) pattern for most use cases. TTL management aligned with data freshness requirements. Redis deployed with Sentinel (HA) or Cluster (horizontal scaling).
+
+◻ **Database queries optimized:** slow query threshold defined (\> 100ms warning, \> 500ms requires optimization, \> 1 second critical immediate action). All queries have EXPLAIN/ANALYZE results reviewed. Indexes on columns used in WHERE, JOIN, and ORDER BY. Connection pooling via PgBouncer (PostgreSQL) or ProxySQL (MySQL) with utilization kept below 80%.
+
+### Scaling and capacity
+
+◻ **Auto-scaling configured and tested.** Kubernetes HPA targeting **CPU utilization at 70%** as a starting point, with custom metrics (request rate, queue depth, tail latency) preferred for production accuracy. Scale-up stabilization at 60 seconds, scale-down at 300 seconds to prevent flapping. KEDA for event-driven scaling (Kafka, SQS, Redis consumers). Karpenter for node-level cluster autoscaling. Maximum pod limits defined to prevent runaway costs.
+
+◻ **Capacity planning validates infrastructure handles 6–12 months of projected growth** without manual intervention. Cost modeling completed with FinOps practices: resource tagging standards (owner, environment, cost center), budget alerts configured, spot/on-demand mix optimized for 60–90% savings on non-critical workloads. Kubecost or equivalent for cost visibility.
+
+---
+
+## 7. Reliability and availability
+
+**Owner: SRE / Platform Engineer | Approver: VP Engineering**
+
+### SLOs, SLIs, and error budgets
+
+Reliability targets drive every engineering and operational decision. Teams using well-defined SLOs report **40% faster incident resolution**. 73% of organizations experienced an outage costing \>\$100K in the last year.
+
+◻ **3–5 SLOs defined per service** following Google's SRE methodology. SLIs measure user-facing experience (not infrastructure metrics): availability (successful requests / total requests), latency (P95 \< threshold), error rate, and throughput. SLO target set slightly stricter than external SLA to create a buffer zone. Most common target: **99.9% availability** (8.76 hours downtime/year, 43.8 minutes/month). Each additional nine costs roughly 10× more to achieve — 100% is the wrong target because it prevents all change.
+
+| Availability | Annual Downtime | Monthly Downtime | Typical Use |
+| --- | --- | --- | --- |
+| 99.9% ("three nines") | 8.76 hours | 43.8 minutes | Standard SaaS, web apps |
+| 99.95% | 4.38 hours | 21.9 minutes | Business-critical APIs |
+| 99.99% ("four nines") | 52.6 minutes | 4.38 minutes | Payment systems, core infrastructure |
+
+◻ **Error budget policy documented.** Error budget = 100% − SLO. For 99.9% SLO, the budget is 0.1% (~43.8 min/month). Burn rate alerting configured: fast burn (14.4× rate over 1 hour → page on-call), slow burn (6× rate over 6 hours → ticket). Policy actions: \< 25% budget remaining → freeze non-critical deploys; \< 10% → all hands on reliability; single incident consuming \> 20% → mandatory blameless postmortem.
+
+### Redundancy, failover, and disaster recovery
+
+◻ **Deployment pattern selected and validated** based on RTO/RPO requirements: active-active (near-zero RTO/RPO, highest cost), active-passive hot standby (minutes RTO, near-zero RPO), warm standby (15–30 min RTO), pilot light (30–60 min RTO), or backup-and-restore (hours RTO, lowest cost). Multi-AZ deployment at minimum for production workloads.
+
+◻ **RTO and RPO targets defined per service tier and tested:** Tier 1 mission-critical (payments, auth): RTO \< 15 minutes, RPO near-zero. Tier 2 business-critical (checkout, APIs): RTO \< 1 hour, RPO \< 5 minutes. Tier 3 business-operational (internal tools): RTO \< 4 hours, RPO \< 1 hour. "If you've never restored from backup, you don't have a backup — you have a theory." Backup restore tested monthly; full failover drill quarterly.
+
+◻ **Health checks implemented on all services:** liveness probe (`/health/live`, every 10 seconds) detects crashed containers; readiness probe (`/health/ready`, every 5 seconds) manages traffic routing; startup probe for slow-starting containers. Health checks verify database connections, downstream service reachability, and cache availability — not just that the process is running.
+
+◻ **Circuit breakers configured on all external calls** using Resilience4j (Java), Polly (.NET), gobreaker (Go), or service mesh (Istio/Linkerd). States: closed → open → half-open. Complemented with bulkheads for isolation, retry with exponential backoff and jitter (prevent thundering herd), and explicit timeouts on every external call.
+
+◻ **Chaos engineering experiments conducted regularly.** Tools: Gremlin, AWS Fault Injection Service, Chaos Mesh, Litmus. Experiment types: CPU stress, disk fill, network latency injection, packet loss, instance termination, AZ failure simulation. Start small in staging, progress to production with guardrails. Lifecycle: define targets → design DR architecture → automate with IaC → test with chaos → monitor → repeat.
+
+---
+
+## 8. Infrastructure and DevOps
+
+**Owner: DevOps / Platform Engineer | Approver: SRE Lead**
+
+### CI/CD pipeline
+
+◻ **Pipeline stages complete and gated:**
+
+1. **Source/commit:** linting, secret scanning, dependency vulnerability scanning (SCA)
+2. **Build:** compile, container image build, target **\< 10 minutes** for build \+ initial tests
+3. **Test:** unit tests, integration tests, contract tests, code coverage gate at **≥ 70% (target 80%)**
+4. **Security gate:** SAST (SonarQube, Semgrep, Snyk Code), container image scanning (Trivy), license compliance — **critical/high CVEs block merge**
+5. **Staging:** deploy to staging with production parity, smoke tests, integration tests, performance tests, database migration validation
+6. **Approval gate:** manual approval for production (configurable per risk level)
+7. **Production deployment:** progressive rollout (canary/blue-green/rolling), automated health checks, **automated rollback on failure**
+8. **Post-deployment:** synthetic monitoring validation, observability verification, performance baseline comparison
+
+### Infrastructure as Code and environment management
+
+◻ **All infrastructure defined in code** (Terraform, Pulumi, or CloudFormation), version-controlled, peer-reviewed, and CI-tested. No manual console changes to production. GitOps pattern with ArgoCD or Flux for Kubernetes environments — git as the single source of truth with automated reconciliation and drift detection. **58% of cloud-native innovators use GitOps** extensively (CNCF 2025).
+
+◻ **Environment parity maintained** across dev/staging/production: identical container images, managed via IaC, same networking and authentication configurations. Ephemeral per-PR preview environments for testing. Environment configs stored securely; production secrets never accessible from non-production environments.
+
+◻ **Container security hardened:** Pod Security Admission enforced (Pod Security Standards), RBAC with least-privilege, resource requests and limits set on all containers, Network Policies for pod-to-pod traffic control, audit logging enabled on API server, container images signed and verified (Cosign). **82% of organizations run Kubernetes in production** (CNCF 2025).
+
+### Deployment, rollback, and observability
+
+◻ **Progressive deployment strategy configured:** canary (1% → 5% → 25% → 50% → 100%) with automated analysis using Flagger or Argo Rollouts. Gate criteria: request success rate ≥ 99%, P99 latency \< 500ms, error rate \< 1%. Automatic rollback triggered when thresholds breached. For monolithic applications, blue-green deployment provides instant rollback capability at the cost of 2× resources.
+
+◻ **Database migrations automated in the pipeline** with backward-compatible expand/contract pattern. Online migration tools for hot tables: gh-ost (MySQL), `CREATE INDEX CONCURRENTLY` (PostgreSQL). Pre-migration backups mandatory. Rollback scripts prepared for every migration. Feature flags disable new behavior instantly if migration causes issues.
+
+◻ **Observability stack deployed** based on OpenTelemetry (CNCF's second-highest-velocity project, 24,000\+ contributors):
+
+| Signal | Collection | Storage | Visualization |
+| --- | --- | --- | --- |
+| Metrics | OTel Collector, Prometheus | Prometheus, Mimir/Thanos | Grafana |
+| Logs | OTel Collector, Fluent Bit | Loki or Elasticsearch | Grafana or Kibana |
+| Traces | OTel SDK \+ Collector | Tempo, Jaeger | Grafana |
+
+Alert on SLO burn rates, not raw metrics. Every alert links to a runbook. "If an alert doesn't trigger a concrete action, it shouldn't page."
+
+◻ **On-call runbooks created for every alert.** Structure: alert identification → impact assessment → triage decision tree → step-by-step remediation (copy-pasteable commands) → escalation paths → verification steps → communication template. Runbooks tested with newly onboarded engineers (the "3 AM test"). Version-controlled, reviewed quarterly, linked directly from monitoring dashboards. Incident response platform configured (PagerDuty, Rootly, or incident.io) with MTTA, MTTR, and MTTD tracking.
+
+---
+
+## 9. Testing
+
+**Owner: QA Lead | Approver: Engineering Manager**
+
+### Coverage and methodology
+
+◻ **Unit test coverage ≥ 80% on all new code**, with a CI failure threshold at 70%. Focus on **branch coverage** of critical business logic, not just line coverage. Coverage ≠ quality — 100% statement coverage can still miss critical bugs. Don't test auto-generated code or thin wrappers. Google considers 75% "commendable"; safety-critical systems (financial, medical) target 90%\+.
+
+◻ **Integration tests cover all critical API paths and user workflows.** Following the modern Testing Trophy approach (Kent C. Dodds): integration tests are the primary focus because "the more your tests resemble the way your software is used, the more confidence they can give you." Use Testing Library, MSW (Mock Service Worker), and Testcontainers for reproducible, isolated test environments.
+
+◻ **End-to-end tests cover every critical user journey:** registration, login, core workflows, checkout/conversion, error states. Typically 5–20 critical E2E scenarios. Run with Playwright (preferred for multi-browser support) or Cypress. E2E tests run against staging with production parity, not mocked backends.
+
+### Security and performance testing in CI
+
+◻ **Security testing integrated across the pipeline:** pre-commit SAST \+ SCA for fast feedback, CI build runs full SAST \+ SCA (block on critical/high), staging runs DAST against deployed application (OWASP ZAP, Nuclei). **97% of commercial applications contain open-source components** — SCA is not optional.
+
+◻ **Performance test results documented and gated:** smoke/load tests run per-commit in CI, full load test at 1.5× peak pre-release. Thresholds set at 120% of measured production baseline, tightened based on 2 weeks of CI data. Results compared to previous release baseline.
+
+◻ **Regression test suite maintained and passing.** All previously discovered bugs have corresponding regression tests. Test suite execution time monitored — parallelization used to keep feedback loops fast.
+
+### QA sign-off
+
+◻ **QA sign-off checklist completed:** all automated tests pass, coverage thresholds met, security scans clean (no critical/high), performance thresholds pass, accessibility audit passes (WCAG 2.2 AA), cross-browser testing completed, API contract tests pass, manual exploratory testing completed on critical paths, documentation updated, feature flag configuration verified, rollback plan documented.
+
+---
+
+## 10. Documentation
+
+**Owner: Engineering Lead \+ Tech Writer | Approver: Product Manager**
+
+### API and developer documentation
+
+◻ **API documentation auto-generated from OpenAPI 3.1 spec** via Swagger UI, Redoc, or Stoplight. Spec validated in CI with Spectral linting. Documentation includes all three tiers: reference docs (auto-generated: endpoints, parameters, schemas, status codes), conceptual docs (human-written: architecture overview, authentication flows, resource relationships), and practical docs (getting-started guide achieving "Hello World" in \< 5 minutes, tutorials, code samples in 3\+ languages).
+
+◻ **Developer onboarding guide published** with: product overview, auth setup and first API call walkthrough, sandbox/test environment access, quick reference card, glossary, status and error codes reference, rate limiting documentation, and versioned changelog.
+
+### Architectural and operational documentation
+
+◻ **Architecture Decision Records (ADRs) maintained** in source control (`/docs/adr/`). One decision per ADR using the Nygard template: Status → Context → Decision → Consequences. Sequential numbering with README index. Include alternatives considered, decision criteria, and confidence level. Review one month later for after-action comparison. ADRs are append-only — supersede rather than edit.
+
+◻ **Operational runbooks created for all common tasks** and all monitoring alerts. Structure: title, owner, last-updated date, overview, prerequisites, numbered procedure with copy-pasteable commands, expected outputs per step, decision branches, rollback steps, escalation contacts, troubleshooting. Linked directly from alerts and dashboards. Tested with new engineers. Reviewed quarterly.
+
+◻ **Incident response procedures documented** following NIST SP 800-61 Rev. 3 (April 2025): preparation → detection and analysis → containment/eradication/recovery → post-incident review. Includes: roles and responsibilities with authority levels, communication protocols, escalation paths, severity classification matrix, contact information, playbooks per incident type, regulatory reporting requirements. Reviewed annually and after every major incident.
+
+◻ **Data dictionary cataloging all entities, attributes, types, constraints, and relationships.** Auto-generated from schema definitions where possible. Updated with every schema change.
+
+◻ **End-user documentation published:** feature guides, FAQs, known issues and workarounds. Documentation treated as code — version-controlled, CI-tested, linted with Vale, broken links detected automatically.
+
+---
+
+## 11. Business continuity
+
+**Owner: SRE \+ Legal \+ Operations | Approver: VP Engineering / COO**
+
+### Business continuity and incident response plans
+
+◻ **Business Continuity Plan (BCP) documented** per ISO 22301 / NIST SP 800-34. Components: risk assessment identifying threats (cyberattacks, vendor failures, infrastructure outages, natural disasters), Business Impact Analysis (BIA) mapping critical processes and dependencies with RTO/RPO per process, recovery strategies with failover procedures, dependency mapping (upstream, downstream, vendor, fourth-party), governance with clear ownership and annual review cycle.
+
+◻ **Incident Response Plan (IRP) documented and rehearsed** following NIST SP 800-61 Rev. 3 or SANS 6-step model. Tabletop exercises conducted **quarterly at minimum**. IRP includes: severity classification matrix (P1–P4), escalation paths, communication protocols (internal Slack/Teams channel \+ external status page \+ customer email), pre-written notification templates for each severity level, reporting requirements (regulatory, legal).
+
+◻ **Communication plan for outages operational:** public status page active (Statuspage.io, Instatus), initial acknowledgment within **\< 5 minutes** of detection, investigation updates every 30 minutes for Sev1, resolution notification, and post-incident summary published. Internal war room channel auto-created with incident management tooling.
+
+### Vendor and legal readiness
+
+◻ **Vendor/third-party risk assessment completed** for all critical dependencies: cybersecurity posture, BCP/DR plans with RTO/RPO, financial viability, fourth-party dependencies mapped. SLAs defined with measurable metrics and penalty clauses. Graceful degradation documented for when vendor SLAs are breached. Vendor concentration risk identified.
+
+◻ **Legal and contractual obligations met:** Terms of Service finalized, Privacy Policy compliant with applicable regulations, DPAs executed with all processors, open source license compliance audit passed, SLAs contractually committed, cyber liability insurance reviewed, industry-specific regulatory compliance verified, IP assignments and NDAs current.
+
+---
+
+## 12. Launch readiness
+
+**Owner: Release Manager / Product Manager | Approver: Executive Sponsor**
+
+### Staged rollout and rollback
+
+◻ **Staged rollout plan defined** using progressive delivery ring model: Ring 0 (internal team, 24–48 hours) → Ring 1 (canary, 1–5% of users) → Ring 2 (beta, 10–25%) → Ring 3 (GA, 100%). Gate criteria before expansion: error rate within threshold, P95/P99 latency stable, no increase in support tickets, core business metrics not degraded, resource utilization stable.
+
+◻ **Feature flags configured** for all new user-facing functionality. Single responsibility (one flag = one feature). Naming convention enforced. Expiration date set at creation with **30-day sunset policy** after GA. Audit logging on all flag changes. Stale flag cleanup scheduled quarterly. Tools: LaunchDarkly, Flagsmith, Unleash, or OpenFeature (CNCF vendor-neutral standard).
+
+◻ **Rollback plan documented and tested:** automated rollback trigger criteria defined (metric thresholds), feature flag kill switch tested, database rollback scripts prepared, previous known-good deployment artifact preserved, rollback runbook with step-by-step instructions, rollback time target defined (\< X minutes), clear decision authority for who triggers rollback.
+
+### Monitoring, support, and go/no-go
+
+◻ **Error monitoring active and verified:** Sentry configured with release tags (regression detection), source maps uploaded, issue grouping rules set, alert rules for new issues and error volume spikes, integrations with Slack/Jira/PagerDuty. Datadog or equivalent configured with monitors, SLO tracking, service maps, and tagging discipline (`service`, `env`, `version`, `team`). Both tools reporting data from staging before production launch.
+
+◻ **Analytics and tracking instrumented:** key events defined and validated (sign-up, activation, purchase, core feature usage), conversion funnels configured, event taxonomy documented, release markers set for deploy correlation, privacy-compliant tracking with consent, launch dashboard created, anomaly alerting configured.
+
+◻ **Customer support team prepared:** trained on new features and common issues, FAQ/knowledge base published, internal support runbooks created, escalation paths defined, canned responses prepared for anticipated questions, staffing planned for launch spike, feedback collection mechanism configured.
+
+◻ **Marketing and legal review complete:** customer-facing copy reviewed for accuracy, pricing/billing changes validated, Terms of Service and Privacy Policy updated if needed, launch announcements coordinated, compliance with advertising regulations verified.
+
+◻ **Go/No-Go meeting conducted** with engineering lead, QA lead, product owner, SRE, security, legal, support lead, and release manager. Each domain scored Pass/Fail against pre-defined criteria. Three outcomes: GO, GO WITH CAVEATS (documented conditions for post-launch resolution), or NO-GO (documented blockers, follow-up scheduled). All sign-offs recorded for audit trail.
+
+### Post-launch monitoring
+
+◻ **First 24 hours:** real-time error rate and latency dashboards monitored continuously, CPU/memory/disk stable, no 5xx spike, feature flag metrics at expected values, database performance nominal, third-party health confirmed, support ticket volume tracked, synthetic tests passing.
+
+◻ **First week:** SLO compliance calculated, error budget consumed assessed, feature adoption metrics reviewed, performance trends analyzed, post-launch retrospective conducted, temporary release flags cleanup initiated, documentation updated with learnings, known issues documented.
+
+---
+
+## Conclusion
+
+This checklist is not a suggestion — it is the minimum standard for production release. Three principles make it work in practice. First, **automate enforcement wherever possible**: coverage gates in CI, security scanning that blocks deploys, SLO burn-rate alerts that page on-call, Lighthouse thresholds that fail PRs. Manual checklists drift; automated gates do not. Second, **assign clear ownership**: every section has a named owner and approver, and the Go/No-Go meeting requires their explicit sign-off. Ambiguous ownership is the primary reason checklists fail. Third, **treat this as a living document**: review quarterly, update after every major incident postmortem, and adapt thresholds as your system matures — the benchmarks here (80% coverage, 99.9% availability, P95 \< 500ms) are starting points, not permanent ceilings.
+
+The costliest production incidents share a common root cause: something on this list was skipped because "we'll fix it later." Later never comes. Ship when the checklist is green.

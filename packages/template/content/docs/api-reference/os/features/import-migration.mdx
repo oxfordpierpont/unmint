@@ -1,0 +1,36 @@
+---
+title: "Import and migration"
+description: "Feature-level API contract for conversation import, archive isolation, deduplication, and promotion into live aiConnectedOS work."
+---
+## Contract status
+
+`Derived implementation contract`
+
+## Source document
+
+- [Import and migration](/docs/knowledge-base/aiconnected-os/aiconnected-os-import-and-migration)
+
+## Feature purpose
+
+Defines safe import flows from external systems into read-only archive contexts before user-directed promotion.
+
+## Required operations
+
+- Import external conversations or exports
+- Deduplicate imports by content hash
+- Store imported items in archive-only containers
+- Promote selected items into live workspace contexts
+
+## Suggested resources
+
+- `imports`
+- `import_batches`
+- `import_archive_items`
+- `import_promotions`
+- `import_dedup_keys`
+
+## Implementation notes
+
+- Keep this feature workspace-scoped and persona-aware where applicable.
+- Preserve authorship, timestamps, and auditability for all state changes.
+- Treat the source doc as the behavioral specification even where final route names remain open.

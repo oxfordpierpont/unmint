@@ -1,0 +1,11 @@
+{
+  "title": "Technology",
+  "pages": [
+    "index",
+    "bp-tech-01-technology-stack",
+    "bp-tech-02-infrastructure-architecture",
+    "bp-tech-03-security-architecture",
+    "bp-tech-04-enterprise-readiness-checklist"
+  ],
+  "defaultOpen": true
+}

@@ -1,0 +1,19 @@
+{
+  "title": "Market Research",
+  "pages": [
+    "index",
+    "bp-market-01-ai-saas-market-sizing",
+    "bp-market-02-agency-software-market",
+    "bp-market-03-tam-analysis",
+    "bp-market-04-sam-calculation",
+    "bp-market-05-som-projection",
+    "bp-market-06-ai-memory-market-sizing",
+    "bp-market-07-robotics-cognitive-market",
+    "bp-market-08-voice-ai-market",
+    "bp-mktres-05-agency-customer-discovery",
+    "bp-mktres-06-business-client-pain-points",
+    "bp-mktres-08-agency-icp",
+    "bp-mktres-09-business-client-icp"
+  ],
+  "defaultOpen": true
+}

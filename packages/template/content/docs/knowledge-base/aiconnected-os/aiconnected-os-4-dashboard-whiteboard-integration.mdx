@@ -1,0 +1,675 @@
+---
+title: "Dashboard whiteboard integration"
+description: "Prompt: Alright, next, I'd like to create a new concept. So, let's say that I am doing some kind of brainstorming, and I'm doing that brainstorming, kind of..."
+---
+<Info>
+Converted from `aiConnected OS - 4. Dashboard whiteboard integration.md`.
+</Info>
+# Dashboard whiteboard integration
+
+**User:** Oxford Pierpont  
+**Created:** 12/10/2025 6:08:57  
+**Updated:** 12/10/2025 6:49:47  
+**Exported:** 2/11/2026 7:08:06  
+**Link:** [https://chatgpt.com/g/g-p-69395d9991108191841f1dac1fd8d1a1-oxpi-aiconnected-ui-features/c/693954c8-91a8-8333-af75-2053023cd6e7](https://chatgpt.com/g/g-p-69395d9991108191841f1dac1fd8d1a1-oxpi-aiconnected-ui-features/c/693954c8-91a8-8333-af75-2053023cd6e7)  
+
+## Prompt:
+Alright, next, I'd like to create a new concept. So, let's say that I am doing some kind of brainstorming, and I'm doing that brainstorming, kind of like I am right now, across multiple chats, okay? And over the course of all these little chats, I'm pinning various things and essentially collecting my ideas that I like. It would be nice if, within the instance, there was one place that isn't necessarily a chat, but one place where I can move all of these pinned conversations or pinned ideas. So, I don't know if this is a document, or if maybe it's a mind map, or some other format, but I feel like I need somewhere that I can take various messages from across various chats within the instance and have one place to put them all collectively without it having to be a chat feed. And I can somehow turn all of these ideas, or we'll say components, or maybe they're document mockups, code, whatever. I can basically collect all of these little pieces and drop them into one place for my master, I guess, my master instance workspace, or, I don't know, help figuring out what I'm even asking for.
+
+It's more like one of those whiteboards you'd see on an app like Miro, or Excalidraw, or something like that, where I can just kind of yank, let's say, this particular message, right? Or maybe an image that was generated, or maybe something that I sent, right? Let's say that it's a document I sent, or a reference, or a link, a video, like anything that I want to take from the chat and essentially drop into this board. And let's say that I selected a bunch of messages. So let's say I went through the filtering process and I selected like 20 or 30 messages or something. I can drop all of those as a group of messages onto that whiteboard. And when I decide to go into the whiteboard for the instance, every instance gets its own whiteboard, just let's say by default, I should be able to link those together. So maybe I want to draw a line or a connection from one group to the other, or I want to, I don't know, like make a mind map or some kind of workflow. And then when I'm in the whiteboard itself with this collection of different components, I can also still chat with the whiteboard. So I can say, hey, take all of this and review all of the information here and turn it into a PRD, right? So it's like I can collect my ideas safely as I'm moving along.
+
+## Response:
+You’re basically asking for a **per-instance “Canvas Workspace”**:  
+a visual board attached to that instance where you can **collect, organize, and talk to** ideas pulled from _any_ chat in that instance, without it being “just another chat feed.”
+
+Let me give you a clean shape for it.
+
+* * *
+
+1\. What this thing _is_
+------------------------
+
+Working name: **Instance Canvas** (or “Workspace Canvas”).
+
+*   **Scope:** 1 Canvas per instance (at least to start).
+*   **Purpose:**
+    *   A **visual, persistent space** where you drop “interesting stuff” from chats: messages, images, files, code, links, etc.
+    *   You can **cluster and connect** those pieces like a mind map / Miro board.
+    *   You can **talk to the Canvas** itself (“Use everything on here to draft a PRD”).
+
+**Key difference from chat:**
+
+*   Chats = **chronological conversations**.
+*   Canvas = **curated, spatial map of the best pieces** from those conversations.
+
+* * *
+
+2\. Core primitives
+-------------------
+
+To make this concrete, imagine four main objects:
+
+1.  **Instance**
+    *   Has: chats, pins, memory, and **one Canvas**.
+2.  **Canvas**
+    *   A 2D space with:
+        *   **Nodes** – items placed on the board.
+        *   **Connections** – lines/edges between nodes.
+        *   **Layout** – positions, zoom, grouping, etc.
+3.  **Artifacts** (the real content)
+    *   A normalized object representing _anything_ you pull in:
+        *   `message` (single chat message)
+        *   `message_group` (a bundle of selected messages)
+        *   `image`
+        *   `file` (PDF, doc, etc.)
+        *   `link` (URL)
+        *   `snippet` (code or text)
+    *   Each artifact stores:
+        *   A **snapshot** (frozen content at the time you added it)
+        *   A **live reference** (where it came from; e.g. instance ID, chat ID, message IDs)
+4.  **Nodes**
+    *   A **visual wrapper around an Artifact** on the Canvas.
+    *   Important fields:
+        *   `artifact_id`
+        *   `position {x,y}`
+        *   `title / label`
+        *   `tags`
+        *   `group_id` (if this node belongs to a cluster)
+    *   Different visual flavors:
+        *   **Bundle Node** – for 20–30 messages dropped as one unit.
+        *   **Image Node**
+        *   **File Node**
+        *   **Note Node** (free-typed sticky note, no underlying chat message)
+        *   **AI Output Node** (things created by the Canvas chat itself, like PRD sections)
+
+Connections:
+
+*   `Connection {from_node, to_node, label, type}`
+    *   Example `type`: “supports”, “contradicts”, “is part of”, “leads to”, etc.
+
+* * *
+
+3\. Flow: from chat to Canvas
+-----------------------------
+
+### 3.1 Selecting stuff in a chat
+
+In any chat within the instance:
+
+1.  You **multi-select messages** (or a continuous range).
+2.  You choose **“Send to Canvas”** (or “Add to Instance Canvas”).
+
+System behavior:
+
+*   It creates an **Artifact** of type `message_group`:
+    *   Includes:
+        *   instance ID
+        *   chat ID
+        *   ordered list of message IDs
+        *   snapshot of text/content
+*   It drops a **Bundle Node** onto the Canvas at a default location (or in an “Inbox lane”).
+
+Visually on the Canvas:
+
+*   You see a card that says something like:
+    *   Title auto-suggested: _“Early PRD thoughts (Chat: 2025-12-10, 23 messages)”_
+    *   Expand to see the submessages _in order_.
+    *   Click “Open in original chat” to jump back with the selection highlighted.
+
+### 3.2 Dragging and arranging
+
+Once on the Canvas, you can:
+
+*   **Drag nodes around** to group related ideas.
+*   Draw **connection lines** between nodes:
+    *   Example: connect “Brainstorming” node → “Requirements list” node with label “refined into”.
+*   Add **Note Nodes** to annotate: e.g. “Final direction we’re taking.”
+
+* * *
+
+4\. Working inside the Canvas
+-----------------------------
+
+Inside the Canvas view there are two main modes:
+
+1.  **Edit mode (spatial)** – move, connect, group.
+2.  **Chat mode (conversational)** – talk to the Canvas.
+
+### 4.1 Edit Mode
+
+You can:
+
+*   **Group nodes** into clusters (like a container or frame):
+    *   Cluster example: “V1 Features”, “UX Ideas”, “Tech Constraints”.
+*   Collapse/expand clusters to reduce visual noise.
+*   Tag nodes or clusters (`#PRD`, `#Cognigraph`, `#UI`, etc.).
+*   Re-label nodes:
+    *   Change auto title “Messages from 10:42–10:55” to “Pinning/Whiteboard concept v1”.
+
+### 4.2 Chat With Canvas
+
+On the right, a **Canvas Chat panel**:
+
+You can:
+
+*   Choose context:
+    *   **“Use everything on the Canvas”**, or
+    *   **“Use only selected nodes/cluster”**.
+*   Ask things like:
+    *   “Summarize all of this into a high-level PRD.”
+    *   “Create a feature list from these three clusters.”
+    *   “What conflicts do you see between these two groups of ideas?”
+    *   “Draft a spec for the pinning + Canvas workflow from these nodes.”
+
+Output behavior:
+
+*   The AI response appears:
+    *   In the chat panel, and
+    *   Optionally as a **new AI Output Node** on the Canvas (e.g. card labeled “Draft PRD v1”).
+*   That new node now becomes another artifact you can connect, refine, or export.
+
+* * *
+
+5\. How it relates to pinning & linked conversations
+----------------------------------------------------
+
+You’ve already designed:
+
+*   **Pinning** – marking individual messages as important.
+*   **Conversation linking** – linking whole chats as “related” threads.
+
+The Canvas sits **above** both of those:
+
+1.  **Pins feed the Canvas**
+    *   There can be a **“Pin Inbox”** on the Canvas:
+        *   Any pinned message in the instance automatically shows up as a tiny node in a side panel.
+        *   You can drag pins from that inbox onto the Canvas proper.
+    *   Or you explicitly say “Send Pin to Canvas.”
+2.  **Linked conversations are visible context**
+    *   Each Canvas node that came from a chat shows which **linked chain** that chat belongs to.
+    *   From a node you can:
+        *   Jump to the **source chat**.
+        *   Jump to **other linked chats** in that chain.
+    *   This way:
+        *   You can move between macro view (Canvas) and micro detail (chat) without losing context.
+
+Think of the hierarchy like:
+
+*   **Instance**
+    *   Chats
+        *   Messages, pins
+    *   Linked conversation graph
+    *   **Instance Canvas** (curated cross-chat brain)
+
+* * *
+
+6\. Example: Your current use case
+----------------------------------
+
+You’re brainstorming features across multiple chats:
+
+1.  In Chat A, we talked about **pinning + filtering**.
+2.  In Chat B, we’re talking about the **Instance Canvas**.
+3.  In Chat C, you might talk about **Cognigraph’s learning sub-architecture**.
+
+You:
+
+*   Select several messages in Chat A → “Send to Canvas.”
+*   Select our description in Chat B → “Send to Canvas.”
+*   Later, from Chat C, you send some learning-architecture ideas to the same Canvas.
+
+Now when you open the **Instance Canvas**:
+
+*   You see:
+    *   Cluster: “Pinning & filtering.”
+    *   Cluster: “Instance Canvas / Whiteboard.”
+    *   Cluster: “Learning sub-architecture.”
+*   You drag connections:
+    *   “Pinning & filtering” → “Instance Canvas” (label: “feeds curated board”).
+    *   “Instance Canvas” → “Learning sub-architecture” (label: “visual working memory for learning design”).
+
+Then you say to the Canvas:
+
+> “Use all three clusters to write a cohesive PRD section called ‘Instance-Level Workspace & Knowledge Canvas’ that explains how pinned messages and learning-focused chats end up here.”
+
+The AI:
+
+*   Reads the nodes you’ve selected.
+*   Produces a clean PRD section.
+*   Adds it as a **new node** on the Canvas, which you can then export to your docs.
+
+* * *
+
+7\. Data model sketch (so you can implement later)
+--------------------------------------------------
+
+Very rough pseudo-schema just to crystallize:
+
+```ts
+type InstanceID = string;
+type ChatID = string;
+type MessageID = string;
+type ArtifactID = string;
+type CanvasID = string;
+type NodeID = string;
+type ConnectionID = string;
+type ClusterID = string;
+
+// Core
+interface Instance {
+  id: InstanceID;
+  name: string;
+  canvasId: CanvasID;  // one primary canvas per instance
+  // ...other fields (chats, memory, etc.)
+}
+
+// Canvas
+interface Canvas {
+  id: CanvasID;
+  instanceId: InstanceID;
+  nodes: NodeID[];
+  connections: ConnectionID[];
+  clusters: ClusterID[];
+}
+
+// Artifacts are the real content
+type ArtifactType =
+  | "message"
+  | "message_group"
+  | "image"
+  | "file"
+  | "link"
+  | "snippet"
+  | "note"
+  | "ai_output";
+
+interface Artifact {
+  id: ArtifactID;
+  type: ArtifactType;
+  instanceId: InstanceID;
+
+  source?: {
+    chatId?: ChatID;
+    messageIds?: MessageID[];
+    externalUrl?: string;
+  };
+
+  snapshot: {
+    text?: string;
+    html?: string;
+    code?: string;
+    fileMeta?: any;
+    imageMeta?: any;
+  };
+
+  meta: {
+    title?: string;
+    createdBy: "user" | "ai";
+    createdAt: string;
+    tags?: string[];
+  };
+}
+
+// Node on canvas referencing artifact
+interface CanvasNode {
+  id: NodeID;
+  canvasId: CanvasID;
+  artifactId: ArtifactID;
+  position: { x: number; y: number };
+  clusterId?: ClusterID;
+  localTitleOverride?: string;
+}
+
+// Connections
+interface CanvasConnection {
+  id: ConnectionID;
+  canvasId: CanvasID;
+  fromNodeId: NodeID;
+  toNodeId: NodeID;
+  label?: string;
+  type?: "supports" | "blocks" | "part_of" | "contradicts" | "related_to";
+}
+
+// Clusters (groups/frames)
+interface CanvasCluster {
+  id: ClusterID;
+  canvasId: CanvasID;
+  name: string;
+  nodeIds: NodeID[];
+}
+```
+
+From the LLM’s point of view, “chat with the Canvas” just means:
+
+*   Given a Canvas ID + list of selected Node IDs:
+    *   Load corresponding Artifacts.
+    *   Use their snapshots as the **primary context window**.
+    *   Generate output and store it as a new `ai_output` Artifact + Node.
+
+* * *
+
+8\. Short label for what you’re asking for
+------------------------------------------
+
+If you want a concise, internal phrase for this feature:
+
+> **“Instance Canvas: a per-instance visual workspace where you can collect, connect, and converse with artifacts from any chat.”**
+
+That’s really the heart of what you described:
+
+*   Not a chat.
+*   Not just memory.
+*   A **board** that becomes the **master workspace** for that instance — the place where all the best bits from scattered conversations come together and then get transformed into real structures (PRDs, specs, diagrams, etc.) by the AI.
+
+## Prompt:
+In another chat, I technically already built a dashboard, right? So this could just be something that's nested in the dashboard, this whiteboard, basically, where everything is collected. Because what I really am trying to do here is, let's say that I have this whole project that I'm building, and I'm brainstorming within the chat interface various ideas and concepts, and I'm trying to work out what the end result is going to be. But I need one place to just kind of collect all those things and bring them into a unified output, right? So that whiteboard could just sit as part of the dashboard menu, where it's just there, and it's above everything, and it is constantly able to collect all of the things that I'd like to keep. And from there, I can just compile it all into a single cohesive project, basically. Or maybe I decide, hey, I'm going to turn this into a presentation for a client, or I'm going to turn this into a business plan or a research study. There's any number of things that I could ask. But right now, I have no way of effectively keeping all of these separated chats except to manually copy them, go to something like Google Drive or Google Docs, paste everything in, try to have little tabs inside of Google Docs, and collect things that way, and that's just not efficient. So I'm trying to find a native solution for that.
+
+## Response:
+Yep, you’re thinking about this exactly the right way:  
+**the “whiteboard” is really the _top layer_ of your existing dashboard**, not a separate thing.
+
+Let’s plug it into what you already have.
+
+* * *
+
+1\. Mental model: “Dashboard → Board → Outputs”
+-----------------------------------------------
+
+For each **instance / project**, you’ll have:
+
+*   **Dashboard** – the control center
+    *   Tabs: _Home, Chats, Docs, Files, Memory, Settings…_
+*   **Board (Whiteboard)** – a special tab **inside** the dashboard
+    *   This is the **one place “above everything”** that can collect pieces from across chats.
+*   **Outputs** – things the AI compiles _from_ the Board:
+    *   A PRD, a business plan, a research paper, a client presentation, etc.
+
+So the flow becomes:
+
+> **Chat ➝ Pin / Send to Board ➝ Arrange on Board ➝ “Compile as X” ➝ Output document**
+
+No more copy → Google Docs → glue things manually.
+
+* * *
+
+2\. Where the Board lives in the dashboard
+------------------------------------------
+
+In your existing dashboard UI, think of the left nav something like:
+
+*   **Overview**
+*   **Board**
+*   Threads / Chats
+*   Docs
+*   Files / Assets
+*   Timeline
+*   Settings
+
+Key details:
+
+*   **Board is per instance** – every instance gets its own Board automatically.
+*   It’s **visibly “top-level”**:
+    *   Either the **default tab** when you open the dashboard
+    *   Or visually emphasized as the “Project Board” / “Workspace Board.”
+
+This matches what you said:
+
+> “it’s above everything, and it is constantly able to collect all of the things that I’d like to keep.”
+
+The “above everything” part is conceptual:  
+The Board sees **down into** all chats, docs, links, assets in that instance.  
+Everything else is a source; the Board is where you **compose the final story**.
+
+* * *
+
+3\. How content flows into the Board
+------------------------------------
+
+Anywhere in the instance where content exists, you should be able to say:
+
+*   **“Add to Board”**
+
+Specifically:
+
+### 3.1 From chats
+
+In any chat:
+
+*   Select a single message, multiple messages, or a range.
+*   Context menu: **“Send to Board”**.
+
+System creates:
+
+*   A **“message group” item** that:
+    *   Contains a frozen snapshot of the messages
+    *   Knows which chat + which messages they came from (for traceability)
+
+On the Board:
+
+*   That appears as a **card node**, maybe in an “Incoming” area or center of the canvas.
+*   Card shows:
+    *   Auto title: _“Brainstorm – whiteboard concept (12 messages)”_
+    *   A highlight like: _Source: Chat ‘Cognigraph UI – 2025-12-10’_
+    *   Expand to see the content in order
+    *   A “View in chat” button that jumps you straight to the original conversation.
+
+### 3.2 From other sources in the dashboard
+
+From other dashboard views:
+
+*   **Docs** – “Add section/page to Board”
+*   **Files** – “Pin this PDF/image to Board”
+*   **Links** – “Send this bookmarked URL to Board”
+*   **Images** – “Send this generated image to Board”
+*   **Notes** – you can create a sticky note directly in the Board
+
+Mechanically, it’s all the same: everything is treated as a **Board Item** (node) that you can move, group, and use as AI input.
+
+* * *
+
+4\. The Board itself: how it behaves
+------------------------------------
+
+Think of it as a hybrid of:
+
+*   **Miro / Excalidraw** (visual, spatial organization)
+*   **Notion database** (structured items underneath)
+*   **Chat with AI** (you can talk to everything on it)
+
+On the Board you can:
+
+1.  **Drag / arrange nodes**
+    *   Group related ideas visually.
+    *   E.g. cluster “Brainstorm ideas” on the left, “Final decisions” on the right.
+2.  **Create clusters/frames**
+    *   Example clusters:
+        *   “Feature Ideas”
+        *   “Constraints / Risks”
+        *   “User Stories”
+        *   “Research & References”
+    *   Each cluster can be:
+        *   Collapsed/expanded
+        *   Targeted as a specific input for AI (“Use only this cluster”).
+3.  **Draw connections**
+    *   Lines between nodes:
+        *   Feature idea → Requirement
+        *   Concept → Design mockup
+    *   Optional labels:
+        *   “Refined into”, “Contradiction”, “Depends on”, etc.
+4.  **Add Board-only notes**
+    *   Sticky notes for your own commentary:
+        *   “We dropped this approach.”
+        *   “Client said no to this on 12/10.”
+5.  **See source context**
+    *   Every node shows where it came from.
+    *   From a node, you can:
+        *   Jump back to the original chat
+        *   Open the underlying document or file
+
+The Board becomes your **project brain**:  
+spatial, curated, and heavily linked back to the raw material.
+
+* * *
+
+5\. Compiling from Board → unified outputs
+------------------------------------------
+
+This is the part that replaces “copy to Google Docs.”
+
+On the Board there’s a **“Compile” panel** (right side or top bar):
+
+### 5.1 Choosing what to compile
+
+First choose **scope**:
+
+*   **Everything on the Board**, or
+*   **Only selected nodes**, or
+*   **One or more clusters**.
+
+Then choose **template** (your “What am I making?” menu):
+
+*   PRD
+*   Business plan
+*   Research study
+*   Pitch deck / client presentation
+*   Technical spec
+*   Blog series / doc set
+*   Custom templates you define (e.g. “Cognigraph internal design doc”)
+
+### 5.2 Templates as structured output recipes
+
+Each template defines:
+
+*   **Sections** (and their order)
+    *   e.g. PRD: Overview, Problem, Goals, User Personas, Requirements, etc.
+*   **What to look for on the Board**
+    *   e.g. For “Requirements”, prioritize nodes tagged `#feature`, `#requirement`.
+*   **Tone / style**
+    *   Technical, investor-facing, client-facing, etc.
+*   **Output format**
+    *   Markdown doc
+    *   Rich text
+    *   Slide outline
+    *   JSON spec, etc.
+
+When you click **“Compile as PRD”**:
+
+1.  Cipher reads the selected Board items.
+2.  It uses the template to:
+    *   Pull out relevant ideas
+    *   Organize them into sections
+    *   Resolve obvious contradictions (or call them out)
+3.  It generates:
+    *   A **draft document** stored in the dashboard’s Docs section
+    *   A new **“Output Node”** on the Board (e.g. “PRD – v1 (generated)”)
+
+Now you can:
+
+*   Open the PRD in the **Docs** tab for serious editing.
+*   Keep the PRD node on the Board as the “living spec.”
+*   Later, select new nodes + PRD node and say:
+    *   “Update this PRD to v2, incorporating the new decisions in these nodes.”
+
+This is your replacement for “copy things to Google Docs and glue manually.”
+
+* * *
+
+6\. Multiple deliverables from one Board
+----------------------------------------
+
+You also mentioned scenarios like:
+
+*   “Turn this into a presentation for a client”
+*   “Turn this into a business plan”
+*   “Turn this into a research study”
+
+The Board is **neutral**; templates give you multiple outputs.
+
+You might have:
+
+*   **Cluster: “Core Vision & Requirements”**
+*   **Cluster: “Technical Details & Architecture”**
+*   **Cluster: “Market & Revenue Model”**
+*   **Cluster: “Client-Facing Benefits”**
+
+Then:
+
+1.  **Business Plan**
+    *   Compile using:
+        *   Core Vision
+        *   Market & Revenue Model
+2.  **Internal Technical Spec**
+    *   Compile using:
+        *   Core Vision
+        *   Technical Details & Architecture
+3.  **Client Presentation**
+    *   Compile using:
+        *   Core Vision
+        *   Client-Facing Benefits
+
+Each of those becomes a **separate document** in your Docs hub but all sourced from the **same Board**, and you don’t have to re-curate the content each time.
+
+* * *
+
+7\. How this plays with linked conversations & memory
+-----------------------------------------------------
+
+You already set up:
+
+*   **Linked conversations** – showing which chats flow into which.
+*   **Cognigraph-style memory** – deeper graph behind the scenes.
+
+The Board sits as:
+
+*   The **visible, user-controlled working memory** for the instance.
+*   Each Board node is:
+    *   Backed by the **deeper knowledge graph** (Cognigraph).
+    *   Mapped to conversations & documents via stable IDs.
+
+Concretely:
+
+*   When you drag a message group onto the Board:
+    *   That content is **also** available to Cognigraph as structured memory.
+*   When you ask the Board:
+    *   “Find any related ideas from other chats I haven’t pinned yet,”  
+        the system can:
+    *   Query Cognigraph & chat history
+    *   Suggest additional nodes to add to this Board.
+
+So the Board is **your view**; Cognigraph is the **engine under the floorboards**.
+
+* * *
+
+8\. Your current pain vs this design
+------------------------------------
+
+Right now:
+
+*   You brainstorm across multiple chats.
+*   There is no single **native** place to pull those pieces together.
+*   You’re forced to:
+    *   Copy content manually
+    *   Paste into Google Docs
+    *   Fake “structure” with headings and tabs.
+
+With the Board integrated into the dashboard:
+
+*   You never leave the system.
+*   Every interesting message / image / file is one click away from being a **Board node**.
+*   The Board becomes your **project surface**:
+    *   You see your ideas
+    *   Restructure them visually
+    *   Ask Cipher: “Turn this into X.”
+*   Outputs are **first-class citizens** in the same dashboard (Docs tab), linked back to the Board.
+
+* * *
+
+If you’d like, next we can:
+
+*   Define **exact sections** for the Board tab inside the dashboard (left pane, canvas, right AI/chat pane).
+*   Or draft one or two **output templates** (e.g. your default PRD + your default “business plan for investors”) that the Board would use.
+
+
+
+---
+Powered by [ChatGPT Exporter](https://www.chatgptexporter.com)

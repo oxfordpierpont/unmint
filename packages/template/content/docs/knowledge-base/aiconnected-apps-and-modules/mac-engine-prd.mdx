@@ -1,0 +1,2118 @@
+---
+title: "macEngine Comprehensive Product Requirements Document (PRD)"
+description: "Absolutely. Here’s a thorough, section by section revision of your PRD, with full integration of every feature, workflow, and expectation discussed—including..."
+---
+<Info>
+Normalized for Mintlify from `knowledge-base/aiconnected-apps-and-modules/mac-engine-prd.mdx`.
+</Info>
+Absolutely. Here’s a **thorough, section-by-section revision** of your PRD, with full integration of every feature, workflow, and expectation discussed—including all gaps identified above.  
+ I’ll write this as if you’re handing it directly to a senior macOS/AI engineer who needs **zero ambiguity** and **no unanswered questions** about what to build.
+
+---
+
+# **macEngine Comprehensive Product Requirements Document (PRD)**
+
+---
+
+## **1\. Introduction**
+
+### **1.1 Product Vision**
+
+macEngine is a locally installed, voice-first, AI-powered “operating layer” for macOS that gives users hands-free, intelligent control over their Mac.  
+ Unlike chatbots, macEngine listens for user requests, understands screen context, and **performs real actions**—opening apps, navigating UIs, typing, scheduling, searching, and executing complex workflows.  
+ It provides a near-invisible, always-on “J.A.R.V.I.S.” experience—learning and adapting to user routines, switching personalities on the fly, and connecting to a broader mesh of aiConnected engines for extended reach.
+
+### **1.2 Business Goals**
+
+* Launch a $149.97/mo utility that is indispensable after a 7-day trial.
+
+* Require no ongoing AI inference cost to us (users supply LLM API keys).
+
+* Achieve NPS \&gt; 60 and \&lt;1% monthly churn.
+
+* Establish a secure, modular core for macEngine Pro and aiConnected engines.
+
+---
+
+## **2\. User Personas & Use Cases**
+
+### **2.1 Students**
+
+* “What’s my next exam?” → Reads school portal, finds and speaks answer.
+
+* “Open all materials for my next assignment in tabs.” → Browser, login, tabs.
+
+### **2.2 Executives**
+
+* “Join my next meeting and take notes.” → Opens Zoom, records, summarizes.
+
+* “Book a flight for Monday, 8AM to NYC.” → Opens browser, fills in booking.
+
+### **2.3 Developers**
+
+* “Pull latest, run all tests, DM me the failures.” → Terminal, Git, Slack.
+
+### **2.4 Creatives**
+
+* “Summarize these five PDFs, build a Notion outline.” → Reads, parses, posts.
+
+---
+
+## **3\. System Architecture**
+
+### **3.1 High-Level Subsystems**
+
+* **Voice Interface:** Wake-word, STT, TTS, multiple personalities/voices.
+
+* **Command Interpreter:** NLU, intent extraction, clarification, context history.
+
+* **LLM Dispatcher:** Local (llama.cpp) vs. cloud LLM (OpenAI, Anthropic, Gemini) logic.
+
+* **Screen Interpreter:** OCR, vision models, widget detection, semantic screen map.
+
+* **Executor:** Accessibility API, AppleScript, robust and recoverable UI automation.
+
+* **Routine Engine:** User-trained, replayable, shareable multi-step workflows.
+
+* **Personality Manager:** Swappable personas, voice & response config, auto-switch logic.
+
+* **Configuration & Security:** Keychain, preferences, permissions, API key flow, privacy.
+
+* **Subscription Management:** Daily license validation (internet required); graceful fallback.
+
+---
+
+### **3.2 Detailed Module Descriptions**
+
+#### **3.2.1 Voice Interface**
+
+* **Wake-word Detection:**
+
+  * Local/offline (“Hey macEngine”, custom name support).
+
+  * Porcupine or Apple VoiceTrigger; \&lt;50 MB RAM.
+
+  * Wake-word profiles stored per-persona.
+
+* **Speech-to-Text:**
+
+  * whisper.cpp or Apple Speech (configurable fallback).
+
+  * Streams mic, segmenting per wake/utterance.
+
+* **Text-to-Speech:**
+
+  * Native Apple voices (default), ElevenLabs option (API key).
+
+  * Latency \&lt;300ms.
+
+  * Voice selection by persona, instant switch on “Switch to \[persona\] mode.”
+
+#### **3.2.2 Command Interpreter**
+
+* **Intent Extraction:**
+
+  * Local rules for top-20 built-in intents; LLM fallback for complex queries.
+
+  * Slot filling (parse date/time/app, user, command context).
+
+  * Clarification dialog if intent confidence \&lt;0.65 (“Did you mean...?”)
+
+* **Context History:**
+
+  * Retains previous N (configurable) interactions for context-sensitive commands.
+
+  * Example: “Email them the last summary” → resolves “them” from history.
+
+#### **3.2.3 LLM Dispatcher**
+
+* **Local Model:**
+
+  * llama.cpp, 7B minimum (CPU-optimized, user can upgrade models).
+
+  * Handles system commands, routines, local search, privacy-first flows.
+
+* **Cloud Model:**
+
+  * OpenAI, Anthropic, Gemini, etc.—user provides API keys during onboarding.
+
+  * Handles coding, research, content gen, ambiguous or “long context” tasks.
+
+* **Routing Logic:**
+
+  * Decision tree: direct system actions to local, open-ended requests to cloud.
+
+  * Users can override per-persona or per-command.
+
+  * Failover: if cloud API fails, fallback to local or return user-facing error.
+
+* **API Key Management:**
+
+  * Entered via onboarding, stored in Keychain, editable in preferences.
+
+  * Keys never leave user’s machine; no cloud proxying by macEngine.
+
+#### **3.2.4 Screen Interpreter**
+
+* **Capture:**
+
+  * CGDisplay snapshot at 1 fps when active, on-demand if needed.
+
+  * Suspend in idle state to preserve privacy and CPU.
+
+* **OCR:**
+
+  * Apple Vision for fast/built-in, Tesseract fallback for complex cases.
+
+```text
+  * Output: \[{bbox, text, element type, confidence}\]
+
+```
+* **Vision Models:**
+
+  * Local CLIP or small vision transformer to classify UI controls.
+
+  * Semantic labeling: “Button: Submit”, “Table: Assignments”, etc.
+
+#### **3.2.5 Executor**
+
+* **Actions:**
+
+  * click(x,y), doubleClick, typeText(str), pressHotkey, scroll, openURL, runShell, openApp, closeApp.
+
+* **Implementation:**
+
+  * Accessibility API preferred; AppleScript for system and “legacy” app control.
+
+  * Visual confirmation after every action (element highlight or screen OCR match).
+
+* **Safety/Confirmation:**
+
+  * All destructive ops (delete, overwrite, move, close unsaved) require explicit voice confirmation (“Are you sure? Say yes to continue.”)
+
+* **Error Recovery:**
+
+  * If UI element not found (fuzzy match ±20 px); prompt user for manual correction (“Point to what you want me to click.”).
+
+#### **3.2.6 Routine Engine**
+
+* **Training Workflow:**
+
+  * Triggered by user (“Let me show you how”) or failed automation attempt.
+
+  * Step-by-step “watch me do it”:
+
+    1. User performs each UI action (click, type, scroll, etc.).
+
+    2. macEngine records:
+
+       * Action
+
+       * Screen snapshot, element anchors (bbox, text, widget type)
+
+       * Delay/interval
+
+       * Optional voice explanation per step (for Routine clarity/sharing)
+
+  * When finished: user names Routine, assigns trigger phrases.
+
+* **Replay Workflow:**
+
+  * User invokes Routine by phrase or voice (“Run my grade check Routine.”).
+
+  * macEngine replays steps using current screen context and anchor matching.
+
+  * Supports variables (e.g., “next exam,” “all assignments,” etc.).
+
+* **Editing/Export:**
+
+  * Routines are managed in a Routine Library in preferences UI.
+
+  * Users can edit, rename, delete, export/import (for sharing or backup).
+
+  * All routines stored locally, exportable as signed JSON (.mre); pro version supports routine sharing/marketplace.
+
+* **Adaptation:**
+
+  * If screen layout changes, macEngine prompts user for correction and “remembers” update.
+
+#### **3.2.7 Personality Manager**
+
+* **Personas:**
+
+  * At onboarding, user names macEngine and selects from pre-set voices/personalities (e.g., Professional/Orion, Casual/Elara, Creative/Nova), or imports their own (Pro).
+
+  * Personality \= wake-word, TTS voice, response style (concise, verbose, witty, etc.), LLM preference, context schedule (work hours \= Professional; night \= Casual).
+
+* **Voice/Persona Switching:**
+
+  * User can switch at any time via voice (“Switch to Creative mode.”)
+
+  * Persona change is immediate: affects voice, tone, LLM, and (if scheduled) context-aware auto-switch.
+
+  * All persona configs are stored and synced locally (future: sync via aiConnected cloud).
+
+* **Multiple/Custom Personas:**
+
+  * Users may define and save custom personas, mapping them to their own voices or style templates.
+
+#### **3.2.8 Configuration, Security, and Subscription Management**
+
+* **Key Storage:**
+
+  * All secrets (API keys, routine vars) stored in macOS Keychain (never plain-text on disk).
+
+* **Permissions:**
+
+  * On install/first launch, guided overlay for enabling Mic, Screen Recording, Accessibility, and (optionally) Full Disk Access.
+
+  * macEngine does not run until permissions are granted; checks status at launch.
+
+* **Subscription Management:**
+
+  * On first launch, user is prompted for account creation (or trial activation).
+
+  * macEngine performs a daily internet check (via secure HTTPS) to validate subscription; if offline, continues for 3-day grace period.
+
+  * If validation fails, user is notified with clear UX (“Your subscription needs to be renewed—please reconnect to the internet.”)
+
+  * All subscription logic is transparent and documented.
+
+* **Privacy:**
+
+  * No user data is uploaded, shared, or analyzed outside of user device.
+
+  * Any error reports or telemetry are strictly opt-in, anonymized, and user-controlled.
+
+---
+
+## **4\. Functional Requirements**
+
+### **4.1 Voice Interaction**
+
+* Reliable, responsive wake-word detection with custom names (per-persona).
+
+* Accurate STT with latency \&lt;1s, including fallback if mic or model errors.
+
+* Clear, context-appropriate TTS (switches with persona).
+
+* All commands available via hotkey (for accessibility).
+
+### **4.2 Task Automation**
+
+* Support for robust app launching, navigation, file management, clipboard, and UI interaction (see Executor above).
+
+* All system-level actions provide visual and/or spoken confirmation of success/failure.
+
+* Destructive/system-changing operations always require explicit voice confirmation.
+
+### **4.3 Routine Learning & Execution**
+
+* Users can “train” new routines, including complex multi-step, multi-app workflows.
+
+* Routine recording includes both visual and semantic anchors for resilience.
+
+* Routines are replayed with error correction (fuzzy matching, element search).
+
+* Routines may be exported/imported for sharing or backup.
+
+* Routine library is managed in-app, with a search and filter function for ease of use.
+
+### **4.4 LLM Integration**
+
+* Local LLM is installed and ready for use out of the box (llama.cpp or equivalent).
+
+* Users provide cloud LLM API keys during onboarding or via settings; keys are verified before acceptance.
+
+* macEngine routes requests automatically and lets users override routing per command, routine, or persona.
+
+* Failover logic: if the cloud LLM fails, notify user and fallback to local; if local model fails, inform user and log error for debugging.
+
+### **4.5 Persona Customization**
+
+* Users may select, define, and switch personas at any time, by command or via the preferences UI.
+
+* Each persona can be mapped to a schedule, trigger, or even context (“use Professional voice when Calendar is open”).
+
+* Persona switching is always immediate, and changes all visible/audible cues (bubble icon, TTS voice, etc.).
+
+* Voice onboarding: user names their assistant and selects a persona/voice at setup.
+
+---
+
+## **5\. Non-Functional Requirements**
+
+### **5.1 Performance**
+
+* Idle CPU \&lt;7% (on M1/M2), memory \&lt;800MB.
+
+* Action execution (from command to result) \&lt;300ms (where possible).
+
+* STT and TTS latency \&lt;1s total, including switching voices.
+
+### **5.2 Reliability & Stability**
+
+* macEngine is crash-free \&gt;99.5% of user hours.
+
+* All failed actions prompt the user for correction, retry, or “teach mode” (for new routine creation).
+
+* System responds gracefully to permission errors (e.g., user revoked Accessibility—show alert, guide user to re-enable).
+
+### **5.3 Security & Privacy**
+
+* No API keys or sensitive data ever stored outside macOS Keychain.
+
+* All data access (screen, mic, file, app) requires explicit permission and provides visible indication when active.
+
+* All routine recordings and automation steps are stored only locally, unless the user exports them.
+
+* Subscription checks only transmit anonymous license token (never personal data).
+
+### **5.4 Accessibility**
+
+* All UIs (tray, onboarding, routine manager) are VoiceOver compatible.
+
+* All system notifications are available in text and speech.
+
+* System can be fully controlled via voice or keyboard for maximum accessibility.
+
+---
+
+## **6\. User Experience Flow**
+
+### **6.1 Installation & Onboarding**
+
+* User downloads notarized installer, runs, and is prompted for:
+
+  * Permissions: Microphone, Accessibility, Screen Recording.
+
+  * Naming assistant and selecting initial persona/voice.
+
+  * Optionally entering LLM API keys (OpenAI, Anthropic, Gemini, etc).
+
+  * Subscription creation or trial activation; explained privacy and license checks.
+
+* First-launch tutorial walks user through:
+
+  * Wake-word test (“Hey \[Name\], open Notes.”)
+
+  * Sample task (“Open Safari and go to apple.com”)
+
+  * Routine training demo (“Show me how to check grades on Canvas”)
+
+### **6.2 Daily Workflow**
+
+* User interacts by voice or hotkey—macEngine listens for command, interprets intent, confirms action, and provides visible and audible feedback.
+
+* When failing a new workflow, macEngine prompts: “Would you like to teach me how to do this? Let’s record a new routine.”
+
+* Routines are managed and triggered by simple phrases; can be scheduled or set to run on context (advanced, Pro only).
+
+* At any point, user can say “Switch to \[Persona\] mode” or edit persona config in Preferences.
+
+### **6.3 Routine Management**
+
+* Routine library UI shows all available routines, with search/filter, usage stats, and one-click edit/delete/export.
+
+* Routines are stored as signed JSON (.mre) files; can be imported/exported for sharing.
+
+* Routine sharing/marketplace available in macEngine Pro (future).
+
+### **6.4 Persona Management**
+
+* Persona manager UI shows all personas; users can edit, duplicate, or import/export personas.
+
+* Persona switching available by command or schedule.
+
+---
+
+## **7\. Testing Strategy**
+
+### **7.1 Unit Testing**
+
+* Voice module (wake-word, STT, TTS)
+
+* NLU/Intent parser
+
+* Executor primitives
+
+* Routine recording/playback
+
+* LLM dispatcher/routing
+
+### **7.2 Integration Testing**
+
+* End-to-end flows for: app launching, web automation, routine training, multi-app workflows.
+
+### **7.3 Performance Testing**
+
+* Measure latency from command to result (CPU, memory, responsiveness).
+
+* Test on both Intel and Apple Silicon Macs.
+
+### **7.4 Security Testing**
+
+* Confirm no API key/data leaks.
+
+* Permissions: attempt to revoke and re-grant all major permissions during runtime.
+
+* Static and dynamic code analysis.
+
+### **7.5 Accessibility Testing**
+
+* VoiceOver and keyboard-only navigation of all user-facing UIs.
+
+---
+
+## **8\. Project Timeline**
+
+| Week | Milestone/Deliverable |
+| ----- | ----- |
+| 1-2 | Repo setup, voice layer POC, onboarding script |
+| 3-4 | Executor core, Accessibility API hardening |
+| 5-6 | LLM dispatcher and local model integration |
+| 7-8 | Screen interpreter and vision model |
+| 9 | Routine engine (record/replay/CRUD UI) |
+| 10 | Persona manager, voice onboarding, preference sync |
+| 11 | Full integration, performance and accessibility pass |
+| 12 | Closed beta, bug-fix, notarization, GA prep |
+
+---
+
+## **9\. Risk Management**
+
+* **Permissions friction:** Use onboarding overlay, documentation, FAQ.
+
+* **Cloud LLM downtime:** Failover to local, clear user error reporting.
+
+* **Screen/UI change (OS update):** Continuous regression testing on beta macOS versions; adaptive anchor logic for routines.
+
+* **Intel Mac performance:** Optimize/quantize models, document performance caveats.
+
+---
+
+## **10\. Acceptance Criteria**
+
+* All functional and non-functional requirements are met.
+
+* All five core user flows (student, exec, dev, creative, pro) work hands-free from voice to execution.
+
+* 99.5% crash-free operation in beta.
+
+* User feedback during onboarding \&gt;90% “easy to use.”
+
+* All sensitive actions require explicit consent; no privacy surprises.
+
+* Dev, user, and security documentation delivered and reviewed.
+
+Here’s an **expanded technical resource kit** for macEngine, delivering:
+
+1. **Module-Level Technical Specs** for every subsystem (with interfaces, dependencies, error flows, sequence diagrams)
+
+2. **Figma-Style Wireframe Descriptions** for onboarding, preferences, routine/engine management, persona management, and in-task UI
+
+3. **Full Versioned API/Data Schemas** for Routines, Personas, LLM Routing, Permissions, Subscription, Telemetry, Error Logging, and Routine Marketplace (future)
+
+4. **Advanced LLM Routing Rules**
+
+5. **Routine Engine Error Recovery Flow**
+
+6. **Accessibility & Security Guidance**
+
+7. **Voice Model Download & Upgrade Handling**
+
+8. **Onboarding Copy, Error Dialog Texts, and Confirmation Prompts**
+
+9. **Recommended Directory/File Structure for macEngine Source Tree**
+
+---
+
+# **1\. ONBOARDING, PREFERENCES, ROUTINE/PERSONA MANAGEMENT, & IN-TASK UI — WIREFRAME FLOW DESCRIPTIONS**
+
+## **1.1 ONBOARDING FLOW (Figma-Ready)**
+
+**1.1.1 Welcome**
+
+* Fullscreen, dark blur background with subtle macEngine logo.
+
+* Headline: “Welcome to macEngine”
+
+* Tagline: “Your Mac. Now with a real-life J.A.R.V.I.S.”
+
+* Button: \[Get Started\]
+
+**1.1.2 Permissions**
+
+* Visual checklist:
+
+  * \[Mic\] \[Accessibility\] \[Screen Recording\]
+
+* Explanations beside each:
+
+  * "So I can hear your commands"
+
+  * "So I can act on your behalf"
+
+  * "So I can see what’s on your screen"
+
+* “Grant Permissions” button launches relevant System Settings pages.
+
+* FAQ link: “Why do I need this?”
+
+**1.1.3 Name Your Assistant**
+
+* Headline: “What should I call you?”
+
+* Text field, defaults: Orion, Elara, Nova, Custom.
+
+* Suggestion: “You’ll say this name to get my attention.”
+
+**1.1.4 Select Persona & Voice**
+
+* Cards: “Professional” / “Creative” / “Lighthearted” (with sample TTS buttons)
+
+* Option to create/import custom persona (disabled in Core, enabled in Pro)
+
+* Visualizer animates when voice is played.
+
+* \[Next\]
+
+**1.1.5 Connect AI Providers**
+
+* Logos: OpenAI, Anthropic, Gemini, \[Custom\]
+
+* Text entry fields, test button.
+
+* "Skip for now" (uses local only, disables cloud features until keys added)
+
+**1.1.6 Subscription**
+
+* License key input, or \[Start Free Trial\]
+
+* Status: “You’re in a 3-day offline grace period if you lose connection.”
+
+* FAQ: “How does licensing work?”
+
+**1.1.7 Try Your First Command**
+
+* Large bubble at screen center, animated ripple on wake.
+
+* Prompt: “Say: ‘Hey Orion, open Safari.’”
+
+* Shows live transcription and executes.
+
+**1.1.8 Teach a Routine**
+
+* Step-by-step walkthrough:
+
+  * Floating window records clicks, types, pauses.
+
+  * “Next step” / “Undo” / “Done” controls.
+
+  * When finished, asks for routine name and trigger phrase.
+
+**1.1.9 All Set**
+
+* “macEngine is listening and ready. Find me in your menu bar.”
+
+* Tips for hotkey use and privacy reminder.
+
+---
+
+## **1.2 PREFERENCES WINDOW (Menu Bar App)**
+
+**Tabs:**
+
+* **General**: Assistant name, hotkey, startup behavior.
+
+* **AI Providers**: API keys (OpenAI, Anthropic, Gemini), test/revoke, usage meter.
+
+* **Personas**: List, edit, switch, schedule, preview.
+
+* **Routines**: List, edit, import/export, create new, delete.
+
+* **Privacy/Security**: Permission status, re-request, telemetry opt-in.
+
+* **Subscription**: Plan, status, payment, trial days left, offline grace.
+
+---
+
+## **1.3 ROUTINE LIBRARY**
+
+* Table: Name, Last Used, Steps, Trigger, \[Edit\], \[Export\], \[Delete\]
+
+* Search bar, sort by use/last run/date created
+
+* Routine detail: Shows all recorded steps with screenshot thumbnails and anchor info
+
+---
+
+## **1.4 PERSONA MANAGER**
+
+* Persona cards: Name, voice, sample style, icon/avatar
+
+* Edit: Name, wakeword, TTS, style, LLM pref, schedule
+
+* Switch: radio/select, live preview
+
+* Create/Import/Export: enabled in Pro
+
+---
+
+## **1.5 IN-TASK UI (FLOATING BUBBLE)**
+
+* Persistent, docked bubble bottom-right by default (drag to move)
+
+* Animates on wake/listen
+
+* Shows TTS output as text overlay
+
+* Visual success/failure: green/red pulse
+
+* Clarification (“Did you mean...?”) shown as clickable overlay
+
+* Confirmation dialogs (“Say YES to continue” in a modal style)
+
+---
+
+# **2\. COMPLETE API/DATA SCHEMAS**
+
+## **2.1 Routine File Schema (.mre, v1.0)**
+
+```text
+{
+
+  "id": "uuid",
+
+  "name": "Check Canvas Assignments",
+
+  "created\_at": "2025-07-14T11:11:00Z",
+
+  "trigger\_phrases": \["check assignments", "show homework"\],
+
+  "steps": \[
+
+    {
+
+      "order": 1,
+
+      "action": "open\_url",
+
+      "params": {"url": "https://canvas.instructure.com"}
+
+    },
+
+    {
+
+      "order": 2,
+
+      "action": "type\_text",
+
+      "params": {"selector": "\#login", "text": "${USER\_EMAIL}"}
+
+    },
+
+    {
+
+      "order": 3,
+
+      "action": "click",
+
+      "params": {"text\_match": "Assignments"}
+
+    },
+
+    {
+
+      "order": 4,
+
+      "action": "extract\_table",
+
+      "params": {"selector": ".assignments-table"}
+
+    }
+
+```
+  \],
+
+```text
+  "variables": \[
+
+    {"name": "USER\_EMAIL", "secure": true}
+
+```
+  \],
+
+```text
+  "author": "local\_user",
+
+  "signature": "HMAC-SHA256",
+
+  "version": "1.0"
+
+}
+
+```
+## **2.2 Persona File Schema (YAML/JSON)**
+
+id: "uuid"
+
+name: Orion
+
+wakeword: "Hey Orion"
+
+tts\_voice: "com.apple.voice.Alex"
+
+style: professional
+
+llm\_pref:
+
+  provider: openai
+
+  model: gpt-4o
+
+  temperature: 0.4
+
+schedule:
+
+  weekdays: Orion
+
+  evenings: Elara
+
+version: "1.0"
+
+## **2.3 LLM Routing Policy**
+
+```text
+{
+
+  "routing\_policy\_version": "1.0",
+
+  "default": {
+
+    "personal": "local",
+
+    "file\_ops": "local",
+
+    "routine": "local",
+
+    "creative": "cloud"
+
+  },
+
+  "personas": {
+
+    "Orion": {"provider": "openai", "model": "gpt-4o"},
+
+    "Nova": {"provider": "gemini", "model": "pro-1.5"}
+
+  },
+
+  "overrides": \[
+
+    {"intent": "summarize\_pdf", "persona": "Nova", "provider": "openai", "model": "gpt-4o"}
+
+```
+  \]
+
+```text
+}
+
+```
+## **2.4 Permissions Status**
+
+```text
+{
+
+  "microphone": "granted",
+
+  "screen\_recording": "granted",
+
+  "accessibility": "pending",
+
+  "full\_disk\_access": "denied"
+
+}
+
+```
+## **2.5 Subscription Status**
+
+```text
+{
+
+  "license\_key": "xxxx-xxxx-xxxx-xxxx",
+
+  "status": "valid",
+
+  "last\_checked": "2025-07-14T10:15:00Z",
+
+  "grace\_expiry": "2025-07-17T10:15:00Z",
+
+  "plan": "core"
+
+}
+
+```
+## **2.6 Telemetry/Logging (opt-in)**
+
+```text
+{
+
+  "event": "routine\_executed",
+
+  "routine\_id": "uuid",
+
+  "success": true,
+
+  "latency\_ms": 1850,
+
+  "timestamp": "2025-07-14T10:15:30Z"
+
+}
+
+```
+## **2.7 Routine Marketplace Listing (future)**
+
+```text
+{
+
+  "routine\_id": "uuid",
+
+  "name": "Auto Check Bank Balance",
+
+  "author": "routine\_builder\_42",
+
+  "usage\_count": 314,
+
+  "tags": \["finance", "web"\],
+
+  "version": "1.0",
+
+  "rating": 4.8,
+
+  "uploaded\_at": "2025-07-14T08:00:00Z",
+
+  "verified": true
+
+}
+
+```
+---
+
+# **3\. LLM ROUTING LOGIC**
+
+* If `intent` is in \["file\_ops", "routine", "personal"\]: always local
+
+* If persona is "always local": always local
+
+* If `intent` is \["creative", "summarize\_pdf", "code", "research"\]: use persona’s cloud model if available
+
+* If cloud LLM fails: retry 3x, fallback to local if \&lt; context window
+
+* If local model fails: error message, log event, suggest upgrade
+
+* Persona overrides (from schedule or manual switch) apply immediately
+
+---
+
+# **4\. ROUTINE ENGINE ERROR RECOVERY FLOW**
+
+**When anchor not found:**
+
+* Try fuzzy search on bbox and/or text
+
+* If not found, pause, prompt user “Please click the missing element.”
+
+* User input updates anchor, routine continues
+
+* If still not found or user cancels, abort: “Routine stopped: could not locate required element. You may need to retrain.”
+
+**Routine import fails HMAC:**
+
+* “This routine appears tampered with or from an untrusted source. Import blocked.”
+
+**Routine interrupted (e.g. app closed):**
+
+* Notify: “App closed during routine playback—reopen to continue.”
+
+---
+
+# **5\. ACCESSIBILITY & SECURITY GUIDANCE**
+
+* All UIs must be fully VoiceOver navigable.
+
+* All text prompts must have spoken equivalents.
+
+* Tray, onboarding, and routine library must support keyboard-only navigation.
+
+* All API keys and secure variables must use macOS Keychain APIs (SecItemAdd/SecItemCopyMatching).
+
+* Network calls (license, telemetry) must be HTTPS+cert pinning; error logs for any failure.
+
+* Routines and personas must be signed with HMAC, versioned, and validated on import.
+
+---
+
+# **6\. VOICE MODEL UPGRADE/DOWNLOAD**
+
+* Onboarding: device spec check for local LLM (RAM, CPU, storage)
+
+* If missing, show download button with size estimate
+
+* Allow “Upgrade model” in Preferences → shows all available models (7B, 13B, etc)
+
+* Show RAM/CPU usage estimates before confirm
+
+* On download/upgrade error: “Could not download model. Check internet connection or free up disk space.”
+
+---
+
+# **7\. ONBOARDING/ERROR DIALOG TEXTS**
+
+**Onboarding copy:**
+
+* “Let’s get started. I’ll need a few permissions so I can help you hands-free.”
+
+* “What’s your assistant’s name? Pick something easy to say.”
+
+* “Select a persona that matches your style—or switch later with a voice command.”
+
+* “Connect your favorite AI brains for advanced help. You can skip and add later.”
+
+**Error dialogs:**
+
+* “I didn’t hear you—check your mic or permissions.”
+
+* “Screen Recording access was revoked. Open System Settings to restore.”
+
+* “Subscription expired. Reconnect to the internet or renew your license.”
+
+* “API key invalid or quota exceeded. Update in Preferences.”
+
+**Confirmation prompts:**
+
+* “You’re about to permanently delete files. Say YES to confirm, or NO to cancel.”
+
+* “Switching persona. Want to use a different voice too?”
+
+---
+
+# **8\. RECOMMENDED SOURCE DIRECTORY TREE**
+
+/macengine
+
+    /VoiceInterface
+
+        WakeWordEngine.swift
+
+        Transcriber.swift
+
+        Speaker.swift
+
+    /CommandInterpreter
+
+        IntentParser.swift
+
+        ContextManager.swift
+
+        Clarifier.swift
+
+    /LLMDispatcher
+
+        LocalLLMHandler.swift
+
+        CloudLLMProxy.swift
+
+        RoutingPolicyManager.swift
+
+    /ScreenInterpreter
+
+        ScreenCapturer.swift
+
+        OcrEngine.swift
+
+        WidgetClassifier.swift
+
+    /Executor
+
+        UIActionPerformer.swift
+
+        ScriptRunner.swift
+
+        ActionSequencer.swift
+
+    /RoutineEngine
+
+        RoutineRecorder.swift
+
+        RoutinePlayer.swift
+
+        RoutineManager.swift
+
+        RoutineSerializer.swift
+
+    /PersonalityManager
+
+        PersonaManager.swift
+
+        PersonaConfig.swift
+
+        PersonaScheduler.swift
+
+    /Config
+
+        ConfigStore.swift
+
+        KeychainHandler.swift
+
+        SubscriptionChecker.swift
+
+    /UI
+
+        OnboardingUI.swift
+
+        PreferencesUI.swift
+
+        RoutineLibraryUI.swift
+
+        PersonaManagerUI.swift
+
+        TrayMenu.swift
+
+        BubbleUI.swift
+
+    /Assets
+
+        voices/
+
+        icons/
+
+        onboarding/
+
+    /Tests
+
+        (Unit/Integration/Performance/Accessibility)
+
+    /Docs
+
+        PRD.md
+
+        API\_SCHEMAS.md
+
+        UX\_FLOWS.md
+
+    main.swift
+
+---
+
+# **9\. RECOMMENDED TEST CASES (EXAMPLES)**
+
+* Voice: Wake word accuracy (10,000 trials, \&lt;1% miss), STT accuracy on standard/poor mics, TTS fallback on network loss.
+
+* Command: Intent parse errors, ambiguous slot filling, clarify flow.
+
+* LLM: Routing (per persona, per intent), cloud failover, local fallback, model download/upgrade, API key revoke.
+
+* Executor: All system APIs (AX, AppleScript) across macOS 13–15, destructive operation confirmations, error handling.
+
+* Routine: Anchor moves, app window closed, import/export, signature fail, context replay with/without user intervention.
+
+* Persona: Schedule triggers, instant switch via voice/UI, voice model switching.
+
+* Security: API key storage, routine/persona HMAC validation, HTTPS cert pin, telemetry opt-in/opt-out, permission loss mid-session.
+
+* UI: Full VoiceOver, keyboard nav, color contrast, text-to-speech on all prompts.
+
+---
+
+Here is a **complete, professional developer handoff package** for macEngine. This will be long, but it is thorough and implementation-ready, covering:
+
+---
+
+### **1\. Onboarding, Preferences, Routine & Persona Management, In-Task UI – Figma-Style Wireframe Flow Descriptions**
+
+### **2\. All Major API/Data Schemas (JSON/YAML, with versioning)**
+
+### **3\. Ready-to-Implement API Endpoints & Sample Calls**
+
+### **4\. Example Test Cases (Unit, Integration, E2E, Accessibility)**
+
+### **5\. Advanced LLM Routing Rules (Policy Doc, Flowcharts)**
+
+### **6\. Routine Engine Error Recovery Logic (with user flows)**
+
+### **7\. Voice Model Download/Upgrade Handling**
+
+### **8\. Accessibility & Security Requirements (macOS Focus)**
+
+### **9\. Error Dialog Copy, Confirmation Prompts, Onboarding Text**
+
+### **10\. Source Directory/File Structure Recommendation**
+
+Absolutely. Here’s a comprehensive checklist of **everything else** a developer or engineering team will need to take the macEngine product from PRD/UX/UI/API spec to actual release-ready code—including key topics not fully covered in the docs above.
+
+---
+
+## **macEngine Developer Handoff – Missing Essentials & Recommended Additions**
+
+### **A. Development Environment & Build Guidance**
+
+* **Full stack versioning:** Required Xcode version, Swift version, Python dependencies (for LLM/OCR), compatible macOS versions (minimum, tested).
+
+* **Build scripts & CI:** Example `Makefile`, Xcode project setup, sample GitHub Actions/Bitrise/Travis config for CI.
+
+* **Local LLM/voice model setup scripts** (for quantized downloads, permissions, local testing).
+
+---
+
+### **B. Testing and Quality**
+
+* **Automated test suites:**
+
+  * Scripts and conventions for unit, integration, E2E, and accessibility (including sample input/output files for STT, OCR, routine replays).
+
+* **UI snapshot regression testing:**
+
+  * Storyboard/screenshots for each major UI component.
+
+* **Manual QA checklists:**
+
+  * All “happy path” user flows
+
+  * “Unhappy”/edge case flows (lost permissions, failed LLM calls, network drop, corrupted routine import, etc.)
+
+* **Device matrix:**
+
+  * Required tests on: M1, M2, Intel Macs; macOS 13, 14, 15 (public beta); with/without external displays, with accessibility features enabled.
+
+---
+
+### **C. Documentation**
+
+* **Developer onboarding guide:**
+
+  * How to set up the project, install dependencies, get a test license, and run the app locally.
+
+* **Full API documentation:**
+
+  * Autogenerated (DocC, Swagger/OpenAPI for any network APIs, markdown for internal plugin APIs).
+
+* **Module ownership map:**
+
+  * Clear list of “who owns what” if in a team.
+
+* **Internal API stability/compatibility policy:**
+
+  * Versioning scheme for .mre, persona files, LLM policies.
+
+---
+
+### **D. External Integrations**
+
+* **LLM API test harnesses:**
+
+  * Scripts for automated calls to OpenAI, Anthropic, Gemini, with dummy/test keys.
+
+* **Voice TTS/STT test harness:**
+
+  * Standalone scripts to test whisper.cpp, ElevenLabs, Apple AVSpeechSynthesizer.
+
+* **OCR/Screen test harness:**
+
+  * Screenshots, batch test for all UI widget types; expected vs actual detection.
+
+---
+
+### **E. Security & Compliance**
+
+* **Pen test scripts:**
+
+  * For Keychain access, permissions, routine import/export, API key handling.
+
+* **GDPR/compliance notes:**
+
+  * How macEngine avoids storing/exporting PII, and user data deletion/export tools.
+
+* **Audit logs & incident response doc:**
+
+  * What is logged, how users/developers can retrieve error/usage logs.
+
+---
+
+### **F. Release Engineering**
+
+* **Code signing/notarization checklist:**
+
+  * Apple Developer account setup, notarization script, App Store/standalone build differences.
+
+* **Auto-updater integration:**
+
+  * e.g., Sparkle, custom (if not in App Store).
+
+* **Crash reporting/analytics (optional):**
+
+  * Sentry, Crashlytics, or opt-in macOS log forwarding.
+
+* **Beta channel build toggle:**
+
+  * Mechanism to enable/disable new features in field/beta.
+
+---
+
+### **G. User Feedback & Support**
+
+* **In-app feedback tool:**
+
+  * Button to “report a bug” or “send suggestion,” with log attachment.
+
+* **User troubleshooting guide:**
+
+  * Top 10 permission errors, cloud API quota issues, model download failures, “reset” instructions.
+
+* **Knowledge base/FAQ skeleton:**
+
+  * For onboarding, LLM keys, permissions, privacy, marketplace (future).
+
+---
+
+### **H. Marketplace/Future-Ready**
+
+* **Routine/Persona marketplace skeleton:**
+
+  * Upload/download endpoints, moderation/review workflow, signature validation on download.
+
+* **Developer plugin SDK outline:**
+
+  * For 3rd party plugin support in the future (external skills, integrations, custom triggers).
+
+---
+
+### **I. Performance & Resource Use**
+
+* **Profiler scripts:**
+
+  * To measure CPU/memory per-module, recommend optimization passes.
+
+* **Resource limits docs:**
+
+  * “What to expect” for users with lower RAM/CPU, fallback flows.
+
+---
+
+### **J. Accessibility & Internationalization**
+
+* **i18n support plan:**
+
+  * Where and how to localize, text labels ready for translation, LLM prompt language options.
+
+* **Accessibility test matrix:**
+
+  * Full VoiceOver/keyboard coverage, color contrast check, spoken prompts for all error dialogs.
+
+---
+
+### **K. Disaster Recovery & Data Export**
+
+* **Backup/export/restore for routines/personas/config.**
+
+* **Disaster mode:**
+
+  * What happens if routine library is corrupted, lost, or model download fails.
+
+---
+
+### **L. Project Management**
+
+* **Jira/Epic template:**
+
+  * Story breakdown for v1.0 features.
+
+* **Milestone roadmap:**
+
+  * Weeks/sprints, major deliverables, responsible dev/owner.
+
+---
+
+## **Summary Table**
+
+| Area | Essential Resource | Covered Above? | Needs Developer Asset? |
+| ----- | ----- | ----- | ----- |
+| Dev Env/Build | Xcode, CI config, setup docs | ✗ | ✅ |
+| QA & Testing | Full test suite, matrix, scripts | ✗ | ✅ |
+| Docs | Onboarding, API, ownership, versioning | ✗ | ✅ |
+| Integrations | LLM/OCR harnesses, test keys | ✗ | ✅ |
+| Security/Compliance | Pen test scripts, GDPR, audit log | ✗ | ✅ |
+| Release Eng | Signing, notarization, auto-update | ✗ | ✅ |
+| User Feedback | In-app reporting, FAQ, support | ✗ | ✅ |
+| Marketplace/SDK | Routine/persona upload, plugin skeleton | ✗ | ✅ |
+| Perf/Resource Use | Profiler, optimization docs | ✗ | ✅ |
+| i18n/Accessibility | Text labels, l10n plan, test matrix | ✗ | ✅ |
+| Backup/Disaster | Export/restore scripts | ✗ | ✅ |
+| Project Mgmt | Jira/Epic, sprints, owners | ✗ | ✅ |
+
+---
+
+Absolutely. I’ll create **each asset, one at a time**, with a complete, copy-pasteable resource for a senior macOS/AI developer.  
+ Let’s start at the top: **Development Environment & Build Guidance.**
+
+---
+
+# **1\. DEVELOPMENT ENVIRONMENT & BUILD GUIDANCE**
+
+---
+
+## **macEngine Development Environment and Build Setup**
+
+---
+
+### **1.1. Minimum Requirements**
+
+* **Hardware:**
+
+  * Apple Silicon (M1/M2/M3, recommended), Intel x64 supported
+
+  * 8 GB RAM minimum (16 GB recommended for local LLM)
+
+  * 15 GB free disk space (for models/routines/assets)
+
+* **macOS:**
+
+  * Minimum: macOS Ventura (13.x)
+
+  * Recommended: macOS Sonoma (14.x) and above
+
+  * Actively tested: 13.x, 14.x, 15.x (beta)
+
+* **Xcode:**
+
+  * Version: 15.0+
+
+  * Command Line Tools installed (`xcode-select --install`)
+
+* **Python:**
+
+  * Python 3.10+ (for whisper.cpp and OCR batch scripts)
+
+  * `pip` for managing Python dependencies
+
+* **Homebrew:**
+
+  * For easy CLI installs (`/bin/bash -c \"$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\"`)
+
+* **Dependencies:**
+
+  * Swift (Xcode toolchain)
+
+  * CocoaPods (for UI components if needed)
+
+  * Carthage or SPM (for dependency management)
+
+  * Rust toolchain (if using llama.cpp/Ollama with Rust bindings)
+
+  * Node.js 18+ (if testing with Electron overlays, not core app)
+
+---
+
+### **1.2. Initial Project Setup**
+
+**Clone the macEngine Repository**
+
+ git clone https://github.com/aiConnected/macengine.git  
+cd macengine
+
+1. 
+
+**Install Homebrew Dependencies**
+
+ brew install python rust tesseract ffmpeg portaudio
+
+2. 
+
+**Install Python Requirements (for LLM/STT/OCR helpers)**
+
+ cd Scripts/  
+pip3 install \-r requirements.txt
+
+3.   
+4. **Install Whisper.cpp (STT)**
+
+Download or build from source:
+
+ git clone https://github.com/ggerganov/whisper.cpp.git  
+cd whisper.cpp  
+make
+
+*   
+  * Place `main` binary in `/macengine/Models/` or system path.
+
+5. **Install Llama.cpp (Local LLM)**
+
+Download or build from source:
+
+ git clone https://github.com/ggerganov/llama.cpp.git  
+cd llama.cpp  
+make
+
+* 
+
+Download desired model(s):
+
+ ./download-model.sh 7B  
+mv ./models/7B/ggml-model-q4\_0.bin ../macengine/Models/
+
+*   
+  * Document in `/Docs/LLM_SETUP.md`.
+
+**Install/Verify Tesseract OCR**
+
+ brew install tesseract  
+tesseract \--version  \# Confirm installation
+
+6.   
+7. **Xcode Project Setup**
+
+   * Open `macengine.xcodeproj` in Xcode.
+
+   * Set target to “macOS (Universal)”.
+
+   * Ensure all Swift source files and resource bundles are linked.
+
+   * Build scheme: Debug, Release.
+
+8. **Build and Run**
+
+   * In Xcode: Cmd+B (build), Cmd+R (run)
+
+   * Confirm app launches, tray icon appears, and onboarding launches.
+
+---
+
+### **1.3. Code Formatting, Linting, and Style**
+
+* SwiftLint (included via SPM or Cocoapods)
+
+* All Python scripts PEP8-compliant (`black .`)
+
+* Markdown documentation linted with `markdownlint`
+
+* **All commit messages** follow [Conventional Commits](https://www.conventionalcommits.org/)
+
+---
+
+### **1.4. Sample `.env` File**
+
+OPENAI\_API\_KEY=sk-...  
+ANTHROPIC\_API\_KEY=sk-ant-...  
+GEMINI\_API\_KEY=ai-...  
+LLAMA\_MODEL\_PATH=Models/ggml-model-q4\_0.bin  
+WHISPER\_MODEL\_PATH=Models/ggml-base.en.bin
+
+**Do NOT commit actual API keys. Use environment variables or macOS Keychain for storage.**
+
+---
+
+### **1.5. IDE and Tools Recommendations**
+
+* **Xcode** for main Swift/macOS development
+
+* **VSCode** for Python scripts, model config, and rapid editing
+
+* **PyCharm** (optional, for advanced Python)
+
+* **Simulator** for UI flows if no spare test Macs
+
+* **Instruments** (Xcode) for profiling memory/CPU
+
+---
+
+### **1.6. Sample `.gitignore`**
+
+/Models/\*  
+\!/Models/README.md  
+/Secrets/\*  
+.env  
+\*.pyc  
+\*.log  
+xcuserdata/  
+DerivedData/  
+build/  
+.idea/  
+\*.DS\_Store
+
+---
+
+### **1.7. CI/CD Starter (GitHub Actions example)**
+
+name: macEngine Build & Test
+
+on:  
+  push:  
+    branches: \[main\]  
+  pull\_request:  
+    branches: \[main\]
+
+jobs:  
+  build-macos:  
+    runs-on: macos-latest  
+    steps:  
+    \- uses: actions/checkout@v4  
+    \- name: Install Homebrew dependencies  
+      run: brew install python rust tesseract ffmpeg  
+    \- name: Install Python requirements  
+      run: pip3 install \-r Scripts/requirements.txt  
+    \- name: Build Xcode project  
+      run: xcodebuild \-project macengine.xcodeproj \-scheme macEngine \-configuration Debug build  
+    \- name: Run SwiftLint  
+      run: swiftlint
+
+---
+
+### **1.8. Minimum Local Model Download Script (Python)**
+
+```text
+import os  
+import requests
+
+```
+MODEL\_URL \= "https://huggingface.co/ggml/llama-2-7b/resolve/main/ggml-model-q4\_0.bin"  
+DEST \= "../Models/ggml-model-q4\_0.bin"
+
+print("Downloading Llama 7B Q4\_0 model...")  
+r \= requests.get(MODEL\_URL, stream=True)  
+```text
+with open(DEST, 'wb') as f:  
+```
+```text
+    for chunk in r.iter\_content(chunk\_size=8192):  
+        if chunk:  
+```
+            f.write(chunk)  
+print("Download complete\!")
+
+---
+
+### **1.9. Developer Contact & Support**
+
+* Main Slack: \#macengine-dev
+
+* Email: devsupport@aiconnected.com
+
+* Office Hours: Monday/Thursday, 3–5pm EST (TBD)
+
+---
+
+# **2\. AUTOMATED TEST SUITE & QA MATRIX**
+
+---
+
+## **2.1. Automated Test Suite Structure**
+
+### **A. Unit Tests**
+
+**Directory:** `/Tests/Unit/`
+
+**Tools:**
+
+* Swift: `XCTest`
+
+* Python: `pytest` (for helper/model scripts)
+
+* Shell: `Bats` (for CLI/model checks)
+
+**Coverage:**
+
+* All modules and submodules, including:
+
+  * VoiceInterface (wake word, STT, TTS, error handling)
+
+  * CommandInterpreter (intent parsing, clarification)
+
+  * LLMDispatcher (local/cloud routing, API keys)
+
+  * ScreenInterpreter (OCR output, widget classification)
+
+  * Executor (UI action success, destructive operation confirmation)
+
+  * RoutineEngine (record/replay, import/export, error handling)
+
+  * PersonalityManager (switch, schedule, override logic)
+
+  * Config/Subscription (key storage, permissions, status check)
+
+**Sample Swift Unit Test (XCTest)**
+
+```text
+import XCTest
+
+```
+@testable import macEngine
+
+```text
+class VoiceInterfaceTests: XCTestCase {
+
+    func testWakewordDetection() {
+
+        let vi \= VoiceInterface()
+
+```
+        vi.setWakeword("Hey Orion")
+
+        XCTAssertTrue(vi.listen(for: "Hey Orion"))
+
+        XCTAssertFalse(vi.listen(for: "Hello World"))
+
+```text
+    }
+
+```
+    
+
+    func testTTSVoiceSwitch() &#123;
+
+```text
+        let vi \= VoiceInterface()
+
+```
+        vi.setTTSVoice("com.apple.voice.Nova")
+
+```text
+        let out \= vi.speak("Testing", persona: .nova)
+
+```
+        XCTAssertEqual(out.voiceUsed, "com.apple.voice.Nova")
+
+```text
+    }
+
+}
+
+```
+---
+
+### **B. Integration Tests**
+
+**Directory:** `/Tests/Integration/`
+
+**Tools:**
+
+* Swift: `XCTest`
+
+* Python: Custom scripts for LLM/Whisper/Tesseract
+
+**Coverage:**
+
+* Full module flows, e.g.:
+
+  * Voice → Command → LLM → Executor
+
+  * Routine record, then replay with UI change
+
+  * LLM fallback to local on cloud error
+
+**Sample Integration Test (Pseudo-Swift)**
+
+func testRoutineReplayWithAnchorUpdate() &#123;
+
+    // Record a routine
+
+```text
+    let routine \= routineEngine.recordRoutine(name: "Check Email", trigger: \["check my mail"\])
+
+```
+    routineEngine.addStep(.openApp, anchor: "Mail")
+
+    routineEngine.addStep(.click, anchor: "Inbox")
+
+    routineEngine.finalize()
+
+    // Simulate UI change (Inbox button moved)
+
+    // Routine should pause, ask for anchor, and update
+
+```text
+    let success \= routineEngine.play(routine)
+
+```
+    XCTAssertTrue(success)
+
+    XCTAssertEqual(routine.steps\[1\].anchor, "Inbox") // Updated anchor stored
+
+```text
+}
+
+```
+---
+
+### **C. End-to-End (E2E) Tests**
+
+**Directory:** `/Tests/E2E/`
+
+**Tools:**
+
+* AppleScript/Swift: For automating app flows
+
+* Python: For model/CLI flows
+
+**Coverage:**
+
+* Real user flows, such as:
+
+  * “Hey Orion, open Safari, go to Apple.com, take a screenshot”
+
+  * “Check my grades” (full voice-to-result loop)
+
+  * “Run backup routine” (finder, compression, copy to disk, TTS confirmation)
+
+  * Persona switching during task
+
+**Sample E2E Test Steps**
+
+\# Run test using voice or hotkey trigger
+
+1\. Launch macEngine.
+
+2\. Use test voice file: "Hey Orion, open Calendar."
+
+3\. Confirm Calendar app is focused.
+
+4\. Say: "Switch to Creative mode."
+
+5\. Confirm persona and voice change.
+
+6\. Say: "Teach new routine."
+
+7\. Demo: Open Safari, type "macengine.com", take screenshot.
+
+8\. Save routine, replay it, confirm all steps succeed.
+
+*(Scripts would use `say`, AppleScript, and OCR to validate output.)*
+
+---
+
+### **D. Accessibility Tests**
+
+**Directory:** `/Tests/Accessibility/`
+
+**Tools:**
+
+* macOS VoiceOver
+
+* Automated UIA test scripts
+
+* `axe-core` for web-based components
+
+**Coverage:**
+
+* Preferences, onboarding, bubble UI, routine manager, persona editor—all navigable by keyboard/VoiceOver.
+
+* All icons have text labels.
+
+* Color contrast ratios verified.
+
+**Sample Accessibility Checklist**
+
+* All focusable controls can be reached by Tab/Shift-Tab.
+
+* VoiceOver reads label for every field/button.
+
+* All dynamic notifications (e.g., “Say YES to continue”) are also spoken.
+
+* Visual cues always paired with audible cues.
+
+---
+
+## **2.2. QA Device/OS Matrix**
+
+| Mac Model | CPU | RAM | macOS | Ext. Display | Accessibility | Status |
+| ----- | ----- | ----- | ----- | ----- | ----- | ----- |
+| MacBook Air M1 | ARM | 8GB | 13, 14 | Yes | On/Off | Required |
+| MacBook Pro M2 | ARM | 16GB | 14, 15 | Yes | On/Off | Required |
+| Intel Mac Mini | x64 | 8GB | 13 | No | Off | Required |
+| Mac Studio M2 | ARM | 32GB | 14, 15 | Yes | On | Optional |
+
+**Test all major features on:**
+
+* Apple Silicon (M1/M2/M3)
+
+* Intel x64
+
+* macOS 13, 14, 15 (beta)
+
+---
+
+## **2.3. Manual QA Checklist (Core Flows)**
+
+* Onboarding: permissions, naming, persona selection, LLM key entry, license/trial
+
+* Bubble UI: wakeword, live STT, TTS response, visual feedback
+
+* Preferences: all fields, save/cancel, import/export routines/personas
+
+* Routine Engine: record, replay, anchor update, error prompt
+
+* LLM: test with local only, with cloud only, with both, API failover
+
+* Persona Manager: switch via voice and UI, schedule
+
+* Security: API key in Keychain, cannot be accessed from terminal
+
+* Accessibility: VoiceOver/keyboard covers all interactive elements
+
+* Recovery: lose permission, recover gracefully (user prompt, guide)
+
+* Subscription: offline mode, grace period, renewal/lockout
+
+---
+
+## **2.4. Test Data Files**
+
+* **Audio:** Test .wav for wakeword, typical commands, accented voices
+
+* **Screenshots:** For routine anchor test (original, with UI change)
+
+* **Routine files:** Valid .mre, invalid/corrupted .mre, for import error handling
+
+* **Persona files:** Valid, invalid signature
+
+* **LLM key files:** Dummy/test keys
+
+---
+
+## **2.5. Sample Test Script (Shell)**
+
+\#\!/bin/bash
+
+echo "Starting E2E: Voice Trigger to App Open"
+
+say "Hey Orion, open Safari."
+
+sleep 5
+
+open \-a Safari
+
+osascript \-e 'tell application "Safari" to activate'
+
+sleep 2
+
+screencapture \-x test-screenshot.png
+
+tesseract test-screenshot.png stdout | grep \-i "Safari" && echo "Test passed" || echo "Test failed"
+
+---
+
+# **3\. DOCUMENTATION ASSETS**
+
+---
+
+## **3.1. Developer Onboarding Guide (`/Docs/ONBOARDING.md`)**
+
+---
+
+### **macEngine Developer Onboarding**
+
+**1\. Prerequisites:**
+
+* macOS 13.0+ (Ventura), Apple Silicon or Intel
+
+* Xcode 15+, Python 3.10+, Homebrew, Rust
+
+* Git access to private repo
+
+**2\. Clone and Set Up:**
+
+git clone https://github.com/aiConnected/macengine.git
+
+cd macengine
+
+brew install python rust tesseract ffmpeg
+
+pip3 install \-r Scripts/requirements.txt
+
+**3\. Build Local Models:**
+
+* Whisper.cpp (see `/Scripts/WHISPER_SETUP.md`)
+
+* Llama.cpp (see `/Docs/LLM_SETUP.md`)
+
+* Tesseract for OCR
+
+**4\. Xcode:**
+
+* Open `macengine.xcodeproj`
+
+* Target \= “macOS (Universal)”
+
+* Run/Build (Cmd+R/Cmd+B)
+
+**5\. Environment Variables:**
+
+* Add `.env` (see PRD) or use macOS Keychain for API keys
+
+**6\. Run the App:**
+
+* App launches, menu bar icon appears
+
+* Onboarding starts (permissions, naming, persona, keys)
+
+**7\. Run Tests:**
+
+swift test
+
+pytest Tests/Python/
+
+* See `/Tests/README.md` for more
+
+**8\. Support:**
+
+* devsupport@aiconnected.com or Slack \#macengine-dev
+
+---
+
+## **3.2. API Documentation**
+
+---
+
+### **A. Internal Module APIs**
+
+**Location:** `/Docs/API.md`
+
+* **VoiceInterface:**
+
+  * `start()`, `stop()`, `setWakeword(w)`, `speak(text, persona)`, callbacks: `onTranscription`, `onWake`
+
+* **CommandInterpreter:**
+
+  * `parse(transcript, context) -> CommandIntent`
+
+* **LLMDispatcher:**
+
+  * `route(req, persona) -> LLMResponse`, `updateApiKey(provider, key)`
+
+* **Executor:**
+
+  * `execute(action, target)`, `openApp(bundle)`, `runShell(cmd)`, `confirmDestructive(action, cb)`
+
+* **RoutineEngine:**
+
+  * `recordRoutine(name, trigger)`, `addStep()`, `finalize()`, `play()`, `importRoutine()`, `exportRoutine()`
+
+* **PersonaManager:**
+
+  * `current()`, `switchTo(persona)`, `schedule(persona, at)`, `update(persona)`
+
+* **ConfigModule:**
+
+  * `get(key)`, `set(key, value)`, `saveApiKey()`, `hasPermission()`, `promptForPermission()`, `checkSubscription()`
+
+*(All methods/types defined in the PRD/Tech Specs.)*
+
+---
+
+### **B. External HTTP APIs**
+
+**Location:** `/Docs/EXTERNAL_APIS.md`
+
+**Sample: License Verification**
+
+POST https://api.macengine.com/v1/subscription/verify
+
+```text
+{
+
+  "license\_key": "xxxx-xxxx-xxxx-xxxx",
+
+  "device\_id": "MBP-012345"
+
+}
+
+```
+Returns:
+
+```text
+{
+
+  "status": "valid",
+
+  "grace\_expiry": "2025-07-17T10:15:00Z"
+
+}
+
+```
+---
+
+### **C. Data Formats**
+
+* `.mre` routine files: see API schemas in earlier responses
+
+* Persona files: YAML/JSON
+
+* Config: `.env` or Keychain (never plain-text keys)
+
+* All file formats versioned (e.g., `version: "1.0"` in file header)
+
+---
+
+## **3.3. Ownership/Module Map**
+
+**Location:** `/Docs/MODULE_OWNERS.md`
+
+| Module | Primary Owner | Backup Owner |
+| ----- | ----- | ----- |
+| VoiceInterface | Alice Devlin | Jon West |
+| CommandInterpreter | Jon West | Priya Saini |
+| LLMDispatcher | Priya Saini | Alice Devlin |
+| Executor | Jon West | Yusuke Tanaka |
+| RoutineEngine | Alice Devlin | Yusuke Tanaka |
+| PersonaManager | Yusuke Tanaka | Jon West |
+| Config/Security | Alice Devlin | Priya Saini |
+| UI/Onboarding | Priya Saini | Yusuke Tanaka |
+| External API | Alice Devlin | Jon West |
+| Docs/Tests | All (rotate) | All |
+
+*(Update as needed for your actual team.)*
+
+---
+
+## **3.4. Internal API Stability/Compatibility Policy**
+
+**Location:** `/Docs/VERSIONING.md`
+
+* All file-based APIs are versioned:
+
+  * e.g., `.mre` files: `"version": "1.0"`
+
+* All internal Swift protocol changes bump module `API_VERSION` (document in module header)
+
+* Major/breaking changes require migration scripts for user data (routines, personas)
+
+* Routine Marketplace will only accept current and previous major version
+
+* Always prefer backward compatibility; deprecate, then remove
+
+---
+
+## **3.5. Change/Release Documentation**
+
+* Every release: `/CHANGELOG.md`
+
+* All PRs must link to Jira/Epic story
+
+* Major features documented in `/Docs/FEATURES.md`
+
+* Security updates noted in `/Docs/SECURITY.md`
+
+* Routine/persona API changes announced to user base 2+ sprints before enforcement
+
+---
+
+## **3.6. Example DocC (Swift) Snippet**
+
+/// Starts the voice listener and waits for wake word.
+
+/// \- Throws: VoiceEngineError if audio input fails.
+
+/// \- Returns: None. Calls \`onWake\` when triggered.
+
+public func start() throws
+
+---

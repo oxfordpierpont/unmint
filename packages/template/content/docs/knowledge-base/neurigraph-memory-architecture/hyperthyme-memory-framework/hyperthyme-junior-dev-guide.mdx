@@ -1,0 +1,729 @@
+---
+title: "Neurigraph Hyperthyme Artificial Memory Framework"
+description: "Junior Developer Guide By Oxford Pierpont What Is Hyperthyme? Hyperthyme is a memory system for AI. Right now, when you chat with an AI like ChatGPT or Claud..."
+---
+<Info>
+Normalized for Mintlify from `knowledge-base/neurigraph-memory-architecture/hyperthyme-memory-framework/hyperthyme-junior-dev-guide.mdx`.
+</Info>
+# Neurigraph Hyperthyme Artificial Memory Framework
+
+## Junior Developer Guide
+
+**By Oxford Pierpont**
+
+---
+
+## What Is Hyperthyme?
+
+Hyperthyme is a memory system for AI. Right now, when you chat with an AI like ChatGPT or Claude, it forgets everything once the conversation ends. Hyperthyme solves this by creating a persistent memory layer that stores, organizes, and retrieves past conversations so the AI can "remember" what you've discussed—even months or years later.
+
+Think of it like this: the AI is the brain, and Hyperthyme is the long-term memory that the brain can access whenever it needs to recall something.
+
+The name comes from "hyperthymesia"—a rare condition where people remember every single day of their lives in perfect detail. We're building that capability for AI.
+
+---
+
+## The Problem We're Solving
+
+### Context Windows
+
+Every AI model has a "context window"—the amount of text it can see at once. For example:
+
+- GPT-4 can see about 128,000 tokens (\~100,000 words)  
+- Claude can see about 200,000 tokens (\~150,000 words)
+
+This seems like a lot, but it fills up fast. And once the conversation ends, it's gone. The AI has no way to access previous conversations.
+
+### Current Solutions Are Incomplete
+
+Some companies offer basic memory features, but they typically:
+
+- Only store summaries (losing important details)  
+- Compress information (losing exact wording, code, files)  
+- Don't scale to thousands of conversations  
+- Don't organize information intelligently
+
+Hyperthyme takes a different approach: store everything, organize it well, and retrieve only what's needed.
+
+---
+
+## How Hyperthyme Works: The Big Picture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                        USER                                  │
+└─────────────────────────┬───────────────────────────────────┘
+                          │
+                          ▼
+┌─────────────────────────────────────────────────────────────┐
+│                  HYPERTHYME MIDDLEWARE                       │
+│                                                             │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐  │
+│  │   Logger    │  │  Retriever  │  │  Context Injector   │  │
+│  │             │  │             │  │                     │  │
+│  │ Saves every │  │ Finds past  │  │ Adds relevant       │  │
+│  │ conversation│  │ memories    │  │ memories to prompt  │  │
+│  └─────────────┘  └─────────────┘  └─────────────────────┘  │
+│                                                             │
+│  ┌─────────────────────────────────────────────────────┐    │
+│  │                   STORAGE LAYER                      │    │
+│  │                                                      │    │
+│  │  Knowledge Graph ←→ RAG Database ←→ Recall Files    │    │
+│  └─────────────────────────────────────────────────────┘    │
+└─────────────────────────┬───────────────────────────────────┘
+                          │
+                          ▼
+┌─────────────────────────────────────────────────────────────┐
+│                    AI MODEL                                  │
+│            (Claude, GPT, Gemini, etc.)                      │
+└─────────────────────────────────────────────────────────────┘
+```
+
+The middleware sits between the user and the AI. It:
+
+1. **Logs** every conversation as it happens  
+2. **Retrieves** relevant past information when needed  
+3. **Injects** that information into the AI's context so it can "remember"
+
+---
+
+## Core Components
+
+### 1\. Recall Files
+
+The foundation of the system. A Recall File is a folder that contains a snapshot of a conversation segment.
+
+**When is a Recall File created?** Every \~50,000 tokens (roughly 35,000-40,000 words), the system creates a new Recall File. This threshold is chosen because:
+
+- It's small enough to fit in most AI context windows when retrieved  
+- It's large enough that you don't create thousands of tiny files  
+- It represents roughly 1-3 substantial conversations
+
+**What's inside a Recall File?**
+
+```
+recall-files/
+└── ai-brain-memory-architecture-2025-01-11/
+    ├── summary.md          # AI-generated summary of the conversation
+    ├── keywords.txt        # Extracted keywords for fast searching
+    ├── transcript.md       # Complete verbatim conversation log
+    └── artifacts.zip       # Any files created during this conversation
+```
+
+**File Breakdown:**
+
+| File | Purpose | Size |
+| :---- | :---- | :---- |
+| `summary.md` | Quick overview for search matching | Small (\~500-1000 words) |
+| `keywords.txt` | Exact-match search terms | Tiny (\~50-100 terms) |
+| `transcript.md` | Full source of truth | Large (\~50,000 tokens) |
+| `artifacts.zip` | Code, documents, images created | Variable |
+
+**Naming Convention:**
+
+```
+{topic-key-subject}-{YYYY-MM-DD}/
+```
+
+Examples:
+
+- `funnelchat-stripe-integration-2025-01-03/`  
+- `ai-brain-memory-architecture-2025-01-11/`  
+- `marketing-strategy-q1-planning-2025-01-08/`
+
+### 2\. Knowledge Graph
+
+The Knowledge Graph is a database that stores **relationships** between topics. Think of it as a map of everything the user has discussed.
+
+**What it stores:**
+
+- **Nodes**: Topics, projects, concepts, people, entities  
+- **Edges**: Relationships between nodes
+
+**Example Structure:**
+
+```
+[AI Brain] ──contains──► [Memory System]
+     │                         │
+     │                         ├──relates to──► [Hyperthyme]
+     │                         │
+     │                         └──discussed in──► [recall-file-2025-01-11]
+     │
+     ├──contains──► [Coherence Layer]
+     │
+     └──contains──► [Storage System]
+```
+
+**Why it matters:**
+
+When the user asks about "the memory system," the Knowledge Graph instantly knows:
+
+- It's part of the AI Brain project  
+- It relates to Hyperthyme  
+- The relevant Recall Files are from January 2025
+
+This narrows the search space from potentially millions of files to just a handful.
+
+**Technology options:**
+
+- Neo4j (most popular graph database)  
+- Amazon Neptune  
+- PostgreSQL with graph extensions  
+- Lightweight: NetworkX (Python library) for prototyping
+
+### 3\. RAG Database (Vector Store)
+
+RAG stands for "Retrieval-Augmented Generation." It's a technique where you:
+
+1. Convert text into numerical vectors (embeddings)  
+2. Store those vectors in a specialized database  
+3. Search by finding vectors that are "similar" to a query
+
+**How it works in Hyperthyme:**
+
+The summaries from Recall Files are embedded and stored in a vector database. When the user asks a question, the question is also embedded, and we find summaries that are semantically similar.
+
+```
+User Query: "What was that thing about payment processing?"
+                    │
+                    ▼
+            [Generate Embedding]
+                    │
+                    ▼
+            [Search Vector DB]
+                    │
+                    ▼
+    Matches: "funnelchat-stripe-integration-2025-01-03"
+             "payment-gateway-comparison-2024-12-15"
+```
+
+**Why not just use keyword search?**
+
+Keyword search finds exact matches. RAG finds **semantic** matches.
+
+- Keyword search for "payment processing" won't find a document that only mentions "Stripe integration"  
+- RAG understands that "payment processing" and "Stripe integration" are related concepts
+
+**Technology options:**
+
+- Pinecone (managed, easy to start)  
+- Weaviate (open source)  
+- Chroma (lightweight, good for prototyping)  
+- pgvector (PostgreSQL extension)  
+- Qdrant (open source, performant)
+
+### 4\. Defining Memories
+
+Not all memories are equal. Some conversations are routine; others are significant.
+
+**Defining Memories** are flagged moments that represent:
+
+- Decisions ("I've decided to focus on the AI marketplace")  
+- Milestones ("We launched the beta today")  
+- Life events ("I'm starting a new job")  
+- Turning points ("This changes everything")
+
+**How they're detected:**
+
+The system looks for trigger patterns in conversations:
+
+```py
+DECISION_TRIGGERS = [
+    "I've decided",
+    "We're going with",
+    "I'm committing to",
+    "Let's do",
+    "Final decision:",
+]
+
+MILESTONE_TRIGGERS = [
+    "We launched",
+    "It's done",
+    "I finished",
+    "Completed",
+    "Shipped",
+]
+
+EVENT_TRIGGERS = [
+    "I'm starting",
+    "I got the job",
+    "We closed the deal",
+    "I'm getting married",
+]
+```
+
+**Defining Memory Structure:**
+
+```json
+{
+  "id": "dm-2025-01-11-001",
+  "type": "decision",
+  "date": "2025-01-11",
+  "summary": "Committed to building Hyperthyme memory system",
+  "context": "After discovering Mem0 raised $24M for a similar approach",
+  "source_recall_file": "ai-brain-memory-architecture-2025-01-11/",
+  "related_nodes": ["AI Brain", "Hyperthyme", "Memory System"],
+  "tags": ["product", "commitment", "startup"]
+}
+```
+
+**Why separate Defining Memories?**
+
+When someone asks "When did I decide to start this project?" they don't want to search through 10,000 conversations. They want to hit the Defining Memory index and get an instant answer.
+
+Defining Memories are always "warm"—always in memory, always fast to access.
+
+---
+
+## The Search Cascade
+
+When the user asks something that requires memory, the system searches in layers:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ QUERY: "What did we decide about the payment system?"       │
+└─────────────────────────┬───────────────────────────────────┘
+                          │
+                          ▼
+┌─────────────────────────────────────────────────────────────┐
+│ STEP 1: Knowledge Graph Navigation                          │
+│                                                             │
+│ "payment system" → relates to → "funnelChat" project        │
+│                                                             │
+│ Result: Scope search to funnelChat-related Recall Files     │
+└─────────────────────────┬───────────────────────────────────┘
+                          │
+                          ▼
+┌─────────────────────────────────────────────────────────────┐
+│ STEP 2: Keyword Search                                       │
+│                                                             │
+│ Search keywords.txt files for: "payment", "stripe", "billing"│
+│                                                             │
+│ Result: 3 Recall Files match                                │
+└─────────────────────────┬───────────────────────────────────┘
+                          │
+                          ▼
+┌─────────────────────────────────────────────────────────────┐
+│ STEP 3: RAG Search on Summaries                              │
+│                                                             │
+│ Embed query, find similar summaries                         │
+│                                                             │
+│ Result: Ranked list of most relevant Recall Files           │
+└─────────────────────────┬───────────────────────────────────┘
+                          │
+                          ▼
+┌─────────────────────────────────────────────────────────────┐
+│ STEP 4: Load Transcript                                      │
+│                                                             │
+│ Read full transcript.md from top-ranked Recall File         │
+│                                                             │
+│ Result: Complete context available                          │
+└─────────────────────────┬───────────────────────────────────┘
+                          │
+                          ▼
+┌─────────────────────────────────────────────────────────────┐
+│ STEP 5: Check Defining Memories                              │
+│                                                             │
+│ Were there any decisions about payment systems?             │
+│                                                             │
+│ Result: "On Jan 3, decided to use Stripe Connect"           │
+└─────────────────────────────────────────────────────────────┘
+```
+
+This cascade is fast because each step narrows the search space:
+
+- Knowledge Graph: Millions of files → Thousands (scoped to project)  
+- Keywords: Thousands → Hundreds (exact matches)  
+- RAG: Hundreds → Tens (semantic relevance)  
+- Transcript: Load only what's needed
+
+---
+
+## Storage States: Hot, Warm, Cold
+
+Not all memories need to be instantly accessible. Hyperthyme uses a tiered storage system:
+
+### Hot (Active)
+
+- Current conversation  
+- Currently loaded Recall Files  
+- Uncompressed, in working memory
+
+### Warm (Recent)
+
+- Accessed in the last 7 days  
+- Same project/node as current conversation  
+- Uncompressed, ready to read
+
+### Cold (Long-term)
+
+- Not accessed in 7+ days  
+- Artifacts are compressed (zipped)  
+- Keywords and summaries still indexed  
+- Takes slightly longer to retrieve
+
+**Warming Process:**
+
+When the user starts discussing a topic, the system "warms" related memories:
+
+```py
+def warm_node(node_id):
+    """
+    When a topic is touched, warm all related Recall Files
+    """
+    # Get all Recall Files linked to this node
+    recall_files = knowledge_graph.get_files_for_node(node_id)
+    
+    for file in recall_files:
+        if file.is_cold():
+            # Decompress artifacts
+            file.decompress_artifacts()
+            
+            # Pre-load transcript into cache
+            file.cache_transcript()
+            
+            # Mark as warm
+            file.set_state("warm")
+```
+
+This is **predictive retrieval**—if you're asking about the AI Brain project, you'll probably ask more AI Brain questions, so we prepare.
+
+---
+
+## Making It Model-Agnostic
+
+Hyperthyme works with any AI model. Here's how:
+
+### The Middleware Pattern
+
+Hyperthyme doesn't modify the AI. It wraps around it:
+
+```py
+class HyperthymeMiddleware:
+    def __init__(self, ai_client, memory_store):
+        self.ai = ai_client  # Could be OpenAI, Anthropic, Google, etc.
+        self.memory = memory_store
+    
+    def chat(self, user_message, user_id):
+        # 1. Search for relevant memories
+        relevant_memories = self.memory.search(
+            query=user_message,
+            user_id=user_id
+        )
+        
+        # 2. Build enhanced prompt with memories
+        enhanced_prompt = self.inject_memories(
+            user_message, 
+            relevant_memories
+        )
+        
+        # 3. Send to AI (any model works here)
+        response = self.ai.generate(enhanced_prompt)
+        
+        # 4. Log the conversation
+        self.memory.log(user_message, response, user_id)
+        
+        return response
+    
+    def inject_memories(self, message, memories):
+        memory_context = "\n".join([
+            f"[From {m.date}]: {m.summary}"
+            for m in memories
+        ])
+        
+        return f"""
+        Relevant context from past conversations:
+        {memory_context}
+        
+        Current message: {message}
+        """
+```
+
+### Swapping Models
+
+Because the middleware handles memory separately, you can swap AI models without losing memory:
+
+```py
+# Using Claude
+claude_client = AnthropicClient(api_key="...")
+hyperthyme = HyperthymeMiddleware(claude_client, memory_store)
+
+# Switch to GPT—memory stays the same
+openai_client = OpenAIClient(api_key="...")
+hyperthyme = HyperthymeMiddleware(openai_client, memory_store)
+```
+
+### MCP (Model Context Protocol)
+
+MCP is an emerging standard that lets AI models call external tools. Hyperthyme can be exposed as an MCP server:
+
+```py
+@mcp_tool("search_memory")
+def search_memory(query: str, user_id: str) -> list:
+    """Search user's conversation history"""
+    return memory_store.search(query, user_id)
+
+@mcp_tool("get_defining_memories")
+def get_defining_memories(user_id: str) -> list:
+    """Get user's major decisions and milestones"""
+    return memory_store.get_defining_memories(user_id)
+```
+
+Now any MCP-compatible AI can access Hyperthyme memory directly.
+
+---
+
+## Database Schema (Simplified)
+
+Here's a starting point for the database design:
+
+### recall\_files
+
+```sql
+CREATE TABLE recall_files (
+    id UUID PRIMARY KEY,
+    user_id UUID NOT NULL,
+    folder_name VARCHAR(255) NOT NULL,
+    topic VARCHAR(255),
+    created_at TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP NOT NULL,
+    token_count INTEGER,
+    state VARCHAR(20) DEFAULT 'warm',  -- 'hot', 'warm', 'cold'
+    summary_path TEXT,
+    transcript_path TEXT,
+    keywords_path TEXT,
+    artifacts_path TEXT
+);
+```
+
+### knowledge\_graph\_nodes
+
+```sql
+CREATE TABLE knowledge_graph_nodes (
+    id UUID PRIMARY KEY,
+    user_id UUID NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    node_type VARCHAR(50),  -- 'project', 'topic', 'person', 'concept'
+    created_at TIMESTAMP NOT NULL,
+    last_accessed TIMESTAMP
+);
+```
+
+### knowledge\_graph\_edges
+
+```sql
+CREATE TABLE knowledge_graph_edges (
+    id UUID PRIMARY KEY,
+    source_node_id UUID REFERENCES knowledge_graph_nodes(id),
+    target_node_id UUID REFERENCES knowledge_graph_nodes(id),
+    relationship VARCHAR(100),  -- 'contains', 'relates_to', 'discussed_in'
+    created_at TIMESTAMP NOT NULL
+);
+```
+
+### recall\_file\_nodes (junction table)
+
+```sql
+CREATE TABLE recall_file_nodes (
+    recall_file_id UUID REFERENCES recall_files(id),
+    node_id UUID REFERENCES knowledge_graph_nodes(id),
+    PRIMARY KEY (recall_file_id, node_id)
+);
+```
+
+### defining\_memories
+
+```sql
+CREATE TABLE defining_memories (
+    id UUID PRIMARY KEY,
+    user_id UUID NOT NULL,
+    memory_type VARCHAR(50),  -- 'decision', 'milestone', 'event', 'turning_point'
+    summary TEXT NOT NULL,
+    context TEXT,
+    detected_at TIMESTAMP NOT NULL,
+    source_recall_file_id UUID REFERENCES recall_files(id),
+    tags TEXT[]  -- Array of tags
+);
+```
+
+### summary\_embeddings
+
+```sql
+-- For vector search (using pgvector)
+CREATE TABLE summary_embeddings (
+    id UUID PRIMARY KEY,
+    recall_file_id UUID REFERENCES recall_files(id),
+    embedding vector(1536),  -- OpenAI embedding size
+    created_at TIMESTAMP NOT NULL
+);
+
+-- Create index for fast similarity search
+CREATE INDEX ON summary_embeddings 
+USING ivfflat (embedding vector_cosine_ops);
+```
+
+---
+
+## Technology Stack Recommendations
+
+### For Prototyping (MVP)
+
+| Component | Recommendation | Why |
+| :---- | :---- | :---- |
+| Language | Python | Fastest for AI development |
+| Database | PostgreSQL \+ pgvector | One database for everything |
+| File Storage | Local filesystem | Simple, no cloud dependency |
+| Vector Search | pgvector | Integrated with main DB |
+| Knowledge Graph | NetworkX (in-memory) | Fast prototyping |
+| AI Integration | LangChain or direct API | Flexibility |
+| API Framework | FastAPI | Modern, async, automatic docs |
+
+### For Production
+
+| Component | Recommendation | Why |
+| :---- | :---- | :---- |
+| Language | Python \+ Go for performance-critical | Balance of speed and AI ecosystem |
+| Database | PostgreSQL (primary) | Battle-tested, scalable |
+| File Storage | S3 or equivalent | Scalable, cheap |
+| Vector Search | Pinecone or Weaviate | Purpose-built, performant |
+| Knowledge Graph | Neo4j | Industry standard |
+| Caching | Redis | Fast warming/hot storage |
+| API Framework | FastAPI behind Kong/Nginx | Production-ready |
+| Orchestration | Kubernetes | Scalability |
+
+---
+
+## Getting Started: Your First Task
+
+If you're building this, here's what to tackle first:
+
+### Week 1: Basic Recall File Creation
+
+```py
+# Goal: Create Recall Files from conversations
+
+def create_recall_file(conversation, user_id):
+    # 1. Generate folder name
+    folder_name = generate_folder_name(conversation)
+    
+    # 2. Save transcript
+    save_transcript(folder_name, conversation)
+    
+    # 3. Generate and save summary (using AI)
+    summary = generate_summary(conversation)
+    save_summary(folder_name, summary)
+    
+    # 4. Extract and save keywords
+    keywords = extract_keywords(conversation)
+    save_keywords(folder_name, keywords)
+    
+    # 5. Register in database
+    register_recall_file(folder_name, user_id)
+```
+
+### Week 2: Basic Search
+
+```py
+# Goal: Find relevant Recall Files
+
+def search_memory(query, user_id):
+    # 1. Keyword search
+    keyword_matches = search_keywords(query, user_id)
+    
+    # 2. Return matching Recall Files
+    return load_recall_files(keyword_matches)
+```
+
+### Week 3: RAG Integration
+
+```py
+# Goal: Add semantic search
+
+def search_memory_with_rag(query, user_id):
+    # 1. Embed the query
+    query_embedding = embed_text(query)
+    
+    # 2. Find similar summaries
+    matches = vector_db.search(query_embedding, user_id)
+    
+    # 3. Load and return
+    return load_recall_files(matches)
+```
+
+### Week 4: Knowledge Graph
+
+```py
+# Goal: Add topic-based navigation
+
+def search_memory_with_graph(query, user_id):
+    # 1. Identify relevant nodes
+    nodes = knowledge_graph.find_nodes(query, user_id)
+    
+    # 2. Get Recall Files for those nodes
+    recall_files = []
+    for node in nodes:
+        recall_files.extend(node.get_recall_files())
+    
+    # 3. Rank and return
+    return rank_by_relevance(recall_files, query)
+```
+
+---
+
+## Common Pitfalls to Avoid
+
+### 1\. Storing Too Much in Memory
+
+Don't try to keep all transcripts in RAM. Use the hot/warm/cold system. Only load what's needed.
+
+### 2\. Ignoring Token Limits
+
+When injecting memories into prompts, count tokens. Don't overflow the AI's context window.
+
+```py
+def inject_memories(message, memories, max_tokens=4000):
+    injected = []
+    token_count = 0
+    
+    for memory in memories:
+        memory_tokens = count_tokens(memory.summary)
+        if token_count + memory_tokens > max_tokens:
+            break
+        injected.append(memory)
+        token_count += memory_tokens
+    
+    return injected
+```
+
+### 3\. Not Handling Multiple Users
+
+Always scope queries by user\_id. Never let one user's memories leak to another.
+
+### 4\. Synchronous Everything
+
+Recall File creation, embedding generation, and cold storage compression should be async/background jobs. Don't block the user.
+
+### 5\. No Backup Strategy
+
+Memories are valuable. Implement backups from day one.
+
+---
+
+## Summary
+
+Hyperthyme is a memory layer for AI consisting of:
+
+1. **Recall Files** — Complete conversation snapshots with summaries, keywords, transcripts, and artifacts  
+2. **Knowledge Graph** — Relationship map between topics for fast navigation  
+3. **RAG Database** — Semantic search over summaries  
+4. **Defining Memories** — Index of major decisions and milestones  
+5. **Middleware** — Model-agnostic layer that handles logging and retrieval
+
+The system uses a search cascade (Graph → Keywords → RAG → Transcript) to efficiently find relevant memories, and a tiered storage system (Hot → Warm → Cold) to balance speed and cost.
+
+Start simple. Build the Recall File system first. Add intelligence layer by layer.
+
+---
+
+**Neurigraph Hyperthyme Artificial Memory Framework**  
+*By Oxford Pierpont*

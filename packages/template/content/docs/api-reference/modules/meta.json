@@ -1,0 +1,14 @@
+{
+  "title": "Modules",
+  "pages": [
+    "index",
+    "additional-modules",
+    "contact-monitor-cobrowser",
+    "knowledge-chat",
+    "logiclegal",
+    "mac-engine",
+    "paper",
+    "voice"
+  ],
+  "defaultOpen": true
+}

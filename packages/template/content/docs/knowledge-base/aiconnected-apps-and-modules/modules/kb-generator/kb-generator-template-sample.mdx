@@ -1,0 +1,310 @@
+---
+title: "Knowledge Base Template"
+description: "This is the structure your completed knowledge base should have. Fill this in for each client. 1. BUSINESS PROFILE `javascript const businessProfile = name..."
+---
+<Info>
+Normalized for Mintlify from `knowledge-base/aiconnected-apps-and-modules/modules/kb-generator/kb-generator-template-sample.mdx`.
+</Info>
+# Knowledge Base Template
+
+This is the structure your completed knowledge base should have. Fill this in for each client.
+
+---
+
+## 1\. BUSINESS PROFILE
+
+```javascript
+const businessProfile = {
+  name: "",
+  type: "", // med_spa, salon, dental, fitness, restaurant, etc.
+  
+  location: {
+    address: "",
+    city: "",
+    state: "",
+    zip: ""
+  },
+  
+  contact: {
+    phone: "",
+    email: "",
+    website: "",
+    bookingUrl: ""
+  },
+  
+  hours: {
+    // Optional
+  },
+  
+  brandVoice: {
+    tone: "", // warm, professional, casual, luxurious
+    personality: [], // knowledgeable, caring, friendly, expert
+    avoid: [] // salesy, clinical, pushy
+  }
+};
+```
+
+---
+
+## 2\. SERVICES
+
+```javascript
+const services = [
+  {
+    id: "service_slug",
+    name: "Service Name",
+    category: "Category Name",
+    
+    // Basic info
+    description: "Brief description",
+    price: "$XXX" or "Starting at $XXX",
+    duration: "XX minutes",
+    
+    // Educational content
+    education: {
+      howItWorks: "2-3 paragraphs explaining the service...",
+      whatToExpect: {
+        during: "What the experience is like",
+        after: "Immediately after",
+        downtime: "Recovery/downtime info",
+        results: "When to expect results"
+      }
+    },
+    
+    // Decision helpers
+    chooseThisFor: [
+      "Situation or goal 1",
+      "Situation or goal 2",
+      "Situation or goal 3"
+    ],
+    
+    selfIdentification: [
+      "You've noticed...",
+      "You're bothered by...",
+      "You want to..."
+    ],
+    
+    // Mapping
+    concerns: ["concern1", "concern2", "concern3"],
+    tags: ["tag1", "tag2"],
+    
+    // Additional info
+    faqs: [
+      { q: "Common question?", a: "Helpful answer" }
+    ],
+    
+    notRightFor: [
+      "Contraindication 1",
+      "Situation where not appropriate"
+    ],
+    
+    relatedServices: ["other_service_id"],
+    
+    // Flags
+    requiresConsultation: true/false,
+    popular: true/false
+  }
+];
+```
+
+---
+
+## 3\. CONCERN MAP
+
+```javascript
+const concernMap = {
+  "acne": {
+    primary: ["acne_treatment", "chill_pill"],
+    secondary: ["glow_getter"],
+    keywords: ["breakouts", "pimples", "blemishes", "oily", "clogged pores"]
+  },
+  
+  "aging": {
+    primary: ["morpheus8", "skin_tightening"],
+    secondary: ["photoshop_facial"],
+    keywords: ["wrinkles", "fine lines", "sagging", "loose skin", "anti-aging"]
+  },
+  
+  "glow": {
+    primary: ["glow_getter", "oxygen_facial"],
+    secondary: ["skin_beauty_facial"],
+    keywords: ["radiance", "dull", "brightness", "luminous", "healthy skin"]
+  },
+  
+  // Add all concerns...
+};
+```
+
+---
+
+## 4\. CONVERSATION STARTERS
+
+```javascript
+const conversationStarters = [
+  {
+    icon: "✨",
+    title: "I want glowing skin",
+    subtitle: "Radiance treatments",
+    message: "I want glowing, radiant skin"
+  },
+  {
+    icon: "🎯",
+    title: "Help with acne",
+    subtitle: "Clear skin solutions",
+    message: "I need help with acne and breakouts"
+  },
+  {
+    icon: "⏳",
+    title: "Anti-aging options",
+    subtitle: "Turn back time",
+    message: "I'm interested in anti-aging treatments"
+  },
+  {
+    icon: "🎀",
+    title: "Event coming up",
+    subtitle: "Look your best",
+    message: "I have a special event coming up and want to look my best"
+  }
+  // 4-8 more starters...
+];
+```
+
+---
+
+## 5\. SYSTEM PROMPT
+
+```javascript
+const systemPrompt = `
+You are the AI assistant for [BUSINESS NAME], a [BUSINESS TYPE] located in [CITY].
+
+YOUR ROLE:
+You help customers understand their options and find the right services for their needs. You're knowledgeable, warm, and genuinely helpful - like a trusted friend who happens to work here.
+
+YOUR KNOWLEDGE:
+You have detailed information about all services offered:
+[Brief list of services and what they address]
+
+WHEN CUSTOMERS DESCRIBE CONCERNS:
+Match their concerns to appropriate services. Use the concern mapping:
+- "acne" / "breakouts" → Recommend [relevant services]
+- "aging" / "wrinkles" → Recommend [relevant services]
+[Continue for all concerns]
+
+HOW TO RESPOND:
+1. Acknowledge their concern with empathy
+2. Ask clarifying questions if needed to narrow down the best option
+3. Recommend 1-3 relevant services with brief explanations of WHY each fits their needs
+4. Include educational context - help them understand, don't just sell
+5. Offer to provide more details or help them book
+
+FORMATTING:
+- Keep responses conversational, not listy
+- For service recommendations, you can show service cards with: name, brief description, price, and a "Learn More" action
+- Ask follow-up questions to refine recommendations
+- Limit to 1-3 service recommendations at a time
+
+BOUNDARIES:
+- Only recommend services offered by [BUSINESS NAME]
+- Don't mention competitors
+- For specific pricing questions beyond what's listed, suggest they call or book a consultation
+- For medical questions, note that a consultation would provide personalized guidance
+- If asked about something unrelated to the business, politely redirect
+
+BOOKING:
+When customers show interest, guide them to book:
+- Online: [BOOKING URL]
+- Phone: [PHONE]
+- Consultation recommended for: [services requiring consultation]
+
+TONE:
+[Describe brand voice - warm, professional, etc.]
+Sound like a knowledgeable friend, not a salesperson or generic chatbot.
+`;
+```
+
+---
+
+## 6\. QUIZ (Optional)
+
+```javascript
+const quiz = {
+  title: "Get Your Personalized Recommendation",
+  subtitle: "Answer a few questions and we'll suggest the perfect services for you",
+  
+  questions: [
+    {
+      id: "main_concern",
+      question: "What's your main concern?",
+      type: "single",
+      options: [
+        { label: "Acne or breakouts", value: "acne", icon: "🎯" },
+        { label: "Signs of aging", value: "aging", icon: "⏳" },
+        { label: "Dull or uneven skin", value: "dullness", icon: "✨" },
+        { label: "Redness or sensitivity", value: "sensitivity", icon: "🌡️" },
+        { label: "Just want healthier skin", value: "general", icon: "💆" }
+      ]
+    },
+    // More questions...
+  ],
+  
+  scoring: {
+    // Logic to map answers to recommendations
+  },
+  
+  resultMapping: {
+    // How to generate personalized results
+  }
+};
+```
+
+---
+
+## CHECKLIST: Is Your Knowledge Base Complete?
+
+### Business Profile
+
+- [ ] Name and type identified  
+- [ ] All contact info captured  
+- [ ] Booking URL confirmed  
+- [ ] Brand voice defined
+
+### Services (for EACH service)
+
+- [ ] Basic info: name, price, duration  
+- [ ] Educational content: how it works, what to expect  
+- [ ] "Choose this for" list (4-6 items)  
+- [ ] Self-identification triggers (4-6 "You..." statements)  
+- [ ] Concerns array (keywords)  
+- [ ] FAQs (4-6 questions)  
+- [ ] Contraindications/not right for  
+- [ ] Related services mapped
+
+### Concern Map
+
+- [ ] All customer concerns identified  
+- [ ] Primary services mapped to each concern  
+- [ ] Secondary services mapped  
+- [ ] Alternative phrasings/keywords captured
+
+### Conversation Starters
+
+- [ ] 8-12 starters created  
+- [ ] Cover main concern categories  
+- [ ] Variety of entry points (problems, goals, situations)  
+- [ ] Icons, titles, subtitles, messages all defined
+
+### System Prompt
+
+- [ ] Identity and role defined  
+- [ ] Knowledge usage instructions clear  
+- [ ] Conversation rules established  
+- [ ] Formatting guidelines set  
+- [ ] Boundaries defined  
+- [ ] Booking guidance included
+
+### Quiz (if applicable)
+
+- [ ] Questions cover key decision factors  
+- [ ] Answer options map to concerns/services  
+- [ ] Scoring logic produces useful results  
+- [ ] Results map to service recommendations

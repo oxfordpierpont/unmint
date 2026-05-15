@@ -1,0 +1,587 @@
+---
+title: "Brain Memory Architecture: Z Axis Specification"
+description: "Match Specificity Dimension Product: Brain by aiConnected Date: January 20, 2026 Status: Architecture Specification Executive Summary This specification intr..."
+---
+<Info>
+Normalized for Mintlify from `knowledge-base/neurigraph-memory-architecture/legacy-brain-z-axis-spec.mdx`.
+</Info>
+# Brain Memory Architecture: Z-Axis Specification
+## Match Specificity Dimension
+
+**Product:** Brain by aiConnected  
+**Version:** 1.0  
+**Date:** January 20, 2026  
+**Author:** Bob / Claude  
+**Status:** Architecture Specification
+
+---
+
+## Executive Summary
+
+This specification introduces the **Z-Axis (Match Specificity)** as the third dimension of Brain's memory retrieval architecture, complementing the existing X-Axis (Knowledge Graph) and Y-Axis (Vector Database). The Z-Axis represents a continuous spectrum from exact lexical matching to broad semantic similarity, enabling **retrieval intent awareness**—the ability to distinguish between "find that specific thing" and "help me think about this topic."
+
+This architectural enhancement maps directly to how human memory actually works, differentiating between episodic recall (specific memories) and semantic recall (conceptual understanding), providing Brain with a significant competitive advantage over systems that collapse this distinction into a single similarity score.
+
+---
+
+## Current Architecture Review
+
+### X-Axis: Knowledge Graph Navigation
+- Represents **relational connections** between concepts, entities, and contexts
+- Enables traversal between related nodes (e.g., "aiConnected" → "Brain" → "Memory Architecture")
+- Provides structural organization of the user's cognitive landscape
+- Navigation is explicit and deterministic
+
+### Y-Axis: Vector Database (Per Node)
+- Each Knowledge Graph node contains its own **vector store**
+- Stores embeddings of conversations, documents, and insights within that node's context
+- Enables semantic similarity search **within a specific domain**
+- Results ranked by cosine similarity to query embedding
+
+### Current Limitation
+The Y-Axis retrieval returns results based solely on semantic similarity, without distinguishing between:
+- A user wanting the **exact conversation** where they mentioned "53% equity"
+- A user wanting to **explore** their thinking about equity structures generally
+
+Both queries currently return the same ranked results, losing valuable signal about retrieval intent.
+
+---
+
+## Z-Axis: Match Specificity
+
+### Definition
+
+The Z-Axis represents a **continuous spectrum** of match precision:
+
+```
+Z = 0.0  ←──────────────────────────────→  Z = 1.0
+EXACT                                      BROAD
+│                                          │
+├─ Precise lexical match                   ├─ Thematic relevance
+├─ Specific phrase/keyword                 ├─ Conceptual similarity  
+├─ Named entity identification             ├─ Analogical connections
+└─ Temporal/contextual anchors             └─ Abstract pattern matching
+```
+
+### Z-Value Interpretation
+
+| Z Range | Match Type | Example Query | Expected Behavior |
+|---------|------------|---------------|-------------------|
+| 0.0 - 0.2 | **Exact** | "Find where I said '53% equity'" | Lexical search, exact phrase matching |
+| 0.2 - 0.4 | **Precise** | "The conversation about Jacob's CTO offer" | Named entity + context matching |
+| 0.4 - 0.6 | **Balanced** | "What did we discuss about compensation?" | Hybrid lexical + semantic |
+| 0.6 - 0.8 | **Conceptual** | "My thinking on fairness in partnerships" | Semantic similarity, theme extraction |
+| 0.8 - 1.0 | **Broad** | "Ideas related to building teams" | Abstract pattern matching, analogies |
+
+---
+
+## Technical Implementation
+
+### 3.1 Dual-Score Retrieval
+
+Every retrieval operation returns results with **two independent scores**:
+
+```python
+@dataclass
+class MemoryResult:
+    content: str
+    node_id: str                    # X-axis position
+    embedding_similarity: float     # Y-axis score (0-1)
+    lexical_precision: float        # Z-axis anchor (0-1)
+    z_position: float               # Computed Z value
+    timestamp: datetime
+    metadata: dict
+```
+
+#### Lexical Precision Score (Z-Anchor)
+Computed using BM25 or TF-IDF against the original query terms:
+
+```python
+def compute_lexical_precision(query: str, content: str) -> float:
+    """
+    Returns 0-1 score where:
+    - 1.0 = Exact phrase match
+    - 0.8+ = All query terms present, high term frequency
+    - 0.5 = Partial term overlap
+    - 0.0 = No lexical overlap
+    """
+    # Implementation using rank_bm25 or similar
+    tokenized_query = tokenize(query)
+    tokenized_content = tokenize(content)
+    
+    # Exact phrase bonus
+    if query.lower() in content.lower():
+        return 1.0
+    
+    # BM25 score normalized to 0-1
+    bm25_score = compute_bm25(tokenized_query, tokenized_content)
+    return normalize(bm25_score)
+```
+
+#### Z-Position Calculation
+
+```python
+def compute_z_position(
+    lexical_score: float, 
+    semantic_score: float
+) -> float:
+    """
+    Z approaches 0 when lexical >> semantic (exact match)
+    Z approaches 1 when semantic >> lexical (broad match)
+    """
+    if lexical_score == 0 and semantic_score == 0:
+        return 0.5  # Neutral
+    
+    total = lexical_score + semantic_score
+    z = semantic_score / total
+    return z
+```
+
+### 3.2 Query Intent Detection
+
+Before retrieval, the system analyzes the query to determine the **target Z-range**:
+
+```python
+@dataclass
+class QueryIntent:
+    target_z: float           # Center of desired Z-range
+    z_tolerance: float        # Acceptable deviation (±)
+    confidence: float         # How certain we are of intent
+
+def analyze_query_intent(query: str) -> QueryIntent:
+    """
+    Detect retrieval intent from query patterns
+    """
+    # Exact match indicators (Z → 0)
+    exact_patterns = [
+        r"exact(ly)?",
+        r"specific(ally)?", 
+        r"where (did )?(I|we) (say|mention|write)",
+        r"find (the|that) (conversation|chat|discussion)",
+        r"quote",
+        r'"[^"]+"',  # Quoted phrases
+    ]
+    
+    # Broad match indicators (Z → 1)  
+    broad_patterns = [
+        r"(think|thought|thinking) about",
+        r"ideas? (on|about|related)",
+        r"explore",
+        r"generally",
+        r"themes?",
+        r"pattern",
+        r"similar to",
+    ]
+    
+    exact_score = sum(
+        1 for p in exact_patterns 
+        if re.search(p, query, re.IGNORECASE)
+    )
+    broad_score = sum(
+        1 for p in broad_patterns 
+        if re.search(p, query, re.IGNORECASE)
+    )
+    
+    # Default to balanced (0.5) with moderate tolerance
+    if exact_score == 0 and broad_score == 0:
+        return QueryIntent(target_z=0.5, z_tolerance=0.3, confidence=0.5)
+    
+    # Calculate target Z
+    total = exact_score + broad_score
+    target_z = broad_score / total
+    confidence = min(1.0, total / 3)  # More signals = higher confidence
+    
+    # Tighter tolerance for confident intent detection
+    z_tolerance = 0.2 if confidence > 0.7 else 0.35
+    
+    return QueryIntent(
+        target_z=target_z, 
+        z_tolerance=z_tolerance, 
+        confidence=confidence
+    )
+```
+
+### 3.3 Z-Aware Retrieval Pipeline
+
+```python
+class BrainRetriever:
+    def retrieve(
+        self, 
+        query: str, 
+        node_ids: list[str] = None,  # X-axis filter
+        z_override: float = None,     # Manual Z targeting
+        limit: int = 10
+    ) -> list[MemoryResult]:
+        
+        # Step 1: Detect query intent (or use override)
+        if z_override is not None:
+            intent = QueryIntent(
+                target_z=z_override, 
+                z_tolerance=0.15, 
+                confidence=1.0
+            )
+        else:
+            intent = analyze_query_intent(query)
+        
+        # Step 2: Parallel retrieval strategies
+        lexical_results = self.lexical_search(query, node_ids)
+        semantic_results = self.semantic_search(query, node_ids)
+        
+        # Step 3: Merge and score
+        all_results = self.merge_results(lexical_results, semantic_results)
+        
+        # Step 4: Compute Z-position for each result
+        for result in all_results:
+            result.z_position = compute_z_position(
+                result.lexical_precision,
+                result.embedding_similarity
+            )
+        
+        # Step 5: Rank by Z-distance from target
+        def z_relevance_score(result: MemoryResult) -> float:
+            z_distance = abs(result.z_position - intent.target_z)
+            z_penalty = z_distance / intent.z_tolerance
+            
+            # Combine intrinsic quality with Z-alignment
+            base_score = (
+                result.lexical_precision * (1 - intent.target_z) +
+                result.embedding_similarity * intent.target_z
+            )
+            
+            # Penalize results outside Z tolerance
+            if z_distance > intent.z_tolerance:
+                return base_score * 0.5
+            
+            return base_score * (1 - z_penalty * 0.3)
+        
+        ranked = sorted(all_results, key=z_relevance_score, reverse=True)
+        return ranked[:limit]
+```
+
+### 3.4 Tiered Retrieval Mode
+
+For applications requiring explicit separation, Brain supports **tiered retrieval**:
+
+```python
+@dataclass
+class TieredResults:
+    exact_matches: list[MemoryResult]      # Z < 0.3
+    precise_matches: list[MemoryResult]    # 0.3 ≤ Z < 0.5
+    semantic_matches: list[MemoryResult]   # 0.5 ≤ Z < 0.7
+    conceptual_matches: list[MemoryResult] # Z ≥ 0.7
+
+def tiered_retrieve(query: str, node_ids: list[str] = None) -> TieredResults:
+    """
+    Returns results organized by Z-tier for UI display
+    """
+    all_results = retrieve(query, node_ids, limit=50)
+    
+    return TieredResults(
+        exact_matches=[r for r in all_results if r.z_position < 0.3],
+        precise_matches=[r for r in all_results if 0.3 <= r.z_position < 0.5],
+        semantic_matches=[r for r in all_results if 0.5 <= r.z_position < 0.7],
+        conceptual_matches=[r for r in all_results if r.z_position >= 0.7],
+    )
+```
+
+---
+
+## API Design
+
+### 4.1 MCP Tool Definition
+
+```json
+{
+  "name": "brain_recall",
+  "description": "Retrieve memories from Brain's 3D memory space",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "query": {
+        "type": "string",
+        "description": "Natural language query"
+      },
+      "focus": {
+        "type": "string",
+        "enum": ["exact", "precise", "balanced", "conceptual", "broad"],
+        "default": "auto",
+        "description": "Z-axis targeting preset (auto = intent detection)"
+      },
+      "z_value": {
+        "type": "number",
+        "minimum": 0,
+        "maximum": 1,
+        "description": "Explicit Z-axis target (overrides focus)"
+      },
+      "nodes": {
+        "type": "array",
+        "items": {"type": "string"},
+        "description": "X-axis filter: specific Knowledge Graph nodes"
+      },
+      "limit": {
+        "type": "integer",
+        "default": 10,
+        "description": "Maximum results to return"
+      },
+      "tiered": {
+        "type": "boolean",
+        "default": false,
+        "description": "Return results grouped by Z-tier"
+      }
+    },
+    "required": ["query"]
+  }
+}
+```
+
+### 4.2 Response Schema
+
+```json
+{
+  "results": [
+    {
+      "content": "...",
+      "node": {
+        "id": "node_123",
+        "label": "aiConnected/Brain/Architecture"
+      },
+      "scores": {
+        "lexical": 0.85,
+        "semantic": 0.72,
+        "z_position": 0.46,
+        "relevance": 0.91
+      },
+      "metadata": {
+        "timestamp": "2026-01-15T14:30:00Z",
+        "source": "conversation",
+        "conversation_id": "conv_456"
+      }
+    }
+  ],
+  "query_analysis": {
+    "detected_intent": "precise",
+    "target_z": 0.35,
+    "confidence": 0.82
+  }
+}
+```
+
+---
+
+## User Experience
+
+### 5.1 Transparent vs. Hidden Operation
+
+**Default Mode: Hidden**
+- Z-axis operates automatically via intent detection
+- Users see only relevant results without technical details
+- No additional cognitive load
+
+**Power User Mode: Transparent**
+- Optional UI control: "Match Precision" slider (Exact ↔ Broad)
+- Results display Z-position indicator
+- Tiered view available
+
+### 5.2 Natural Language Z-Targeting
+
+Users can implicitly control Z through natural phrasing:
+
+| User Says | Detected Z | Behavior |
+|-----------|------------|----------|
+| "Find exactly where I said..." | 0.1 | Lexical-dominant search |
+| "What was that conversation about..." | 0.3 | Named entity + context |
+| "What do I think about..." | 0.6 | Semantic theme extraction |
+| "Ideas similar to..." | 0.8 | Conceptual pattern matching |
+| "Explore everything related to..." | 0.9 | Broad associative retrieval |
+
+### 5.3 Result Presentation
+
+For tiered mode, results can be presented with visual Z-indicators:
+
+```
+🎯 Exact Matches (Z < 0.3)
+   └─ "The equity split is 53% for me, 10% each for..." [Jan 15]
+
+📍 Precise Matches (Z 0.3-0.5)  
+   └─ Discussion with Jacob about CTO compensation structure [Jan 12]
+
+💭 Conceptual Matches (Z 0.5-0.7)
+   └─ Notes on fair partnership principles from startup reading [Dec 28]
+
+🌐 Broad Matches (Z > 0.7)
+   └─ General thoughts on building founding teams [Nov 15]
+```
+
+---
+
+## Competitive Advantage
+
+### 6.1 What Competitors Do
+
+| System | Approach | Limitation |
+|--------|----------|------------|
+| **ChatGPT Memory** | Flat key-value facts | No semantic depth, no specificity control |
+| **Notion AI** | Single vector search | Collapses specificity into one score |
+| **Mem.ai** | Semantic-only retrieval | Can't find exact quotes/phrases |
+| **Rewind.ai** | OCR + keyword search | No semantic understanding |
+
+### 6.2 Brain's 3D Advantage
+
+Brain is the **only** system that provides:
+
+1. **Structural Navigation** (X-Axis): "Show me memories about Brain, not aiConnected generally"
+2. **Semantic Depth** (Y-Axis): "Find relevant context within this domain"
+3. **Retrieval Intent** (Z-Axis): "I want the exact quote, not the general theme"
+
+This maps to **how human memory actually works**:
+- X-Axis = Categorical organization (where in your mental filing cabinet)
+- Y-Axis = Associative retrieval (what reminds you of what)
+- Z-Axis = Episodic vs. semantic recall (specific memory vs. general knowledge)
+
+### 6.3 Defensibility
+
+The Z-Axis is:
+- **Architecturally integrated** (not a bolt-on feature)
+- **Patent-eligible** (novel combination of retrieval strategies with intent detection)
+- **Hard to replicate** (requires rethinking core retrieval infrastructure)
+- **Competitively invisible** (users experience it as "it just works better")
+
+---
+
+## Implementation Roadmap
+
+### Phase 1: Foundation (Week 1-2)
+- [ ] Implement BM25 lexical scoring alongside existing vector search
+- [ ] Add `z_position` calculation to retrieval results
+- [ ] Create query intent detection heuristics
+- [ ] Unit tests for Z-scoring accuracy
+
+### Phase 2: Integration (Week 3-4)
+- [ ] Modify retrieval pipeline to accept Z-targeting parameters
+- [ ] Implement merged result ranking with Z-awareness
+- [ ] Add tiered retrieval mode
+- [ ] Integration tests across X/Y/Z dimensions
+
+### Phase 3: API & MCP (Week 5)
+- [ ] Extend MCP tool schema with Z-axis parameters
+- [ ] Implement response schema with scoring breakdown
+- [ ] Documentation and examples
+
+### Phase 4: Refinement (Week 6)
+- [ ] Tune intent detection patterns based on real queries
+- [ ] A/B test Z-aware vs. Z-naive retrieval quality
+- [ ] Performance optimization (caching, parallel retrieval)
+
+---
+
+## Technical Considerations
+
+### 7.1 Performance
+
+**Concern:** Dual retrieval (lexical + semantic) doubles query time.
+
+**Mitigation:**
+- Parallel execution of BM25 and vector search
+- Lexical index is extremely fast (inverted index)
+- Cache query intent analysis for conversation context
+- Precompute lexical precision during ingestion for common terms
+
+### 7.2 Storage
+
+**Additional Requirements:**
+- Inverted index for lexical search (BM25): ~10-20% overhead
+- No additional per-memory storage (Z is computed at query time)
+
+### 7.3 Index Updates
+
+When new memories are ingested:
+1. Generate and store embedding (existing)
+2. Update inverted index with tokenized content (new)
+3. Both indexes updated atomically
+
+---
+
+## Success Metrics
+
+| Metric | Target | Measurement |
+|--------|--------|-------------|
+| **Exact Match Precision** | &gt;90% | When user queries with quotes, top result contains exact phrase |
+| **Intent Detection Accuracy** | &gt;80% | Human evaluation of Z-targeting appropriateness |
+| **Retrieval Satisfaction** | &gt;4.5/5 | User rating of result relevance |
+| **Query Latency** | &lt;200ms | P95 retrieval time with Z-aware pipeline |
+
+---
+
+## Appendix A: Query Intent Patterns
+
+### Exact Match Indicators (Z → 0)
+```
+- "exactly"
+- "specifically" 
+- "word for word"
+- "where did I say"
+- "find the conversation where"
+- "quote"
+- Quoted phrases ("...")
+- Specific numbers or dates
+- Proper nouns with modifiers
+```
+
+### Broad Match Indicators (Z → 1)
+```
+- "thinking about"
+- "ideas on"
+- "explore"
+- "related to"
+- "similar to"
+- "themes"
+- "patterns"
+- "generally"
+- "overall"
+- Abstract nouns without specifics
+```
+
+---
+
+## Appendix B: Z-Axis Visualization
+
+```
+                              Y-Axis (Vector Similarity)
+                                        │
+                                        │
+                              ┌─────────┼─────────┐
+                             /│         │         │
+                            / │    High Semantic  │
+                           /  │    Low Lexical    │
+                          /   │    (Z → 1.0)      │
+                         /    │         │         │
+        X-Axis          /     ├─────────┼─────────┤
+    (Knowledge Graph)──/──────┤         │         │
+                      /       │  Balanced Match   │
+                     /        │    (Z ≈ 0.5)      │
+                    /         │         │         │
+                   /          ├─────────┼─────────┤
+                  /           │         │         │
+                 /            │   High Lexical    │
+                /             │   Low Semantic    │
+               /              │    (Z → 0.0)      │
+              /               │         │         │
+             /                └─────────┴─────────┘
+            /                           │
+           /                    Z-Axis (Specificity)
+          /                             │
+         ▼                              ▼
+    Node Navigation              Exact ◄────► Broad
+```
+
+---
+
+## Document Control
+
+| Version | Date | Author | Changes |
+|---------|------|--------|---------|
+| 1.0 | 2026-01-20 | Bob/Claude | Initial specification |
+
+---
+
+*This document is proprietary to aiConnected, LLC. The Z-Axis architecture represents a trade secret and competitive advantage.*

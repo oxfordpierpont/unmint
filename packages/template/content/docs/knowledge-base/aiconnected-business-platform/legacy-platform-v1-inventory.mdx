@@ -1,0 +1,703 @@
+---
+title: "Legacy Platform v1 Inventory"
+---
+# Platform v1 Complete Capability Inventory
+
+## Purpose
+
+This document is the exhaustive, evidence-backed inventory of what v1 currently does across the whole monorepo.
+
+Status tags used:
+
+- `active`: implemented and wired to real logic  
+- `partial`: present but incomplete/TODO/mock-dependent  
+- `duplicate`: multiple implementations for same surface  
+- `legacy`: stale/old preserved implementation  
+- `uncertain`: intent exists but behavior or usage is not fully provable from current code
+
+Architecture-vs-implementation rule used throughout:
+
+- Preserve architecture ideas separately from code reuse decisions.  
+- A capability can be strategically important while its current implementation remains non-reusable.
+
+---
+
+## How v1 Currently Works (System Narrative)
+
+### 1\) Runtime topology (Open to changing or deleting this)
+
+- Monorepo is organized into deployable apps, shared packages, and a worker service.  
+- Core deployables:  
+  - `apps/platform` (multi-tenant control plane)  
+  - `apps/chat` (public business chat runtime)  
+  - `apps/kb-studio` (KB studio UI, scaffold state)  
+  - `services/worker` (KB job execution)  
+- Evidence:  
+  - `docs/monorepo-architecture.md`  
+  - `docs/dokploy-monorepo.md`
+
+### 2\) Shell and tenancy flow (Keep this for v2 after stability is verified)
+
+- Platform root routes authenticated users into admin shell and unauthenticated users to login.  
+- Admin shell wraps pages with auth checks, user loading, role context, sidebar, and settings/theme hydration.  
+- Tenancy model is Platform \-\> Agency \-\> Business with scoped access and role matrix.  
+- Evidence:  
+  - `apps/platform/src/app/page.tsx`  
+  - `apps/platform/src/app/admin/layout.tsx`  
+  - `apps/platform/src/lib/auth.js`  
+  - `apps/platform/src/lib/tenant-context.js`  
+  - `supabase/migrations/001_multi_tenant_schema.sql`  
+  - `supabase/migrations/002_rls_policies.sql`
+
+### 3\) Impersonation and effective identity (Keep this for v2 after stability is verified)
+
+- Impersonation state is stored in local storage and cookie `platform_impersonation`.  
+- Super admin can impersonate agency/business; agency admin can impersonate business in-scope.  
+- Effective user/role/tenant ids are normalized on server for scoped APIs.  
+- Evidence:  
+  - `apps/platform/src/context/ImpersonationContext.tsx`  
+  - `apps/platform/src/lib/tenant-context.js`  
+  - `apps/platform/src/app/api/settings/route.js`
+
+### 4\) Inheritance and settings resolution (Keep this for v2 after stability is verified)
+
+- Settings inherit/merge through platform-level settings, then agency-level overrides, then business-level overrides.  
+- Same pattern appears for integration sharing and branding controls.  
+- Evidence:  
+  - `apps/platform/src/app/api/settings/route.js`  
+  - `packages/db/src/integration-sharing.js`  
+  - `apps/platform/src/app/api/agencies/[agencyId]/branding/route.js`  
+  - `apps/platform/src/app/api/businesses/[businessId]/branding/route.js`
+
+### 5\) Module import/catalog model (Unstable. Open to rebuilding this)
+
+- Platform app catalog supports listing apps, importing app packages, assessing manifests, storing import metadata.  
+- Manifest and normalization rules live in app-sdk layer.  
+- Evidence:  
+  - `apps/platform/src/features/app-catalog/PlatformAppCatalogScreen.jsx`  
+  - `apps/platform/src/app/api/platform/apps/route.js`  
+  - `apps/platform/src/app/api/platform/apps/import/route.js`  
+  - `packages/app-sdk/src/imports.js`  
+  - `packages/app-sdk/src/manifests.js`  
+  - `supabase/migrations/008_app_platform_catalog.sql`  
+  - `supabase/migrations/20260315120000_platform_app_imports.sql`  
+  - `supabase/migrations/20260315180025_create_normalization_reports.sql`
+
+### 6\) Chat runtime model(s) (Unstable. Open to rebuilding this)
+
+- Business-facing chat runtime is implemented as standalone `apps/chat` and mirrored in parts of platform APIs.  
+- Public chat routes load business runtime config, process AI responses, persist conversations, and capture leads.  
+- Platform also has chat-related admin/service surfaces and overlapping API behavior.  
+- Evidence:  
+  - `apps/chat/src/app/[accountId]/page.jsx`  
+  - `apps/chat/src/app/api/chat/route.js`  
+  - `apps/chat/src/app/api/leads/route.js`  
+  - `apps/platform/src/app/api/chat/route.js`  
+  - `apps/platform/src/app/admin/services/chat/*`
+
+### 7\) KB generation and worker pipeline (Unstable. Open to rebuilding this)
+
+- Onboarding/KB APIs create and manage KB generation jobs.  
+- Worker service claims and runs jobs with KB engine functions.  
+- KB Studio app exists but is currently scaffold-level.  
+- Evidence:  
+  - `apps/platform/src/app/api/kb-jobs/route.js`  
+  - `apps/platform/src/app/api/knowledge-base/route.js`  
+  - `services/worker/src/index.js`  
+  - `services/worker/src/run-job.js`  
+  - `packages/kb-engine/src/*`  
+  - `apps/kb-studio/src/app/*`
+
+### 8\) Auth/permissions/RLS/security behavior (Keep this for v2 after stability is verified)
+
+- Auth via Supabase helpers and service-role API clients.  
+- Role checks are in permissions package and platform auth library wrappers.  
+- RLS policies encode tenant-scoped data access across key tables.  
+- Evidence:  
+  - `packages/permissions/src/auth.js`  
+  - `apps/platform/src/lib/auth.js`  
+  - `supabase/migrations/002_rls_policies.sql`
+
+### 9\) Theming/branding/white-label/custom domain behavior (Unstable. Open to rebuilding this)
+
+- Platform/agency/business branding APIs exist with merge/fallback behavior.  
+- Login/secure-login/setup-account and domain verification flows support white-label style runtime customization.  
+- Custom domains and verification endpoints exist for businesses.  
+- Evidence:  
+  - `apps/platform/src/app/api/agencies/[agencyId]/branding/route.js`  
+  - `apps/platform/src/app/api/businesses/[businessId]/branding/route.js`  
+  - `apps/platform/src/app/api/businesses/[businessId]/domains/route.js`  
+  - `apps/platform/src/app/api/verify-domain/route.js`  
+  - `apps/platform/src/app/secure-login/page.tsx`  
+  - `apps/platform/src/app/setup-account/page.tsx`  
+  - `apps/chat/src/app/page.jsx`
+
+### 10\) Deployment/runtime operational model (Keep this for v2 after stability is verified)
+
+- Dokploy deployments are app-specific by workspace/build args/watch paths using root Dockerfile.  
+- Required env vars include Supabase and encryption keys with app-specific public URL wiring.  
+- Evidence:  
+  - `docs/dokploy-monorepo.md`  
+  - `Dockerfile`
+
+---
+
+## Capability Index by Subsystem
+
+- A1 Authentication and session routing  
+- A2 Tenancy and impersonation  
+- A3 Agency/business/user administration  
+- A4 Branding/theming/white-label/custom domains  
+- A5 Module catalog/import/manifest normalization  
+- A6 Capabilities library (n8n-template and import lane)  
+- A7 Integrations/connectors/composio/http requests  
+- A8 Chat runtime and conversation handling  
+- A9 Lead capture, webhook, email delivery  
+- A10 Knowledge base onboarding/jobs/worker pipeline  
+- A11 Billing/reporting/account/settings utilities  
+- A12 SDK and shared package layer  
+- A13 DB schema/migrations/RLS/infra  
+- A14 Non-canonical surfaces (duplicate/legacy/partial)
+
+---
+
+## Capability Catalog (Comprehensive)
+
+| ID | Subsystem | Capability | What it does | Where it lives | Dependency chain (key) | Audience | Status |
+| :---- | :---- | :---- | :---- | :---- | :---- | :---- | :---- |
+| C-001 | A1 | Root auth redirect | Redirects authenticated to `/admin`, unauthenticated to `/login` | `apps/platform/src/app/page.tsx` | Supabase auth helper \-\> router replace | user-facing | `active` |
+| C-002 | A1 | Login/password auth | Email/password sign-in, post-login destination resolve | `apps/platform/src/app/login/page.tsx`, `apps/platform/src/app/api/auth/post-login-destination/route.js` | Supabase auth \-\> user role lookup \-\> destination route | user-facing | `active` |
+| C-003 | A1 | Google OAuth login | Optional Google sign-in flow | `apps/platform/src/app/login/page.tsx`, `apps/platform/src/app/auth/callback/route.js` | Supabase OAuth provider | user-facing | `active` |
+| C-004 | A1 | White-label login variant | Alternate secure login page path | `apps/platform/src/app/secure-login/page.tsx` | Branding/theming \+ auth | user-facing | `active` |
+| C-005 | A1 | Account setup flow | Invitation/setup password entry flow | `apps/platform/src/app/setup-account/page.tsx`, `apps/platform/src/app/api/agencies/[agencyId]/resend-welcome/route.js` | User management \+ email delivery | user-facing | `active` |
+| C-006 | A2 | Admin shell role context | Wraps `/admin/*` with auth, user, nav, and settings load | `apps/platform/src/app/admin/layout.tsx` | Supabase auth \+ `/api/settings` \+ impersonation context | operator-facing | `active` |
+| C-007 | A2 | Effective tenant context resolver | Builds effective role, agency/business scope, impersonation normalization | `apps/platform/src/lib/tenant-context.js` | users/businesses lookups \+ role group logic | internal | `active` |
+| C-008 | A2 | Impersonation persistence \+ lifecycle | Start/stop agency/business impersonation with cookie/local storage | `apps/platform/src/context/ImpersonationContext.tsx` | tenant-context \+ `/api/agencies/*` `/api/businesses/*` validation | operator-facing | `active` |
+| C-009 | A2 | Authorized business scope helper | Restricts business-target API actions by role and tenant | `apps/platform/src/lib/business-scope.js` | tenant-context derived roles \+ businesses query | internal | `active` |
+| C-010 | A2 | Settings inheritance resolution | Merges platform/agency/business settings with impersonation-awareness | `apps/platform/src/app/api/settings/route.js` | tenant-context \+ dashboard settings merge \+ db integration helpers | internal/operator-facing | `active` |
+| C-011 | A3 | Agencies CRUD \+ onboarding | Create/list/update/delete agencies, user setup hooks | `apps/platform/src/app/api/agencies/route.js`, `apps/platform/src/app/admin/agencies/page.tsx` | auth \+ tenant checks \+ app offering defaults | operator-facing | `active` |
+| C-012 | A3 | Agency detail ops | Agency profile, credentials, users, app offering bindings | `apps/platform/src/app/api/agencies/[agencyId]/*`, `apps/platform/src/app/admin/agencies/[agencyId]/page.tsx` | users/agencies/businesses tables \+ app catalog tables | operator-facing | `active` |
+| C-013 | A3 | Businesses CRUD | Create/list/update businesses with tenant checks | `apps/platform/src/app/api/businesses/route.js`, `apps/platform/src/app/api/businesses/[businessId]/route.js`, `apps/platform/src/app/admin/sub-accounts/page.jsx` | tenant context \+ agencies/businesses tables | operator-facing | `active` |
+| C-014 | A3 | Users CRUD and profile management | User creation/update/list with scoped role logic | `apps/platform/src/app/api/users/route.js`, `apps/platform/src/app/admin/users/page.jsx`, `apps/platform/src/app/admin/account/*` | auth \+ tenant rules \+ users table | operator-facing | `active` |
+| C-015 | A4 | Agency branding management | Get/save agency branding and dashboard settings | `apps/platform/src/app/api/agencies/[agencyId]/branding/route.js`, `apps/platform/src/app/admin/agencies/[agencyId]/branding/page.tsx` | settings defaults \+ agency record \+ merge utilities | operator-facing | `active` |
+| C-016 | A4 | Business branding management | Get/save business branding, chat settings, advanced theme | `apps/platform/src/app/api/businesses/[businessId]/branding/route.js`, `apps/platform/src/app/admin/branding/page.jsx` | business \+ agency \+ platform branding fallback | operator-facing | `active` |
+| C-017 | A4 | Platform branding controls | Global branding/dash theme controls | `apps/platform/src/app/admin/platform/branding/page.jsx`, `apps/platform/src/app/api/settings/route.js` | settings table \+ admin theme helpers | operator-facing | `active` |
+| C-018 | A4 | Dashboard theme editor | Dashboard colors/fonts/spacing controls | `apps/platform/src/app/admin/dashboard-settings/page.tsx` | settings API \+ theme token mapping | operator-facing | `active` |
+| C-019 | A4 | Custom domain management | Configure/verify business custom domains | `apps/platform/src/app/api/businesses/[businessId]/domains/route.js`, `apps/platform/src/app/api/verify-domain/route.js`, `apps/platform/src/app/admin/settings/domains/page.jsx` | businesses table (`custom_domain`, `domain_verified`) | operator-facing | `active` |
+| C-020 | A4 | Domain-based chat routing | Hostname \-\> business account resolution for chat runtime | `apps/chat/src/app/page.jsx` | Supabase business lookup by `custom_domain` | user-facing | `active` |
+| C-021 | A5 | Platform app catalog browsing | Lists managed/imported apps and connection metadata | `apps/platform/src/features/app-catalog/PlatformAppCatalogScreen.jsx`, `apps/platform/src/app/admin/platform/apps/page.jsx` | `@sec-admn/app-sdk` \+ `/api/platform/apps` | operator-facing | `active` |
+| C-022 | A5 | Module import pipeline | Upload zip, normalize imports/colors, assess manifest, persist report | `apps/platform/src/app/api/platform/apps/import/route.js`, `packages/app-sdk/src/imports.js`, `sdk/packages/schemas/src/index.ts`, `sdk/packages/ui/src/components/NormalizationReport.tsx` | app-sdk normalization \-\> db report storage | operator-facing/infrastructure | `active` |
+| C-023 | A5 | Manifest validation and compatibility assessment | Validates module manifest contract and connection requirements | `packages/app-sdk/src/manifests.js`, `packages/app-sdk/src/imports.js`, `apps/platform/src/app/(dashboard)/modules/upload/assessment/page.tsx` | manifest parser/validator \+ assessment report | internal/operator-facing | `active` |
+| C-024 | A5 | App availability resolution by tenant | Returns installable apps for tenant scope | `apps/platform/src/app/api/apps/available/route.js` | app catalog tables \+ tenant context | operator-facing | `active` |
+| C-025 | A6 | Capabilities registry APIs | CRUD/list categories/requirements for capabilities | `apps/platform/src/app/api/capabilities/*` | capabilities tables \+ requirement resolver | operator-facing | `active` |
+| C-026 | A6 | Capability install flow | Installs capabilities for business context | `apps/platform/src/app/api/capabilities/[id]/install/route.js`, `apps/platform/src/app/admin/capabilities/[slug]/requirements/page.tsx` | capability tables \+ business bindings | operator-facing | `active` |
+| C-027 | A6 | n8n template intake lane | Imports/reads n8n template-backed capabilities | `apps/platform/src/app/api/capabilities/n8n-templates/route.js`, `apps/platform/src/app/admin/platform/capabilities/page.jsx` | template parsing \+ capabilities import route | operator-facing | `active` |
+| C-028 | A6 | Capabilities compiler workflow | Converts workflow payload into capability records | `apps/platform/src/lib/compiler/*`, `apps/platform/src/app/api/capabilities/import/route.js` | parser \-\> compiler \-\> db write | internal/operator-facing | `active` |
+| C-029 | A7 | Integration settings management | AI provider/webhook/http request integration settings by scope | `apps/platform/src/app/admin/integrations/page.tsx`, `apps/platform/src/app/api/agencies/[agencyId]/integrations/route.js`, `apps/platform/src/app/api/businesses/[businessId]/connectors/*` | tenant context \+ integration sharing merge \+ encryption helpers | operator-facing | `active` |
+| C-030 | A7 | Composio connection flow | Connect/disconnect/callback for external toolkits | `apps/platform/src/app/api/connections/*`, `apps/platform/src/app/api/integrations/composio/callback/route.js`, `apps/platform/src/lib/composio/*` | composio libs \+ business connector state | operator-facing | `active` |
+| C-031 | A7 | Business connector state APIs | Read/update connector settings per business | `apps/platform/src/app/api/businesses/[businessId]/connectors/*` | connector settings schema \+ db helper | operator-facing | `active` |
+| C-032 | A8 | Public business chat runtime UI | Main chat UI, messages, guided flow, lead form rendering | `apps/chat/src/app/[accountId]/page.jsx` | `/api/business-settings` \+ `/api/chat` \+ `/api/conversations` \+ `/api/leads` | user-facing | `active` |
+| C-033 | A8 | Chat response generation API | Runs AI provider, tool usage, structured response parse | `apps/chat/src/app/api/chat/route.js`, `packages/chat-core/src/*` | runtime-config \+ ai-config \+ structured-response \+ db integration sharing | infrastructure/user-facing | `active` |
+| C-034 | A8 | Conversation persistence API | Create/update/read conversations by session/business | `apps/chat/src/app/api/conversations/route.js`, `apps/platform/src/app/api/conversations/route.js` | conversations table \+ tenant scoping | infrastructure | `active` |
+| C-035 | A8 | Platform chat API variant | Overlapping chat API in platform app with capability tool loading | `apps/platform/src/app/api/chat/route.js` | chat-core \+ platform capability tool-loader | internal | `duplicate` |
+| C-036 | A8 | Embed widget deployment docs | Embed script examples and runtime guidance | `apps/chat/src/app/embed/page.jsx`, `apps/chat/public/widget.js` | chat runtime URL/account id | operator-facing | `active` |
+| C-037 | A9 | Lead capture ingestion | Validates form data, writes lead record, routes delivery | `apps/chat/src/app/api/leads/route.js`, `packages/chat-core/src/lead-capture.js`, `packages/chat-core/src/lead-delivery.js` | lead forms \+ delivery routing \+ decrypt/encryption | infrastructure | `active` |
+| C-038 | A9 | Lead routing admin surface | Configure forms, fields, delivery routes in platform admin | `apps/platform/src/app/admin/services/chat/lead-capture/page.jsx`, `apps/platform/src/app/api/businesses/[businessId]/lead-capture/route.js` | lead forms/routing tables \+ business scope | operator-facing | `active` |
+| C-039 | A9 | Webhook delivery pipeline | Outbound webhook calls for lead/chat events | `apps/chat/src/app/api/webhook/route.js`, `apps/platform/src/app/api/webhook/route.js` | settings/integration state \+ retries/logging | infrastructure | `active` |
+| C-040 | A9 | Email delivery pipeline | SMTP/config-based lead/email dispatch | `apps/chat/src/app/api/email/route.js`, `apps/platform/src/app/api/email/route.js` | settings decrypt \+ nodemailer | infrastructure | `active` |
+| C-041 | A10 | KB onboarding wizard UI | Multi-step onboarding for business setup and KB bootstrapping | `apps/platform/src/components/onboarding/OnboardingWizard.tsx`, `apps/platform/src/app/onboarding/page.tsx` | onboarding context API \+ upload docs \+ kb jobs | operator-facing | `active` |
+| C-042 | A10 | Onboarding context/complete APIs | Read and persist onboarding progress/config | `apps/platform/src/app/api/onboarding/context/route.js`, `apps/platform/src/app/api/onboarding/complete/route.js` | businesses/users/kb jobs tables \+ integration sharing | infrastructure | `active` |
+| C-043 | A10 | KB jobs API | Queue/list/get/restore/process knowledge base jobs | `apps/platform/src/app/api/kb-jobs/*`, `apps/platform/src/app/api/agency/kb-jobs/[businessId]/route.js` | kb\_generation\_jobs \+ knowledge-base store \+ worker launcher | infrastructure | `active` |
+| C-044 | A10 | KB generation worker | Claims/requeues/processes KB jobs | `services/worker/src/index.js`, `services/worker/src/run-job.js` | kb-engine \+ db integration sharing \+ encryption | infrastructure | `active` |
+| C-045 | A10 | KB engine pipeline package | Scrape/extract/research/compile/system-prompt/quiz/starters | `packages/kb-engine/src/*` | AI providers \+ compiler \+ runtime helpers | internal | `active` |
+| C-046 | A10 | KB Studio app scaffold | Projects/review/publish shell pages | `apps/kb-studio/src/app/*` | next/react \+ planned `@sec-admn/kb-engine` dependency | operator-facing | `partial` |
+| C-047 | A11 | Billing dashboard | Billing overview and configuration UIs | `apps/platform/src/app/admin/billing/page.tsx`, `apps/platform/src/app/admin/billing/configuration/page.tsx`, `apps/platform/src/app/api/billing/configuration/route.js` | stripe config tables \+ settings \+ tenant scope | operator-facing | `partial` |
+| C-048 | A11 | Billing invoices/payments/subscriptions pages | Invoice/payment/subscription management views | `apps/platform/src/app/admin/billing/invoices/page.tsx`, `.../payments/page.tsx`, `.../subscriptions/page.tsx` | billing APIs \+ TODO markers | operator-facing | `partial` |
+| C-049 | A11 | Reporting dashboard | Activity/metrics reporting surfaces | `apps/platform/src/app/admin/reporting/page.jsx`, `apps/platform/src/app/api/dashboard/stats/route.js`, `apps/platform/src/app/api/dashboard/overview/route.js` | sessions/leads/business stats \+ window selectors | operator-facing | `partial` |
+| C-050 | A11 | Session/live session pages | Lists and filters conversations/sessions | `apps/platform/src/app/admin/live-sessions/page.jsx`, `apps/platform/src/app/admin/services/chat/sessions/page.jsx`, `apps/platform/src/app/api/sessions/route.js` | chat\_sessions \+ tenant scope | operator-facing | `active` |
+| C-051 | A11 | Leads admin view | Lead listing and operations UI | `apps/platform/src/app/admin/leads/page.jsx`, `apps/platform/src/app/api/leads/route.js` | new\_leads table \+ tenant scope | operator-facing | `active` |
+| C-052 | A11 | Business info and email settings pages | Tenant profile data and email config controls | `apps/platform/src/app/admin/business-info/page.tsx`, `apps/platform/src/app/admin/email-settings/page.tsx` | `/api/settings` \+ `/api/test-connection` | operator-facing | `active` |
+| C-053 | A11 | Account profile/password/notifications pages | User self-management and account preferences | `apps/platform/src/app/admin/account/*` | users API \+ profile/password forms | operator-facing | `partial` |
+| C-054 | A11 | Platform changelog/admin pages | Platform-level admin surfaces | `apps/platform/src/app/admin/platform/changelog/page.jsx`, `apps/platform/src/app/admin/platform/branding/page.jsx` | settings APIs \+ UI components | operator-facing | `active` |
+| C-055 | A11 | Plasmic host \+ render/studio-link APIs | CMS-like hosted visual content integration | `apps/platform/src/app/plasmic-host/page.tsx`, `apps/platform/src/app/api/plasmic/*` | plasmic loader \+ auth helpers | operator-facing/internal | `active` |
+| C-056 | A12 | app-sdk package | Manifest normalization, UI import/color normalization, assessment helpers | `packages/app-sdk/src/*` | parser/validator \+ normalization report schema | internal | `active` |
+| C-057 | A12 | chat-core package | AI config, runtime config, lead capture/delivery, composio hooks, rate-limit | `packages/chat-core/src/*` | db/runtime config \+ provider adapters | internal | `active` |
+| C-058 | A12 | db package | Browser/server supabase clients and integration sharing logic | `packages/db/src/*` | supabase client wrappers \+ integration merge logic | internal | `active` |
+| C-059 | A12 | permissions package | Role constants and auth checks | `packages/permissions/src/*` | consumed by `apps/platform/src/lib/auth.js` | internal | `active` |
+| C-060 | A12 | branding package | Theme defaults and merge helper | `packages/branding/src/index.js` | declared dependency, low direct usage evidence | internal | `uncertain` |
+| C-061 | A12 | auth package | Login route constants helper | `packages/auth/src/index.js` | dependency declared, low direct runtime use | internal | `uncertain` |
+| C-062 | A12 | contracts package | Shared contracts placeholder package | `packages/contracts/src/index.js` | widely declared dependency, sparse runtime imports | internal | `uncertain` |
+| C-063 | A12 | config package | Workspace config helper | `packages/config/src/index.js` | no clear app-level consumer | internal | `legacy` |
+| C-064 | A12 | sdk schemas package | Typed core data/normalization contracts | `sdk/packages/schemas/src/index.ts` | consumed by sdk/ui and platform import assessment | internal | `active` |
+| C-065 | A12 | sdk ui package | Shared UI primitives and normalization report component | `sdk/packages/ui/src/*` | used in assessment/editor contexts | internal | `active` |
+| C-066 | A12 | sdk client package | platform client (`emit/call/usage`) for module interactions | `sdk/packages/client/src/index.ts` | module-runtime integration contract | internal | `active` |
+| C-067 | A12 | sdk manifest package | Manifest schema/validator package | `sdk/packages/manifest/src/index.ts` | module manifest contract layer | internal | `active` |
+| C-068 | A12 | sdk cli scaffolder | `create-aiconnected-module` module generator | `sdk/packages/cli/src/index.ts` | scaffolding for module dev flow | operator-facing/internal | `active` |
+| C-069 | A13 | Supabase schema baseline | Core multi-tenant tables and constraints | `supabase/migrations/001_multi_tenant_schema.sql` | agencies/businesses/users \+ related domain tables | infrastructure | `active` |
+| C-070 | A13 | RLS policy baseline | Role-scoped row-level access policies across core tables | `supabase/migrations/002_rls_policies.sql` | auth.uid \+ users role mapping | infrastructure | `active` |
+| C-071 | A13 | Extended migration lane | Adds onboarding, dashboard settings, capabilities, connectors, billing, imports, normalization reports | `supabase/migrations/003_*.sql` through `20260315180025_*.sql` | iterative schema evolution | infrastructure | `active` |
+| C-072 | A13 | Full deploy migration aggregate | One-shot deploy migration script | `supabase/migrations/999_full_deploy.sql` | aggregate schema deployment lane | infrastructure | `uncertain` |
+| C-073 | A13 | Dokploy monorepo deployment model | App-specific build args/watch paths and shared Docker strategy | `docs/dokploy-monorepo.md`, `Dockerfile` | workspace-targeted build/deploy | infrastructure | `active` |
+| C-074 | A14 | Duplicate route implementations | Same route in `.jsx` and `.tsx` for many admin pages/layouts | e.g. `apps/platform/src/app/admin/dashboard/page.jsx` \+ `.../page.tsx` | duplicate UI logic paths | internal | `duplicate` |
+| C-075 | A14 | Legacy `.old` route files | Stale preserved route variants in active tree | e.g. `apps/platform/src/app/admin/page.jsx.old`, `apps/platform/src/app/admin/settings/domains/page.jsx.old` | historical carry-over | internal | `legacy` |
+| C-076 | A14 | Mock/TODO billing/reporting paths | Mock data and TODO comments in billing/reporting flows | `apps/platform/src/app/admin/billing/page.tsx`, `.../billing/invoices/page.tsx`, `.../billing/subscriptions/page.tsx`, `apps/platform/src/app/admin/reporting/page.jsx` | missing production wiring in parts | operator-facing | `partial` |
+| C-077 | A14 | KB Studio scaffold-only implementation | Pages exist but no substantive feature wiring/fetch/API | `apps/kb-studio/src/app/*`, `apps/kb-studio/src/features/*/.gitkeep` | placeholder application shell | operator-facing | `partial` |
+| C-078 | A14 | Deep-import internal package coupling | Imports package internals via `@sec-admn/*/src/*` paths | `apps/chat/src/app/api/leads/route.js`, `apps/chat/src/app/[accountId]/page.jsx`, `services/worker/src/run-job.js`, `apps/platform/src/lib/supabase-server.js` | boundary bypass increases fragility | internal | `legacy` |
+
+---
+
+## Capability Labels (Migration \+ v2 Placement)
+
+Label set 1:
+
+- `Safe To Migrate`  
+- `Rebuild In v2`  
+- `Do Not Migrate`
+
+Label set 2:
+
+- `Shell`  
+- `Module`  
+- `Other`
+
+| ID | Migration Label | Placement Label |
+| :---- | :---- | :---- |
+| C-001 | Safe To Migrate | Shell |
+| C-002 | Safe To Migrate | Shell |
+| C-003 | Safe To Migrate | Shell |
+| C-004 | Rebuild In v2 | Shell |
+| C-005 | Rebuild In v2 | Shell |
+| C-006 | Safe To Migrate | Shell |
+| C-007 | Safe To Migrate | Shell |
+| C-008 | Safe To Migrate | Shell |
+| C-009 | Safe To Migrate | Shell |
+| C-010 | Safe To Migrate | Shell |
+| C-011 | Safe To Migrate | Shell |
+| C-012 | Safe To Migrate | Shell |
+| C-013 | Safe To Migrate | Shell |
+| C-014 | Rebuild In v2 | Shell |
+| C-015 | Rebuild In v2 | Shell |
+| C-016 | Rebuild In v2 | Shell |
+| C-017 | Safe To Migrate | Shell |
+| C-018 | Rebuild In v2 | Shell |
+| C-019 | Rebuild In v2 | Shell |
+| C-020 | Rebuild In v2 | Module |
+| C-021 | Safe To Migrate | Shell |
+| C-022 | Safe To Migrate | Shell |
+| C-023 | Safe To Migrate | Shell |
+| C-024 | Safe To Migrate | Shell |
+| C-025 | Do Not Migrate | Other |
+| C-026 | Do Not Migrate | Other |
+| C-027 | Do Not Migrate | Other |
+| C-028 | Do Not Migrate | Other |
+| C-029 | Rebuild In v2 | Shell |
+| C-030 | Rebuild In v2 | Module |
+| C-031 | Rebuild In v2 | Module |
+| C-032 | Rebuild In v2 | Module |
+| C-033 | Rebuild In v2 | Module |
+| C-034 | Rebuild In v2 | Module |
+| C-035 | Do Not Migrate | Other |
+| C-036 | Rebuild In v2 | Module |
+| C-037 | Rebuild In v2 | Module |
+| C-038 | Rebuild In v2 | Module |
+| C-039 | Rebuild In v2 | Module |
+| C-040 | Rebuild In v2 | Module |
+| C-041 | Rebuild In v2 | Module |
+| C-042 | Rebuild In v2 | Module |
+| C-043 | Rebuild In v2 | Module |
+| C-044 | Rebuild In v2 | Module |
+| C-045 | Safe To Migrate | Module |
+| C-046 | Rebuild In v2 | Module |
+| C-047 | Rebuild In v2 | Shell |
+| C-048 | Rebuild In v2 | Shell |
+| C-049 | Rebuild In v2 | Shell |
+| C-050 | Rebuild In v2 | Module |
+| C-051 | Rebuild In v2 | Module |
+| C-052 | Rebuild In v2 | Shell |
+| C-053 | Rebuild In v2 | Shell |
+| C-054 | Rebuild In v2 | Shell |
+| C-055 | Do Not Migrate | Other |
+| C-056 | Safe To Migrate | Shell |
+| C-057 | Safe To Migrate | Module |
+| C-058 | Safe To Migrate | Other |
+| C-059 | Safe To Migrate | Shell |
+| C-060 | Rebuild In v2 | Shell |
+| C-061 | Do Not Migrate | Other |
+| C-062 | Rebuild In v2 | Other |
+| C-063 | Do Not Migrate | Other |
+| C-064 | Safe To Migrate | Other |
+| C-065 | Safe To Migrate | Other |
+| C-066 | Safe To Migrate | Module |
+| C-067 | Safe To Migrate | Other |
+| C-068 | Safe To Migrate | Module |
+| C-069 | Safe To Migrate | Shell |
+| C-070 | Safe To Migrate | Shell |
+| C-071 | Rebuild In v2 | Other |
+| C-072 | Do Not Migrate | Other |
+| C-073 | Safe To Migrate | Other |
+| C-074 | Do Not Migrate | Other |
+| C-075 | Do Not Migrate | Other |
+| C-076 | Do Not Migrate | Other |
+| C-077 | Rebuild In v2 | Module |
+| C-078 | Do Not Migrate | Other |
+
+---
+
+## Capability Index by Status Tag
+
+### `active`
+
+C-001, C-002, C-003, C-004, C-005, C-006, C-007, C-008, C-009, C-010, C-011, C-012, C-013, C-014, C-015, C-016, C-017, C-018, C-019, C-020, C-021, C-022, C-023, C-024, C-025, C-026, C-027, C-028, C-029, C-030, C-031, C-032, C-033, C-034, C-036, C-037, C-038, C-039, C-040, C-041, C-042, C-043, C-044, C-045, C-050, C-051, C-052, C-054, C-055, C-056, C-057, C-058, C-059, C-064, C-065, C-066, C-067, C-068, C-069, C-070, C-071, C-073
+
+### `partial`
+
+C-046, C-047, C-048, C-049, C-053, C-076, C-077
+
+### `duplicate`
+
+C-035, C-074
+
+### `legacy`
+
+C-063, C-075, C-078
+
+### `uncertain`
+
+C-060, C-061, C-062, C-072
+
+---
+
+## v1 Capability Coverage Matrix (PRD Handoff)
+
+| Subsystem | Active | Partial | Duplicate | Legacy | Uncertain |
+| :---- | ----: | ----: | ----: | ----: | ----: |
+| A1 Authentication/session | 5 | 0 | 0 | 0 | 0 |
+| A2 Tenancy/impersonation/inheritance | 5 | 0 | 0 | 0 | 0 |
+| A3 Agency/business/user admin | 4 | 0 | 0 | 0 | 0 |
+| A4 Branding/white-label/domains | 6 | 0 | 0 | 0 | 0 |
+| A5 Module import/catalog | 4 | 0 | 0 | 0 | 0 |
+| A6 Capabilities library lane | 4 | 0 | 0 | 0 | 0 |
+| A7 Integrations/connectors/composio | 3 | 0 | 0 | 0 | 0 |
+| A8 Chat runtime/conversation | 4 | 0 | 1 | 0 | 0 |
+| A9 Leads/webhook/email | 4 | 0 | 0 | 0 | 0 |
+| A10 KB onboarding/jobs/worker | 5 | 1 | 0 | 0 | 0 |
+| A11 Billing/reporting/account/plasmic | 4 | 4 | 0 | 0 | 0 |
+| A12 SDK/shared packages | 8 | 0 | 0 | 1 | 3 |
+| A13 DB/infra/deploy | 4 | 0 | 0 | 0 | 1 |
+| A14 Non-canonical surfaces | 0 | 2 | 1 | 2 | 0 |
+
+---
+
+## Non-Canonical and Edge Capability Surfaces (Explicit)
+
+- Whitelabel/custom domains:  
+  - `apps/platform/src/app/api/businesses/[businessId]/domains/route.js`  
+  - `apps/platform/src/app/api/verify-domain/route.js`  
+  - `apps/chat/src/app/page.jsx`  
+- Impersonation:  
+  - `apps/platform/src/context/ImpersonationContext.tsx`  
+  - `apps/platform/src/lib/tenant-context.js`  
+- User/tenant-specific UI customization:  
+  - `apps/platform/src/app/admin/branding/page.jsx`  
+  - `apps/platform/src/app/admin/dashboard-settings/page.tsx`  
+  - `apps/platform/src/app/api/settings/route.js`  
+- Partial/placeholder and TODO/mocks:  
+  - `apps/platform/src/app/admin/billing/subscriptions/page.tsx`  
+  - `apps/platform/src/app/admin/billing/invoices/page.tsx`  
+  - `apps/platform/src/app/admin/billing/page.tsx`  
+  - `apps/kb-studio/src/app/projects/page.jsx`  
+- Duplicated implementations:  
+  - `.jsx` and `.tsx` pairs under `apps/platform/src/app/admin/**`  
+  - overlapping chat API implementations in `apps/platform/src/app/api/chat/route.js` and `apps/chat/src/app/api/chat/route.js`  
+- Legacy `.old` route files:  
+  - `apps/platform/src/app/admin/**/*.old`
+
+---
+
+## Cross-Doc Alignment Check
+
+This inventory is aligned with:
+
+- `docs/v1-audit/01-repo-map.md`  
+- `docs/v1-audit/02-foundation-vs-apps.md`  
+- `docs/v1-audit/03a-auth-and-permissions.md`  
+- `docs/v1-audit/03b-module-manifest-system.md`  
+- `docs/v1-audit/03c-branding-and-theming.md`  
+- `docs/v1-audit/03d-chat-core.md`  
+- `docs/v1-audit/03e-kb-engine.md`  
+- `docs/v1-audit/03f-db-client-server-patterns.md`  
+- `docs/v1-audit/04-app-audit-platform.md`  
+- `docs/v1-audit/04-app-audit-chat.md`  
+- `docs/v1-audit/04-app-audit-kb-studio.md`  
+- `docs/v1-audit/05-delete-list-with-reasons.md`  
+- `docs/v1-audit/06-prd-input-summary.md`  
+- `docs/v1-audit/07-multi-tenancy-clean-port-plan.md`
+
+---
+
+## Appendix A: Complete Route Surface Inventory (apps/platform)
+
+```
+apps/platform/src/app/(dashboard)/modules/upload/assessment/page.jsx
+apps/platform/src/app/(dashboard)/modules/upload/assessment/page.tsx
+apps/platform/src/app/[...catchall]/page.tsx
+apps/platform/src/app/admin/account/notifications/page.tsx
+apps/platform/src/app/admin/account/page.tsx
+apps/platform/src/app/admin/account/password/page.jsx
+apps/platform/src/app/admin/account/password/page.tsx
+apps/platform/src/app/admin/account/profile/page.jsx
+apps/platform/src/app/admin/account/profile/page.tsx
+apps/platform/src/app/admin/agencies/[agencyId]/billing/page.tsx
+apps/platform/src/app/admin/agencies/[agencyId]/branding/page.jsx
+apps/platform/src/app/admin/agencies/[agencyId]/branding/page.tsx
+apps/platform/src/app/admin/agencies/[agencyId]/page.tsx
+apps/platform/src/app/admin/agencies/page.tsx
+apps/platform/src/app/admin/agency/branding/page.jsx
+apps/platform/src/app/admin/agency/branding/page.tsx
+apps/platform/src/app/admin/billing/configuration/page.jsx
+apps/platform/src/app/admin/billing/configuration/page.tsx
+apps/platform/src/app/admin/billing/invoices/page.jsx
+apps/platform/src/app/admin/billing/invoices/page.tsx
+apps/platform/src/app/admin/billing/page.jsx
+apps/platform/src/app/admin/billing/page.tsx
+apps/platform/src/app/admin/billing/payments/page.jsx
+apps/platform/src/app/admin/billing/payments/page.tsx
+apps/platform/src/app/admin/billing/subscriptions/page.jsx
+apps/platform/src/app/admin/billing/subscriptions/page.tsx
+apps/platform/src/app/admin/branding/page.jsx
+apps/platform/src/app/admin/business-info/page.jsx
+apps/platform/src/app/admin/business-info/page.tsx
+apps/platform/src/app/admin/capabilities/[slug]/page.jsx
+apps/platform/src/app/admin/capabilities/[slug]/page.tsx
+apps/platform/src/app/admin/capabilities/[slug]/requirements/page.jsx
+apps/platform/src/app/admin/capabilities/[slug]/requirements/page.tsx
+apps/platform/src/app/admin/capabilities/page.jsx
+apps/platform/src/app/admin/capabilities/page.tsx
+apps/platform/src/app/admin/chat-settings/page.jsx
+apps/platform/src/app/admin/chat-settings/page.tsx
+apps/platform/src/app/admin/clients/[clientId]/page.jsx
+apps/platform/src/app/admin/clients/[clientId]/page.jsx.old
+apps/platform/src/app/admin/clients/page.jsx.old
+apps/platform/src/app/admin/clients/page.tsx
+apps/platform/src/app/admin/dashboard-settings/page.jsx
+apps/platform/src/app/admin/dashboard-settings/page.tsx
+apps/platform/src/app/admin/dashboard/page.jsx
+apps/platform/src/app/admin/dashboard/page.tsx
+apps/platform/src/app/admin/email-settings/page.jsx
+apps/platform/src/app/admin/email-settings/page.tsx
+apps/platform/src/app/admin/embed/page.jsx
+apps/platform/src/app/admin/embed/page.tsx
+apps/platform/src/app/admin/integrations/page.jsx
+apps/platform/src/app/admin/integrations/page.tsx
+apps/platform/src/app/admin/knowledge-base/page.jsx
+apps/platform/src/app/admin/knowledge-base/page.tsx
+apps/platform/src/app/admin/layout.jsx
+apps/platform/src/app/admin/layout.tsx
+apps/platform/src/app/admin/leads/page.jsx
+apps/platform/src/app/admin/live-sessions/page.jsx
+apps/platform/src/app/admin/page.jsx
+apps/platform/src/app/admin/page.jsx.old
+apps/platform/src/app/admin/page.tsx
+apps/platform/src/app/admin/platform/apps/page.jsx
+apps/platform/src/app/admin/platform/branding/page.jsx
+apps/platform/src/app/admin/platform/capabilities/page.jsx
+apps/platform/src/app/admin/platform/changelog/page.jsx
+apps/platform/src/app/admin/prompts/page.jsx
+apps/platform/src/app/admin/reporting/page.jsx
+apps/platform/src/app/admin/services/[appKey]/page.jsx
+apps/platform/src/app/admin/services/chat/history/page.jsx
+apps/platform/src/app/admin/services/chat/knowledge/page.jsx
+apps/platform/src/app/admin/services/chat/lead-capture/page.jsx
+apps/platform/src/app/admin/services/chat/prompts/page.jsx
+apps/platform/src/app/admin/services/chat/sessions/page.jsx
+apps/platform/src/app/admin/session-history/page.jsx
+apps/platform/src/app/admin/settings/api-calls/page.jsx
+apps/platform/src/app/admin/settings/api-keys/page.jsx
+apps/platform/src/app/admin/settings/apps/page.jsx
+apps/platform/src/app/admin/settings/domains/page.jsx
+apps/platform/src/app/admin/settings/domains/page.jsx.old
+apps/platform/src/app/admin/settings/embed/page.jsx
+apps/platform/src/app/admin/settings/embed/page.jsx.old
+apps/platform/src/app/admin/settings/integrations/page.jsx
+apps/platform/src/app/admin/settings/mcps/page.jsx
+apps/platform/src/app/admin/settings/page.jsx
+apps/platform/src/app/admin/settings/platform/page.jsx.old
+apps/platform/src/app/admin/settings/platform/page.tsx
+apps/platform/src/app/admin/settings/theme/page.jsx
+apps/platform/src/app/admin/settings/white-label/page.jsx.old
+apps/platform/src/app/admin/settings/white-label/page.tsx
+apps/platform/src/app/admin/sub-accounts/page.jsx
+apps/platform/src/app/admin/team/page.jsx
+apps/platform/src/app/admin/users/page.jsx
+apps/platform/src/app/api/agencies/[agencyId]/apps/route.js
+apps/platform/src/app/api/agencies/[agencyId]/branding/route.js
+apps/platform/src/app/api/agencies/[agencyId]/credentials/route.js
+apps/platform/src/app/api/agencies/[agencyId]/integrations/route.js
+apps/platform/src/app/api/agencies/[agencyId]/resend-welcome/route.js
+apps/platform/src/app/api/agencies/[agencyId]/route.js
+apps/platform/src/app/api/agencies/[agencyId]/user/route.js
+apps/platform/src/app/api/agencies/route.js
+apps/platform/src/app/api/agency/kb-jobs/[businessId]/route.js
+apps/platform/src/app/api/agency/settings/route.js
+apps/platform/src/app/api/apps/available/route.js
+apps/platform/src/app/api/auth/post-login-destination/route.js
+apps/platform/src/app/api/billing/configuration/route.js
+apps/platform/src/app/api/branding/generate-from-website/route.js
+apps/platform/src/app/api/business-settings/route.js
+apps/platform/src/app/api/businesses/[businessId]/apps/route.js
+apps/platform/src/app/api/businesses/[businessId]/branding/route.js
+apps/platform/src/app/api/businesses/[businessId]/connectors/[toolkit]/connect/route.js
+apps/platform/src/app/api/businesses/[businessId]/connectors/[toolkit]/disconnect/route.js
+apps/platform/src/app/api/businesses/[businessId]/connectors/[toolkit]/route.js
+apps/platform/src/app/api/businesses/[businessId]/connectors/route.js
+apps/platform/src/app/api/businesses/[businessId]/domains/route.js
+apps/platform/src/app/api/businesses/[businessId]/kb-onboarding/route.js
+apps/platform/src/app/api/businesses/[businessId]/lead-capture/route.js
+apps/platform/src/app/api/businesses/[businessId]/route.js
+apps/platform/src/app/api/businesses/route.js
+apps/platform/src/app/api/capabilities/[id]/install/route.js
+apps/platform/src/app/api/capabilities/[id]/requirements/route.js
+apps/platform/src/app/api/capabilities/[id]/route.js
+apps/platform/src/app/api/capabilities/categories/route.js
+apps/platform/src/app/api/capabilities/import/route.js
+apps/platform/src/app/api/capabilities/n8n-templates/route.js
+apps/platform/src/app/api/capabilities/requirements/route.js
+apps/platform/src/app/api/capabilities/route.js
+apps/platform/src/app/api/chat/route.js
+apps/platform/src/app/api/connections/[app]/connect/route.js
+apps/platform/src/app/api/connections/callback/route.js
+apps/platform/src/app/api/connections/route.js
+apps/platform/src/app/api/conversations/route.js
+apps/platform/src/app/api/dashboard/overview/route.js
+apps/platform/src/app/api/dashboard/stats/route.js
+apps/platform/src/app/api/email/route.js
+apps/platform/src/app/api/health/route.js
+apps/platform/src/app/api/integrations/composio/callback/route.js
+apps/platform/src/app/api/kb-jobs/[id]/restore/route.js
+apps/platform/src/app/api/kb-jobs/[id]/route.js
+apps/platform/src/app/api/kb-jobs/process/route.js
+apps/platform/src/app/api/kb-jobs/route.js
+apps/platform/src/app/api/knowledge-base/route.js
+apps/platform/src/app/api/leads/route.js
+apps/platform/src/app/api/onboarding/complete/route.js
+apps/platform/src/app/api/onboarding/context/route.js
+apps/platform/src/app/api/plasmic/render-data/route.ts
+apps/platform/src/app/api/plasmic/studio-link/route.ts
+apps/platform/src/app/api/platform/apps/[appKey]/route.js
+apps/platform/src/app/api/platform/apps/import/route.js
+apps/platform/src/app/api/platform/apps/route.js
+apps/platform/src/app/api/sessions/route.js
+apps/platform/src/app/api/settings/route.js
+apps/platform/src/app/api/test-connection/route.js
+apps/platform/src/app/api/themes/route.js
+apps/platform/src/app/api/upload-documents/route.js
+apps/platform/src/app/api/upload/route.js
+apps/platform/src/app/api/users/route.js
+apps/platform/src/app/api/verify-domain/route.js
+apps/platform/src/app/api/webhook/route.js
+apps/platform/src/app/auth/callback/route.js
+apps/platform/src/app/auth/confirm/route.js
+apps/platform/src/app/chat/[accountId]/page.tsx
+apps/platform/src/app/chat/layout.tsx
+apps/platform/src/app/chat/page.tsx
+apps/platform/src/app/layout.tsx
+apps/platform/src/app/login/page.tsx
+apps/platform/src/app/onboarding/page.tsx
+apps/platform/src/app/page.tsx
+apps/platform/src/app/plasmic-host/page.tsx
+apps/platform/src/app/secure-login/page.tsx
+apps/platform/src/app/setup-account/page.tsx
+```
+
+## Appendix B: Complete Route Surface Inventory (apps/chat)
+
+```
+apps/chat/src/app/[accountId]/layout.jsx
+apps/chat/src/app/[accountId]/page.jsx
+apps/chat/src/app/api/business-settings/route.js
+apps/chat/src/app/api/chat/route.js
+apps/chat/src/app/api/conversations/route.js
+apps/chat/src/app/api/email/route.js
+apps/chat/src/app/api/leads/route.js
+apps/chat/src/app/api/webhook/route.js
+apps/chat/src/app/embed/page.jsx
+apps/chat/src/app/layout.jsx
+apps/chat/src/app/page.jsx
+```
+
+## Appendix C: Complete Route Surface Inventory (apps/kb-studio)
+
+```
+apps/kb-studio/src/app/layout.jsx
+apps/kb-studio/src/app/page.jsx
+apps/kb-studio/src/app/projects/page.jsx
+apps/kb-studio/src/app/publish/page.jsx
+apps/kb-studio/src/app/review/page.jsx
+```
+
+## Appendix D: Package and Service Capability Layers
+
+### D1 packages/\*
+
+```
+packages/app-sdk/package.json
+packages/auth/package.json
+packages/branding/package.json
+packages/chat-core/package.json
+packages/config/package.json
+packages/contracts/package.json
+packages/db/package.json
+packages/kb-engine/package.json
+packages/permissions/package.json
+packages/ui/package.json
+```
+
+### D2 sdk/packages/\*
+
+```
+sdk/packages/cli/package.json
+sdk/packages/client/package.json
+sdk/packages/manifest/package.json
+sdk/packages/schemas/package.json
+sdk/packages/ui/package.json
+```
+
+### D3 services/\*
+
+```
+services/worker/package.json
+services/worker/src/index.js
+services/worker/src/run-job.js
+```
+
+## Appendix E: Migration Capability Surface (supabase/migrations)
+
+```
+supabase/migrations/001_multi_tenant_schema.sql
+supabase/migrations/002_rls_policies.sql
+supabase/migrations/003_kb_onboarding.sql
+supabase/migrations/004_agency_enhancements.sql
+supabase/migrations/004_agency_kb_onboarding_control.sql
+supabase/migrations/005_add_performance_indexes.sql
+supabase/migrations/006_fix_rls_recursion.sql
+supabase/migrations/006_fix_rls_recursion_v2.sql
+supabase/migrations/007_agency_dashboard_settings.sql
+supabase/migrations/008_app_platform_catalog.sql
+supabase/migrations/009_business_dashboard_customization.sql
+supabase/migrations/010_business_runtime_fields.sql
+supabase/migrations/011_agency_profile_and_invite_fields.sql
+supabase/migrations/012_production_schema_repairs.sql
+supabase/migrations/013_fix_knowledge_base_conflict_constraint.sql
+supabase/migrations/014_business_onboarding_state.sql
+supabase/migrations/015_public_chat_runtime_restore.sql
+supabase/migrations/016_lead_capture_routing.sql
+supabase/migrations/017_http_request_integrations.sql
+supabase/migrations/018_business_connector_settings.sql
+supabase/migrations/019_stripe_billing_configuration.sql
+supabase/migrations/20260311120000_capabilities_system.sql
+supabase/migrations/20260311120001_capabilities_rls.sql
+supabase/migrations/20260311120002_add_composio_entity_id.sql
+supabase/migrations/20260315120000_platform_app_imports.sql
+supabase/migrations/20260315180025_create_normalization_reports.sql
+supabase/migrations/999_full_deploy.sql
+```

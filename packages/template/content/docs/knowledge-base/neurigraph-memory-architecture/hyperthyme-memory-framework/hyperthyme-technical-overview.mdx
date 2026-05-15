@@ -1,0 +1,676 @@
+---
+title: "Neurigraph Hyperthyme Artificial Memory Framework"
+description: "Technical Overview for AI Practitioners By Oxford Pierpont Abstract Hyperthyme is a persistent memory architecture for large language models that addresses t..."
+---
+<Info>
+Normalized for Mintlify from `knowledge-base/neurigraph-memory-architecture/hyperthyme-memory-framework/hyperthyme-technical-overview.mdx`.
+</Info>
+# Neurigraph Hyperthyme Artificial Memory Framework
+
+## Technical Overview for AI Practitioners
+
+**By Oxford Pierpont**
+
+---
+
+## Abstract
+
+Hyperthyme is a persistent memory architecture for large language models that addresses the fundamental limitations of context windows and session-based interactions. Unlike existing approaches that rely on summarization and extraction (which inevitably lose information), Hyperthyme implements a complete archival system with intelligent retrieval—ensuring that nothing discussed is ever truly forgotten.
+
+The architecture combines three complementary systems: a Knowledge Graph for structural navigation, a RAG database for semantic matching, and complete conversation archives (Recall Files) as the source of truth. This layered approach enables efficient retrieval from arbitrarily large memory stores while preserving verbatim access to original content.
+
+This document outlines the architectural philosophy, technical implementation, and differentiation from existing memory solutions.
+
+---
+
+## The Problem Space
+
+### Context Windows Are a Bandaid
+
+The industry's response to memory limitations has been to expand context windows:
+
+| Model | Context Window | Year |
+| :---- | :---- | :---- |
+| GPT-3 | 4K tokens | 2020 |
+| GPT-3.5 | 16K tokens | 2023 |
+| GPT-4 | 128K tokens | 2023 |
+| Claude 3 | 200K tokens | 2024 |
+| Gemini 1.5 | 1M+ tokens | 2024 |
+
+This trajectory treats context as an input buffer rather than addressing the fundamental issue: LLMs have no persistent state across sessions. A 1M token context window doesn't help when the conversation ended yesterday.
+
+### Current Memory Approaches Fall Short
+
+**Summarization-Based Memory (Mem0, MemGPT, etc.)**
+
+These systems extract "memories" from conversations—facts, preferences, decisions—and store them in compressed form.
+
+Limitations:
+
+- Summarization is lossy by definition  
+- The summarizer decides what's important (often wrong)  
+- Original context is discarded  
+- No access to exact wording, code blocks, or nuanced discussions  
+- Conflicts arise when new information contradicts old summaries
+
+**Vector-Only RAG**
+
+Embedding all content and retrieving by similarity.
+
+Limitations:
+
+- No structural understanding of relationships between topics  
+- Poor performance on exact-match queries  
+- Retrieval noise increases with corpus size  
+- No distinction between routine and significant content  
+- Expensive to search at scale without pre-filtering
+
+**Session Concatenation**
+
+Simply appending previous sessions to context.
+
+Limitations:
+
+- Quickly exceeds context limits  
+- Wastes tokens on irrelevant history  
+- No intelligent selection of what to include  
+- Scales terribly
+
+### The Real Requirement
+
+Users don't want AI that "kind of remembers" or "has a general sense." They want to say:
+
+- "What exact code did you give me for the authentication flow?"  
+- "When did I decide to pivot the product strategy, and what was my reasoning?"  
+- "Find that document we created about the Q3 roadmap."
+
+This requires:
+
+1. **Complete preservation** — Nothing is lost to summarization  
+2. **Intelligent retrieval** — Finding the right memory without searching everything  
+3. **Structural organization** — Understanding relationships between topics  
+4. **Temporal awareness** — Knowing when things happened and what supersedes what  
+5. **Distinction of significance** — Separating defining moments from routine exchanges
+
+---
+
+## Hyperthyme Architecture
+
+### Design Philosophy
+
+**Summaries are indexes, not storage.**
+
+Hyperthyme inverts the typical approach. Instead of storing compressed memories with optional links to sources, we store complete archives with compressed indexes for retrieval.
+
+```
+Traditional Approach:
+    Conversation → Summarize → Store Summary → (maybe link to source)
+                                    ↓
+                              Summary is the memory
+
+Hyperthyme Approach:
+    Conversation → Store Complete → Generate Index (summary + keywords)
+                        ↓                    ↓
+                   Archive is the         Index enables
+                   source of truth        fast retrieval
+```
+
+**Navigate first, search second.**
+
+At scale (millions of memories), even efficient vector search becomes slow and noisy. Hyperthyme pre-filters using structural navigation before applying semantic search.
+
+**Preserve everything, retrieve selectively.**
+
+Storage is cheap. Tokens are expensive. Store complete transcripts; inject only what's relevant to the current query.
+
+### System Components
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                         HYPERTHYME SYSTEM                            │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  ┌─────────────────────────────────────────────────────────────┐    │
+│  │                    DEFINING MEMORY INDEX                     │    │
+│  │                                                             │    │
+│  │  Always-warm index of decisions, milestones, events         │    │
+│  │  Detected via linguistic triggers + user confirmation       │    │
+│  │  Links to source Recall Files for full context              │    │
+│  └─────────────────────────────────────────────────────────────┘    │
+│                              │                                      │
+│                              ▼                                      │
+│  ┌─────────────────────────────────────────────────────────────┐    │
+│  │                     KNOWLEDGE GRAPH                          │    │
+│  │                                                             │    │
+│  │  Nodes: Projects, topics, concepts, entities                │    │
+│  │  Edges: Relationships (contains, relates_to, discussed_in)  │    │
+│  │  Function: Structural navigation, scope reduction           │    │
+│  └─────────────────────────────────────────────────────────────┘    │
+│                              │                                      │
+│                              ▼                                      │
+│  ┌─────────────────────────────────────────────────────────────┐    │
+│  │                      RAG DATABASE                            │    │
+│  │                                                             │    │
+│  │  Embeddings of Recall File summaries only (not transcripts) │    │
+│  │  Scoped search within KG-selected nodes                     │    │
+│  │  Function: Semantic matching when keywords fail              │    │
+│  └─────────────────────────────────────────────────────────────┘    │
+│                              │                                      │
+│                              ▼                                      │
+│  ┌─────────────────────────────────────────────────────────────┐    │
+│  │                      RECALL FILES                            │    │
+│  │                                                             │    │
+│  │  Complete conversation archives (50K token segments)        │    │
+│  │  Structure: summary.md + keywords.txt + transcript.md       │    │
+│  │             + artifacts.zip                                 │    │
+│  │  Function: Source of truth, verbatim retrieval              │    │
+│  └─────────────────────────────────────────────────────────────┘    │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+### Recall Files: The Source of Truth
+
+A Recall File is created every \~50,000 tokens, containing:
+
+| Component | Content | Purpose |
+| :---- | :---- | :---- |
+| `summary.md` | AI-generated summary (\~500-1000 tokens) | Fast semantic matching |
+| `keywords.txt` | Extracted entities, terms, names | Exact-match retrieval |
+| `transcript.md` | Complete verbatim conversation | Source of truth |
+| `artifacts.zip` | Files created during conversation | Associated deliverables |
+
+**Why 50K tokens?**
+
+- Fits within retrieval budget for most models  
+- Large enough to contain coherent topic coverage  
+- Small enough for granular retrieval  
+- Represents \~1-3 substantial conversations
+
+**Folder Naming Convention:**
+
+```
+{primary-topic}-{secondary-topic}-{YYYY-MM-DD}/
+```
+
+This enables both programmatic parsing and human browsability.
+
+### Knowledge Graph Structure
+
+The Knowledge Graph provides hierarchical organization of user context:
+
+```
+                    [User Root]
+                         │
+         ┌───────────────┼───────────────┐
+         │               │               │
+    [Project A]     [Project B]     [Personal]
+         │               │               │
+    ┌────┴────┐     ┌────┴────┐     ┌────┴────┐
+    │         │     │         │     │         │
+ [Topic]  [Topic] [Topic]  [Topic] [Topic]  [Topic]
+    │
+    └──► [Recall File 1]
+    └──► [Recall File 2]
+    └──► [Recall File 3]
+```
+
+**Node Types:**
+
+- Project: Major work streams  
+- Topic: Subjects within projects  
+- Concept: Abstract ideas that span projects  
+- Entity: People, companies, products mentioned  
+- Recall File: Leaf nodes linking to archives
+
+**Edge Types:**
+
+- `contains`: Hierarchical relationship  
+- `relates_to`: Semantic connection  
+- `discussed_in`: Links concepts to Recall Files  
+- `supersedes`: Temporal versioning (newer replaces older)
+
+**Graph Operations:**
+
+```py
+# Scope reduction via traversal
+def get_relevant_recall_files(query_topics: list) -> list:
+    nodes = []
+    for topic in query_topics:
+        node = graph.find_node(topic)
+        if node:
+            nodes.extend(graph.get_neighborhood(node, depth=2))
+    
+    recall_files = []
+    for node in nodes:
+        recall_files.extend(graph.get_recall_files(node))
+    
+    return deduplicate(recall_files)
+```
+
+### RAG Layer: Semantic Search Within Scope
+
+The RAG database contains embeddings of **summaries only**, not full transcripts. This keeps the vector space manageable and search performant.
+
+**Search is always scoped:**
+
+```py
+def semantic_search(query: str, user_id: str, scope: list = None) -> list:
+    query_embedding = embed(query)
+    
+    if scope:
+        # Only search within KG-selected nodes
+        candidate_ids = [rf.id for rf in scope]
+        results = vector_db.search(
+            query_embedding, 
+            filter={"id": {"$in": candidate_ids}}
+        )
+    else:
+        # Fallback: search all user's memories
+        results = vector_db.search(
+            query_embedding,
+            filter={"user_id": user_id}
+        )
+    
+    return results
+```
+
+### Defining Memories: The Milestone Index
+
+Defining Memories are a separate, always-warm index of significant moments:
+
+**Detection Triggers:**
+
+| Type | Linguistic Patterns |
+| :---- | :---- |
+| Decision | "I've decided", "We're going with", "Final decision" |
+| Milestone | "We launched", "It's done", "Shipped" |
+| Event | "I'm starting", "Got the job", "Closed the deal" |
+| Turning Point | "This changes everything", "I realized", "From now on" |
+
+**Structure:**
+
+```py
+@dataclass
+class DefiningMemory:
+    id: str
+    type: Literal["decision", "milestone", "event", "turning_point"]
+    date: datetime
+    summary: str
+    context: str  # Surrounding discussion
+    source_recall_file: str
+    related_nodes: list[str]
+    confidence: float  # Detection confidence
+```
+
+**Use Cases:**
+
+- "When did I decide X?" → Direct lookup, instant response  
+- "What major things happened this quarter?" → Timeline query  
+- "Show me all my product decisions" → Filtered query by type
+
+---
+
+## Retrieval Cascade
+
+Queries flow through a multi-stage retrieval cascade, with each stage narrowing the search space:
+
+```
+Query: "What was the code for handling payment webhooks?"
+                              │
+                              ▼
+┌──────────────────────────────────────────────────────────────────┐
+│ STAGE 1: Defining Memory Check                                   │
+│                                                                  │
+│ Is this about a decision/milestone? Check defining memory index. │
+│ Result: No match (this is a content retrieval, not a decision)   │
+└──────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌──────────────────────────────────────────────────────────────────┐
+│ STAGE 2: Knowledge Graph Navigation                              │
+│                                                                  │
+│ Identify topics: "payment", "webhooks", "code"                   │
+│ Find nodes: [Payments] → [Stripe Integration] → [Webhooks]      │
+│ Get linked Recall Files: 12 candidates                          │
+└──────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌──────────────────────────────────────────────────────────────────┐
+│ STAGE 3: Keyword Match                                           │
+│                                                                  │
+│ Search keywords.txt in 12 candidates                            │
+│ Terms: "webhook", "stripe", "payment", "handler"                │
+│ Result: 4 Recall Files have strong keyword overlap              │
+└──────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌──────────────────────────────────────────────────────────────────┐
+│ STAGE 4: Semantic Ranking (RAG)                                  │
+│                                                                  │
+│ Embed query, compare to 4 candidate summaries                   │
+│ Rank by cosine similarity                                       │
+│ Result: Top match = funnelchat-stripe-webhooks-2025-01-03       │
+└──────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌──────────────────────────────────────────────────────────────────┐
+│ STAGE 5: Transcript Retrieval                                    │
+│                                                                  │
+│ Load transcript.md from top-ranked Recall File                  │
+│ Extract relevant section containing webhook code                │
+│ Result: Exact code block ready for injection                    │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+**Complexity Analysis:**
+
+| Stage | Corpus Size | Operation | Time Complexity |
+| :---- | :---- | :---- | :---- |
+| Defining Memory | Small (100s) | Index lookup | O(1) |
+| Knowledge Graph | Medium (1000s nodes) | Graph traversal | O(log n) |
+| Keyword Match | Reduced (10s-100s) | String matching | O(k × m) |
+| RAG | Reduced (10s) | Vector similarity | O(1) with index |
+| Transcript Load | Single file | File read | O(1) |
+
+Even with millions of total Recall Files, retrieval remains fast because each stage dramatically reduces the candidate set.
+
+---
+
+## Storage Tiering
+
+### Hot / Warm / Cold Model
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  HOT                                                            │
+│                                                                 │
+│  • Current session's Recall File                                │
+│  • Actively being written to                                    │
+│  • All components in memory                                     │
+│  • Latency: <10ms                                               │
+├─────────────────────────────────────────────────────────────────┤
+│  WARM                                                           │
+│                                                                 │
+│  • Accessed in last 7 days                                      │
+│  • Same KG neighborhood as current topic                        │
+│  • Transcripts cached, artifacts uncompressed                   │
+│  • Latency: <100ms                                              │
+├─────────────────────────────────────────────────────────────────┤
+│  COLD                                                           │
+│                                                                 │
+│  • Not accessed in 7+ days                                      │
+│  • Artifacts compressed                                         │
+│  • Transcripts on disk (not cached)                             │
+│  • Keywords and summaries still indexed                         │
+│  • Latency: <1s                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**Warming Trigger:**
+
+When a KG node is accessed, all Recall Files in that node's neighborhood are warmed:
+
+```py
+async def warm_neighborhood(node_id: str):
+    neighborhood = knowledge_graph.get_neighborhood(node_id, depth=2)
+    
+    for node in neighborhood:
+        for recall_file in node.recall_files:
+            if recall_file.state == "cold":
+                await asyncio.gather(
+                    recall_file.decompress_artifacts(),
+                    recall_file.cache_transcript(),
+                )
+                recall_file.state = "warm"
+```
+
+**Cold Storage Transition:**
+
+Background job runs nightly:
+
+```py
+async def cold_storage_job():
+    cutoff = datetime.now() - timedelta(days=7)
+    
+    warm_files = RecallFile.query(
+        state="warm",
+        last_accessed__lt=cutoff
+    )
+    
+    for recall_file in warm_files:
+        await recall_file.compress_artifacts()
+        await recall_file.evict_transcript_cache()
+        recall_file.state = "cold"
+        await recall_file.save()
+```
+
+---
+
+## Model Agnosticism
+
+Hyperthyme operates as middleware, independent of the underlying LLM:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                       APPLICATION                                │
+└─────────────────────────────┬───────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                    HYPERTHYME MIDDLEWARE                         │
+│                                                                 │
+│  • Intercepts all user messages                                 │
+│  • Executes retrieval cascade                                   │
+│  • Injects relevant memories into prompt                        │
+│  • Logs response to active Recall File                          │
+│  • Updates Knowledge Graph                                      │
+│  • Detects and stores Defining Memories                         │
+└─────────────────────────────┬───────────────────────────────────┘
+                              │
+            ┌─────────────────┼─────────────────┐
+            │                 │                 │
+            ▼                 ▼                 ▼
+       ┌─────────┐       ┌─────────┐       ┌─────────┐
+       │ Claude  │       │   GPT   │       │ Gemini  │
+       └─────────┘       └─────────┘       └─────────┘
+```
+
+**API Contract:**
+
+```py
+class HyperthymeClient:
+    def chat(
+        self,
+        message: str,
+        user_id: str,
+        model: str = "claude-sonnet",
+        include_memories: bool = True,
+        memory_token_budget: int = 4000,
+    ) -> Response:
+        """
+        Process a message with memory-augmented context.
+        
+        Args:
+            message: User's input
+            user_id: Unique user identifier
+            model: Target LLM (claude-*, gpt-*, gemini-*, etc.)
+            include_memories: Whether to retrieve and inject memories
+            memory_token_budget: Max tokens to allocate for memory context
+            
+        Returns:
+            Response with assistant message and metadata
+        """
+        pass
+```
+
+**MCP Integration:**
+
+Hyperthyme exposes tools via Model Context Protocol:
+
+```py
+@mcp_server.tool()
+async def search_memory(
+    query: str,
+    user_id: str,
+    max_results: int = 5
+) -> list[MemoryResult]:
+    """Search user's conversation history."""
+    pass
+
+@mcp_server.tool()
+async def get_defining_memories(
+    user_id: str,
+    type_filter: str = None,
+    since: datetime = None
+) -> list[DefiningMemory]:
+    """Retrieve user's decisions, milestones, and events."""
+    pass
+
+@mcp_server.tool()
+async def get_recall_file(
+    recall_file_id: str,
+    user_id: str,
+    component: str = "transcript"
+) -> str:
+    """Retrieve specific Recall File content."""
+    pass
+```
+
+---
+
+## Comparison with Existing Solutions
+
+| Feature | Mem0 | MemGPT | Zep/Graphiti | Hyperthyme |
+| :---- | :---- | :---- | :---- | :---- |
+| Storage approach | Extracted facts | Tiered summarization | Graph \+ extraction | Complete archives |
+| Source of truth | Summaries | Compressed history | Knowledge graph | Verbatim transcripts |
+| Verbatim retrieval | No | Partial | No | Yes |
+| Knowledge graph | No | No | Yes | Yes |
+| Semantic search | Yes | Yes | Yes | Yes |
+| Keyword search | Limited | No | No | Yes |
+| Defining memories | No | No | Implicit | Explicit index |
+| Model agnostic | Yes | No | Yes | Yes |
+| File/artifact storage | No | No | No | Yes |
+| Storage tiering | No | Yes | No | Yes (Hot/Warm/Cold) |
+
+**Key Differentiator:**
+
+Hyperthyme is the only system that guarantees nothing is lost. Other systems trade fidelity for efficiency. We achieve efficiency through intelligent indexing while maintaining complete fidelity in storage.
+
+---
+
+## Implementation Considerations
+
+### Embedding Strategy
+
+Embed summaries, not transcripts:
+
+- Keeps vector space manageable  
+- Summaries are semantically dense  
+- Full transcripts retrieved on-demand
+
+### Token Budget Management
+
+When injecting memories, respect model limits:
+
+```py
+def build_memory_context(
+    memories: list[Memory],
+    budget: int,
+    model: str
+) -> str:
+    context_parts = []
+    used_tokens = 0
+    
+    for memory in memories:
+        memory_text = format_memory(memory)
+        memory_tokens = count_tokens(memory_text, model)
+        
+        if used_tokens + memory_tokens > budget:
+            break
+            
+        context_parts.append(memory_text)
+        used_tokens += memory_tokens
+    
+    return "\n\n".join(context_parts)
+```
+
+### Concurrent Access
+
+Multiple sessions may access the same user's memory:
+
+- Recall File writes use append-only logs  
+- Knowledge Graph updates use optimistic locking  
+- Vector DB supports concurrent reads
+
+### Privacy and Security
+
+- All user data is scoped by user\_id  
+- No cross-user data leakage  
+- Encryption at rest for Recall Files  
+- Access tokens required for all operations
+
+---
+
+## Performance Targets
+
+| Operation | Target Latency | Notes |
+| :---- | :---- | :---- |
+| Memory search (hot) | \&lt;50ms | Cached, in-memory |
+| Memory search (warm) | \&lt;200ms | Disk read for transcript |
+| Memory search (cold) | \&lt;1s | Decompression \+ read |
+| Recall File creation | \&lt;500ms | Async summary generation |
+| Knowledge Graph update | \&lt;100ms | Incremental |
+| Vector embedding | \&lt;200ms | Depends on embedding model |
+
+### Scaling Considerations
+
+| Corpus Size | Architecture |
+| :---- | :---- |
+| \&lt;10K Recall Files | Single PostgreSQL instance |
+| 10K-100K | PostgreSQL \+ dedicated vector DB |
+| 100K-1M | Sharded PostgreSQL \+ vector DB cluster |
+| \&gt;1M | Distributed architecture with regional caching |
+
+---
+
+## Future Directions
+
+### Multi-User Memory Sharing
+
+Teams could share memory contexts while maintaining individual privacy boundaries.
+
+### Memory Compression Over Time
+
+Old memories could be progressively summarized while maintaining archive links.
+
+### Proactive Memory
+
+System suggests relevant memories before being asked.
+
+### Cross-Application Memory
+
+Single memory layer serving multiple AI applications (chat, coding assistant, writing tool).
+
+---
+
+## Conclusion
+
+Hyperthyme addresses the memory problem not by trying to make AI "smarter" about what to remember, but by ensuring nothing is forgotten and retrieval is intelligent. The architecture recognizes that:
+
+1. Storage is cheap; losing information is expensive  
+2. Summarization is inherently lossy  
+3. Users want verbatim access to past content  
+4. Intelligent indexing beats brute-force search  
+5. Structural organization enables efficient navigation at scale
+
+By combining complete archival storage with a multi-layer retrieval system (Knowledge Graph → Keywords → RAG → Transcript), Hyperthyme provides the memory infrastructure that current LLMs lack—without sacrificing the fidelity that users actually need.
+
+---
+
+**Neurigraph Hyperthyme Artificial Memory Framework**  
+*By Oxford Pierpont*
+
+For technical inquiries: \[To be added\]  
+Repository: \[To be added\]

@@ -1,0 +1,120 @@
+---
+title: "Conversation tools"
+description: "Contracts for navigation, cleanup, split-and-route, context windows, tutorials, and other interaction-layer aiConnectedOS features."
+---
+## Contract status
+
+`Derived implementation contract`
+
+These features are documented as product and UX specs rather than fixed route contracts, but they define clear service responsibilities for the conversation layer.
+
+## Source documents
+
+- [cognition console UI design](/docs/knowledge-base/aiconnected-os/aiconnected-os-8-cognition-console-ui-design)
+- [collaborative personas planning](/docs/knowledge-base/aiconnected-os/aiconnected-os-9-collaborative-personas-planning)
+- [computer use for personas](/docs/knowledge-base/aiconnected-os/aiconnected-os-10-computer-use-for-personas)
+- [chat cleanup system](/docs/knowledge-base/aiconnected-os/aiconnected-os-11-chat-cleanup-system)
+- [persona skill slots](/docs/knowledge-base/aiconnected-os/aiconnected-os-12-persona-skill-slots)
+- [adaptive UI tutorials](/docs/knowledge-base/aiconnected-os/aiconnected-os-13-adaptive-ui-tutorials)
+- [in-chat navigation](/docs/knowledge-base/aiconnected-os/aiconnected-os-17-in-chat-navigation)
+- [context windows in AI](/docs/knowledge-base/aiconnected-os/aiconnected-os-18-context-windows-in-ai)
+- [fluid UI architecture](/docs/knowledge-base/aiconnected-os/aiconnected-os-19-fluid-ui-architecture)
+- [conversation split and route](/docs/knowledge-base/aiconnected-os/aiconnected-os-conversation-split-and-route)
+- [forget this feature](/docs/knowledge-base/aiconnected-os/aiconnected-os-forget-this-feature)
+- [persona meeting mode](/docs/knowledge-base/aiconnected-os/aiconnected-os-persona-meeting-mode)
+
+## Core interaction services
+
+### Cognition console
+
+Required capabilities:
+
+- Display multi-layer reasoning or context traces
+- Surface persona state and tool activity
+- Support safe operator oversight
+
+### Collaborative personas
+
+Required capabilities:
+
+- Run multi-persona collaboration on the same thread or task
+- Preserve authorship and persona boundaries
+- Support explicit invocation and shared outcome capture
+
+### Computer use
+
+Required capabilities:
+
+- Represent browser or computer-use actions as governed tool calls
+- Log actions for audit and replay
+- Route approvals when actions exceed safe automation limits
+
+### Chat cleanup
+
+Required capabilities:
+
+- Collapse or archive stale context
+- Preserve important references and pinned material
+- Improve future retrieval without losing meaningful history
+
+### Skill slots
+
+Required capabilities:
+
+- Attach skill bundles to personas
+- Expose available skills by role or context
+- Control enablement per persona and instance
+
+### Adaptive tutorials
+
+Required capabilities:
+
+- Detect user context and show relevant learning flows
+- Track progress and dismiss state
+
+### In-chat navigation
+
+Required capabilities:
+
+- Jump to prior topics, references, and workspace objects from the chat surface
+- Preserve conversation map metadata
+
+### Context windows
+
+Required capabilities:
+
+- Rank and inject only the most relevant memory and workspace context
+- Respect token budgets and persona priorities
+
+### Split and route
+
+Required capabilities:
+
+- Detect when a conversation should branch into separate threads or tasks
+- Route the branch to the right persona, module, or workspace destination
+
+### Forget
+
+Required capabilities:
+
+- Remove or suppress selected memories or references in a governed way
+- Keep audit and policy metadata around deletion or redaction decisions
+
+### Meeting mode
+
+Required capabilities:
+
+- Support multi-party, persona-aware operating mode
+- Persist meeting artifacts, decisions, and action items
+
+## Shared design requirements
+
+- Everything must be auditable.
+- Persona authorship must remain visible.
+- High-risk actions need explicit governance.
+- Cleanup and forgetting must never silently destroy critical records.
+- Context injection should be deliberate and ranked, not indiscriminate.
+
+## Implementation note
+
+These features form the OS interaction layer. Treat them as orchestration services on top of personas, memory, and workspace objects rather than as isolated one-off UI features.

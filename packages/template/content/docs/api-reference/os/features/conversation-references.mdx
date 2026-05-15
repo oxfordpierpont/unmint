@@ -1,0 +1,35 @@
+---
+title: "Conversation references"
+description: "Feature-level API contract for saving, retrieving, and linking conversation reference anchors in aiConnectedOS."
+---
+## Contract status
+
+`Derived implementation contract`
+
+## Source document
+
+- [Conversation references](/docs/knowledge-base/aiconnected-os/aiconnected-os-6-conversation-reference-feature)
+
+## Feature purpose
+
+Defines lightweight reference anchors for preserving and reusing meaningful parts of prior conversations.
+
+## Required operations
+
+- Create a reference from a message or conversation segment
+- Link references to tasks, docs, or spaces
+- Retrieve references by topic, source, or workspace
+- Promote references into memory or pinned state
+
+## Suggested resources
+
+- `conversation_references`
+- `reference_links`
+- `reference_tags`
+- `reference_activity`
+
+## Implementation notes
+
+- Keep this feature workspace-scoped and persona-aware where applicable.
+- Preserve authorship, timestamps, and auditability for all state changes.
+- Treat the source doc as the behavioral specification even where final route names remain open.

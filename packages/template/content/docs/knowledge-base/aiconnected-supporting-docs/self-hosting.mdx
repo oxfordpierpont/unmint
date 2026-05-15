@@ -1,0 +1,366 @@
+---
+title: "Self Hosting"
+---
+# aiConnected Platform — Self-Hosting, Billing Enforcement, Marketplace & Developer Tracks
+
+**Document Status:** New — supplements existing Billing Model and Developer Use Cases documentation  
+
+**Prepared by:** aiConnected / Oxford Pierpont Holding Corporation  
+
+**Version:** 2.0
+
+-----
+
+## 1. Overview
+
+This document establishes how aiConnected’s billing model, platform tax, and developer marketplace operate consistently across both cloud-hosted and self-hosted installations. It also defines the two formal development tracks available to the open source community.
+
+The core principle governing everything in this document:
+
+\> **There is one billing model on the entire platform. All revenue-generating transactions — without exception — flow through aiConnected’s Stripe infrastructure. This applies equally to cloud-hosted and self-hosted operators.**
+
+-----
+
+## 2. Platform Architecture — Shell, Core Modules, and Standard Modules
+
+### 2.1 The Shell
+
+The aiConnected shell is the open source platform container — the environment that everything else runs inside. It is published on GitHub under the aiConnected Community License and is free to use, modify, and self-host. The shell itself has no AI capabilities on its own. It is the OS. What makes the platform functional is what runs inside it.
+
+### 2.2 Core Modules
+
+Core modules are the foundational capabilities of the aiConnected platform — voice, chat, memory, knowledge base generation, and others. They ship pre-installed with the shell, the way default software ships on a new PC. They are present and ready to use from the moment the platform is deployed.
+
+Core modules are not built into the shell itself. They are architecturally independent — separate from the shell, running inside it, but not part of it. Removing or replacing a core module does not alter the shell. The shell simply provides the environment they operate within.
+
+Core modules are open source and community-built. They live in the aiConnected GitHub repository alongside the shell. The community contributes to their development. Their code is visible and modifiable.
+
+What core modules depend on — and what cannot be self-hosted — are specific aiConnected infrastructure endpoints: model routing, cross-platform memory synchronization, the global Capability Library, telemetry verification, and billing state checks. The module code is open. The infrastructure those modules call is aiConnected’s.
+
+### 2.3 Standard Modules
+
+Standard modules are marketplace modules built by third-party developers. They are not pre-installed. Agencies and operators discover them in the aiConnected marketplace and install them on demand.
+
+Standard modules are architecturally identical to core modules — they run inside the shell, they depend on the same SDK connection points, and they are subject to the same billing and activation rules. The only practical difference is that standard modules are not included by default and must be explicitly installed and activated.
+
+### 2.4 The SDK Connection Points
+
+Both core and standard modules interact with aiConnected’s infrastructure through the aiConnected SDK. The SDK handles:
+
+- License key verification
+
+- Telemetry reporting
+
+- Usage metering for consumable billing
+
+- Authenticated calls to aiConnected-hosted API endpoints
+
+- Billing state checks that govern module activation
+
+These SDK connection points are what aiConnected controls. The module code itself may be open source and community-visible — but the infrastructure endpoints the SDK calls are aiConnected’s, and they require valid credentials to respond.
+
+-----
+
+## 3. Self-Hosting — What It Means and What It Doesn’t
+
+### 3.1 What Self-Hosting Covers
+
+A self-hosted aiConnected installation gives the operator full control over:
+
+- The shell platform and its framework
+
+- Their own server environment, compute, and deployment
+
+- Their own databases and data infrastructure
+
+- Their users’ data — which never leaves their infrastructure
+
+- Their own branding and white-label presentation
+
+Self-hosting is free. There is no fee to run the aiConnected shell.
+
+### 3.2 What Self-Hosting Does Not Change
+
+Self-hosting does not exempt an operator from:
+
+- Maintaining a valid license key
+
+- Keeping telemetry enabled as required by the aiConnected Community License
+
+- Running all revenue-generating transactions through aiConnected’s Stripe infrastructure
+
+- The platform tax on all revenue generated through the platform
+
+- Module activation payment requirements
+
+### 3.3 Why Circumvention Is Self-Defeating
+
+An operator who disables telemetry, spoofs license verification, or reroutes billing does not gain a free platform. They gain a non-functional one.
+
+Core and standard module capabilities depend on authenticated calls to aiConnected’s infrastructure endpoints. Those endpoints require a valid, active license key to respond. A disabled or spoofed license key means those endpoints return nothing. The modules stop working. The subaccounts lose access to the capabilities they depend on.
+
+The enforcement is architectural. It is not primarily a legal threat — it is a functional reality. The platform simply does not work without maintaining the required connections to aiConnected’s infrastructure.
+
+**The operator’s data stays on their servers. The capabilities that process that data require aiConnected’s infrastructure. These are not in conflict — they are by design.**
+
+-----
+
+## 4. License Keys and Telemetry
+
+### 4.1 License Keys Are Free
+
+Any operator — cloud-hosted or self-hosted — registers for aiConnected and receives a license key at no cost. No payment is required to obtain a license key. Registration is the only requirement.
+
+The license key establishes a verified installation in aiConnected’s system. It is the credential that authenticates the installation’s calls to aiConnected’s infrastructure endpoints.
+
+### 4.2 License Key Requirements
+
+As a condition of the aiConnected Community License, operators must:
+
+- Maintain an active, unmodified license key within their installation
+
+- Keep telemetry enabled at all times
+
+- Not attempt to spoof, replace, or circumvent license key verification
+
+These requirements exist because aiConnected uses telemetry and license verification to monitor platform health, verify installation legitimacy, audit usage patterns, and enforce billing state across all installations.
+
+### 4.3 Telemetry Frequency
+
+License key and telemetry checks occur frequently and automatically. They are not one-time events. The platform continuously verifies that installations remain compliant. An installation that falls out of compliance loses access to aiConnected’s infrastructure endpoints progressively — functionality degrades rather than stopping all at once, giving operators the opportunity to correct issues before full service interruption.
+
+-----
+
+## 5. Subaccount Activation and Module Pricing
+
+### 5.1 Subaccount Registration Is Free
+
+Registering a subaccount — a business client under an agency — costs nothing. The agency creates the subaccount on the platform, and it is immediately registered and accessible. No transaction is required for subaccount creation.
+
+### 5.2 Module Activation Requires Payment
+
+What requires payment is activating specific modules for a subaccount. AI-powered capabilities cost real money to run — every inference call, every voice interaction, every knowledge base query consumes compute and API resources. The floor price on module activation reflects these real operational costs.
+
+Most modules carry a floor price. Some modules may be offered free where aiConnected absorbs the underlying cost or the operational cost is negligible. The floor price is set by aiConnected for core modules and by the developer for standard modules, subject to aiConnected’s marketplace guidelines.
+
+A module that has not been paid for appears in the subaccount’s interface in a grayed-out, non-functional state. It is visible and discoverable — the subaccount can see what is available — but it cannot be used until the required payment has been processed. Once payment clears through aiConnected’s Stripe infrastructure, the module transitions to active and becomes fully functional.
+
+This activation state is enforced by the shell natively. It operates identically on cloud-hosted and self-hosted installations. A self-hosted operator cannot activate a module for a subaccount without a corresponding payment record in aiConnected’s infrastructure — and without that activation, the module remains grayed out regardless of what the operator does to the shell code.
+
+### 5.3 BYOK — Bring Your Own API Keys
+
+Self-hosted operators who supply their own API keys for capabilities that would otherwise incur aiConnected infrastructure costs are not subject to the floor price for those specific capabilities.
+
+If a self-hosted agency connects their own OpenRouter account to handle AI inference, for example, aiConnected is not paying anything to serve that usage. Charging a floor price in this scenario would be a fee on someone else’s infrastructure, which is not consistent with aiConnected’s pricing principles.
+
+**The BYOK exception applies when:**
+
+- The operator is self-hosted
+
+- The operator supplies their own API keys for the relevant capability
+
+- aiConnected incurs no infrastructure cost to serve that capability
+
+**The BYOK exception does not apply to:**
+
+- The platform tax — which is assessed on agency revenue regardless of hosting model or API key arrangement
+
+- Capabilities that still depend on aiConnected-hosted infrastructure regardless of the operator’s API keys
+
+- Cloud-hosted installations, where aiConnected is providing the hosting environment
+
+The platform tax still runs on all revenue the agency generates. The BYOK exception only affects the module activation floor price for the specific capabilities the agency is self-funding.
+
+-----
+
+## 6. The Platform Tax
+
+### 6.1 Universal Application
+
+aiConnected collects a 10% platform tax on all revenue generated through the platform. This applies to every transaction processed through aiConnected’s Stripe infrastructure — subaccount services, module resales, usage fees, subscriptions — regardless of the nature of the transaction or the hosting model of the operator.
+
+### 6.2 Automatic Collection
+
+The platform tax is deducted automatically at the point of transaction before funds are disbursed to the agency. There is no self-reporting. There is no manual calculation. The tax is collected before the agency receives anything.
+
+### 6.3 Agency Freedom Within the Model
+
+Agencies retain full commercial autonomy:
+
+- They set their own prices for subaccount services
+
+- They choose which modules to enable per subaccount
+
+- They choose their billing cadence — monthly, annual, pay-as-you-go
+
+- They control their own branding and client-facing presentation
+
+aiConnected takes 10% of whatever the agency charges. The agency’s commercial decisions are entirely their own.
+
+-----
+
+## 7. Marketplace Module Billing — Complete Flow
+
+### 7.1 Module Pricing Models
+
+Developers publishing modules to the aiConnected marketplace may choose from three pricing models:
+
+**One-Time Purchase**
+
+A flat fee paid once per installation. The agency pays once to activate the module for a subaccount. No recurring obligation.
+
+**Consumable / Usage-Based**
+
+A per-use fee metered through the aiConnected SDK. Usage events are reported automatically. The agency is billed periodically based on actual consumption. Agencies may pass this cost through to subaccounts or absorb it.
+
+**Subscription**
+
+A recurring fee on a developer-defined cadence — monthly or annual. The agency commits to the developer’s billing cadence. Agencies may independently decide how to bill their subaccounts — for example, smoothing an annual developer fee into monthly subaccount charges is the agency’s commercial decision. The developer’s price and cadence governs what the agency pays at the platform level.
+
+Developers set their own prices. Agencies add their own markup when reselling. aiConnected does not restrict either figure.
+
+### 7.2 Revenue Split
+
+Every marketplace module transaction is split as follows:
+
+- **90% to the developer** — paid automatically via Stripe Connect to the developer’s connected account
+
+- **10% to aiConnected** — collected as a transaction processing fee
+
+Developers are never double-taxed. aiConnected’s primary revenue on the module chain comes from the platform tax assessed on the agency’s resale transaction — not from the developer’s module price.
+
+**Example — \$10 module, 10 subaccounts:**
+
+|Line Item                                           |Amount |
+
+|----------------------------------------------------|-------|
+
+|Agency pays to activate module across 10 subaccounts|\$100.00|
+
+|Developer receives (90%)                            |\$90.00 |
+
+|aiConnected retains (10%)                           |\$10.00 |
+
+The agency then charges their subaccounts independently. If the agency charges \$20 per subaccount for that module — \$200 total — aiConnected collects \$20 as the platform tax. The agency keeps \$180. The developer has already been paid and is not party to this second transaction.
+
+### 7.3 Agency Module Resale
+
+Agencies may acquire marketplace modules and offer them to their subaccounts. The agency pays the developer’s price per installation regardless of what the agency charges their subaccounts.
+
+An agency offering a module to subaccounts at no charge is not exempted from the developer’s fee — the developer is paid at the agency level, per installation, regardless of the agency’s subaccount pricing decisions. It is always in the agency’s financial interest to charge subaccounts for module access, since the agency absorbs the developer’s fee regardless of their subaccount pricing.
+
+### 7.4 Subaccount Module Activation State
+
+Modules appear in subaccount interfaces in one of two states:
+
+**Inactive (grayed out)** — visible and discoverable but non-functional. This state persists until the required payment has been processed through aiConnected’s Stripe infrastructure.
+
+**Active** — payment has cleared, the record exists in aiConnected’s infrastructure, and the module is fully functional.
+
+The shell enforces this state natively and identically across cloud-hosted and self-hosted installations.
+
+-----
+
+## 8. Developer Infrastructure — Modules Are Developer-Hosted
+
+### 8.1 What aiConnected Hosts
+
+aiConnected does not host marketplace module code. Developers host their own modules. aiConnected hosts:
+
+- The module registry — metadata, pricing, developer accounts, endpoint references
+
+- The license verification service — validates active installations and subscriptions
+
+- The metering service — receives SDK usage events for consumable billing
+
+- The payment router — processes all transactions and distributes revenue splits automatically
+
+### 8.2 Developer Hosting Obligations
+
+Developers publishing paid modules agree to maintain minimum uptime standards as defined in the Developer Agreement. Modules that fail to meet uptime requirements may be delisted. aiConnected-certified hosting partners — designated cloud providers that meet aiConnected’s reliability standards — are available for developers who want a simplified hosting path. Modules deployed on certified partner infrastructure receive a verified reliability badge in the marketplace.
+
+### 8.3 SDK Compliance
+
+The aiConnected SDK’s metering and verification calls are non-optional. A module that bypasses these calls cannot be listed in the marketplace — SDK compliance is validated during the module submission process. This ensures that every marketplace module participates correctly in aiConnected’s billing and metering infrastructure regardless of where it is hosted.
+
+-----
+
+## 9. The Two Development Tracks
+
+### 9.1 Track 1 — Shell and Core Module Development (Open Source)
+
+The aiConnected shell and core modules are open source, published on GitHub under the aiConnected Community License. Any developer may contribute.
+
+**What Track 1 developers build:**
+
+- Shell platform framework improvements
+
+- Core module development and enhancement — voice, chat, memory, knowledge base, and others
+
+- UI system improvements
+
+- Developer tooling and documentation
+
+- SDK enhancements
+
+**Compensation:**
+
+Track 1 development is not directly compensated by aiConnected. The reward is indirect — reputation, influence over the platform’s direction, and participation in a growing ecosystem. Contributors are credited publicly and may be invited into formal contributor programs as the platform matures.
+
+**Who this is for:**
+
+Developers who want to shape the platform itself. Developers building expertise and reputation they will later leverage through Track 2. Developers who want to see specific core capabilities built and are willing to build them.
+
+### 9.2 Track 2 — Marketplace Development (Commercial)
+
+Marketplace modules are developer-hosted products submitted to the aiConnected marketplace. Any developer may build and publish marketplace modules entirely independently of Track 1 contribution.
+
+**What Track 2 developers build:**
+
+- Specialized workflow modules
+
+- Industry-specific capability modules
+
+- Integration modules connecting aiConnected to external services
+
+- AI-powered feature modules
+
+- Any functionality not included in the core platform
+
+**Compensation:**
+
+90% of every transaction their module generates — one-time purchases, recurring subscriptions, and per-use consumable fees. Payments are automatic, processed through aiConnected’s Stripe infrastructure, and disbursed without manual intervention. A developer never has to contribute a single line to the open source shell to participate in Track 2 and earn real income.
+
+**Who this is for:**
+
+Developers who want to build a business. Developers with specialized domain expertise. Developers who want financial return for their work without the complexity of operating a full SaaS product independently.
+
+### 9.3 How Both Tracks Compound Each Other
+
+Shell and core module contributions make the platform more capable, attracting more agencies. More agencies mean more subaccounts and a larger addressable market for marketplace modules. More marketplace modules give agencies more reasons to choose aiConnected. More agency adoption attracts more Shell contributors who want to be associated with a growing platform.
+
+The two tracks are not competing. They are a compounding loop — each strengthening the conditions that make the other more valuable.
+
+This is a deliberate structural differentiator. Most open source platforms offer community participation or commercial opportunity. aiConnected offers both, with the incentives aligned so that contributing to one track directly benefits participation in the other.
+
+-----
+
+## 10. Summary Table
+
+|Scenario                                  |Platform Tax                            |Developer Paid               |Works on Self-Hosted                                     |
+
+|------------------------------------------|----------------------------------------|-----------------------------|---------------------------------------------------------|
+
+|Subaccount registered                     |No                                      |N/A                          |Yes — free                                               |
+
+|Module activated for subaccount           |Yes — 10% of agency charge              |Yes — 90% of module price    |Yes — payment-gated activation                           |
+
+|Agency resells module to subaccounts      |Yes — 10% of agency’s charge            |Already paid at activation   |Yes                                                      |
+
+|BYOK self-hosted — own API keys           |No floor price on that capability       |N/A                          |Yes — BYOK exception applies                             |
+
+|Consumable module usage                   |Yes — 10% of usage fees                 |Yes — 90% of usage fees      |Yes                                                      |
+
+|Subscription module                       |Yes — 10% of recurring charge           |Yes — 90% of recurring charge|Yes                                                      |
+
+|Operator disables telemetry or license key|Infrastructure endpoints stop responding|N/A                          |Enforcement is architectural — platform stops functioning|

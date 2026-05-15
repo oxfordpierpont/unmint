@@ -1,0 +1,580 @@
+---
+title: "**Master Project Task List**"
+---
+# **Master Project Task List**
+
+## Document Purpose
+
+This document serves as the authoritative overview for the Voice by aiConnected platform build. It provides Claude Code with complete context about the project's goals, architecture, infrastructure decisions, and the sequence of work required to deliver a production-ready Voice AI contact center platform.
+
+**Read this document first before beginning any implementation work.**
+
+---
+
+## Project Overview
+
+### What We Are Building
+
+**Voice by aiConnected** is a white-label Voice AI contact center platform that enables businesses to deploy autonomous AI agents capable of handling inbound and outbound phone calls. The platform integrates with existing phone infrastructure (GoToConnect), leverages real-time audio processing (LiveKit), and delivers hyper-realistic conversational AI through a streaming pipeline of Speech-to-Text, Large Language Model, and Text-to-Speech services.
+
+### Business Context
+
+- **Target Market**: Small to medium-sized businesses needing 24/7 phone coverage, lead response, appointment scheduling, and customer service automation
+- **Pricing Model**: Fixed credit buckets plus per-minute overages
+- **Competitive Advantage**: 50-75% lower cost than competitors (Vapi, Retell, Bland AI) through infrastructure ownership and optimized provider selection
+- **Parent Company**: Oxford Pierpont Corporation (business development and digital marketing)
+
+### Core Capabilities
+
+1. **Inbound Call Handling** — AI answers calls, converses naturally, resolves inquiries or transfers to humans
+2. **Outbound Call Automation** — AI initiates calls for lead follow-up, appointment reminders, reactivation campaigns
+3. **Human Handoff** — Seamless transfer to live agents via blind transfer, warm transfer, or conference
+4. **Tool Calling** — AI executes business logic (CRM updates, calendar booking, data lookup) via webhooks/n8n
+5. **Knowledge Base Integration** — AI responses informed by client-specific business context (already built)
+6. **Multi-Tenant Architecture** — Single platform serves multiple clients with isolated configurations
+
+---
+
+## Architecture Summary
+
+### Voice Pipeline
+
+```text
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                                                                             │
+│   PSTN ←→ GoToConnect PBX ←→ WebRTC Bridge ←→ LiveKit Room                 │
+│                                    (aiortc)         │                       │
+│                                                     ├── Deepgram STT        │
+│                                                     │   (streaming)         │
+│                                                     │                       │
+│                                                     ├── Claude LLM          │
+│                                                     │   (streaming)         │
+│                                                     │                       │
+│                                                     ├── Chatterbox TTS      │
+│                                                     │   (streaming)         │
+│                                                     │                       │
+│                                                     └── Tool Webhooks       │
+│                                                         (async, n8n)        │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Latency Budget (Target: \<1000ms mouth-to-ear)
+
+| Stage | Target | Notes |
+| :-- | :-- | :-- |
+| Audio capture → STT | ~100ms | Streaming VAD |
+| STT processing | ~300ms | Deepgram interim results |
+| LLM time-to-first-token | ~350ms | Claude streaming |
+| TTS time-to-first-byte | ~150ms | Chatterbox streaming |
+| Return audio path | ~70ms | LiveKit → GoTo → PSTN |
+| **Total** | **~970ms** | Achievable with optimization |
+
+### Infrastructure Topology
+
+```text
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ EXTERNAL SERVICES                                                           │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│   GoToConnect          LiveKit Cloud        RunPod                          │
+│   (Telephony)          (Real-time Audio)    (Chatterbox GPU)                │
+│        │                     │                   │                          │
+│   Deepgram             Anthropic API        n8n Cloud/Self-hosted           │
+│   (STT)                (Claude LLM)         (Webhooks)                      │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ DIGITALOCEAN / DOKPLOY                                                      │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│   ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐       │
+│   │   API       │  │   WebRTC    │  │   Agent     │  │   Worker    │       │
+│   │   Gateway   │  │   Bridge    │  │   Service   │  │   Service   │       │
+│   └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘       │
+│                                                                             │
+│   ┌─────────────┐  ┌─────────────┐  ┌─────────────┐                        │
+│   │ PostgreSQL  │  │   Redis     │  │ DO Spaces   │                        │
+│   │ (Database)  │  │   (Cache)   │  │ (Storage)   │                        │
+│   └─────────────┘  └─────────────┘  └─────────────┘                        │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Infrastructure Decisions (Finalized)
+
+These decisions have been made and should not be revisited during implementation:
+
+| Component | Decision | Rationale |
+| :-- | :-- | :-- |
+| **Telephony** | GoToConnect | Grandfathered \$17/user unlimited plan; full call control API |
+| **Real-time Audio** | LiveKit Cloud | Industry standard; Agents SDK for voice AI |
+| **STT** | Deepgram Nova-2 | Low latency streaming; phone audio optimized |
+| **LLM** | Anthropic Claude (Sonnet) | Best reasoning; streaming support |
+| **TTS** | Chatterbox-Turbo on RunPod | Zero per-minute cost; MIT license; paralinguistics |
+| **GPU** | RunPod RTX A5000 | Best value (\$0.27/hr); 24GB VRAM sufficient |
+| **Platform Hosting** | DigitalOcean \+ Dokploy | Existing infrastructure; container orchestration |
+| **Database** | PostgreSQL | Relational; proven; existing expertise |
+| **Cache/State** | Redis | Session state; call state machine |
+| **Object Storage** | DO Spaces | Voice samples; call recordings |
+| **Webhooks** | n8n | Tool calling; existing expertise |
+| **Knowledge Base** | Existing system | Already built and integrated |
+| **Admin Dashboard** | Existing system | Add service config page; UI polish is last priority |
+
+---
+
+## Cost Structure
+
+### Per-Minute Breakdown (at 50k min/month scale)
+
+| Component | Cost |
+| :-- | :-- |
+| LiveKit Agent Session | \$0.0100/min |
+| GoToConnect Telephony | \$0.0000/min (unlimited) |
+| Deepgram STT | \$0.0043/min |
+| Claude Sonnet LLM | \$0.0080/min (estimated) |
+| Chatterbox TTS (amortized) | \$0.0040/min |
+| **Total** | **~\$0.025/min** |
+
+### Monthly Infrastructure
+
+| Service | Est. Cost |
+| :-- | :-- |
+| GoToConnect | \$17/user |
+| LiveKit Cloud | ~\$50-100 |
+| RunPod A5000 | ~\$197 |
+| Deepgram | ~\$50-100 |
+| Anthropic API | ~\$100-300 |
+| DigitalOcean | ~\$50-100 |
+| **Total** | **~\$500-800/mo starting** |
+
+---
+
+## Build Phases
+
+### Phase 1: Foundation (Documents 1-6)
+
+**Goal**: Development environment ready, architecture fully documented
+
+| # | Document | Purpose |
+| :-- | :-- | :-- |
+| 1 | System Architecture Overview | Complete technical blueprint |
+| 2 | GoToConnect Integration Specification | Telephony API details |
+| 3 | Voice Pipeline Architecture | STT→LLM→TTS streaming design |
+| 4 | WebRTC Bridge Technical Design | GoTo↔LiveKit audio bridging |
+| 5 | Development Environment Setup Guide | Local dev stack |
+| 6 | Codebase Structure & Conventions | Repo organization |
+
+**Deliverables**:
+
+- Architecture diagrams finalized
+- All API contracts documented
+- Local development environment functional
+- Repository structure established
+
+---
+
+### Phase 2: Core Infrastructure (Documents 7-11)
+
+**Goal**: Database, state management, and service skeleton operational
+
+| # | Document | Purpose |
+| :-- | :-- | :-- |
+| 7 | Database Schema Design | PostgreSQL tables, migrations |
+| 8 | State Management Specification | Call state machine, Redis structures |
+| 9 | Message Queue & Event Bus Design | Async communication patterns |
+| 10 | Error Handling & Recovery Patterns | Resilience patterns |
+| 11 | Core Services Implementation Guide | Service implementations |
+
+**Deliverables**:
+
+- Database migrations created and tested
+- Redis state management implemented
+- Event bus operational
+- Core services running (API gateway, bridge, agent, worker)
+
+---
+
+### Phase 3: Provider Integrations (Documents 12-16)
+
+**Goal**: All external services connected and functional
+
+| # | Document | Purpose |
+| :-- | :-- | :-- |
+| 12 | LiveKit Integration Specification | Agents SDK, room management |
+| 13 | Deepgram STT Integration Guide | Streaming transcription |
+| 14 | Anthropic Claude Integration Guide | LLM streaming, tools |
+| 15 | Chatterbox TTS Integration Guide | RunPod deployment, synthesis |
+| 16 | Tool Calling & Webhook Specification | n8n integration |
+
+**Deliverables**:
+
+- LiveKit Agents pipeline functional
+- Deepgram streaming STT working
+- Claude streaming responses working
+- Chatterbox deployed on RunPod
+- Tool calling via webhooks operational
+
+---
+
+### Phase 4: Call Features (Documents 17-20)
+
+**Goal**: Complete call handling capabilities
+
+| # | Document | Purpose |
+| :-- | :-- | :-- |
+| 17 | Inbound Call Flow Specification | Answer, converse, resolve |
+| 18 | Outbound Call Flow Specification | Dial, converse, resolve |
+| 19 | Human Handoff Specification | Transfer patterns |
+| 20 | Knowledge Base Integration Guide | Context injection |
+
+**Deliverables**:
+
+- Inbound calls answered by AI
+- Outbound calls initiated by AI
+- Transfers to human agents working
+- Knowledge base context in AI responses
+
+---
+
+### Phase 5: Platform (Documents 21-23)
+
+**Goal**: Multi-tenant API complete
+
+| # | Document | Purpose |
+| :-- | :-- | :-- |
+| 21 | Tenant Configuration API Specification | Agent/voice/number management |
+| 22 | Usage Metering & Billing Integration | Credit tracking, overages |
+| 23 | API Specification (OpenAPI) | Public API documentation |
+
+**Deliverables**:
+
+- Tenant CRUD operations
+- Usage tracking per tenant
+- Billing hooks implemented
+- API documented and versioned
+
+---
+
+### Phase 6: Operations (Documents 24-27)
+
+**Goal**: Production deployment with observability
+
+| # | Document | Purpose |
+| :-- | :-- | :-- |
+| 24 | Infrastructure Architecture | DO/Dokploy/RunPod topology |
+| 25 | Deployment Runbook | Step-by-step production deploy |
+| 26 | CI/CD Pipeline Specification | Automated build/deploy |
+| 27 | Monitoring & Observability Guide | Metrics, logs, alerts |
+
+**Deliverables**:
+
+- Production environment provisioned
+- Deployment automated
+- Monitoring dashboards operational
+- Alerting configured
+
+---
+
+### Phase 7: Hardening (Documents 28-30)
+
+**Goal**: Secure, tested, resilient system
+
+| # | Document | Purpose |
+| :-- | :-- | :-- |
+| 28 | Security Architecture Document | Auth, encryption, trust boundaries |
+| 29 | Testing Strategy Document | Test coverage plan |
+| 30 | Failure Mode Handling Guide | Failovers, fallbacks |
+
+**Deliverables**:
+
+- Security audit passed
+- Test suite comprehensive
+- Failure scenarios handled gracefully
+
+---
+
+## Skills (Provider API Reference)
+
+In addition to the 30 build documents, the following skills provide API reference material:
+
+```text
+/mnt/skills/user/voice-platform/
+├── SKILL.md                     # Overview, when to use each sub-skill
+├── gotoconnect/
+│   ├── SKILL.md                 # Auth, endpoints, code patterns
+│   └── postman_collection.json  # Full API collection
+├── livekit/
+│   └── SKILL.md                 # Agents SDK, room management
+├── deepgram/
+│   └── SKILL.md                 # Streaming STT configuration
+├── anthropic/
+│   └── SKILL.md                 # Streaming, tool calling
+├── chatterbox/
+│   └── SKILL.md                 # RunPod, API wrapper, voice cloning
+└── n8n/
+    └── SKILL.md                 # Webhook patterns
+```
+
+---
+
+## Success Criteria
+
+### MVP Definition
+
+The minimum viable product is achieved when:
+
+1. **Inbound Call**: A call to a GoToConnect number is answered by the AI, which holds a natural conversation and either resolves the inquiry or transfers to a human
+2. **Outbound Call**: The platform initiates a call via API trigger, AI converses with the recipient
+3. **Human Handoff**: AI successfully transfers a call (blind or warm) to a live agent
+4. **Tool Execution**: AI executes at least one tool call (e.g., CRM update, calendar check) during a conversation
+5. **Multi-Tenant**: Two separate clients can operate independent AI agents simultaneously
+6. **Latency**: Mouth-to-ear response time under 1.5 seconds for 90% of interactions
+
+### Quality Gates
+
+| Metric | Target |
+| :-- | :-- |
+| Call completion rate | \>95% |
+| Transfer success rate | \>99% |
+| STT accuracy | \>90% |
+| Average latency | \<1000ms |
+| Concurrent calls (per tenant) | 10\+ |
+| Uptime | 99.5% |
+
+---
+
+## Constraints & Requirements
+
+### Technical Constraints
+
+- **Python preferred** for WebRTC bridge (aiortc ecosystem)
+- **LiveKit Agents SDK** is Python-native
+- **PostgreSQL** for relational data (existing expertise)
+- **Redis** for ephemeral state (call sessions)
+- **Docker/Dokploy** for container orchestration
+
+### Business Constraints
+
+- **Timeline**: MVP within 6-10 weeks
+- **Budget**: Minimize upfront costs; scale with usage
+- **Team**: Development via Claude Code with human oversight
+- **Existing Systems**: Must integrate with existing Knowledge Base and Admin Dashboard
+
+### Non-Goals (Out of Scope for MVP)
+
+- Custom voice cloning per client (use pre-set voices initially)
+- Multi-language support (English only for MVP)
+- SMS/chat channels (voice only)
+- Compliance certifications (SOC 2, HIPAA) — plan for later
+- Mobile app
+- Analytics dashboard beyond basic usage metrics
+
+---
+
+## Document Dependency Map
+
+```text
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ PHASE 1: FOUNDATION                                                         │
+│                                                                             │
+│   [1] System Architecture ─────┬─────────────────────────────────────────┐ │
+│            │                   │                                         │ │
+│            ▼                   ▼                                         │ │
+│   [2] GoToConnect    [3] Voice Pipeline    [5] Dev Environment          │ │
+│            │                   │                     │                   │ │
+│            └─────────┬─────────┘                     │                   │ │
+│                      ▼                               │                   │ │
+│            [4] WebRTC Bridge ◄───────────────────────┘                   │ │
+│                      │                                                   │ │
+│                      ▼                                                   │ │
+│            [6] Codebase Structure                                        │ │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                        │
+                                        ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ PHASE 2: CORE INFRASTRUCTURE                                                │
+│                                                                             │
+│   [7] Database Schema ◄─── [8] State Management ◄─── [9] Event Bus         │
+│            │                        │                       │              │
+│            └────────────────────────┼───────────────────────┘              │
+│                                     ▼                                      │
+│                          [10] Error Handling                               │
+│                                     │                                      │
+│                                     ▼                                      │
+│                      [11] Core Services Implementation                     │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                        │
+                                        ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ PHASE 3: PROVIDER INTEGRATIONS                                              │
+│                                                                             │
+│   [12] LiveKit ──┬── [13] Deepgram ──┬── [14] Claude ──┬── [15] Chatterbox │
+│                  │                   │                 │                   │
+│                  └───────────────────┴─────────────────┘                   │
+│                                      │                                     │
+│                                      ▼                                     │
+│                            [16] Tool Calling                               │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                        │
+                                        ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ PHASE 4: CALL FEATURES                                                      │
+│                                                                             │
+│   [17] Inbound ────┬──── [18] Outbound                                     │
+│         │          │            │                                          │
+│         │          ▼            │                                          │
+│         │    [19] Human Handoff │                                          │
+│         │          │            │                                          │
+│         └──────────┼────────────┘                                          │
+│                    ▼                                                       │
+│         [20] Knowledge Base Integration                                    │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                        │
+                                        ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ PHASE 5: PLATFORM                                                           │
+│                                                                             │
+│   [21] Tenant Config API ──── [22] Usage Metering ──── [23] OpenAPI Spec   │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                        │
+                                        ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ PHASE 6: OPERATIONS                                                         │
+│                                                                             │
+│   [24] Infrastructure ──── [25] Deployment ──── [26] CI/CD ──── [27] Monitoring │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                        │
+                                        ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ PHASE 7: HARDENING                                                          │
+│                                                                             │
+│   [28] Security ──── [29] Testing ──── [30] Failure Modes                  │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## How to Use This Document
+
+### For Claude Code
+
+1. **Read this document completely** before starting any implementation
+2. **Follow the phase order** — each phase builds on the previous
+3. **Consult skills** for API-specific implementation details
+4. **Reference individual documents** for detailed specifications
+5. **Check deliverables** at the end of each phase before proceeding
+
+### For Human Oversight
+
+1. **Review completed phases** before approving progression
+2. **Test deliverables** against success criteria
+3. **Provide credentials** and access as needed per phase
+4. **Clarify requirements** when documents reference "TBD" items
+
+---
+
+## Open Questions (To Be Resolved)
+
+| Question | Owner | Status |
+| :-- | :-- | :-- |
+| GoToConnect OAuth credentials for dev environment | Human | Pending |
+| LiveKit Cloud project setup | Human | Pending |
+| Deepgram API key | Human | Pending |
+| Anthropic API key | Human | Pending |
+| RunPod account and A5000 provisioning | Human | Pending |
+| DigitalOcean/Dokploy access | Human | Pending |
+| n8n instance URL and credentials | Human | Pending |
+| Knowledge Base API endpoint | Human | Pending |
+| Existing Admin Dashboard repo access | Human | Pending |
+
+---
+
+## Version History
+
+| Version | Date | Author | Changes |
+| :-- | :-- | :-- | :-- |
+| 1.0 | 2026-01-16 | Claude | Initial document |
+
+---
+
+## Next Steps
+
+1. Human reviews and approves this Master Project Task List
+2. Human provides access credentials for open questions
+3. Claude Code proceeds to Document #1: System Architecture Overview
+4. Build proceeds phase by phase with human checkpoints
+
+---
+
+_This document is the single source of truth for the Voice by aiConnected project. All implementation decisions should align with the specifications herein._
+
+# **Pre-Build Checklist**
+
+### ✅ Infrastructure (Covered)
+
+- GoToConnect (telephony)
+- LiveKit Cloud (real-time audio)
+- RunPod A5000 (Chatterbox TTS)
+- Deepgram (STT)
+- Anthropic Claude (LLM)
+- DigitalOcean/Dokploy (platform)
+
+---
+
+### ⚠️ Technical (Needs Planning)
+
+| Item | Status | Notes |
+| :-- | :-- | :-- |
+| **WebRTC Bridge** | To build | Python/aiortc service connecting GoTo ↔ LiveKit |
+| **Database** | Needed | PostgreSQL for tenants, configs, logs |
+| **Redis** | Needed | Call state machine, session cache |
+| **Object Storage** | Needed | Voice samples, call recordings |
+| **Knowledge Base** | Needed | How clients upload business context for their agents |
+| **n8n / Webhooks** | Needed | Tool calling (CRM, calendar, etc.) |
+| **Monitoring** | Needed | Grafana/Prometheus or Datadog |
+
+---
+
+### ⚠️ Business Logic (Needs Planning)
+
+| Item | Question to Answer |
+| :-- | :-- |
+| **Billing/Metering** | How do you charge clients? Per minute? Per seat? Flat rate? |
+| **Usage Tracking** | How do you track minutes per tenant for billing? |
+| **Admin Dashboard** | What can clients configure themselves? |
+| **Onboarding Flow** | How do clients set up their first agent? |
+| **Voice Management** | How do clients provide/record their brand voice? |
+| **Human Handoff** | How do live agents get notified and take over? |
+| **Call Recording** | Store recordings? How long? Client access? |
+| **Rate Limits** | Max concurrent calls per client tier? |
+
+---
+
+### ⚠️ Compliance/Legal (Critical)
+
+| Item | Why It Matters |
+| :-- | :-- |
+| **AI Disclosure** | Some states (CA, WA, etc.) require disclosure that caller is speaking to AI |
+| **TCPA Compliance** | Outbound calling rules, consent requirements |
+| **Call Recording Consent** | Two-party consent states |
+| **Data Retention Policy** | How long do you keep call data? |
+| **Privacy Policy** | Required for handling caller PII |
+| **Terms of Service** | Liability, acceptable use |
+| **DPA (Data Processing Agreement)** | For B2B clients |
+
+---
+
+### ⚠️ Failure Modes (Needs Planning)
+
+| Scenario | Fallback Plan |
+| :-- | :-- |
+| LLM times out | Graceful "one moment please" \+ retry? |
+| TTS fails | Pre-recorded fallback audio? |
+| STT fails | Ask caller to repeat? |
+| RunPod goes down | Failover to Resemble API? |
+| Call volume spike | Queue management? Auto-scale? |

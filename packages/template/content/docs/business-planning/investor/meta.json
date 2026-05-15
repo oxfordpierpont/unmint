@@ -1,0 +1,14 @@
+{
+  "title": "Investor",
+  "pages": [
+    "index",
+    "bp-invest-01-pitch-deck-surface",
+    "bp-invest-02-executive-summary-standalone",
+    "bp-invest-03-gohighlevel-comparison",
+    "bp-invest-04-term-sheet-reference",
+    "bp-invest-05-series-a-milestones",
+    "bp-invest-06-pitch-deck-deep",
+    "bp-invest-07-data-room-index"
+  ],
+  "defaultOpen": true
+}

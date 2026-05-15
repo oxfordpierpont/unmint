@@ -1,0 +1,437 @@
+---
+title: "aiConnected Platform — MVP Specification"
+---
+
+# aiConnected Platform — MVP Specification
+**Version 1.0**
+*Prepared for development team engagement — March 2026*
+
+---
+
+## TL;DR
+
+aiConnected is a white-label SaaS platform that agencies buy, rebrand as their own product, and sell to business clients — primarily for AI-powered sales tooling. Think GoHighLevel, but open at the code level so third-party developers can build and publish modules that compound on top of each other over time.
+
+The MVP delivers a working agency platform with five interconnected sales modules: a Knowledge Base Generator (scrapes a business's website and builds a comprehensive AI knowledge source that powers everything else), a Voice AI Hub (handles all inbound and outbound voice interactions via LiveKit), a Chat Interface (a fully branded sales funnel in chat form, embeddable as a full-screen window or bubble), a Contact Forms module (intercepts form submissions and converts them into AI-engaged leads in real time), and a Chat Monitor (gives the business a live view of conversations with the ability to step in or guide the AI when a lead goes warm). A Co-Browser add-on extends the chat to every page of a website with full page-context awareness.
+
+Agencies pay nothing until they generate revenue. aiConnected earns a 10% platform tax on whatever agencies charge their clients, plus a 10% markup on AI API costs. All billing flows through aiConnected's Stripe infrastructure automatically.
+
+The architecture is the more important story. The MVP is built as a shell with pluggable, containerized modules that communicate exclusively through a shared event bus and a declared capability registry. The developer ecosystem — community sandbox, trust pipeline, registry UI — is not an MVP deliverable, but the architecture must support it from day one. Every first-party module ships with a compliant manifest. The event bus is designed for modules it hasn't seen yet. The API gateway routes dynamically. Nothing about the MVP architecture can require rework when the developer layer is built on top of it.
+
+The full platform spec, billing model, and architecture document are included in this package. This document defines the MVP scope and what done looks like.
+
+---
+
+## Purpose of This Document
+
+This document defines the Minimum Viable Product for the aiConnected platform rebuild. It is written for senior engineers and technical collaborators who need a precise understanding of what is being built, why the architectural decisions were made the way they were, and what "done" looks like for the MVP.
+
+The platform is being rebuilt from scratch. An earlier version exists and may be referenced for logic or salvage, but it is not recommended as a foundation. This specification represents the authoritative target.
+
+---
+
+## 1. What We Are Building
+
+aiConnected is a white-label SaaS operating system for agencies. It functions the way GoHighLevel functions in its interconnectedness and multi-tenant white-label model — but unlike GoHighLevel, it is architecturally open. Third-party developers can extend the platform at the code level, with new capabilities compounding on top of existing ones over time.
+
+The closest mental model is this: **WordPress core + Crocoblock-style interconnected plugins, built as a modern SaaS platform, sold to agencies who rebrand and resell it to their business clients.**
+
+Every module on the platform shares the same data layer, the same identity infrastructure, and the same event system. A voice call log is visible to the chat module. A knowledge base update immediately powers AI interactions everywhere. No module is an island.
+
+The platform's long-term differentiator is its developer extensibility model — any developer can build a module, submit it through a governed trust pipeline, and have its capabilities published to a shared registry that all future developers can build upon. Development progress on the platform compounds rather than accumulates in silos. This is described in detail in Section 6.4, and the architecture must support it from day one — though it will not be marketed or sold in the MVP phase.
+
+---
+
+## 2. Market Positioning
+
+The AI SaaS market has largely split into two camps: marketing automation platforms (GoHighLevel, ActiveCampaign, HubSpot) and general-purpose AI tools (ChatGPT, Claude, Gemini wrappers). Neither camp owns sales.
+
+aiConnected occupies the sales lane specifically.
+
+Every MVP module is chosen because it serves the sales process:
+
+- Converting website visitors into identified leads
+- Warming leads through intelligent AI interaction
+- Qualifying leads in real time before a human ever gets involved
+- Giving sales teams visibility into lead behavior before a call
+- Handling inbound voice and chat interactions around the clock
+
+This positioning means aiConnected agencies are not competing with GoHighLevel resellers. They are bringing a category of tooling — AI-powered sales infrastructure — that does not exist as a cohesive, white-label product in the market today.
+
+---
+
+## 3. User Types
+
+The platform serves five distinct user classes. The MVP focuses exclusively on the first three.
+
+**Super User (aiConnected Admin)**
+The platform operator. Has visibility into all agencies, all billing, all system health. The super user does not interact with the product the way agencies and businesses do — they manage the ecosystem.
+
+**Agency User**
+The primary commercial customer. An agency signs up for aiConnected, configures it as their own branded product, and deploys it to their business clients. From their clients' perspective, the agency built the platform. aiConnected is invisible. The agency sets their own pricing, creates their own packages, and controls which modules their clients access.
+
+**Business User**
+The agency's end client. A business user logs into what appears to be the agency's proprietary platform. They configure their AI tools, manage their contacts, and monitor their leads. They have no awareness of aiConnected as the underlying infrastructure.
+
+**Personal User** *(post-MVP)*
+Individual users accessing the platform outside of an agency context. Architecture must not preclude this user type, but it is not an MVP deliverable.
+
+**Developer** *(post-MVP)*
+Third-party developers who build and publish modules to the platform. The module manifest system and capability registry must be architected for this user type from day one, but the developer-facing portal and trust pipeline are not MVP deliverables.
+
+---
+
+## 4. The Architecture
+
+### 4.1 The Core Shell
+
+The shell is the platform's permanent, stable foundation. Every module lives inside it. The shell itself never contains business logic — that lives entirely in modules.
+
+**Shell responsibilities:**
+- User authentication and session management (Supabase Auth)
+- Multi-tenant provisioning — agency accounts, sub-accounts (business clients), and super admin
+- Navigation and routing infrastructure
+- Billing infrastructure (Stripe, platform tax collection, module activation)
+- Module registry — the live directory of all installed and available modules
+- Event bus — the system-wide communication channel between modules
+- API gateway — routes requests between modules, enforces permissions, handles rate limiting
+- Theme engine — applies per-tenant TweakCN configuration
+
+**What the shell explicitly does not do:**
+It contains no CRM logic, no voice logic, no chat logic, no AI inference calls. All of that lives in modules.
+
+---
+
+### 4.2 UI Foundation — shadcn/ui + TweakCN
+
+The entire platform UI is built on shadcn/ui. This decision has three direct benefits:
+
+**1. Development velocity.** Building new interfaces means organizing existing components, not making design decisions from scratch. Module developers inherit a complete, consistent design system without writing a line of custom CSS.
+
+**2. True white-label.** TweakCN enables full CSS-level customization per tenant — colors, typography, border radius, shadows, spacing, borders, backgrounds, hover states. Agencies can configure every visual element to match their brand. The result is that two agencies running the same platform look nothing alike. GoHighLevel's weakness — that its branded deployments are immediately recognizable as GoHighLevel — is structurally prevented.
+
+**3. Developer ergonomics.** Third-party developers who build modules using shadcn/ui components get platform-native styling automatically. Developers who bring a custom UI (for instance, a company integrating an existing product that was not designed with shadcn) are accommodated — the system must not break for non-shadcn UIs. But shadcn is the strongly encouraged default, and the path of least resistance.
+
+Business users may also be granted UI customization access at the agency's discretion. This represents a potential upsell — agencies can charge clients for the ability to personalize their own experience.
+
+---
+
+### 4.3 Shared Data Layer
+
+A single Supabase (PostgreSQL) instance serves as the platform's unified data foundation.
+
+**Core shared entities:**
+
+| Entity | Description |
+|---|---|
+| `workspaces` | The tenant record. Every module references this. |
+| `contacts` | The universal entity. Every module reads from and writes to contacts. |
+| `users` | Platform users with roles and permissions scoped to their workspace. |
+| `events` | The shared event log. This is the interconnection mechanism. |
+| `module_registry` | Live directory of installed modules and their capability contracts. |
+
+**Module data:**
+Each module owns its own database tables, namespaced by module (e.g., `voice_calls`, `chat_conversations`, `kb_entries`). Modules may read from shared entities. They write to their own tables and emit events to the shared event log.
+
+**The interconnection mechanism:**
+When the voice module completes a call, it writes to `voice_calls` and emits a `voice.call.completed` event. The chat module, the contacts module, and any automation subscribed to that event receives it and responds accordingly. No module ever reaches directly into another module's tables. All cross-module communication flows through the event bus and declared API contracts.
+
+This is what makes the platform's capabilities genuinely interconnected rather than just co-located.
+
+---
+
+### 4.4 The Module System
+
+Every capability on the platform — whether built by aiConnected or a third party — is a module. Modules are self-contained and follow a common manifest specification.
+
+**Module manifest (example):**
+
+```json
+{
+  "id": "voice-hub",
+  "name": "Voice AI Hub",
+  "version": "1.0.0",
+  "developer": "aiConnected",
+  "routes": ["/voice", "/voice/calls", "/voice/settings"],
+  "sidebar": {
+    "label": "Voice",
+    "icon": "phone",
+    "position": 3
+  },
+  "permissions": ["contacts.read", "contacts.write", "events.emit"],
+  "capabilities": {
+    "inputs": ["contact_id", "script", "voice_profile_id"],
+    "outputs": ["call_record", "transcript", "call_status"],
+    "events_emitted": ["voice.call.started", "voice.call.completed", "voice.call.failed"],
+    "events_consumed": ["contact.updated", "kb.updated"]
+  },
+  "data_schemas": ["voice_calls", "voice_profiles", "transcripts"]
+}
+```
+
+The platform reads the manifest and automatically registers routes, adds sidebar navigation, grants declared permissions, subscribes the module to its declared events, and publishes its capabilities to the registry.
+
+This manifest-first approach is what makes the module system extensible. Adding a new module does not require touching the shell.
+
+---
+
+### 4.5 Container Architecture
+
+Every module — including all first-party aiConnected modules — runs in its own isolated container. This is not a post-MVP architectural improvement. It is a day-one requirement.
+
+**Why this is non-negotiable:**
+- A failing module cannot affect the platform or any other module
+- A compromised module cannot reach into the core or other containers
+- Each module can be updated, rolled back, or restarted independently
+- Resource usage per module is monitored and enforceable
+- Security audits are scoped to individual containers
+
+Modules communicate with each other exclusively through the API gateway. Direct container-to-container calls are not permitted. The API gateway handles routing, authentication enforcement, rate limiting, and anomaly detection.
+
+Infrastructure: DigitalOcean, orchestrated via Dokploy.
+
+---
+
+### 4.6 Developer Ecosystem Foundation *(Architectural Requirement — Not MVP Product)*
+
+The platform must be architected for third-party developer extensibility from day one. The developer-facing portal, community sandbox, capability registry UI, and trust pipeline workflow are not MVP deliverables and will not be marketed or sold in the MVP phase. However, the architecture must not require significant rework to support them later.
+
+This means the following must be in place at MVP:
+
+- The module manifest specification must be final and enforced
+- The capability registry database schema must be in place, even if the UI for browsing it is not
+- The event bus must be designed to accommodate modules it has not yet seen
+- The API gateway must be designed to route to containers dynamically, not hardcoded to known modules
+- Tenant isolation must be scoped in a way that supports future developer-submitted modules
+
+The developer ecosystem will be a significant commercial layer on top of this foundation. Its viability depends entirely on the foundation being correctly built in the MVP. This is the single most important architectural constraint in this document.
+
+---
+
+## 5. MVP Modules
+
+The MVP ships with five modules and one add-on. All five are deeply interconnected and all serve the sales process.
+
+---
+
+### 5.1 Knowledge Base Generator
+
+**Role:** The brain of the platform. Every interaction-based module draws from it.
+
+The Knowledge Base Generator builds a comprehensive, structured intelligence document for a business — covering their services, pricing, FAQs, target customers, ideal and non-ideal use cases, delivery timelines, what clients can expect during and after service, and supplemental market context. This becomes the knowledge source that powers all AI interactions on the platform: chat responses, voice conversations, automated follow-ups, and service card presentations.
+
+**How it works:**
+
+1. The system scrapes and reads the client's entire website
+2. It identifies gaps — information that should exist but doesn't appear on the site — and fills those gaps with AI-assisted research
+3. It generates the structured knowledge base and presents it to the business user through a management UI
+4. The business user reviews, edits, supplements, and approves the knowledge base
+5. The approved knowledge base is published and immediately available to all connected modules
+6. The business user can configure a regeneration schedule to keep the knowledge base current as their offerings evolve
+
+**Module connections:**
+`kb.updated` event triggers re-indexing in Voice AI and Chat Interface. All AI modules query the knowledge base via the API gateway rather than maintaining their own copies.
+
+---
+
+### 5.2 Voice AI Hub
+
+**Role:** Powers all voice interactions across the platform.
+
+Any module that requires voice — inbound phone calls, outbound calls, voice mode within the chat interface — routes through Voice AI Hub. It is the single voice infrastructure layer for the entire platform.
+
+**Core capabilities:**
+- Inbound call handling: AI answers calls for the business, handles questions using Knowledge Base data, qualifies callers, books appointments, or routes to a live agent
+- Outbound calls: AI-initiated calls for lead follow-up, appointment reminders, and outreach sequences
+- In-chat voice: Powers the voice communication mode inside the Chat Interface (see 5.3)
+- Phone number management: Supports adding and managing business phone numbers within the platform
+
+**Technology:** Built on LiveKit for real-time voice communication.
+
+**Module connections:**
+Consumes `contact.updated` and `kb.updated` events. Emits `voice.call.started`, `voice.call.completed`, `voice.call.failed` events consumed by Contacts, Chat Monitor, and automation layers.
+
+---
+
+### 5.3 Chat Interface
+
+**Role:** The business's AI-powered sales funnel in chat form.
+
+This is not a generic chatbot. The Chat Interface is a fully branded, white-label sales experience that a business deploys on their website. It is powered by the Knowledge Base Generator and presents information in rich interactive formats rather than plain text responses.
+
+**Deployment options:**
+- Full-screen chat window (comparable to a Claude.ai or ChatGPT interface experience, embedded directly on the business's site)
+- Traditional chat bubble in the corner of any page
+
+**What it does:**
+A prospective customer opens the chat and begins asking questions. The AI responds using the business's Knowledge Base — answering questions about services, pricing, timelines, and suitability. Services are presented as structured cards with relevant details, not buried in paragraphs. The interface supports text and voice modes (Voice AI Hub powers the voice mode).
+
+As the conversation progresses, the Chat Monitor (see 5.5) watches lead warmth in real time. When a lead crosses a warmth threshold, the business receives a notification and can choose to step in, allow the AI to guide the lead toward booking, or route to a live agent.
+
+**Module connections:**
+Pulls from Knowledge Base on every response. Emits lead events to Chat Monitor. Invokes Voice AI for voice-mode sessions. Writes conversation records and contact data to the shared `contacts` and `chat_conversations` tables.
+
+---
+
+### 5.4 Contact Forms Module
+
+**Role:** Converts traditional form submissions into qualified, AI-engaged leads.
+
+Most contact forms on business websites are dead ends — a submission goes into a CRM and waits for a human to follow up. The Contact Forms module intercepts that process.
+
+**What it does:**
+
+1. **Submission validation:** Before anything else, the system evaluates whether a submission is genuine or spam/bot. This alone provides significant value — businesses receive only real leads.
+
+2. **Intent classification:** Real submissions are classified by intent. Is this a purchase inquiry? A support question? A refund request? An information request? Classification determines the response path.
+
+3. **AI-assisted engagement:** Based on intent, the submitter is routed into an appropriate AI interaction. A purchase inquiry might open a targeted chat asking qualifying questions. A support question might be resolved immediately with Knowledge Base answers. A warm lead might be prompted toward booking an appointment.
+
+**The key distinction from the Chat Interface:** The Chat Interface catches people who chose to engage. Contact Forms catches people who never intended to chat — they filled out a form and expected to wait. The Contact Forms module meets them in that moment with immediate, intelligent engagement, dramatically improving conversion rates and reducing time-to-contact.
+
+**Module connections:**
+Writes to `contacts`. Emits `contact.form_submitted`, `contact.qualified`, and `contact.warm` events. Can invoke the Chat Interface for follow-on engagement and Voice AI for callback initiation.
+
+---
+
+### 5.5 Chat Monitor
+
+**Role:** Gives the business real-time visibility and control over live AI sales conversations.
+
+The Chat Monitor is the business-facing backend companion to the Chat Interface. While AI handles conversations autonomously, the Chat Monitor watches for signals that a lead is warming — increased engagement, questions about pricing or next steps, repeated visits to specific service pages — and surfaces those signals to the business user.
+
+**What the business can do from the Chat Monitor:**
+- Receive real-time notifications when a lead crosses a warmth threshold
+- View the full conversation in progress
+- Step into the conversation directly (live agent takeover)
+- Push a back-end instruction to the AI — guiding it to move toward booking, offer a specific promotion, or escalate the conversation — without the customer knowing a human is now involved
+
+This gives businesses the efficiency of full AI automation combined with the option of human judgment at the moments that matter most.
+
+**Module connections:**
+Subscribes to lead warmth events from Chat Interface and Contact Forms. Writes agent intervention records to the shared event log.
+
+---
+
+### 5.6 Co-Browser *(Add-on / Upsell)*
+
+**Role:** Extends AI chat to every page of a website with full contextual awareness.
+
+The Co-Browser is a floating input bar that follows the user across every page of the business's website. Unlike the Chat Interface (which is a dedicated chat destination), the Co-Browser is ambient — it is always present without requiring the user to navigate anywhere.
+
+**What makes it different:**
+- The AI has awareness of which page the user is currently on, and uses that context in its responses. A user on the HVAC maintenance service page asking "how long does this take?" gets an answer specific to that service, not a generic response.
+- Voice mode is the primary intended interaction method. A user browsing through multiple pages can carry on a natural conversation without typing on each page.
+- Page visit data is recorded throughout the session. Before a sales call happens, the business knows exactly which pages this prospect viewed, in what order, how long they spent, and what questions they asked. This is high-value pre-call intelligence.
+
+The Co-Browser carries a higher inference cost than the standard Chat Interface due to continuous page context processing. It is priced as an add-on above the standard chat subscription.
+
+**Module connections:**
+Leverages Voice AI for voice mode. Writes page visit and conversation data to the contact record. Emits events that Chat Monitor can act on.
+
+---
+
+## 6. Business Model
+
+The platform operates on a zero-barrier, performance-aligned revenue model. Agencies access the platform at no cost and pay nothing until they generate revenue for themselves.
+
+**The three-party structure:**
+Every transaction involves aiConnected (infrastructure operator), the Agency (white-label service provider), and the Business Client (end user). All billing flows through aiConnected's Stripe infrastructure — this is the mechanism by which the platform tax is automatically collected.
+
+**Platform Tax (Revenue Share)**
+aiConnected charges 10% of whatever the agency charges their clients, collected automatically at the point of transaction. If an agency generates no revenue, aiConnected earns nothing from that agency. The platform tax scales directly with agency success.
+
+**Floor Pricing**
+Every module carries a minimum floor price set by aiConnected. Agencies may not charge below the floor. Above the floor, agencies set whatever price they choose — $200/month or $2,000/month for the same module. aiConnected takes 10% regardless.
+
+**API Resale Model**
+AI inference is sourced through OpenRouter, giving access to all major model providers (Anthropic, OpenAI, Google, Mistral, Meta, and others) through a single integration. aiConnected applies a 10% markup on API costs and resells credits to agencies. Agencies then apply their own markup when selling AI usage to clients. The platform tax applies on top of this at the client billing level.
+
+Agencies may also opt into BYOK (Bring Your Own Key) if they have existing direct API relationships. BYOK removes the API markup but does not exempt the agency from the platform tax — the platform tax compensates for platform infrastructure and white-label capability, not API access.
+
+**Revenue streams summary:**
+
+| Stream | Type | Rate |
+|---|---|---|
+| Platform tax on client billing | Variable | 10% of agency charges |
+| API resale markup | Variable | 10% of API cost |
+| Platform tax on BYOK usage | Variable | 10% of agency charges |
+| Customer Success — Starter | Flat monthly | $600–$800/month |
+| Customer Success — Part-Time | Flat monthly | $1,500–$1,700/month |
+| Customer Success — Full-Time | Flat monthly | $3,000–$3,500/month |
+
+Customer Success is an optional white-label service offering where aiConnected provides dedicated human success managers who engage with business clients on the agency's behalf. All CS activity is fully white-labeled — clients interact with who they believe is the agency's team.
+
+---
+
+## 7. Technical Stack
+
+| Layer | Technology |
+|---|---|
+| Frontend framework | Next.js 14 |
+| Monorepo management | Turborepo |
+| UI component system | shadcn/ui |
+| Tenant theming | TweakCN |
+| Database | Supabase (PostgreSQL) |
+| Authentication | Supabase Auth |
+| Realtime / event bus | Supabase Realtime + custom event log table |
+| Voice infrastructure | LiveKit |
+| AI inference | OpenRouter (unified API layer across all major providers) |
+| Container orchestration | Dokploy |
+| Automation / workflow layer | n8n (self-hosted, existing infrastructure) |
+| API gateway | Custom — Next.js middleware + edge functions |
+| Billing | Stripe (all client billing flows through aiConnected's Stripe) |
+| Infrastructure | DigitalOcean |
+
+---
+
+## 8. MVP Scope — What's In, What's Out, What Must Be Architected For
+
+### In scope for MVP
+- Core shell (auth, multi-tenant provisioning, billing, module registry, event bus, API gateway, theme engine)
+- shadcn/ui component foundation + TweakCN theming engine
+- Super user, Agency user, and Business user access layers
+- All five MVP modules: Knowledge Base Generator, Voice AI Hub, Chat Interface, Contact Forms, Chat Monitor
+- Co-Browser as an add-on module
+- Stripe billing integration with platform tax collection and floor price enforcement
+- Agency white-label configuration (branding, custom domain, module selection, client management)
+
+### Out of scope for MVP (post-MVP)
+- Developer portal and developer account management
+- Community sandbox and trust pipeline UI
+- Capability registry browsing interface
+- Personal user account type
+- Visual builder (Craft.js drag-and-drop interface builder)
+- GitHub import / module compatibility translation layer
+
+### Must be architected for — not shipped, but cannot be an afterthought
+- Module manifest specification: must be finalized and enforced from day one. Every first-party module ships with a compliant manifest.
+- Capability registry schema: database schema must exist in MVP even if no UI exposes it yet
+- Event bus: must be designed to handle events from unknown future modules, not hardcoded to MVP module list
+- API gateway: must route dynamically to module containers, not via hardcoded routing tables
+- Container isolation: every module, including first-party modules, runs in its own container from day one
+- Tenant data isolation: must be designed to accommodate third-party module data schemas without architectural rework
+
+---
+
+## 9. What MVP Completion Looks Like
+
+MVP is complete when the following is true end-to-end:
+
+An agency signs up, configures their white-label branding (logo, colors, domain, typography), sets up their Stripe billing, and creates their first business client account.
+
+That business client logs into what appears to be the agency's product, runs the Knowledge Base Generator against their website, reviews and approves the generated knowledge base, and publishes it.
+
+The Chat Interface goes live on the business's website — both as a bubble and as a full-screen embed. A site visitor opens the chat, asks questions about the business's services, receives AI responses drawn from the knowledge base, and is presented with formatted service cards. They switch to voice mode and continue the conversation by speaking.
+
+The business user sees this conversation happening in the Chat Monitor. The lead's warmth score increases. The business receives a notification, reviews the conversation, and decides to let the AI guide the lead toward booking. The appointment is set.
+
+Separately, a visitor submits a contact form on the business's website. The Contact Forms module validates the submission, classifies the intent as a purchase inquiry, and initiates a follow-up AI interaction that qualifies the lead and routes them toward a consultation booking.
+
+All of the above happens within a white-label environment that bears zero visible relationship to aiConnected. The agency looks like the product company. That is the MVP.
+
+---
+
+*aiConnected Platform — MVP Specification v1.0*
+*March 2026*
+*For development team engagement — confidential*

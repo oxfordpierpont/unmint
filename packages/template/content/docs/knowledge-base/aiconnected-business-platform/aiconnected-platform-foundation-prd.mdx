@@ -1,0 +1,370 @@
+---
+title: "aiConnected Platform — Foundation PRD"
+---
+
+# aiConnected Platform — Foundation PRD
+**Version:** 1.0
+**Date:** March 25, 2026
+**Author:** Bob Hunter, Founder/CPO — aiConnected
+**Status:** Draft
+
+---
+
+## 1. Purpose & Scope
+
+This PRD defines the **core foundation** of the aiConnected platform — the shell that everything else is built on. It does not describe any product modules (voice, chat, knowledge base, etc.). Those are first-party modules that will be imported after the foundation is stable.
+
+The foundation is not a feature. It is the architecture. When it is complete, a developer should be able to build any module, plug it in, and have it work — without touching the core.
+
+**In scope:**
+- Multi-tenant permission architecture
+- UI system (shadcn/ui + TweakCN)
+- Layout Manager + AI Module Creator
+- Memory system (Neurigraph basics)
+- Module import system
+- Module isolation / standalone access
+
+**Out of scope (first modules to import, not foundation components):**
+- Voice AI
+- Chat Interface
+- Knowledge Base Generator
+- Contact Forms / Chat Monitor
+- Co-Browser
+
+---
+
+## 2. Architectural Philosophy — The Lego Brick Model
+
+The single most important requirement for this platform is that every major system is **swappable in isolation**. This is non-negotiable.
+
+The core shell is a **central fortress** — it provides identity, routing, permissions, theming, and the event bus. Everything else connects to the fortress via well-defined endpoints. Nothing lives inside the fortress that doesn't have to. No module should be able to break another module. No upgrade should require a full rebuild.
+
+In practice this means:
+
+- Each foundation component lives in its own package with its own folder
+- Components communicate through defined contracts (endpoints, events, manifests) — not direct imports
+- Replacing or upgrading any component (e.g., swapping the UI library, changing the auth provider, updating the memory system) should not require changes to any other component
+- Every module gets its own container, its own repo, and its own direct-access URL from day one
+- The complexity is front-loaded into the foundation so that future creation is as frictionless as possible
+
+The analogy is Lego: each brick is designed and tested in isolation. Once the brick exists, it can be combined freely. The goal is to reach a point where building a new module is a matter of arranging existing bricks — not inventing new materials.
+
+---
+
+## 3. Foundation Components
+
+### 3.1 Multi-Tenant Permission Architecture
+
+#### Overview
+The platform serves five distinct user layers in a hierarchical structure. Each layer is fully isolated from layers it does not own or manage.
+
+```
+Super Admin
+  └── Agency
+        ├── Business
+        │     └── End User (via module, not platform login)
+        └── Developer (sandboxed, separate trust pipeline)
+Personal (isolated, no sub-users)
+```
+
+#### The 13 Permission Types
+
+Each of the first four layers (Super, Agency, Business, Developer) supports three internal user roles. Personal has no sub-users — it is always a single private user.
+
+| Layer | Admin | Manager | User |
+|-------|-------|---------|------|
+| Super | Full platform control | Manages platform-level users | Limited read/support access |
+| Agency | Full agency control | Manages agency users and businesses | Role-specific (sales, support, finance, etc.) |
+| Business | Full business account control | Manages business users | Role-specific (assigned accounts, assistants, etc.) |
+| Developer | Full dev environment control | Manages team collaborators | Contributor access |
+| Personal | (single user, no sub-roles) | — | — |
+
+**Layer Admin** — The account owner. Full permissions for their layer. Cannot exceed their layer's access.
+**Layer Manager** — Delegated authority. Near-admin permissions. Responsible for user management within the layer.
+**Layer User** — Individual contributors. Permissions are explicitly assigned. Cannot escalate their own permissions.
+
+#### Inheritance Rules
+- A Super Admin can impersonate any layer for support and testing
+- An Agency Admin can configure what Business Admins are allowed to do
+- A Business Admin can configure what their users can do, within the bounds the Agency set
+- No layer can grant permissions that exceed their own
+- Personal accounts are entirely isolated — no cross-tenant visibility
+
+#### Key Requirements
+- Permission checks must be enforced at the API layer, not just the UI
+- Role assignments must be auditable (who granted what, when)
+- Impersonation sessions must be logged and time-limited
+- The permission model must be swappable — if the role structure changes, only the permissions package updates
+
+#### v1 Reference
+`packages/permissions/src/auth.js` has the 13 role constants and group helpers. The logic is sound. The v2 version should be rebuilt cleanly from scratch using this as a reference spec only — no code copy.
+
+---
+
+### 3.2 UI System — shadcn/ui + TweakCN
+
+#### Overview
+The entire platform UI is built on shadcn/ui as the component foundation and TweakCN as the theming layer. This means the visual design is completely separated from the functional structure.
+
+**shadcn/ui** provides the component library — buttons, inputs, cards, tables, modals, navigation, everything. Every interface element in the platform uses shadcn components. This ensures consistency, accessibility, and rapid development. Developers building modules inherit this library automatically.
+
+**TweakCN** provides per-tenant CSS variable theming. Colors, fonts, border radii, shadows, spacing — all controlled via CSS custom properties, not hardcoded values. Each agency gets a theme configuration. Each business can inherit or override within the bounds the agency allows.
+
+#### Theming Hierarchy
+```
+Platform defaults (Super)
+  └── Agency theme (overrides platform defaults)
+        └── Business theme (overrides agency defaults, if permitted)
+```
+
+Agency Admins can configure their complete visual identity — brand colors, logo, fonts, border styles — and it propagates automatically to all their business accounts. A business account using an agency's platform will never see the aiConnected brand.
+
+#### AI-Promptable Theming
+The UI system must be designed so that a non-technical user can describe a design change in plain language and the system can execute it. Example: "Make everything more rounded, use a dark navy background, and switch to Inter font." The system AI reads the current theme configuration, interprets the request, updates the CSS variables, and previews the result. This is not a separate product — it is how the theme editor works for anyone who prefers it.
+
+#### Key Requirements
+- All components must come from `@aiconnected/ui` (the platform's shadcn wrapper package) — never imported directly from shadcn or any other library
+- Hardcoded color values are not permitted anywhere in the codebase
+- All colors reference CSS variables only
+- Theme inheritance must be explicit and auditable
+- Theme changes must be previewable before publishing
+- The UI package must be versioned independently of everything else
+
+#### Module UI Flexibility
+Modules that are imported from external developers are not required to use shadcn. If a module has its own UI (e.g., a major vendor like HeyGen), it is loaded in an iframe or isolated container. The platform does not break if a module has a foreign UI. However, first-party modules and all modules built inside the platform must use the shadcn system.
+
+---
+
+### 3.3 Layout Manager + AI Module Creator
+
+#### Overview
+The Layout Manager is the platform's visual building tool. It has two functions:
+
+1. **Edit existing screens** — drag, drop, resize, and reconfigure layouts using shadcn components as building blocks
+2. **Create new modules** — a conversational AI workflow that builds entire new modules from a description
+
+These are not separate tools. They are two tabs inside the same Layout Manager interface.
+
+#### Who Has Access
+| Role | Layout Manager Access |
+|------|--------------------|
+| Super Admin | Full access — all screens, all modules, all tenants |
+| Developer | Limited — their own module scope only |
+| Agency Admin | Limited — their tenant's screens only, within platform bounds |
+| Everyone else | No access |
+
+#### Tab 1: Modules (Edit Existing)
+
+The Modules tab displays a table of all screens and modules in the platform. Clicking any screen opens the drag-and-drop canvas editor.
+
+The canvas editor is powered by **Craft.js** — an open-source React drag-and-drop framework built specifically to be embedded inside an application. Every shadcn component in the platform appears as a draggable widget. Admins drag components onto the canvas, resize and reposition them, and configure their props through a sidebar panel.
+
+**Key behaviors:**
+- Layout changes do not go live immediately. They are staged for AI processing.
+- When an admin saves a layout, the system's orchestration AI interprets the layout change, updates the underlying code, and triggers a redeployment via Dokploy.
+- The admin receives a notification when the change is live and can preview it before publishing.
+- Layout changes are versioned. Any change can be rolled back.
+- A pencil icon appears on every screen when an authorized user is logged in. Clicking it opens the Layout Manager directly to that screen.
+- The Layout Manager is also accessible from the admin sidebar under "Layout Manager → Modules."
+
+#### Tab 2: Create New (AI Module Creator)
+
+The Create New tab is a conversational interface for building new modules without leaving the platform.
+
+**Workflow:**
+1. Admin describes what they want in plain language. Example: "Create a team communications module that works like Slack."
+2. The AI researches the functionality — searches for open-source resources, reviews existing endpoints in the SDK, identifies what already exists vs. what needs to be built.
+3. The AI presents a plan: here are the endpoints I'll connect to, here are the ones I need to create, here is the user flow, here is what the UI will look like. The admin reviews and approves or requests changes before anything is built.
+4. The AI writes the underlying code using existing platform bricks wherever possible. Novel functionality is minimized and logged as new SDK endpoints.
+5. The AI builds the UI using the shadcn component library. If a new component is needed, it is built to be shadcn-compatible.
+6. The AI creates the screens, wires the interactions, and generates the module manifest.
+7. The admin is notified: "Your module is ready for testing."
+8. The admin tests interactively — making direct edits via the Modules tab, or communicating changes in natural language through the Create New tab.
+9. When satisfied, the admin publishes the module, sets access permissions, and it becomes available to enabled users.
+
+**Module release workflow:**
+- When a new module is published, Agency Admins receive a release notification: what it does, how to enable it, what it costs.
+- Agency Admins try it, decide whether to make it available to their business accounts.
+- Business Admins receive their own notification if the Agency has enabled it.
+- Developers releasing modules through the developer trust pipeline follow a separate review workflow (community sandbox → aiConnected certification).
+
+**Key principle:** The Create New tool does not invent new things unnecessarily. It assembles existing bricks. The SDK endpoint registry grows over time, and as it grows, the number of things the tool can build from existing pieces increases. After voice is built, anything needing voice just connects to it. After image generation is built, anything needing images just connects to it. The goal is to front-load the complexity so that future creation is fast and safe.
+
+---
+
+### 3.4 Memory System — Neurigraph Basics
+
+#### Overview
+The platform includes a centralized memory system based on the Neurigraph Memory Architecture. For the foundation, only the core layer is implemented — enough to give the platform and its AI components persistent, structured memory across sessions and users. The full Neurigraph system is a standalone product (Cognition Adaptive LLC) and will be built out separately.
+
+#### What "Basics" Means for the Foundation
+
+The foundation memory system must support:
+
+- **Session memory** — the platform remembers what happened in the current session, including user actions, AI interactions, and module events
+- **User memory** — persistent preferences, history, and context for each user across sessions
+- **Tenant memory** — shared context that applies across all users within an agency or business account (e.g., brand voice, common workflows, frequently asked questions)
+- **Module memory** — each module can read from and write to the shared memory layer, so a call logged by Voice AI is visible to the Chat module and the Knowledge Base
+
+#### Key Requirements
+- Memory is stored in Supabase with row-level security enforcing tenant isolation
+- The memory API is a shared service — all modules connect to the same memory layer, not separate databases
+- Memory is structured (typed, queryable) not just a blob of text
+- The memory layer exposes a clean read/write API that modules can call without knowing the storage implementation
+- The memory package must be versioned and swappable independently of the modules that use it
+
+#### What Is Deferred
+The full Neurigraph cognitive architecture — multi-tier memory classification, associative retrieval, adaptive context weighting — is out of scope for the foundation. The foundation implements the data layer and API contract that the full system will eventually plug into.
+
+---
+
+### 3.5 Module Import System
+
+#### Overview
+The Module Import System is how externally-developed apps become platform-compatible. A developer brings a GitHub repo. The system reads it, maps its functionality to the platform's SDK, and produces a platform-compatible module.
+
+This is the mechanism that allows the platform to grow beyond what aiConnected builds directly — any developer can build a module externally and import it.
+
+#### Import Process
+
+1. **Submission** — Developer submits a GitHub repo URL or ZIP archive through the Developer Portal.
+2. **Manifest check** — The system looks for a `platform-app.json` manifest. If one exists and is valid, the import skips to step 5. If not, the AI-assisted mapping begins.
+3. **Frontend mapping** — The system scans the repo's UI components and maps them to their shadcn equivalents. A normalization report is generated showing what mapped cleanly, what mapped with modifications, and what could not be mapped (warnings, not blockers).
+4. **Backend mapping** — The system scans API calls, service integrations, and data schemas. Existing SDK endpoints are matched. New functionality that has no SDK equivalent is flagged as requiring new endpoint creation.
+5. **Plan presentation** — The system presents the mapping results to the developer: here is what your app does, here is how it connects to the platform, here is what needs to be built. The developer reviews and approves.
+6. **Normalization** — The system rewrites imports from shadcn to `@aiconnected/ui`. It replaces hardcoded hex values with CSS variables. The original code is preserved. A normalized artifact is created alongside it.
+7. **Manifest generation** — A `platform-app.json` is generated or validated, declaring the module's inputs, outputs, events, permissions, and capabilities.
+8. **Staging** — The module enters the staging registry. It is visible to the developer community for testing and integration. The source code is not exposed — only the capability contract (inputs, outputs, events).
+9. **Community review** — Developers in the community can install the staged module into their sandbox environments and test it against their own modules. Weighted votes determine readiness.
+10. **aiConnected certification** — Modules that pass community review are submitted to aiConnected for security review and stress testing before being published to the live registry.
+
+#### The Living SDK
+Every time a new module introduces functionality that has no existing SDK endpoint, that endpoint is created and logged in the SDK registry. Over time, the registry grows. Future modules — whether imported or created inside the platform — have an increasingly rich set of building blocks to connect to.
+
+The SDK endpoint registry is the platform's most important long-term asset. It compounds.
+
+#### Key Requirements
+- The original submitted code is always preserved. Normalization creates a separate artifact.
+- Import succeeds even with unmapped components or unrecognized colors — these are warnings, not failures
+- Every module in the registry is containerized and isolated (Dokploy)
+- Every module gets a unique direct-access URL from the moment it enters the registry (see 3.6)
+- The manifest format is defined in `packages/app-sdk` (extended from v1 with `events_emitted` and `events_consumed` fields)
+
+---
+
+### 3.6 Module Isolation — Standalone Access
+
+#### Overview
+Every module must be accessible without the full platform from the moment it is registered. A module is not just a feature inside the platform — it is a standalone product that happens to also integrate with the platform.
+
+#### Why This Is a Day-One Requirement
+- Demos — show a single module without exposing the full platform
+- Campaigns — link directly to a module as a standalone product experience
+- Licensing — grant a third-party company access to a module's output without giving them platform access
+- A/B testing — test variations of a module independently
+- Open source — publish a module under an MIT license as a public tool
+- Embedding — drop a module into another company's product
+
+#### How It Works
+
+When a module is added to the system, two things are created automatically:
+
+1. **Standalone URL** — a direct endpoint (e.g., `modules.sec-admn.com/kb-studio` or a custom domain) that gives access to the module with configurable authentication (public, token-gated, invite-only, or full auth)
+2. **Standalone repository** — the module's own Git repo, independent of the platform monorepo
+
+The module is not aware of whether it is being accessed through the full platform or via its standalone URL. It simply operates. The platform shell (sidebar, navigation, billing) is conditionally rendered — present when accessed through the platform, absent when accessed standalone.
+
+#### Authentication Options for Standalone Access
+| Mode | Description |
+|------|-------------|
+| Public | No login required. Anyone with the URL can access. |
+| Token | A unique token in the URL grants one-time or time-limited access. |
+| Invite | Access by email invite only. |
+| Full auth | Standard platform login required. Same as in-platform access. |
+
+Access mode is configured per module by the Super Admin or Agency Admin.
+
+#### Key Requirements
+- Standalone URL and repo are created automatically at module registration — not a manual step
+- The module's container runs independently — it does not depend on other modules being online
+- Billing for standalone access is tracked separately and routes through the same Stripe infrastructure
+- Standalone access does not bypass the permission model — access mode is set by the admin, not the end user
+
+---
+
+## 4. What This Foundation Enables
+
+When these five components are complete and working together, the platform can do the following without any additional core development:
+
+- An Agency Admin logs in, customizes their brand in 10 minutes using the AI-prompted theme editor, and shares a branded link with their client
+- A developer builds a new module externally, submits it, and the import system maps it to the platform in one session
+- Bob describes a new module in plain language inside the Create New tab, and the AI builds and deploys it
+- A module is shared as a public demo via its standalone URL — no login required
+- A partner company integrates a single module's output into their own product via its standalone endpoint
+- When the memory system is updated or the UI library is replaced, no modules need to be touched
+
+---
+
+## 5. Individual PRDs Required
+
+Each of the following will require its own detailed PRD before development begins:
+
+1. **Multi-Tenant Permission Architecture** — role model, inheritance rules, impersonation, audit logging
+2. **UI System** — shadcn/ui wrapper package, TweakCN integration, theme inheritance, AI-promptable theme editor
+3. **Layout Manager** — Craft.js integration, canvas editor, AI-processed layout saves, redeploy pipeline
+4. **AI Module Creator** — conversational workflow, research layer, plan review, code generation, testing workflow, publish flow
+5. **Memory System** — Neurigraph basics layer, data schema, read/write API, tenant isolation
+6. **Module Import System** — manifest spec, frontend normalization, backend mapping, staging registry, community review, certification
+7. **Module Isolation** — standalone URL generation, standalone repo creation, authentication modes, billing tracking
+
+---
+
+## 6. Build Sequence
+
+The foundation components must be built in dependency order:
+
+| Phase | Component | Dependency |
+|-------|-----------|------------|
+| 1 | Monorepo structure + shared packages | None |
+| 2 | Permission system | None |
+| 3 | Supabase schema + memory layer basics | Permission system |
+| 4 | UI system (shadcn wrapper + TweakCN) | None |
+| 5 | Platform shell (auth, routing, navigation, billing hooks) | Permissions + UI system |
+| 6 | Module manifest spec + SDK endpoint registry | Platform shell |
+| 7 | Module isolation (standalone URLs + repos) | Module manifest |
+| 8 | Module import system | Module manifest + isolation |
+| 9 | Layout Manager — canvas editor | UI system + platform shell |
+| 10 | Layout Manager — AI Module Creator | Layout Manager + SDK registry + memory |
+
+Voice, Chat, and Knowledge Base are imported after Phase 10 as the first live test of the import system.
+
+---
+
+## 7. v1 Reference Notes
+
+The v1 platform (`platform.sec-admn.com-2`) contains reference material that informed this PRD. **No v1 code should be copied.** The logic is sound in places; the implementation is not trustworthy.
+
+Reference only (do not copy):
+- `packages/permissions/src/auth.js` — 13 role constants, group helpers
+- `packages/app-sdk/src/manifests.js` — manifest spec baseline
+- `packages/branding/src/index.js` — `mergeTheme()` logic and token names
+
+The v2 versions of these must be written cleanly from scratch, using the v1 files as a specification reference, not a code source.
+
+---
+
+## 8. Definition of Done
+
+The foundation is complete when:
+
+- [ ] All 13 permission types are enforced at the API layer (not just UI) and tested
+- [ ] A theme can be changed for a tenant without touching another tenant's theme
+- [ ] A layout change in the canvas editor deploys to production without manual developer intervention
+- [ ] A new module can be described in plain language and the AI builds and deploys it end-to-end
+- [ ] An externally-built module can be imported, normalized, and staged without manual code editing
+- [ ] Every registered module has a working standalone URL accessible without a platform login
+- [ ] Any foundation component (UI system, permission system, memory layer) can be replaced without changes to modules that depend on it
+
+---
+
+*This PRD covers the foundation only. First-party module PRDs (Voice AI, Chat Interface, Knowledge Base Generator, Contact Forms, Co-Browser) will be written separately after the foundation is complete.*

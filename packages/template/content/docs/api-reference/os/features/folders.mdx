@@ -1,0 +1,36 @@
+---
+title: "Folder system"
+description: "Feature-level API contract for nested folder organization across documents, chats, ideas, and workspace artifacts."
+---
+## Contract status
+
+`Derived implementation contract`
+
+## Source document
+
+- [Folder system](/docs/knowledge-base/aiconnected-os/aiconnected-os-4-folder-system-design)
+
+## Feature purpose
+
+Defines the navigable hierarchy that organizes workspace objects across spaces and instances.
+
+## Required operations
+
+- Create and reorder nested folders
+- Move chats, docs, tasks, and artifacts into folders
+- Query folder contents by workspace scope
+- Support bulk moves and archive flows
+
+## Suggested resources
+
+- `folders`
+- `folder_memberships`
+- `folder_items`
+- `folder_permissions`
+- `folder_activity`
+
+## Implementation notes
+
+- Keep this feature workspace-scoped and persona-aware where applicable.
+- Preserve authorship, timestamps, and auditability for all state changes.
+- Treat the source doc as the behavioral specification even where final route names remain open.

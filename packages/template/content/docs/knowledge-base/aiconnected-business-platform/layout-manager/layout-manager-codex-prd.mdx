@@ -1,0 +1,647 @@
+---
+title: "Layout Manager Codex PRD"
+---
+# aiConnected v2 Layout Manager PRD (Implementation-Grade)
+Version: `1.0`  
+Date: `March 26, 2026`  
+Status: `Draft for Engineering Handoff`  
+Owner: `Product + Systems (aiConnected v2)`  
+
+## 1) Purpose
+Define the complete MVP-to-build specification for the **aiConnected Layout Manager** subsystem: a platform-native visual + conversational construction environment used by privileged roles to compose UI structure, bind functionality intent, invoke AI for missing capability/component creation, and move drafts through save/preview/test/publish/rollback safely.
+
+This PRD is intentionally scoped to Layout Manager and its required interfaces/dependencies, not full platform architecture.
+
+---
+
+## 2) Problem Statement
+Current workflow is fragmented across external coding tools, code review loops, Git pushes, deployment, and rework due to mismatch between requested UI/behavior and generated implementation.  
+The platform needs a native workflow where:
+1. Editing starts on the actual live screen.
+2. Structural UI composition happens visually.
+3. Functional intent is wired at component level.
+4. Missing behavior/components are created through guided AI.
+5. Output returns as editable drafts.
+6. Publish control remains explicit and safe.
+
+---
+
+## 3) Product Definition
+The Layout Manager is the platform’s native authoring layer for:
+1. Structural composition of screens/pages/modules using registered builder-safe components.
+2. Component property editing and functional intent wiring.
+3. Data source binding via Connect Existing or Create New.
+4. AI-assisted generation of missing functionality and reusable components (MVP).
+5. Durable persistence as structured layout + bindings (source of truth).
+6. Controlled lifecycle: Save, Preview, Test, Publish, Rollback.
+
+Generated code is a **derived artifact**, never the primary editable source.
+
+---
+
+## 4) Goals
+1. Reduce iteration time from idea to testable platform-native draft.
+2. Eliminate dependency on external vibe-coding loops for routine platform evolution.
+3. Ensure reuse-first construction via registered components/capabilities.
+4. Keep architecture clean: structure vs aesthetics vs business logic separation.
+5. Provide safe operational lifecycle with validation, history, rollback, and role controls.
+
+## 5) Non-Goals
+1. Full platform PRD (tenant inheritance, marketplace distribution, full plugin lifecycle).
+2. Unrestricted raw CSS/theme authoring in builder.
+3. Arbitrary raw-code editing by end users in canvas.
+4. Open-ended regular-user access to authoring tools.
+5. Auto-publish without privileged review/approval action.
+
+---
+
+## 6) Product Principles
+1. **Builder-first UX:** users compose and refine in-platform, on real surfaces.
+2. **AI owns technical translation:** user defines intent, AI handles implementation shape.
+3. **Reuse before creation:** existing components/capabilities are preferred and surfaced first.
+4. **Structured truth:** layout JSON + bindings + metadata is canonical.
+5. **Safe extensibility:** AI-generated outputs are draft, testable, and rollback-capable.
+6. **Clear separation of concerns:**  
+   - Layout Manager = structure/composition/intent wiring  
+   - Theme System = aesthetics/brand  
+   - Module/Service Layer = business logic  
+
+---
+
+## 7) Personas and Role Boundaries
+## 7.1 Super User
+Permissions:
+1. Access all Layout Manager entry points.
+2. Create/edit module/page layouts in permitted shell zones.
+3. Use Data Source Connect Existing/Create New.
+4. Trigger AI creation for new functionality/components.
+5. Run Preview/Test/Publish/Rollback within authorized scope.
+
+## 7.2 Agency Admin
+Permissions:
+1. Access Layout Manager within agency scope.
+2. Edit agency-available module layouts and create scoped layouts.
+3. Invoke AI creation within scope.
+4. Publish within agency-controlled boundaries (no global shell override).
+
+## 7.3 Developer Mode (Limited)
+Permissions:
+1. Technical inspection and assisted debugging of builder artifacts.
+2. Restricted publish unless elevated.
+3. Access logs/validation detail views not shown to admins.
+
+## 7.4 Regular Users
+1. No unrestricted access to Layout Manager editing, AI generation, publish, or rollback.
+
+---
+
+## 8) Scope Boundaries and Dependencies
+## 8.1 In Scope
+1. Builder workspace IA and interactions.
+2. Component registry integration.
+3. Layout source-of-truth schemas.
+4. Data source binding UX and contracts.
+5. AI orchestration states and returns.
+6. Lifecycle operations and validation model.
+7. Role-based access and builder-scope security controls.
+
+## 8.2 Out of Scope (Referenced Dependency Only)
+1. Full theming subsystem internals.
+2. Full backend/module platform lifecycle policies.
+3. Full shell routing governance.
+4. Tenant inheritance architecture details.
+5. Marketplace/export workflows.
+
+## 8.3 Required Dependencies
+1. Auth/RBAC service.
+2. Component Registry service.
+3. Capability/Endpoint Registry service.
+4. AI orchestration service.
+5. Build/deploy pipeline interface.
+6. Theme token service (read-only in builder context).
+7. Versioning and release metadata store.
+
+---
+
+## 9) Assumptions (Strong Defaults)
+1. Layout Manager persists state in a dedicated `layout_definitions` domain store with version records.
+2. Canvas rendering engine is React-based and supports nested tree editing.
+3. AI operations are asynchronous jobs with resumable status polling/streaming.
+4. Preview/Test run against isolated draft runtime context before Publish.
+5. Rollback uses immutable published snapshots.
+6. Component registry enforces compatibility metadata before component appears in library.
+7. Reusable AI-generated component publication requires validation + privileged approval.
+
+---
+
+## 10) Information Architecture and Entry Points
+## 10.1 Entry Point A: In-Context Edit on Live Screens
+1. Privileged user sees edit trigger (pencil icon) on supported live screen.
+2. Clicking trigger opens Layout Manager with route context, current layout draft/published baseline loaded.
+3. User edits in context; Save/Preview/Test/Publish accessible per permission.
+
+## 10.2 Entry Point B: Admin Sidebar
+Path: `Layout Manager`
+1. `Modules`  
+   - Browse existing module layouts/screens.  
+   - Open existing draft or published version for editing.
+2. `Create New`  
+   - Start conversational creation for new page/screen/module interface/capability-linked draft.
+
+## 10.3 Workspace IA (Mandatory)
+1. **Left Panel:** Component library + sticky actions.
+   - Search, categories, draggable items, recent/favorites (optional but recommended for MVP).
+   - Bottom sticky controls: `Save` and `Preview`, side-by-side, `50/50` width.
+2. **Center Panel:** Canvas.
+   - Nested structural editing (sections/containers/components).
+   - Selection, drag/drop, reordering, duplicate, delete, move between valid containers.
+3. **Right Panel (Tabbed):**
+   - `Hierarchy` (tree)
+   - `Properties`
+   - `History` (change log + undo/redo)
+
+---
+
+## 11) Detailed UX Flows
+## 11.1 Edit Existing Screen Flow
+1. Enter from in-context trigger or Modules list.
+2. Layout baseline loads, with current draft if exists.
+3. User modifies tree on canvas.
+4. Properties update for selected node.
+5. Validation status updates in real time.
+6. User Save -> Preview -> Test -> Publish or continue editing.
+
+## 11.2 Create New Flow (MVP Core)
+1. User opens `Layout Manager > Create New`.
+2. Conversational intake captures intended module/page/capability.
+3. AI clarification interview resolves ambiguity.
+4. Reuse check runs against existing capabilities/components.
+5. AI prepares plan and generates initial draft structure + bindings.
+6. System transitions to builder with returned editable draft.
+7. User refines visually, tests, and publishes.
+
+## 11.3 Selected Component Behavior
+1. Click component in canvas or hierarchy.
+2. Properties tab shows:
+   - Basic settings (label/content/options).
+   - Structural settings (size, placement constraints).
+   - Limited interaction settings.
+   - Data Source section (mandatory when component type supports binding).
+3. Changes are logged in History and reversible.
+
+## 11.4 Data Source Flow: Connect Existing
+1. Open Data Source section.
+2. Select `Connect Existing`.
+3. Search capability registry (endpoint/service/workflow/resource).
+4. Validate compatibility mapping with component contract.
+5. Bind and save; unresolved required mappings become blocking issues.
+
+## 11.5 Data Source Flow: Create New
+1. Select `Create New`.
+2. User states intended behavior in natural language.
+3. AI workflow state sequence executes (defined in Section 15).
+4. AI returns draft capability + binding proposal.
+5. Builder reopens with editable result and explicit validation state.
+
+## 11.6 AI-Generated Reusable Component Flow
+1. Component missing in registry for needed UX pattern.
+2. User requests component creation from builder context.
+3. AI clarifies behavior, props, structural footprint, accessibility expectations.
+4. AI generates component draft package and registry metadata draft.
+5. Validation + approval gates.
+6. Approved component appears in registry and reusable library.
+
+## 11.7 History / Undo / Redo
+1. Every user action and significant AI action emits a history entry with readable label.
+2. Undo/redo operates on deterministic layout operations.
+3. Branching history is managed per draft session; Publish snapshots remain immutable.
+
+---
+
+## 12) Source of Truth: Data Model and Contracts
+## 12.1 Canonical Data Objects
+1. `LayoutDefinition` (logical identity and metadata)
+2. `LayoutVersion` (immutable snapshot; draft/published/rolled_back)
+3. `LayoutNode` (tree node)
+4. `ComponentBinding` (data/capability linkage)
+5. `AIDraftArtifact` (capability/component draft outputs)
+6. `ValidationReport`
+7. `HistoryEvent`
+
+## 12.2 JSON Schema Example: LayoutDefinition
+```json
+{
+  "layoutId": "lay_01JX...",
+  "moduleId": "mod_sales_dashboard",
+  "screenId": "screen_pipeline_overview",
+  "status": "DRAFT",
+  "currentVersionId": "lv_01JX...",
+  "publishedVersionId": "lv_01JW...",
+  "createdBy": "usr_123",
+  "updatedAt": "2026-03-26T16:22:11Z",
+  "themeRef": "theme_default_v2"
+}
+```
+
+## 12.3 JSON Schema Example: LayoutVersion
+```json
+{
+  "versionId": "lv_01JX...",
+  "layoutId": "lay_01JX...",
+  "versionNumber": 14,
+  "state": "DRAFT",
+  "tree": {
+    "nodeId": "root",
+    "type": "Page",
+    "children": [
+      {
+        "nodeId": "sec_hero",
+        "type": "Section",
+        "props": { "columns": 2 },
+        "children": [
+          {
+            "nodeId": "cmp_kpi_1",
+            "type": "KpiCard",
+            "props": { "title": "Open Deals" },
+            "binding": {
+              "mode": "CONNECT_EXISTING",
+              "targetType": "capability",
+              "targetRef": "cap_sales_open_deals_v1",
+              "mapping": { "value": "$.count" }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "aiArtifacts": [],
+  "historyCursor": 223,
+  "createdAt": "2026-03-26T16:24:00Z"
+}
+```
+
+## 12.4 JSON Schema Example: AI Create-New Draft Artifact
+```json
+{
+  "artifactId": "aid_01JX...",
+  "artifactType": "CAPABILITY_DRAFT",
+  "state": "builder_returned",
+  "workflowState": "builder_returned",
+  "intent": "Need a dial pad input and call initiation action for PowerDialer screen",
+  "reuseCandidates": ["cap_voice_place_call_v2"],
+  "plan": {
+    "decision": "Create new reusable UI component + bind existing voice capability",
+    "steps": [
+      "Generate PhoneKeypad component draft",
+      "Bind submit action to cap_voice_place_call_v2",
+      "Add validation for phone format"
+    ]
+  },
+  "draftRefs": {
+    "componentDraftId": "cd_01JX...",
+    "bindingDraftId": "bd_01JX..."
+  },
+  "errors": []
+}
+```
+
+---
+
+## 13) Component Registry Contract (Builder-Compatible)
+## 13.1 Required Metadata Fields
+1. `componentKey` (stable unique key)
+2. `displayName`
+3. `category`
+4. `version`
+5. `source` (`system` | `ai_generated`)
+6. `footprint` (block/inline/container requirements)
+7. `allowedParents`
+8. `allowedChildren` (if container)
+9. `propSchema` (typed, editable property model)
+10. `supportsDataSource` (boolean)
+11. `bindingSchema` (if supports data source)
+12. `capabilityCompatibility` (optional list of compatible target types)
+13. `a11yContract` (required accessibility guarantees)
+14. `status` (`draft` | `approved` | `deprecated`)
+15. `deprecationPolicy` link/id
+
+## 13.2 Registry API Contract Example
+`GET /api/layout-manager/component-registry/search?q=phone&category=input`
+```json
+{
+  "items": [
+    {
+      "componentKey": "phone_keypad",
+      "displayName": "Phone Keypad",
+      "category": "Input",
+      "version": "1.0.0",
+      "source": "ai_generated",
+      "supportsDataSource": true,
+      "status": "approved"
+    }
+  ]
+}
+```
+
+## 13.3 Compatibility Rule
+A component is draggable only when:
+1. Registry status is `approved`.
+2. Parent-child context is valid by footprint contract.
+3. Required prop defaults and validation hooks are available.
+
+---
+
+## 14) API and Interface Contracts
+## 14.1 Session and Draft APIs
+1. `POST /api/layout-manager/sessions`  
+   Input: `screenId | moduleId`, entry source (`in_context|admin_modules|create_new`)  
+   Output: session id + loaded draft/published refs.
+2. `GET /api/layouts/{layoutId}/draft`
+3. `POST /api/layouts/{layoutId}/save`
+4. `POST /api/layouts/{layoutId}/autosave`
+
+## 14.2 Lifecycle APIs
+1. `POST /api/layouts/{layoutId}/preview`
+2. `POST /api/layouts/{layoutId}/test`
+3. `POST /api/layouts/{layoutId}/publish`
+4. `POST /api/layouts/{layoutId}/rollback`
+
+## 14.3 Binding APIs
+1. `GET /api/capabilities/search`
+2. `POST /api/layouts/{layoutId}/bindings/connect-existing`
+3. `POST /api/layouts/{layoutId}/bindings/create-new/start`
+4. `GET /api/layouts/{layoutId}/bindings/create-new/{jobId}`
+
+## 14.4 AI Orchestration APIs
+1. `POST /api/layout-manager/ai/jobs`
+2. `GET /api/layout-manager/ai/jobs/{jobId}`
+3. `POST /api/layout-manager/ai/jobs/{jobId}/approve-plan`
+4. `POST /api/layout-manager/ai/jobs/{jobId}/return-to-builder`
+
+## 14.5 Event Stream Interface
+`layout.session.events` (SSE/WebSocket):
+1. `AUTOSAVE_SUCCESS`
+2. `VALIDATION_UPDATED`
+3. `AI_WORKFLOW_STATE_CHANGED`
+4. `HISTORY_APPENDED`
+5. `PREVIEW_READY`
+6. `TEST_RESULT_READY`
+7. `PUBLISH_COMPLETED`
+8. `ROLLBACK_COMPLETED`
+
+---
+
+## 15) AI Orchestration Behavior (Mandatory State Machine)
+Required states:
+`intent_captured -> clarifying -> reuse_check -> plan_ready -> draft_generated -> builder_returned`
+
+## 15.1 State Definitions
+1. `intent_captured`  
+   User intent accepted, normalized, and linked to context node/layout.
+2. `clarifying`  
+   AI asks focused questions to resolve ambiguity.
+3. `reuse_check`  
+   AI queries component/capability registries; ranks reuse candidates.
+4. `plan_ready`  
+   AI produces implementation plan and proposed artifacts.
+5. `draft_generated`  
+   AI creates draft artifacts (bindings/capabilities/components/layout diffs).
+6. `builder_returned`  
+   Draft merged into editable builder state with validation annotations.
+
+## 15.2 AI Decision Rules
+1. Prefer reuse over net-new creation when compatibility score threshold is met.
+2. If multiple valid approaches exist, choose least-risk architecture and explain rationale in plan metadata.
+3. Never auto-publish.
+4. On failure, isolate AI artifact and preserve user draft unchanged.
+
+## 15.3 AI Failure Isolation
+1. AI job failure cannot corrupt latest saved draft.
+2. Partial artifacts remain quarantined until validated or discarded.
+3. User can continue manual structural edits while AI retries.
+
+---
+
+## 16) Lifecycle Definition: Save, Preview, Test, Publish, Rollback
+## 16.1 Save
+1. Persists current draft snapshot and history cursor.
+2. Runs lightweight structural validation.
+3. Does not affect live published experience.
+
+## 16.2 Preview
+1. Builds renderable preview from draft snapshot + mock/live-safe bindings.
+2. Shows UI exactly as composed, including nested structure and resolved component props.
+3. Marks unresolved bindings visibly.
+
+## 16.3 Test
+1. Executes functional checks for:
+   - Existing capability bindings.
+   - AI-created draft capabilities/components.
+   - Required input/output mapping.
+2. Produces pass/fail report with blocking/warning classification.
+
+## 16.4 Publish
+1. Requires no blocking issues and valid permission.
+2. Creates immutable published snapshot.
+3. Triggers downstream implementation sync/deploy pipeline.
+4. Maintains audit entry with actor/time/version.
+
+## 16.5 Rollback
+1. Select previous published version.
+2. System sets selected snapshot as active published state.
+3. New rollback event/version recorded.
+4. Rollback is atomic and reversible via forward publish.
+
+---
+
+## 17) Validation Model (Blocking vs Warning)
+## 17.1 Blocking
+1. Invalid layout tree structure.
+2. Missing required component props.
+3. Broken component references.
+4. Required Data Source unset for binding-required component.
+5. Unresolved AI draft dependency required for behavior.
+6. Publish permission violation.
+7. Incompatible parent-child placement by footprint contract.
+
+## 17.2 Warning
+1. Deprecated component usage.
+2. Suboptimal reuse opportunity detected.
+3. Non-critical accessibility improvement recommended.
+4. Performance risk patterns (excessive nested heavy components).
+5. Optional test coverage missing for non-critical branch.
+
+## 17.3 Validation Output Contract
+```json
+{
+  "summary": { "blocking": 2, "warning": 3 },
+  "issues": [
+    {
+      "severity": "blocking",
+      "code": "BINDING_REQUIRED_MISSING",
+      "nodeId": "cmp_table_7",
+      "message": "Data Source is required for Table component.",
+      "resolution": "Connect Existing capability or Create New."
+    }
+  ]
+}
+```
+
+---
+
+## 18) Testing Requirements (Builder Scope)
+1. Visual Preview Tests
+   - Render correctness for nested layouts and component props.
+2. Functional Binding Tests
+   - Existing capability response mapping checks.
+3. AI-Generated Draft Tests
+   - Draft capability/component smoke tests before publish.
+4. Lifecycle Tests
+   - Save/Preview/Test/Publish/Rollback transitions and state integrity.
+5. History Integrity Tests
+   - Undo/redo determinism across mixed user + AI actions.
+6. RBAC Tests
+   - Role restrictions for edit/publish/rollback.
+
+---
+
+## 19) Performance Requirements (MVP Targets)
+1. Canvas drag/drop and selection interactions should feel immediate in normal drafts.
+2. Component search results should return near-instantly for typical registry sizes.
+3. Property edits should reflect in canvas without perceptible lag.
+4. Autosave must complete in background without blocking editing.
+5. AI states must stream progress updates; no silent waiting.
+6. Preview generation should be fast enough for iterative workflows.
+
+---
+
+## 20) Reliability and Resilience Requirements
+1. Autosave with draft recovery after interruption/reload.
+2. Coherent history model across session reconnects.
+3. AI failure isolation from main draft integrity.
+4. Registry stability for approved reusable components.
+5. Rollback safety with immutable published snapshots.
+6. Idempotent publish/rollback operations.
+7. Recovery UX that offers “Restore last autosaved draft” when crash detected.
+
+---
+
+## 21) Security and Governance (Builder Scope)
+1. RBAC enforcement at API and UI layers.
+2. Scope-aware authorization (global vs agency).
+3. Audit logging for Save/Test/Publish/Rollback and AI generation actions.
+4. Capability access controls on Connect Existing search results.
+5. Prompt and artifact handling with PII-safe logging policy.
+6. No unrestricted regular user access to authoring endpoints.
+
+---
+
+## 22) MVP Definition
+MVP includes:
+1. Both entry points (in-context + admin sidebar modules/create new).
+2. Full 3-pane workspace with mandated tabs and sticky Save/Preview controls.
+3. Nested structural editing and hierarchy tree.
+4. Properties panel with mandatory Data Source modes.
+5. AI workflow states exactly as specified and integrated into builder return flow.
+6. AI-assisted creation for missing functionality and reusable components.
+7. Save/Preview/Test/Publish/Rollback lifecycle.
+8. Blocking/warning validation model.
+9. History log + undo/redo + AI action entries.
+10. RBAC boundaries for Super User, Agency Admin, limited Developer mode.
+
+---
+
+## 23) MVP Acceptance Criteria
+1. Privileged user can launch Layout Manager from live screen edit trigger and edit current screen in context.
+2. Privileged user can launch from `Layout Manager > Modules` and open/edit module screens.
+3. Privileged user can launch `Layout Manager > Create New`, complete conversational intake, and receive editable generated draft in builder.
+4. Left panel contains searchable component library with sticky `Save` and `Preview` buttons side-by-side at equal width.
+5. Center canvas supports nested sections/containers/components with drag/drop, reorder, duplicate, delete.
+6. Right panel includes tabs: `Hierarchy`, `Properties`, `History`.
+7. Selecting any component updates Properties with valid editable fields for that component.
+8. Binding-capable components always expose Data Source with both modes: `Connect Existing` and `Create New`.
+9. `Connect Existing` allows searchable capability selection and validated binding mapping.
+10. `Create New` runs required AI state sequence: `intent_captured -> clarifying -> reuse_check -> plan_ready -> draft_generated -> builder_returned`.
+11. AI-generated result is editable in builder and not locked.
+12. Save persists draft without publishing.
+13. Preview renders draft representation with binding statuses.
+14. Test returns actionable functional report for existing and AI-generated connections.
+15. Publish is blocked when blocking issues exist.
+16. Publish succeeds only for authorized roles and creates immutable published snapshot.
+17. Rollback restores selected published snapshot safely and logs audit event.
+18. History shows user and notable AI actions with undo/redo functioning deterministically.
+19. Autosave and recovery restore draft after simulated interruption.
+20. AI failure does not corrupt saved draft or published state.
+21. Regular users cannot access authoring APIs or UI entry points.
+22. Reusable AI-generated component, once approved, appears in component library for later reuse.
+
+---
+
+## 24) Phased Roadmap
+## Phase 1 (MVP Build)
+1. Core builder IA and structural editing.
+2. Registry-driven component library.
+3. Data Source Connect Existing/Create New.
+4. AI workflow core states and draft return.
+5. Lifecycle controls and validation model.
+6. RBAC + audit + autosave/recovery.
+
+## Phase 2 (Hardening and Scale)
+1. Enhanced test harnesses and simulation data tooling.
+2. Advanced diff visualization and change review before publish.
+3. Better AI plan explainability and comparison options.
+4. Component deprecation assistant and migration prompts.
+
+## Phase 3 (Advanced Authoring)
+1. Multi-user concurrent editing controls.
+2. Richer generated component quality gates.
+3. Expanded scoped template kits and reusable flow blueprints.
+4. Broader orchestration integrations (still governed by structured source model).
+
+---
+
+## 25) Open Risks and Mitigations
+1. Risk: AI creates low-quality or over-complex artifacts.  
+   Mitigation: strict plan review metadata, validation gates, draft-only return, approval workflow.
+2. Risk: Registry inconsistency causes runtime/editor mismatch.  
+   Mitigation: registry contract validation and compatibility checks at load and drop-time.
+3. Risk: Scope creep into full theme editor.  
+   Mitigation: enforce structural-only property schema and theme-system boundary.
+4. Risk: Publish pipeline latency harms confidence.  
+   Mitigation: explicit state feedback, progress telemetry, and rollback-first safety.
+5. Risk: Role boundary confusion in multi-tenant contexts.  
+   Mitigation: central RBAC policies + scope labels in UI + API enforcement.
+6. Risk: History complexity with mixed AI/user events.  
+   Mitigation: operation-based event model with deterministic undo semantics.
+
+---
+
+## 26) Requirements Traceability Matrix
+
+| Requirement ID | Requirement Summary | PRD Section(s) |
+|---|---|---|
+| R1 | Layout Manager is core to aiConnected v2 | 1, 3, 22 |
+| R2 | Platform-native visual + conversational environment | 3, 11, 15 |
+| R3 | shadcn/ui-compatible default building blocks | 3, 13 |
+| R4 | Source of truth = structured layout + bindings | 3, 12 |
+| R5 | AI-assisted missing functionality + reusable components is MVP | 11.5, 11.6, 15, 22, 23 |
+| R6 | Separation: layout vs theme vs backend logic | 6, 8 |
+| R7 | Required IA: left/center/right + tabs + sticky controls | 10.3, 23 |
+| R8 | Required entry points: in-context + admin modules/create new | 10.1, 10.2, 23 |
+| R9 | Data Source mandatory with Connect Existing/Create New | 11.4, 11.5, 23 |
+| R10 | Required AI workflow states sequence | 15, 23 |
+| R11 | Lifecycle: Save, Preview, Test, Publish, Rollback | 16, 23 |
+| R12 | Role boundaries: Super User, Agency Admin, limited Developer; no unrestricted regular users | 7, 21, 23 |
+| R13 | Validation model: blocking vs warning | 17, 23 |
+| R14 | Reliability: autosave/recovery, coherent history, AI failure isolation, rollback safety | 18, 20, 23 |
+| R15 | Acceptance criteria implementation-verifiable | 23 |
+| R16 | Include explicit API/interface contracts and schema examples | 12, 14, 17.3 |
+| R17 | Include architecture boundaries and subsystem dependencies | 8 |
+| R18 | Include component registry contract | 13 |
+| R19 | Include phased roadmap and open risks | 24, 25 |
+| R20 | Focus on Layout Manager subsystem, not full platform PRD | 1, 8.2 |
+
+---
+
+## 27) Final Product Statement
+The aiConnected Layout Manager is the platform-native subsystem through which privileged users visually compose interface structure, wire functional intent, and invoke conversational AI to create missing capabilities/components, with structured layout+binding artifacts as canonical truth and a governed lifecycle that safely converts draft intent into published platform behavior.

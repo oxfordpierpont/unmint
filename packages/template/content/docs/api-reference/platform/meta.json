@@ -1,0 +1,12 @@
+{
+  "title": "Platform",
+  "pages": [
+    "index",
+    "overview",
+    "auth-tenancy",
+    "modules-events",
+    "shared-entities",
+    "theme-layout"
+  ],
+  "defaultOpen": true
+}

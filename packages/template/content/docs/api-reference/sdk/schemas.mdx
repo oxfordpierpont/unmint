@@ -1,0 +1,191 @@
+---
+title: "Schemas"
+description: "Shared v1 SDK data models from @aiconnected/schemas, including core entities, ownership boundaries, and reuse guidance for module authors."
+---
+## Contract status
+
+`Canonical interface contract`
+
+This page is based on:
+
+- `platform.sec-admn.com-2/sdk/packages/schemas/src/index.ts`
+
+## Why this page matters
+
+The v1 SDK docs are explicit: shared data models belong in `@aiconnected/schemas`, and module authors should not redefine them inline. This package is the common language between modules.
+
+## Golden path usage
+
+```ts
+import type {
+  Contact,
+  Conversation,
+  Call,
+  Appointment,
+  Workflow,
+  UsageRecord,
+  Account,
+  Agency,
+  Module,
+  Theme
+} from "@aiconnected/schemas";
+```
+
+## Core model inventory
+
+The package defines these major entity families:
+
+| Model | Purpose |
+|---|---|
+| `Contact` | central lead or person record |
+| `Message` and `Conversation` | channel-agnostic conversation thread |
+| `Call` | voice interaction record |
+| `Appointment` | scheduled interaction with a contact |
+| `KnowledgeBase` and `KnowledgeBaseDocument` | AI context and indexed document records |
+| `Workflow` and `WorkflowStep` | automation definition |
+| `UsageRecord` | usage and billing telemetry |
+| `Account` | business customer or agency client |
+| `Agency` | reseller entity |
+| `Module` | registered module record |
+| `Theme` | visual token set |
+
+## Important primitives
+
+The package also defines shared primitives such as:
+
+- `UUID`
+- `ISOTimestamp`
+- `RecordStatus`
+- `UsageUnit`
+
+## High-value shared entities
+
+### `Contact`
+
+This is the most important shared record in the package.
+
+Key fields:
+
+- `id`
+- `first_name`
+- `last_name`
+- `full_name`
+- `email`
+- `phone`
+- `company`
+- `tags`
+- `custom_fields`
+- `status`
+- `source`
+- `assigned_to`
+- `account_id`
+
+Why it matters:
+
+- chat, voice, forms, and other modules should point at the same contact identity
+- modules should enrich a contact record rather than invent parallel person objects
+
+### `Conversation`
+
+Defines a thread with:
+
+- `contact_id`
+- `account_id`
+- `channel`
+- `messages`
+- `status`
+- `metadata`
+
+Channels supported by the package:
+
+- `chat`
+- `sms`
+- `email`
+- `voice`
+- `web_widget`
+
+### `Call`
+
+Defines shared voice records with:
+
+- `contact_id`
+- `account_id`
+- `direction`
+- `outcome`
+- `duration_seconds`
+- `recording_url`
+- `transcript`
+- `summary`
+- `provider`
+
+### `Workflow`
+
+Defines automation state with:
+
+- `trigger_event`
+- `steps`
+- `created_by`
+- `run_count`
+
+This is important for the capability and automation side of the platform.
+
+## Ownership boundaries
+
+Use these schemas when:
+
+- a record is shared conceptually across modules
+- a record needs platform-wide consistency
+- a record may appear in SDK payloads, registry calls, or event data
+
+Do not invent new field names for:
+
+- contacts
+- conversations
+- calls
+- appointments
+- workflows
+- usage records
+- accounts and agencies
+
+## Module-author guidance
+
+### Do
+
+- import shared types from `@aiconnected/schemas`
+- extend through module-local metadata where necessary
+- keep module-specific fields out of core entity names unless they belong in the shared package
+
+### Do not
+
+- create alternate names for core objects
+- redefine shared models in each module
+- silently diverge field names between modules
+
+## Normalization and reporting models
+
+The same package also includes zod schemas for import-normalizer reporting, including:
+
+- `UIImportNormalization`
+- `ColorNormalization`
+- `NormalizationReport`
+
+Those support the v1 UI import normalizer workflow described in the SDK and manifest docs.
+
+## v1 reality vs v2 target
+
+### Implemented in v1
+
+- shared data model package
+- strong guidance against inline redefinition
+- normalization-report models
+
+### Carry forward to v2
+
+- one package for core cross-module entities
+- shared primitive and enum vocabulary
+- import-normalization report models if the upload workflow remains
+
+### Known mismatch or migration risk
+
+- some v1 model naming uses `account_id` while newer platform docs emphasize `workspace` terminology
+- v2 should either alias this cleanly or provide a structured migration path rather than silently mixing terms

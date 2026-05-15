@@ -1,0 +1,14 @@
+{
+  "title": "AiConnected Paper",
+  "pages": [
+    "index",
+    "paper-claude",
+    "paper-design-spec-overiew",
+    "paper-dev-overview",
+    "paper-developer-prd",
+    "paper-product-overview",
+    "paper-readme",
+    "paper-ui-ux-spec"
+  ],
+  "defaultOpen": false
+}

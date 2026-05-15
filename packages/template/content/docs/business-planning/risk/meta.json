@@ -1,0 +1,13 @@
+{
+  "title": "Risk",
+  "pages": [
+    "index",
+    "bp-risk-01-risk-register",
+    "bp-risk-02-gdpr-compliance",
+    "bp-risk-03-ccpa-compliance",
+    "bp-risk-04-ai-regulatory-risk",
+    "bp-risk-05-robotics-regulatory-landscape",
+    "bp-risk-08-vendor-dependency-risk"
+  ],
+  "defaultOpen": true
+}

@@ -1,0 +1,140 @@
+---
+title: "Concept Task List"
+---
+# aiConnected Industry Template Concept Implementation Task List
+
+## Core Concept Clarification
+
+**Model B: Industry = Collection of Configurations**
+
+Industries are not monolithic templates with specializations underneath. Industries ARE their configurations.
+
+Example: Real Estate Industry is:
+
+- Land Sales Configuration (1.2M active businesses)
+- Residential Home Sales Configuration (850k active businesses)
+- Commercial Real Estate Configuration (320k active businesses)
+- Build-to-Rent Configuration (45k active businesses)
+- Real Estate M&A Configuration (12k active businesses)
+- etc.
+
+Agency workflow: “My client does land sales” → Click Real Estate > Land Sales config → Done. No customization needed. Battle-tested setup.
+
+Agencies can apply configurations to their entire agency OR to specific business clients (granular control).
+
+-----
+
+## Feature Voting & Governance System
+
+- [ ] Build voting interface for template features (thumbs up/down, optional comment field)
+- [ ] Create AI capability to ingest and process user feedback at scale (no human bottleneck)
+- [ ] Define voting window parameters (test period: 30 vs 90 days, measure which performs better)
+- [ ] Create feature acceptance/rejection workflow based on vote totals
+- [ ] When feature is rejected, feed AI-processed feedback back to contributor for improvement iteration
+- [ ] Document contribution submission workflow (how agencies/developers propose features)
+
+## Version Management & Non-Forced Updates
+
+- [ ] Build version tracking system for each industry template
+- [ ] Ensure agencies can stay on any version indefinitely (no forced upgrades)
+- [ ] Create version upgrade opt-in flow (not automatic)
+- [ ] Implement rollback capability if an agency needs to revert to prior version
+
+## Persona Learning Integration with User Acceptance Gates
+
+- [ ] When personas across industry template ecosystem improve via cross-persona learning, create user acceptance flow
+- [ ] Agencies/businesses can review new skills/capabilities before adoption
+- [ ] Build reversibility system - users can reject or remove skills that don’t work for their use case
+- [ ] Document how improved persona baseline gets propagated to template versions
+
+## Cold Start / Initial Template Bootstrap
+
+- [ ] Identify 10-20 most popular industry verticals for launch (Real Estate, Legal, Med Spa, Dentistry, Insurance, Construction/Remodeling, Healthcare, etc.)
+- [ ] For each initial template: document required modules, features to enable, baseline personas needed
+- [ ] Create contribution guidelines that support BOTH developer AND agency input (not just developers)
+- [ ] Establish quality bar for initial templates before launch
+
+## Ecosystem & Contribution Framework
+
+- [ ] Define roles: agencies vs. developers in contribution model
+- [ ] Create process for agencies to submit their proven/working configurations as template contributions
+- [ ] Create process for developers to submit new features/modules to existing templates
+- [ ] Document conflict resolution if two contributions conflict
+
+## Configurations Sub-Feature (Agency Contributions)
+
+- [ ] Build configuration creation workflow - agencies export their working setup as a configuration
+- [ ] Create configuration submission UI - name, description, target industry, what problem it solves
+- [ ] **Configuration conflict resolution**: When competing configurations (e.g., two “Land Sales” configs) are submitted, use same voting system (30/90 day test window). If accepted = becomes new version. If rejected = doesn’t propagate, but agencies already using it can continue (no forced changes)
+- [ ] Build configuration discovery interface - search + browse by industry + use case keywords
+- [ ] **AI-assisted discovery**: System AI can ask targeted questions to drill down to matching configurations (“You’re in land sales? Here are land sales configurations”)
+- [ ] Create configuration application flow - apply to entire agency OR to specific business clients (granular control)
+- [ ] Configuration versioning - agencies can use different versions of same configuration (v1.5 vs v2.0)
+- [ ] Voting/feedback system for configurations (same thumbs up/down mechanism)
+- [ ] Configuration reusability - ensure configuration can be applied multiple times across different clients without conflicts
+- [ ] Reversibility - agencies can remove/rollback a configuration if it doesn’t work for them
+
+## Configuration Testing & Feedback (Beta Testing Model)
+
+- [ ] Enable Test Mode toggle for agencies - allows business clients to beta test configurations before production
+- [ ] Test mode activates 30-day voting window (upvote/downvote feedback system)
+- [ ] Agencies can enable test mode for specific business clients (granular control)
+- [ ] **Data visualization needed**: Charts showing configuration voting trends, acceptance likelihood, user sentiment during testing period
+- [ ] Data display in agency settings showing real-time upvote/downvote counts for configurations in test
+- [ ] Data display in Industry discovery page showing configurations currently in test with vote data and trends
+- [ ] Test mode data applies both locally (agency settings) and globally (industry discovery)
+- [ ] Seamless transition: when configuration completes testing and passes voting, automatically moves to production
+
+## Configuration Application (No Forking Model)
+
+- [ ] Agencies apply configurations as-is (snapshot of settings, personas, integrations, workflows, modules)
+- [ ] After applying, agencies can customize/fine-tune for their specific needs
+- [ ] No forking required - each agency gets their own instance of the configuration to modify
+- [ ] Changes made by agencies don’t create new public configurations
+- [ ] If an agency wants to share their customizations, they submit as new configuration through voting process
+
+## Configuration Discovery & Trust Signals (WordPress Plugin Model)
+
+- [ ] Display active businesses/users count on every configuration (e.g., “1.2M active businesses”)
+- [ ] Display star/rating system for each configuration
+- [ ] Display “Last Updated” date for each configuration
+- [ ] Display configuration adoption trends (is it growing or declining?)
+- [ ] Surface top configurations by category (most active, highest rated, newest)
+- [ ] Make discovery visual and scannable - agencies can glance and see what’s working vs what’s niche
+- [ ] Show configuration version history (what changed, when, community votes)
+
+## Access Control & Business Client Configuration Management
+
+- [ ] Agencies can toggle “Industry Templates/Configurations” access on/off per business client (similar to marketplace toggle)
+- [ ] Agencies control which configurations are available to their business clients (whitelisting/blacklisting)
+- [ ] Agencies can set default configurations per business client type
+- [ ] **Open question**: Should business clients be able to search and apply configurations themselves, or only agencies can apply on their behalf?
+  - Current thinking: Agencies toggle this on/off per client (agency decides what they allow)
+  - Not forcing one model - agencies make the choice for their workflow
+
+## Feature + Configuration Interaction (ARCHITECTURAL PRINCIPLE)
+
+- [ ] **CORE PRINCIPLE: No auto-apply, ever.** Features must go through voting/testing. Agencies are notified of updates but never forced to adopt them.
+- [ ] When a new feature passes voting (e.g., skip-tracing for Real Estate), agencies get notification: “New skip-tracing feature available. Here’s what it does. Toggle on/off?”
+- [ ] Agencies decide per-business-client whether to enable the new feature
+- [ ] If enabled, pricing toggle appears (free or upsell)
+- [ ] No forced updates, no auto-propagation, no breaking changes imposed on users
+
+## Monitoring & Optimization
+
+- [ ] Track voting window duration performance (30 vs 90 day outcomes)
+- [ ] Monitor adoption rates per industry template
+- [ ] Measure feature acceptance/rejection ratios over time
+- [ ] Collect data on version retention (which versions do agencies stay on longest)
+
+## Feature Pricing Integration (CRITICAL)
+
+- [ ] For every feature toggle available to agencies (enable/disable for business clients), add Pricing button
+- [ ] Pricing UI shows when feature toggle is activated
+- [ ] Agencies can set price at $0 (free upsell) or custom amount (paid upsell)
+- [ ] Pricing applies per-feature, per-business-client, enabling granular monetization
+- [ ] Ensure pricing data flows to billing system
+
+-----
+
+**Note**: This keeps the business model intact. No changes to platform tax, 90/10 split, or core marketplace. This is scaffolding and collaborative evolution for starting configurations.

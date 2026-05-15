@@ -1,0 +1,1094 @@
+---
+title: "Clean Room Specification 03: Schema Driven Knowledge Graph with Dynamic Tool Generation"
+description: "Document Purpose This specification describes a schema driven knowledge graph MCP server that automatically generates CRUD tools from JSON schema definitions..."
+---
+<Info>
+Normalized for Mintlify from `knowledge-base/neurigraph-memory-architecture/neurigraph-tool-references/03-Temporal-Knowledge-Graph-Adaptive-Decay.mdx`.
+</Info>
+# Clean-Room Specification 03: Schema-Driven Knowledge Graph with Dynamic Tool Generation
+
+## Document Purpose
+
+This specification describes a **schema-driven knowledge graph MCP server** that automatically generates CRUD tools from JSON schema definitions. Unlike basic knowledge graphs with fixed tool sets, this system allows users to define custom entity schemas (e.g., NPCs, locations, artifacts) that automatically become MCP tools with full validation, relationship management, and transactional operations. An AI coding model should be able to produce a functionally identical implementation from this document alone.
+
+---
+
+## 1. System Overview
+
+### 1.1 What This System Does
+
+This is a TypeScript MCP server that provides a **schema-governed knowledge graph** with these key innovations:
+
+1. **Dynamic tool generation**: Define a JSON schema file → system auto-generates `add_*`, `update_*`, `delete_*` MCP tools
+2. **Schema-enforced properties**: Each node type has required/optional fields with enum constraints
+3. **Relationship-aware schemas**: Schema properties can define edges that auto-create when nodes are created
+4. **Metadata as flat string arrays**: Structured data stored as `"Key: Value"` strings for maximum flexibility
+5. **Edge weights**: Confidence/strength scoring on relationships (0.0–1.0 range)
+6. **Transaction support**: Atomic multi-step operations with rollback
+7. **Neighbor-inclusive queries**: Search and open operations always return immediate graph neighbors for richer context
+
+### 1.2 Core Architecture
+
+```
+┌────────────────────────────────────────────────────────┐
+│                    MCP Server Layer                      │
+│  (StdioServerTransport, JSON-RPC)                       │
+│                                                          │
+│  ┌────────────────────────────────────────────────────┐  │
+│  │              Tool Registry                          │  │
+│  │                                                     │  │
+│  │  Static Tools (11):                                 │  │
+│  │    add_nodes, update_nodes, delete_nodes            │  │
+│  │    add_edges, update_edges, delete_edges            │  │
+│  │    add_metadata, delete_metadata                    │  │
+│  │    read_graph, search_nodes, open_nodes             │  │
+│  │                                                     │  │
+│  │  Dynamic Tools (3 per schema):                      │  │
+│  │    add_<type>, update_<type>, delete_<type>         │  │
+│  │    (e.g., add_npc, update_npc, delete_npc)          │  │
+│  └──────────────────┬─────────────────────────────────┘  │
+│                     │                                     │
+│  ┌──────────────────▼─────────────────────────────────┐  │
+│  │          Application Manager (Facade)               │  │
+│  │                                                     │  │
+│  │  ┌─────────────┐ ┌─────────────┐ ┌──────────────┐  │  │
+│  │  │NodeManager  │ │EdgeManager  │ │MetadataManager│  │  │
+│  │  └─────────────┘ └─────────────┘ └──────────────┘  │  │
+│  │  ┌─────────────┐ ┌──────────────────────────────┐  │  │
+│  │  │SearchManager│ │TransactionManager            │  │  │
+│  │  └─────────────┘ └──────────────────────────────┘  │  │
+│  └──────────────────┬─────────────────────────────────┘  │
+│                     │                                     │
+│  ┌──────────────────▼─────────────────────────────────┐  │
+│  │         Schema System                               │  │
+│  │  SchemaLoader → SchemaBuilder → SchemaProcessor     │  │
+│  │  (Reads .schema.json files from disk)               │  │
+│  └──────────────────┬─────────────────────────────────┘  │
+│                     │                                     │
+│  ┌──────────────────▼─────────────────────────────────┐  │
+│  │       JsonLineStorage                               │  │
+│  │  (Persists graph as JSONL file on disk)             │  │
+│  └─────────────────────────────────────────────────────┘  │
+└──────────────────────────────────────────────────────────┘
+```
+
+### 1.3 Key Design Decisions
+
+1. **Schema-first design**: All node types are defined by JSON schema files. No free-form entity creation.
+2. **Metadata as string arrays**: Instead of typed objects, metadata is `["Role: Wizard", "Status: Active"]` — parsed on demand.
+3. **Relationship properties in schemas**: A schema property can declare it creates an edge, making relationship creation automatic.
+4. **Edge weights**: Optional 0–1 float on edges representing confidence/strength. Default 1.0.
+5. **Weight averaging**: When updating weights, new evidence is averaged with current: `(current + new) / 2`.
+6. **Neighbor-inclusive search**: `searchNodes` and `openNodes` always include immediate neighbor nodes and connecting edges.
+7. **Transaction wrapping**: Multi-step operations (create node + edges) are wrapped in transactions with rollback support.
+8. **Event system**: Before/after events emitted on all graph operations for extensibility.
+
+---
+
+## 2. Data Model
+
+### 2.1 Node
+
+```typescript
+interface Node {
+  type: "node";           // Discriminator for JSONL storage
+  name: string;           // UNIQUE identifier — no two nodes share a name
+  nodeType: string;       // Schema type (e.g., "npc", "location", "artifact")
+  metadata: string[];     // Array of "Key: Value" strings
+}
+```
+
+**Rules:**
+- `name` is the UNIQUE key. Two nodes cannot have the same name regardless of nodeType.
+- `nodeType` references a loaded schema name (without "add_" prefix in storage).
+- `metadata` is a flat array of strings in "Key: Value" format (colon-space separator).
+
+### 2.2 Edge
+
+```typescript
+interface Edge {
+  type: "edge";           // Discriminator for JSONL storage
+  from: string;           // Source node name (must exist)
+  to: string;             // Target node name (must exist)
+  edgeType: string;       // Relationship type (e.g., "located_in", "owns")
+  weight?: number;        // 0.0 to 1.0, defaults to 1.0 if omitted
+}
+```
+
+**Rules:**
+- Edges are UNIQUE by the triple `(from, to, edgeType)`. No duplicate edges.
+- Both `from` and `to` must reference existing nodes (validated on creation).
+- Weight must be in range [0.0, 1.0]. Default is 1.0 (maximum confidence).
+- Edges are directional: A→B ≠ B→A.
+
+### 2.3 Graph
+
+```typescript
+interface Graph {
+  nodes: Node[];
+  edges: Edge[];
+}
+```
+
+### 2.4 JSONL Storage Format
+
+One JSON object per line. All nodes first, then all edges:
+
+```
+{"type":"node","name":"Gandalf","nodeType":"npc","metadata":["Role: Wizard","Status: Active","Description: A powerful wizard"]}
+{"type":"node","name":"Rivendell","nodeType":"location","metadata":["Atmosphere: Peaceful","Region: Middle-earth"]}
+{"type":"edge","from":"Gandalf","to":"Rivendell","edgeType":"located_in","weight":1}
+```
+
+Loading/saving follows the same pattern as Spec 01: full file read on load, full file write on save, `type` field stripped from in-memory objects and re-added on serialization.
+
+---
+
+## 3. Schema System — The Core Innovation
+
+### 3.1 Schema File Format
+
+Schemas are JSON files stored in a `schemas/` directory with the naming convention `<entitytype>.schema.json`.
+
+**Complete schema example (`npc.schema.json`):**
+
+```json
+{
+  "name": "add_npc",
+  "description": "Add a non-player character to the knowledge graph",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "The name of the NPC",
+      "required": true
+    },
+    "role": {
+      "type": "string",
+      "description": "The NPC's role or occupation",
+      "required": true,
+      "enum": ["Warrior", "Wizard", "Merchant", "Noble", "Peasant", "Thief"]
+    },
+    "status": {
+      "type": "string",
+      "description": "Current status of the NPC",
+      "required": true,
+      "enum": ["Active", "Inactive", "Deceased", "Missing"]
+    },
+    "currentLocation": {
+      "type": "string",
+      "description": "Where the NPC currently is",
+      "required": false,
+      "relationship": {
+        "edgeType": "located_in",
+        "nodeType": "location",
+        "description": "The location where this NPC resides"
+      }
+    },
+    "description": {
+      "type": "string",
+      "description": "Physical or personality description",
+      "required": false
+    },
+    "traits": {
+      "type": "array",
+      "description": "Character traits",
+      "required": false
+    }
+  },
+  "additionalProperties": true
+}
+```
+
+### 3.2 Schema Property Types
+
+| Property Type | Storage | Description |
+|---|---|---|
+| `string` (no relationship) | Metadata entry: `"Key: Value"` | Simple attribute stored in metadata |
+| `string` (with relationship) | Edge created + metadata entry | Creates an edge AND stores in metadata |
+| `array` | Metadata entry: `"Key: item1, item2, item3"` | Array items joined by comma-space |
+| `enum` constrained | Same as string/array | Values validated against allowed list |
+
+### 3.3 Schema Name Convention
+
+- Schema file `name` field MUST start with `"add_"` prefix (e.g., `"add_npc"`)
+- The entity type is derived by removing the prefix: `"add_npc"` → `"npc"`
+- Dynamic tools generated: `add_npc`, `update_npc`, `delete_npc`
+
+### 3.4 Relationship Properties
+
+When a schema property includes a `relationship` block:
+
+```json
+"currentLocation": {
+  "type": "string",
+  "required": false,
+  "relationship": {
+    "edgeType": "located_in",     // Type of edge to create
+    "nodeType": "location",       // Expected target node type (informational)
+    "description": "Where this entity is located"
+  }
+}
+```
+
+**On creation**: If `currentLocation` is provided with value "Rivendell":
+1. A metadata entry `"Current Location: Rivendell"` is added to the node
+```text
+2. An edge `{from: nodeName, to: "Rivendell", edgeType: "located_in"}` is created
+
+```
+**On update**: If `currentLocation` changes from "Rivendell" to "Mordor":
+```text
+1. Delete old edge: `{from: nodeName, to: "Rivendell", edgeType: "located_in"}`
+```
+```text
+2. Create new edge: `{from: nodeName, to: "Mordor", edgeType: "located_in"}`
+```
+3. Update metadata: replace `"Current Location: Rivendell"` with `"Current Location: Mordor"`
+
+### 3.5 SchemaBuilder Class
+
+Programmatically constructs schemas:
+
+```typescript
+class SchemaBuilder {
+  private name: string;
+  private description: string;
+  private properties: Map<string, PropertyConfig>;
+  private relationships: Map<string, RelationshipConfig>;
+  private allowAdditional: boolean;
+
+  constructor(name: string, description: string)
+
+  addStringProperty(name: string, description: string, required: boolean, enumValues?: string[]): this
+  addArrayProperty(name: string, description: string, required: boolean, enumValues?: string[]): this
+  addRelationship(propertyName: string, edgeType: string, description: string, nodeType?: string): this
+  allowAdditionalProperties(allowed: boolean): this
+  createUpdateSchema(): SchemaBuilder  // Returns new builder for update_* variant
+  build(): SchemaConfig
+}
+```
+
+**`createUpdateSchema()`**: Creates a variant where ALL properties are optional (for partial updates). The `name` property becomes required (to identify which node to update).
+
+### 3.6 SchemaLoader Class
+
+Loads schemas from disk:
+
+```typescript
+class SchemaLoader {
+  private schemasDir: string;
+
+  constructor(schemasDir: string)
+
+  loadSchema(schemaName: string): SchemaBuilder    // Load single .schema.json file
+  loadAllSchemas(): Map<string, SchemaBuilder>      // Load entire directory
+}
+```
+
+**Validation on load:**
+- File must be valid JSON
+- Must have `name` (string), `description` (string), `properties` (object)
+- Name must start with `"add_"`
+- Properties must have `type` and `description`
+
+### 3.7 SchemaProcessor — Node Creation from Schema
+
+```typescript
+function createSchemaNode(
+  args: Record<string, any>,  // The tool call arguments
+  schema: SchemaBuilder,       // The loaded schema
+  entityType: string           // e.g., "npc"
+): { nodes: Node[], edges: Edge[] }
+```
+
+**Algorithm:**
+```
+1. Extract "name" from args (required)
+2. Initialize metadata: string[] = []
+3. Initialize edges: Edge[] = []
+4. For each property in schema:
+   a. Get value from args (skip if not provided and not required)
+   b. If required and not provided: throw validation error
+   c. If property has enum constraint: validate value is in enum list
+   d. If property has a relationship definition:
+      - Create edge: { from: args.name, to: value, edgeType: relationship.edgeType }
+      - Add metadata: "PropertyDisplayName: value"
+   e. If property is type "array":
+      - Add metadata: "PropertyDisplayName: item1, item2, item3"
+   f. If property is type "string" (no relationship):
+      - Add metadata: "PropertyDisplayName: value"
+5. Create node: { name: args.name, nodeType: entityType, metadata }
+6. Return { nodes: [node], edges }
+```
+
+**PropertyDisplayName conversion**: Convert camelCase property name to Title Case with spaces:
+- `currentLocation` → `"Current Location"`
+- `role` → `"Role"`
+
+---
+
+## 4. Manager Classes — Complete Specifications
+
+### 4.1 ApplicationManager (Facade)
+
+Central entry point that delegates to specialized managers:
+
+```typescript
+class ApplicationManager {
+  private graphManager: GraphManager;
+  private searchManager: SearchManager;
+  private transactionManager: TransactionManager;
+
+  // Node operations (delegate to GraphManager → NodeManager)
+  addNodes(nodes: Node[]): Promise<void>
+  updateNodes(updates: NodeUpdate[]): Promise<void>
+  deleteNodes(names: string[]): Promise<void>
+
+  // Edge operations (delegate to GraphManager → EdgeManager)
+  addEdges(edges: Edge[]): Promise<void>
+  updateEdges(updates: EdgeUpdate[]): Promise<void>
+  deleteEdges(edgeIds: EdgeIdentifier[]): Promise<void>
+  getEdges(filter?: EdgeFilter): Promise<Edge[]>
+
+  // Metadata operations (delegate to GraphManager → MetadataManager)
+  addMetadata(nodeName: string, metadata: string[]): Promise<void>
+  deleteMetadata(nodeName: string, metadata: string[]): Promise<void>
+
+  // Search operations (delegate to SearchManager)
+  readGraph(): Promise<Graph>
+  searchNodes(query: string): Promise<Graph>
+  openNodes(names: string[]): Promise<Graph>
+
+  // Transaction operations (delegate to TransactionManager)
+  beginTransaction(): Promise<void>
+  commit(): Promise<void>
+  rollback(): Promise<void>
+  withTransaction<T>(operation: () => Promise<T>): Promise<T>
+}
+```
+
+### 4.2 NodeManager
+
+**`addNodes(nodes: Node[]): Promise<void>`**
+```
+1. For each node:
+   a. Validate node has name, nodeType, metadata (array)
+   b. Validate no existing node has the same name (throw if duplicate)
+2. Append nodes to graph
+3. Save graph to storage
+```
+
+```text
+**`updateNodes(updates: Array<{name: string, metadata?: string[], nodeType?: string}>): Promise<void>`**
+```
+```
+1. For each update:
+   a. Find existing node by name (throw if not found)
+   b. If metadata provided: replace entire metadata array
+   c. If nodeType provided: update nodeType
+2. Save graph to storage
+```
+
+**`deleteNodes(names: string[]): Promise<void>`**
+```
+1. Remove all nodes whose name is in the names array
+2. Remove ALL edges where from OR to is in the names array (cascade)
+3. Save graph to storage
+```
+
+### 4.3 EdgeManager
+
+**`addEdges(edges: Edge[]): Promise<void>`**
+```
+1. For each edge:
+   a. Validate from and to are non-empty strings
+   b. Validate both from and to reference existing nodes (throw if not)
+   c. Validate no duplicate (from, to, edgeType) exists in graph
+   d. If weight is undefined: set to 1.0
+   e. If weight provided: validate 0.0 ≤ weight ≤ 1.0
+2. Append edges to graph
+3. Save graph to storage
+```
+
+```text
+**`updateEdges(updates: Array<{from: string, to: string, edgeType: string, newWeight?: number}>): Promise<void>`**
+```
+```
+1. For each update:
+   a. Find existing edge by (from, to, edgeType)
+   b. If newWeight provided: set edge.weight = updateWeight(currentWeight, newWeight)
+      updateWeight formula: (current + new) / 2
+2. Save graph to storage
+```
+
+```text
+**`deleteEdges(identifiers: Array<{from: string, to: string, edgeType: string}>): Promise<void>`**
+```
+```
+1. Filter graph.edges: keep edges that do NOT match any identifier on all three fields
+2. Save graph to storage
+```
+
+### 4.4 MetadataManager
+
+**`addMetadata(nodeName: string, entries: string[]): Promise<void>`**
+```
+1. Find node by name (throw if not found)
+2. For each entry in entries:
+   a. If entry NOT already in node.metadata: append it
+   (Deduplication by exact string match)
+3. Save graph to storage
+```
+
+**`deleteMetadata(nodeName: string, entries: string[]): Promise<void>`**
+```
+1. Find node by name (throw if not found)
+2. Filter node.metadata: keep entries NOT in the deletion list
+   (Exact string match)
+3. Save graph to storage
+```
+
+### 4.5 SearchManager
+
+**`readGraph(): Promise<Graph>`**
+```
+1. Load graph from storage
+2. Return the complete graph as-is
+```
+
+**`searchNodes(query: string): Promise<Graph>`**
+```
+1. Load graph from storage
+2. Lowercase the query
+3. Find matching nodes where query is substring of (case-insensitive):
+   a. node.name
+   b. node.nodeType
+   c. ANY entry in node.metadata
+4. Collect matching node names into a Set
+5. Find all edges where from OR to is in the matching set
+6. Extract neighbor names from those edges (names not already in matching set)
+7. Find neighbor nodes by name
+8. Return {
+     nodes: [...matchingNodes, ...neighborNodes],
+     edges: [...connectingEdges]
+   }
+```
+
+**CRITICAL**: Search returns BOTH the directly matching nodes AND their immediate neighbors. This provides richer context for the AI.
+
+**`openNodes(names: string[]): Promise<Graph>`**
+```
+1. Load graph from storage
+2. Find nodes where name is in the input array (exact match)
+3. Find all edges where from OR to is in the names
+4. Extract neighbor names from edges
+5. Find neighbor nodes
+6. Return {
+     nodes: [...requestedNodes, ...neighborNodes],
+     edges: [...connectingEdges]
+   }
+```
+
+### 4.6 TransactionManager
+
+```typescript
+class TransactionManager {
+  private inTransaction: boolean = false;
+  private rollbackActions: Array<{ action: () => Promise<void>, description: string }> = [];
+
+  beginTransaction(): Promise<void>
+  // Sets inTransaction = true, clears rollback queue
+
+  addRollbackAction(action: () => Promise<void>, description: string): void
+  // Pushes to rollback queue
+
+  commit(): Promise<void>
+  // Clears rollback queue, sets inTransaction = false
+
+  rollback(): Promise<void>
+  // Executes rollback actions in REVERSE order (LIFO)
+  // Continues executing remaining actions even if one fails
+  // Sets inTransaction = false
+
+  withTransaction<T>(operation: () => Promise<T>): Promise<T>
+  // Convenience wrapper:
+  // 1. beginTransaction()
+  // 2. Try: result = await operation(); commit(); return result
+  // 3. Catch: rollback(); re-throw error
+
+  isInTransaction(): boolean
+}
+```
+
+**Key behavior:**
+- Rollback actions execute in LIFO order (last registered, first executed)
+- A failing rollback action does NOT prevent remaining rollback actions from executing
+- `withTransaction()` provides auto-commit on success, auto-rollback on failure
+
+---
+
+## 5. Dynamic Tool Generation
+
+### 5.1 How It Works
+
+For each `.schema.json` file loaded, the system generates THREE MCP tools:
+
+1. **`add_<type>`**: Creates a new node of this type with schema-validated properties
+2. **`update_<type>`**: Updates an existing node (all properties optional except `name`)
+3. **`delete_<type>`**: Deletes a node by name and type
+
+### 5.2 Tool Schema Generation
+
+Given an NPC schema with properties `name`, `role`, `status`, `currentLocation`, `description`, `traits`:
+
+**Generated `add_npc` tool input schema:**
+```json
+{
+  "type": "object",
+  "properties": {
+    "npc": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "The name of the NPC" },
+        "role": { "type": "string", "description": "The NPC's role", "enum": ["Warrior", "Wizard", ...] },
+        "status": { "type": "string", "description": "Current status", "enum": ["Active", "Inactive", ...] },
+        "currentLocation": { "type": "string", "description": "Where the NPC currently is" },
+        "description": { "type": "string", "description": "Physical or personality description" },
+        "traits": { "type": "array", "items": { "type": "string" }, "description": "Character traits" }
+      },
+      "required": ["name", "role", "status"]
+    }
+  },
+  "required": ["npc"]
+}
+```
+
+```text
+**Note**: The arguments are wrapped in an object keyed by the entity type name (e.g., `{ npc: { ... } }`).
+
+```
+**Generated `update_npc` tool input schema:**
+- Same structure but `required` only includes `["name"]`
+- All other properties are optional for partial updates
+
+**Generated `delete_npc` tool input schema:**
+```json
+{
+  "type": "object",
+  "properties": {
+    "npc": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "The name of the NPC to delete" }
+      },
+      "required": ["name"]
+    }
+  },
+  "required": ["npc"]
+}
+```
+
+### 5.3 Dynamic Tool Execution Flow
+
+**Add operation (`add_npc`):**
+```
+1. Extract entity data from args.npc
+2. Call SchemaProcessor.createSchemaNode(args.npc, schema, "npc")
+3. Begin transaction
+4. Add nodes via NodeManager
+5. Add edges via EdgeManager (if relationship properties present)
+6. Commit transaction
+7. Return created nodes and edges
+```
+
+**Update operation (`update_npc`):**
+```
+1. Extract entity data from args.npc
+2. Find existing node by name AND nodeType
+3. Begin transaction
+4. For each provided property:
+   a. If it has a relationship:
+      - Delete old edges of same edgeType from this node
+      - Create new edge to new target
+   b. Parse existing metadata into key→value map
+   c. Update the changed key
+   d. Rebuild metadata array from map
+5. Update node via NodeManager
+6. Commit transaction
+7. Return updated node and edges
+```
+
+**Delete operation (`delete_npc`):**
+```
+1. Extract name from args.npc.name
+2. Find node by name (validate it exists and matches nodeType)
+3. Begin transaction
+4. Delete node via NodeManager (cascades to edges)
+5. Commit transaction
+6. Return confirmation
+```
+
+---
+
+## 6. Static MCP Tools (11 Tools)
+
+In addition to dynamic schema tools, the server provides 11 always-available tools:
+
+### 6.1 Graph Mutation Tools
+
+**`add_nodes`**
+```text
+- Input: `{ nodes: Array<{name: string, nodeType: string, metadata: string[]}> }`
+```
+- Action: Add nodes to graph (validates uniqueness)
+
+**`update_nodes`**
+```text
+- Input: `{ nodes: Array<{name: string, metadata?: string[], nodeType?: string}> }`
+```
+- Action: Update existing nodes by name
+
+**`delete_nodes`**
+```text
+- Input: `{ nodeNames: string[] }`
+```
+- Action: Delete nodes and cascade-delete connected edges
+
+**`add_edges`**
+```text
+- Input: `{ edges: Array<{from: string, to: string, edgeType: string, weight?: number}> }`
+```
+- Action: Add edges (validates node existence, uniqueness, weight range)
+
+**`update_edges`**
+```text
+- Input: `{ edges: Array<{from: string, to: string, edgeType: string, weight?: number}> }`
+```
+- Action: Update edge weights using averaging formula
+
+**`delete_edges`**
+```text
+- Input: `{ edges: Array<{from: string, to: string, edgeType: string}> }`
+```
+- Action: Remove edges by exact triple match
+
+### 6.2 Metadata Tools
+
+**`add_metadata`**
+```text
+- Input: `{ nodeName: string, metadata: string[] }`
+```
+- Action: Append metadata entries to node (deduplicated)
+
+**`delete_metadata`**
+```text
+- Input: `{ nodeName: string, metadata: string[] }`
+```
+- Action: Remove specific metadata entries from node
+
+### 6.3 Search Tools
+
+**`read_graph`**
+```text
+- Input: `{}` (no parameters)
+```
+- Action: Return complete graph
+
+**`search_nodes`**
+```text
+- Input: `{ query: string }`
+```
+- Action: Case-insensitive substring search + neighbor expansion
+
+**`open_nodes`**
+```text
+- Input: `{ names: string[] }`
+```
+- Action: Exact name lookup + neighbor expansion
+
+---
+
+## 7. Tool Handler Routing
+
+### 7.1 Handler Architecture
+
+```
+ToolHandlerFactory.getHandler(toolName) routes to:
+├── GraphToolHandler       → add_nodes, update_nodes, delete_nodes,
+│                            add_edges, update_edges, delete_edges
+├── SearchToolHandler      → read_graph, search_nodes, open_nodes
+├── MetadataToolHandler    → add_metadata, delete_metadata
+└── DynamicToolHandler     → all add_*/update_*/delete_* schema tools
+```
+
+**Routing logic:**
+```
+if toolName matches /^(add|update|delete)_(nodes|edges)$/ → GraphToolHandler
+if toolName matches /^(read_graph|search_nodes|open_nodes)$/ → SearchToolHandler
+if toolName matches /^(add|delete)_metadata$/ → MetadataToolHandler
+otherwise → DynamicToolHandler (schema-generated tools)
+```
+
+### 7.2 Response Format
+
+All tool responses follow this structure:
+
+**Success response:**
+```json
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "{\"data\": {...}, \"actionTaken\": \"Created npc: Gandalf\", \"timestamp\": \"2026-03-08T...\"}"
+    }
+  ],
+  "isError": false
+}
+```
+
+**Error response:**
+```json
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "{\"error\": \"Node 'Gandalf' already exists\", \"context\": {...}, \"suggestions\": [...]}"
+    }
+  ],
+  "isError": true
+}
+```
+
+---
+
+## 8. Event System
+
+### 8.1 EventEmitter
+
+Simple publish-subscribe system:
+
+```typescript
+class EventEmitter {
+  on(event: string, listener: Function): () => void    // Returns unsubscribe function
+  off(event: string, listener: Function): void
+  once(event: string, listener: Function): () => void
+  emit(event: string, data?: any): boolean             // Returns true if listeners exist
+  removeAllListeners(event?: string): void
+}
+```
+
+### 8.2 Events Emitted
+
+| Event | When Emitted | Data |
+|---|---|---|
+```text
+| `beforeAddNodes` | Before nodes are added | `{ nodes: Node[] }` |
+```
+```text
+| `afterAddNodes` | After nodes are added | `{ nodes: Node[] }` |
+```
+```text
+| `beforeDeleteNodes` | Before nodes are deleted | `{ names: string[] }` |
+```
+```text
+| `afterDeleteNodes` | After nodes are deleted | `{ names: string[] }` |
+```
+```text
+| `beforeAddEdges` | Before edges are added | `{ edges: Edge[] }` |
+```
+```text
+| `afterAddEdges` | After edges are added | `{ edges: Edge[] }` |
+```
+```text
+| `beforeSearch` | Before search operation | `{ query: string }` |
+```
+```text
+| `afterSearch` | After search operation | `{ results: Graph }` |
+```
+| `beforeBeginTransaction` | Before transaction starts | `{}` |
+| `afterCommit` | After transaction commits | `{}` |
+| `beforeRollback` | Before rollback executes | `{}` |
+| `afterRollback` | After rollback completes | `{}` |
+
+---
+
+## 9. Metadata Processing
+
+### 9.1 Metadata Format
+
+All metadata entries are strings in `"Key: Value"` format:
+```
+["Role: Wizard", "Status: Active", "Description: A powerful wizard", "Traits: brave, wise"]
+```
+
+### 9.2 MetadataProcessor Utilities
+
+```typescript
+class MetadataProcessor {
+  // Parse single entry
+  static parseEntry(entry: string): { key: string, value: string }
+  // Splits on FIRST ": " (colon-space). Everything before is key, everything after is value.
+
+  // Format entry
+  static formatEntry(key: string, value: string): string
+  // Returns "key: value"
+
+  // Create map from metadata array
+  static createMap(metadata: string[]): Map<string, string>
+  // Parses all entries into key→value map
+
+  // Merge multiple metadata arrays (deduplicates)
+  static merge(...arrays: string[][]): string[]
+
+  // Get value for a key
+  static getValue(metadata: string[], key: string): string | null
+  // Returns first matching value, or null
+
+  // Filter by key
+  static filterByKey(metadata: string[], key: string): string[]
+  // Returns all entries matching key
+}
+```
+
+---
+
+## 10. Edge Weight System
+
+### 10.1 Weight Properties
+
+- Range: 0.0 (no confidence) to 1.0 (maximum confidence)
+- Default: 1.0 when not specified
+- Meaning: Strength or confidence of the relationship
+
+### 10.2 Weight Utilities
+
+```typescript
+class EdgeWeightUtils {
+  static validateWeight(weight: number): void
+  // Throws if weight < 0 or weight > 1
+
+  static ensureWeight(edge: Edge): Edge
+  // If edge.weight is undefined, set to 1.0. Returns edge.
+
+  static updateWeight(current: number, newEvidence: number): number
+  // Returns (current + newEvidence) / 2
+  // This averaging formula allows gradual confidence updates
+
+  static combineWeights(weights: number[]): number
+  // Returns Math.max(...weights)
+  // Used for parallel edges (same endpoints, different types)
+}
+```
+
+**Example of weight evolution:**
+```
+Initial:        weight = 1.0 (default)
+Update with 0.6: (1.0 + 0.6) / 2 = 0.8
+Update with 0.4: (0.8 + 0.4) / 2 = 0.6
+Update with 1.0: (0.6 + 1.0) / 2 = 0.8
+```
+
+---
+
+## 11. Validation Rules
+
+### 11.1 Node Validation
+
+```typescript
+class GraphValidator {
+  static validateNodeProperties(node: Node): void
+  // - node.name must be non-empty string
+  // - node.nodeType must be non-empty string
+  // - node.metadata must be an array
+
+  static validateNodeDoesNotExist(graph: Graph, name: string): void
+  // - Throws if any node in graph has this name
+
+  static validateNodeExists(graph: Graph, name: string): Node
+  // - Returns the node, or throws if not found
+}
+```
+
+### 11.2 Edge Validation
+
+```typescript
+static validateEdgeProperties(edge: Edge): void
+// - edge.from must be non-empty string
+// - edge.to must be non-empty string
+// - edge.edgeType must be non-empty string
+// - If weight defined: must be 0.0 ≤ weight ≤ 1.0
+
+static validateEdgeUniqueness(graph: Graph, edge: Edge): void
+// - Throws if any existing edge matches (from, to, edgeType)
+
+static validateEdgeReferences(graph: Graph, edges: Edge[]): void
+// - For each edge: both from and to must reference existing nodes
+```
+
+---
+
+## 12. Configuration
+
+```typescript
+const CONFIG = {
+  SERVER: {
+    NAME: "memorymesh",
+    VERSION: "0.3.0"
+  },
+  PATHS: {
+    SCHEMAS_DIR: path.join(__dirname, "..", "data", "schemas"),
+    MEMORY_FILE: path.join(__dirname, "..", "data", "memory.json")
+  }
+};
+```
+
+---
+
+## 13. Example Schema Set
+
+The system ships with 11 pre-built schemas (designed for RPG/storytelling use cases):
+
+| Schema | Entity Type | Key Properties | Relationships |
+|---|---|---|---|
+| npc.schema.json | npc | name, role, status, description, traits | currentLocation → located_in |
+| location.schema.json | location | name, atmosphere, region | parentLocation → contained_in |
+| artifact.schema.json | artifact | name, rarity, properties | owner → owned_by |
+| quest.schema.json | quest | name, status, objectives, rewards | location → takes_place_in |
+| faction.schema.json | faction | name, alignment, goals | headquarters → based_in |
+| player_character.schema.json | player_character | name, class, level, stats | currentLocation → located_in |
+| inventory.schema.json | inventory | name, contents, capacity | owner → belongs_to |
+| skills.schema.json | skills | name, type, level, effects | - |
+| currency.schema.json | currency | name, denomination, value | - |
+| transportation.schema.json | transportation | name, type, speed | owner → owned_by |
+| temporal.schema.json | temporal | name, timestamp, event | location → occurred_at |
+
+These schemas are **customizable and replaceable**. Users can add their own schemas for any domain.
+
+---
+
+## 14. Complete Behavioral Test Specifications
+
+### 14.1 Schema Loading Tests
+
+**Test: Load valid schema**
+- Input: Valid npc.schema.json
+- Expected: SchemaBuilder created with correct properties and relationships
+
+**Test: Reject schema without "add_" prefix**
+- Input: Schema with name "npc" (no prefix)
+- Expected: Validation error thrown
+
+**Test: Load all schemas from directory**
+- Input: Directory with 3 schema files
+- Expected: 3 SchemaBuilder instances, 9 dynamic tools registered
+
+### 14.2 Dynamic Tool Tests
+
+**Test: Create node via schema tool**
+```text
+- Input: `add_npc` with `{npc: {name: "Gandalf", role: "Wizard", status: "Active"}}`
+```
+- Expected: Node created with metadata `["Role: Wizard", "Status: Active"]`
+
+**Test: Create node with relationship property**
+```text
+- Input: `add_npc` with `{npc: {name: "Gandalf", role: "Wizard", status: "Active", currentLocation: "Rivendell"}}`
+```
+```text
+- Expected: Node created AND edge `{from: "Gandalf", to: "Rivendell", edgeType: "located_in"}` created
+
+```
+**Test: Update node via schema tool**
+- Setup: NPC "Gandalf" with currentLocation "Rivendell"
+```text
+- Input: `update_npc` with `{npc: {name: "Gandalf", currentLocation: "Mordor"}}`
+```
+- Expected: Old edge to Rivendell deleted. New edge to Mordor created. Metadata updated.
+
+**Test: Delete node via schema tool**
+- Setup: NPC "Gandalf" with edges
+```text
+- Input: `delete_npc` with `{npc: {name: "Gandalf"}}`
+```
+- Expected: Node and all connected edges removed
+
+**Test: Enum validation**
+- Input: `add_npc` with role "Dragon" (not in enum)
+- Expected: Validation error
+
+### 14.3 Search with Neighbor Expansion
+
+**Test: Search returns neighbors**
+- Setup: Nodes A, B, C. Edge A→B. Search matches only A.
+- Expected: Returns nodes [A, B], edges [A→B]
+
+**Test: Open nodes returns neighbors**
+- Setup: Nodes A, B, C. Edges: A→B, B→C.
+- Input: openNodes(["A"])
+- Expected: Returns nodes [A, B], edges [A→B]
+
+### 14.4 Transaction Tests
+
+**Test: Successful transaction commits**
+- Begin transaction → Add node → Add edge → Commit
+- Expected: Both node and edge persisted
+
+**Test: Failed transaction rolls back**
+- Begin transaction → Add node → Fail on edge (bad reference) → Rollback
+- Expected: Node is also removed (rolled back)
+
+**Test: withTransaction auto-commits on success**
+```text
+- withTransaction(() => { addNode(); addEdge(); })
+```
+- Expected: Both persisted
+
+**Test: withTransaction auto-rolls-back on error**
+```text
+- withTransaction(() => { addNode(); throw Error(); })
+```
+- Expected: Node not persisted
+
+### 14.5 Edge Weight Tests
+
+**Test: Default weight is 1.0**
+- Create edge without weight
+- Expected: edge.weight === 1.0
+
+**Test: Weight averaging on update**
+- Setup: Edge with weight 0.8
+- Update with weight 0.6
+- Expected: New weight = (0.8 + 0.6) / 2 = 0.7
+
+**Test: Weight out of range rejected**
+- Create edge with weight 1.5
+- Expected: Validation error
+
+---
+
+## 15. Implementation Checklist
+
+1. **Core data types**: Node, Edge, Graph interfaces
+2. **JSONL storage**: Load/save with type discriminator
+3. **MetadataProcessor**: Parse, format, merge, query metadata strings
+4. **EdgeWeightUtils**: Validate, default, average, combine weights
+5. **GraphValidator**: Node/edge property and uniqueness validation
+6. **NodeManager**: CRUD with cascade deletes
+7. **EdgeManager**: CRUD with weight handling and node reference validation
+8. **MetadataManager**: Add/delete metadata entries with deduplication
+9. **SearchManager**: Case-insensitive search + neighbor expansion; exact open + neighbor expansion
+10. **TransactionManager**: Begin/commit/rollback with LIFO action queue
+11. **ApplicationManager**: Facade delegating to all managers
+12. **EventEmitter**: Simple pub-sub for before/after hooks
+13. **SchemaBuilder**: Programmatic schema construction
+14. **SchemaLoader**: Load .schema.json files from disk
+15. **SchemaProcessor**: Create/update nodes from schema definitions with automatic edge generation
+16. **DynamicSchemaToolRegistry**: Generate add/update/delete tools per schema
+17. **Static tools**: Register 11 always-available MCP tools
+18. **Tool routing**: Factory pattern to route tool calls to correct handler
+19. **Response formatting**: Success, error, and partial success response builders
+20. **MCP server setup**: Server initialization, tool registration, stdio transport
+21. **Configuration**: Centralized paths and server metadata
+22. **Sample schemas**: At minimum one example schema file (npc.schema.json)
+
+**Total expected implementation**: ~2000 lines TypeScript across ~25 files in a layered architecture.

@@ -1,0 +1,477 @@
+---
+title: "Lead Capture & Routing System"
+description: "Overview This specification extends the kbChat platform with lead capture and routing capabilities. The system allows agencies and businesses to create custo..."
+---
+<Info>
+Normalized for Mintlify from `knowledge-base/aiconnected-apps-and-modules/modules/funnelChat/legacy-kb-chat-lead-capture-routing.mdx`.
+</Info>
+# Lead Capture & Routing System
+
+## Overview
+
+This specification extends the kbChat platform with lead capture and routing capabilities. The system allows agencies and businesses to create custom forms, capture lead information during chat conversations, and route that information to their preferred destination.
+
+**Platform Responsibility:** Capture the data, deliver the data.
+
+**Agency/Business Responsibility:** What happens after delivery.
+
+---
+
+## Admin Interface: Lead Capture Settings
+
+Location: Business Settings → Lead Capture (or Agency Settings → Default Lead Capture for agency-wide defaults)
+
+---
+
+## Part 1: Form Builder
+
+### 1.1 Form Configuration
+
+| Setting | Description |
+|---------|-------------|
+| Form Name | Internal reference name (e.g., "Main Contact Form", "Service Request Form") |
+| Form Enabled | Toggle on/off |
+| Multiple Forms | Business can create multiple forms for different purposes |
+
+### 1.2 Field Builder
+
+Each form consists of custom fields. The admin can add, remove, reorder, and configure fields.
+
+**Field Properties:**
+
+| Property | Description |
+|----------|-------------|
+| Field Label | Display name shown to user (e.g., "Your Name", "Email Address") |
+| Field Key | System identifier for JSON payload (e.g., "name", "email", "phone") - auto-generated from label but editable |
+| Field Type | See field types below |
+| Required | Yes/No - conversation cannot complete without this field |
+| Placeholder | Helper text shown in empty field |
+| Validation | Type-specific validation rules |
+
+**Field Types:**
+
+| Type | Use Case | Validation |
+|------|----------|------------|
+| Text | Name, company, general input | Min/max length |
+| Email | Email address | Valid email format |
+| Phone | Phone number | Valid phone format (configurable by country) |
+| Number | Quantity, budget, age | Min/max value |
+| Dropdown | Service type, location, predefined options | Must select from list |
+| Multi-select | Multiple services interested in | Must select at least one (if required) |
+| Date | Preferred appointment date | Future dates only (optional) |
+| Time | Preferred time | Time range restrictions (optional) |
+| Long Text | Message, project description, details | Min/max length |
+| Hidden | UTM parameters, page URL, referrer | Auto-populated, not shown to user |
+
+### 1.3 Preset Templates
+
+To speed up setup, offer starter templates:
+
+| Template | Fields Included |
+|----------|-----------------|
+| Basic Contact | Name, Email, Phone |
+| Service Request | Name, Email, Phone, Service Type (dropdown), Message |
+| Appointment Request | Name, Email, Phone, Preferred Date, Preferred Time, Notes |
+| Quote Request | Name, Email, Phone, Service Type, Budget Range, Project Description |
+
+Agency can set a default template that applies to all new businesses.
+
+### 1.4 Form Display Options
+
+| Setting | Options |
+|---------|---------|
+| Display Mode | Inline (fields appear in chat) / Modal (form pops up) |
+| Trigger | AI-initiated (AI decides when to show) / User-initiated (user clicks button) / Always (form appears at conversation start) |
+| Submit Button Text | Customizable (default: "Submit") |
+| Success Message | Message shown after form submission (default: "Thanks! Someone will be in touch shortly.") |
+
+---
+
+## Part 2: AI Integration
+
+### 2.1 How the AI Uses the Form
+
+The AI needs to know:
+1. What form(s) exist
+2. When to present the form
+3. What to do after submission
+
+**System Prompt Addition:**
+
+When generating the business system prompt, append form instructions:
+
+```
+## Lead Capture
+
+When the user expresses interest in [services/booking/getting started/learning more], collect their information using the following form:
+
+Required fields: [list required fields]
+Optional fields: [list optional fields]
+
+You may collect this information conversationally (asking one field at a time) or present the form directly, depending on conversation flow.
+
+After collecting information, confirm receipt and inform the user: "[Success Message]"
+```
+
+### 2.2 Conversational vs. Form Collection
+
+**Option A: Conversational Collection**
+AI asks for fields naturally within the conversation:
+&gt; "I'd be happy to have someone reach out to you. What's the best email to contact you at?"
+
+**Option B: Direct Form**
+AI triggers form display:
+&gt; "Let me grab your details so we can follow up. Just fill out this quick form:"
+&gt; [Form appears]
+
+**Admin Setting:** Collection Style
+- Conversational (AI asks naturally)
+- Form (AI presents form)
+- Hybrid (AI asks 1-2 key fields, then presents form for rest)
+
+---
+
+## Part 3: Routing Configuration
+
+After form submission, where does the data go?
+
+### 3.1 Routing Destinations
+
+Admin can enable one or more destinations. All enabled destinations fire simultaneously.
+
+#### Email Notification
+
+| Setting | Description |
+|---------|-------------|
+| Enable Email | Toggle |
+| Recipient(s) | One or more email addresses (comma-separated) |
+```text
+| Subject Line | Customizable, supports variables: {form_name}, {business_name}, {field:name} |
+```
+| Email Format | HTML (formatted) / Plain Text |
+| Include Transcript | Yes/No - attach full conversation transcript |
+| Include AI Summary | Yes/No - include AI-generated lead summary |
+
+```text
+**Default Subject:** "New Lead: {field:name} - {business_name}"
+
+```
+**Email Body Contains:**
+- All captured form fields (label: value format)
+- Timestamp
+- Conversation transcript (if enabled)
+- AI summary (if enabled): "User is interested in [X], asked about [Y], sentiment: [Z]"
+
+#### SMS Notification
+
+| Setting | Description |
+|---------|-------------|
+| Enable SMS | Toggle |
+| Recipient(s) | One or more phone numbers |
+| Message Template | Customizable, supports variables, max 160 characters recommended |
+
+```text
+**Default Message:** "New lead from {business_name}: {field:name}, {field:phone}. Check email for details."
+
+```
+#### Webhook (JSON Payload)
+
+| Setting | Description |
+|---------|-------------|
+| Enable Webhook | Toggle |
+| Webhook URL | Destination endpoint |
+| HTTP Method | POST (default) / PUT |
+| Authentication Type | None / API Key / Bearer Token / Basic Auth |
+| API Key Header | If API Key auth: header name (default: "X-API-Key") |
+| API Key Value | If API Key auth: the key value |
+| Bearer Token | If Bearer auth: the token |
+| Basic Auth Username | If Basic auth |
+| Basic Auth Password | If Basic auth |
+| Custom Headers | Optional additional headers (key:value pairs) |
+| Include Transcript | Yes/No |
+| Include AI Summary | Yes/No |
+
+### 3.2 JSON Payload Structure
+
+```json
+{
+  "event": "lead_captured",
+  "timestamp": "2025-01-14T15:30:00Z",
+  "business": {
+    "id": "uuid",
+    "name": "Business Name"
+  },
+  "form": {
+    "id": "uuid",
+    "name": "Form Name"
+  },
+  "lead": {
+    "name": "John Smith",
+    "email": "john@example.com",
+    "phone": "555-123-4567",
+    "service_type": "Kitchen Remodel",
+    "message": "Looking to update my kitchen, wondering about timeline and cost."
+  },
+  "meta": {
+    "page_url": "https://example.com/services",
+    "referrer": "https://google.com",
+    "utm_source": "google",
+    "utm_medium": "cpc",
+    "utm_campaign": "spring_promo"
+  },
+  "conversation": {
+    "id": "uuid",
+    "transcript": "[Full transcript if enabled]",
+    "summary": "User interested in kitchen remodel. Asked about timeline (wants completion by summer) and financing options. Ready to schedule consultation.",
+    "message_count": 12,
+    "duration_seconds": 180
+  }
+}
+```
+
+**Field Mapping Note:**
+The `lead` object keys match the Field Key set in the form builder. Agencies can customize these keys to match their destination system's expected field names, eliminating the need for field mapping on the receiving end.
+
+### 3.3 Webhook Testing
+
+| Feature | Description |
+|---------|-------------|
+| Test Button | Sends sample payload to configured URL |
+| Response Display | Shows HTTP status code and response body |
+| Payload Preview | Shows exact JSON that will be sent |
+| Recent Deliveries | Log of last 10 webhook attempts with status |
+
+### 3.4 Redirect Option
+
+After form submission, optionally redirect the user:
+
+| Setting | Description |
+|---------|-------------|
+| Enable Redirect | Toggle |
+| Redirect URL | Where to send user (e.g., Calendly link, thank you page) |
+| Redirect Delay | Seconds to wait before redirect (default: 2) |
+| Redirect Message | Message shown during delay (default: "Taking you to schedule your appointment...") |
+
+This allows: Capture lead info → Send to webhook → Redirect to Calendly
+
+The business gets the lead data AND the user can self-schedule. Best of both worlds.
+
+---
+
+## Part 4: Database Schema Additions
+
+### 4.1 New Tables
+
+```sql
+-- Lead capture forms
+CREATE TABLE lead_forms (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  business_id UUID REFERENCES businesses(id) ON DELETE CASCADE,
+  name VARCHAR(255) NOT NULL,
+  is_active BOOLEAN DEFAULT true,
+  display_mode VARCHAR(20) DEFAULT 'inline', -- 'inline' | 'modal'
+  trigger_type VARCHAR(20) DEFAULT 'ai_initiated', -- 'ai_initiated' | 'user_initiated' | 'always'
+  collection_style VARCHAR(20) DEFAULT 'conversational', -- 'conversational' | 'form' | 'hybrid'
+  submit_button_text VARCHAR(100) DEFAULT 'Submit',
+  success_message TEXT DEFAULT 'Thanks! Someone will be in touch shortly.',
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Form fields
+CREATE TABLE lead_form_fields (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  form_id UUID REFERENCES lead_forms(id) ON DELETE CASCADE,
+  field_label VARCHAR(255) NOT NULL,
+  field_key VARCHAR(100) NOT NULL,
+  field_type VARCHAR(50) NOT NULL,
+  is_required BOOLEAN DEFAULT false,
+  placeholder VARCHAR(255),
+  validation_rules JSONB, -- type-specific validation
+  options JSONB, -- for dropdown/multi-select
+  display_order INTEGER NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Routing configuration
+CREATE TABLE lead_routing (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  form_id UUID REFERENCES lead_forms(id) ON DELETE CASCADE,
+  
+  -- Email settings
+  email_enabled BOOLEAN DEFAULT false,
+  email_recipients TEXT[], -- array of email addresses
+  email_subject VARCHAR(255),
+  email_include_transcript BOOLEAN DEFAULT true,
+  email_include_summary BOOLEAN DEFAULT true,
+  
+  -- SMS settings
+  sms_enabled BOOLEAN DEFAULT false,
+  sms_recipients TEXT[], -- array of phone numbers
+  sms_template VARCHAR(320),
+  
+  -- Webhook settings
+  webhook_enabled BOOLEAN DEFAULT false,
+  webhook_url TEXT,
+  webhook_method VARCHAR(10) DEFAULT 'POST',
+  webhook_auth_type VARCHAR(20) DEFAULT 'none', -- 'none' | 'api_key' | 'bearer' | 'basic'
+  webhook_auth_config JSONB, -- stores auth details (encrypted)
+  webhook_custom_headers JSONB,
+  webhook_include_transcript BOOLEAN DEFAULT true,
+  webhook_include_summary BOOLEAN DEFAULT true,
+  
+  -- Redirect settings
+  redirect_enabled BOOLEAN DEFAULT false,
+  redirect_url TEXT,
+  redirect_delay INTEGER DEFAULT 2,
+  redirect_message TEXT,
+  
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Captured leads
+CREATE TABLE leads (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  business_id UUID REFERENCES businesses(id) ON DELETE CASCADE,
+  form_id UUID REFERENCES lead_forms(id) ON DELETE SET NULL,
+  conversation_id UUID REFERENCES conversations(id) ON DELETE SET NULL,
+  
+  lead_data JSONB NOT NULL, -- captured form fields
+  meta_data JSONB, -- page_url, referrer, utm params
+  ai_summary TEXT,
+  
+  -- Delivery tracking
+  email_sent BOOLEAN DEFAULT false,
+  email_sent_at TIMESTAMPTZ,
+  sms_sent BOOLEAN DEFAULT false,
+  sms_sent_at TIMESTAMPTZ,
+  webhook_sent BOOLEAN DEFAULT false,
+  webhook_sent_at TIMESTAMPTZ,
+  webhook_response_code INTEGER,
+  
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Webhook delivery log
+CREATE TABLE webhook_logs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  lead_id UUID REFERENCES leads(id) ON DELETE CASCADE,
+  webhook_url TEXT NOT NULL,
+  request_payload JSONB,
+  response_code INTEGER,
+  response_body TEXT,
+  error_message TEXT,
+  attempted_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+### 4.2 RLS Policies
+
+```sql
+-- Lead forms: business and parent agency can manage
+ALTER TABLE lead_forms ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY lead_forms_policy ON lead_forms
+  USING (
+    business_id IN (
+      SELECT id FROM businesses WHERE id = business_id
+      UNION
+      SELECT b.id FROM businesses b
+      JOIN agencies a ON b.agency_id = a.id
+      WHERE a.id = current_user_agency_id()
+    )
+  );
+
+-- Similar policies for lead_form_fields, lead_routing, leads, webhook_logs
+```
+
+---
+
+## Part 5: UI Mockup Descriptions
+
+### 5.1 Form Builder Interface
+
+**Header:**
+- Form Name (editable)
+- Active/Inactive toggle
+- Save / Delete buttons
+
+**Left Panel: Field List**
+- Draggable list of current fields
+- Each field shows: Label, Type, Required indicator
+- Drag handle for reordering
+- Click to edit, X to delete
+
+**Right Panel: Field Editor**
+- Appears when field is selected
+- All field properties editable
+- Live preview of field appearance
+
+**Bottom: Add Field**
+- "+ Add Field" button
+- Dropdown of field types
+- Or "Use Template" to load preset
+
+### 5.2 Routing Configuration Interface
+
+**Tab Layout:**
+- Email | SMS | Webhook | Redirect
+
+**Each Tab:**
+- Enable toggle at top
+- Configuration fields below (grayed out if disabled)
+- Test button where applicable
+
+**Webhook Tab Extras:**
+- Payload Preview panel (shows live JSON)
+- Test Result panel (shows last test response)
+- Delivery Log link
+
+### 5.3 Leads Dashboard
+
+**Table View:**
+- Date/Time
+- Name
+- Email
+- Phone
+- Form Used
+- Delivery Status (icons: ✓ email, ✓ SMS, ✓ webhook)
+- Actions: View Details
+
+**Detail View:**
+- All captured fields
+- Full conversation transcript
+- AI summary
+- Delivery log (what was sent where, when, response codes)
+
+---
+
+## Part 6: Implementation Priority
+
+### Phase 1: Minimum Viable
+1. Form builder with basic fields (text, email, phone)
+2. Email notification only
+3. Basic leads table
+
+### Phase 2: Full Routing
+1. All field types
+2. SMS notification
+3. Webhook with authentication options
+4. Redirect option
+
+### Phase 3: Polish
+1. Preset templates
+2. Webhook testing and logs
+3. Leads dashboard with filtering/search
+4. AI summary generation
+
+---
+
+## Summary
+
+**What we built:** A form builder and routing system that captures leads and delivers them wherever the business needs.
+
+**What we didn't build:** Integrations with specific platforms. That's the agency's job.
+
+**The value proposition:** "Never miss a lead. Your AI assistant captures contact information and sends it to you instantly—by email, text, or directly into your existing systems via webhook."

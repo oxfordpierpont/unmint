@@ -1,0 +1,2435 @@
+---
+title: "PART I: FOUNDATION"
+description: "LogicLegal by Oxford Pierpont Product Requirements Document — Versions 1 & 2 Comprehensive Outline (Final) 1. Executive Summary 1.1 Product Overview 1.1.1 Wh..."
+---
+<Info>
+Normalized for Mintlify from `knowledge-base/aiconnected-apps-and-modules/modules/incomplete-logicLegal-oxpi-aiConnected-prd-outline.mdx`.
+</Info>
+## LogicLegal by Oxford Pierpont
+### Product Requirements Document — Versions 1 & 2
+### Comprehensive Outline (Final)
+
+---
+
+# PART I: FOUNDATION
+
+---
+
+**1. Executive Summary**
+- 1.1 Product Overview
+  - 1.1.1 What LogicLegal Is
+  - 1.1.2 What Problem It Solves
+  - 1.1.3 Who It's For
+- 1.2 Target Market
+  - 1.2.1 Primary Market: Solo Attorneys
+  - 1.2.2 Secondary Market: Small Firms (2-5 Attorneys)
+  - 1.2.3 Geographic Scope (United States)
+  - 1.2.4 Practice Areas Supported (Criminal Defense, Family Law, Personal Injury, Immigration)
+- 1.3 Value Proposition
+  - 1.3.1 For Established Solo Attorneys
+  - 1.3.2 For New/Recent Graduate Attorneys
+  - 1.3.3 For Small Firms
+- 1.4 Document Scope
+  - 1.4.1 What This Document Covers (Versions 1 & 2)
+  - 1.4.2 What Is Out of Scope (Version 3+)
+  - 1.4.3 How to Use This Document
+- 1.5 Success Metrics
+  - 1.5.1 Version 1 Success Criteria
+  - 1.5.2 Version 2 Success Criteria
+  - 1.5.3 Key Performance Indicators (KPIs)
+
+---
+
+**2. Problem Statement**
+- 2.1 The Solo/Small Firm Attorney Challenge
+  - 2.1.1 The Time Problem (Admin vs. Billable Work)
+  - 2.1.2 The Availability Problem (In Court, Can't Answer)
+  - 2.1.3 The Lead Management Problem (Leads Fall Through Cracks)
+  - 2.1.4 The Marketing Problem (No Time, No Expertise)
+  - 2.1.5 The Scaling Problem (Attorney Is the Bottleneck)
+- 2.2 Current Solutions and Their Limitations
+  - 2.2.1 Answering Services (Expensive, Just Takes Messages)
+  - 2.2.2 Virtual Receptionists (Expensive, Inconsistent Quality)
+  - 2.2.3 Marketing Agencies (Expensive, Separate System)
+  - 2.2.4 CRM Software (Requires Manual Work)
+  - 2.2.5 Generic AI Chatbots (Hallucination Risk, Not Legal-Specific)
+- 2.3 Market Gap
+  - 2.3.1 No Unified Solution Exists
+  - 2.3.2 Intelligence + Marketing + Intake Not Combined
+  - 2.3.3 Affordable Options Lack Sophistication
+- 2.4 Cost of the Problem (Quantified)
+  - 2.4.1 Lost Revenue from Missed Calls
+  - 2.4.2 Lost Billable Hours to Admin Work
+  - 2.4.3 Cost of Current Fragmented Solutions
+
+---
+
+**3. Product Vision**
+- 3.1 Long-Term Vision
+  - 3.1.1 The AI-Powered Law Practice Partner
+  - 3.1.2 Complete Practice Operations Platform
+  - 3.1.3 Oxford Pierpont Acquired Intelligence Integration (Future)
+- 3.2 Version 1 Goals (MVP — Marketing + Intake)
+  - 3.2.1 Primary Goal: Fill Attorney's Pipeline
+  - 3.2.2 Secondary Goal: Never Miss a Lead
+  - 3.2.3 Tertiary Goal: Reduce Attorney Admin Time
+- 3.3 Version 2 Goals (Case Briefings + Attorney Assistant)
+  - 3.3.1 Primary Goal: Make Attorney Informed Before Every Interaction
+  - 3.3.2 Secondary Goal: Voice-Accessible Practice Management
+  - 3.3.3 Tertiary Goal: Unified Communication Hub
+- 3.4 Version 3+ Roadmap Overview (Out of Scope, For Reference)
+  - 3.4.1 Case Preparation Features
+  - 3.4.2 Document Integration (Clio, Google Drive, etc.)
+  - 3.4.3 Multi-User/Firm Features
+  - 3.4.4 Advanced Support Tiers
+
+---
+
+**4. User Personas**
+- 4.1 Primary Persona: Solo Attorney (Established)
+  - 4.1.1 Background and Demographics
+  - 4.1.2 Goals and Motivations
+  - 4.1.3 Pain Points
+  - 4.1.4 Technology Comfort Level
+  - 4.1.5 Day-in-the-Life Scenario
+  - 4.1.6 What Success Looks Like for This User
+- 4.2 Primary Persona: Solo Attorney (New/Recent Graduate)
+  - 4.2.1 Background and Demographics
+  - 4.2.2 Goals and Motivations
+  - 4.2.3 Pain Points
+  - 4.2.4 Technology Comfort Level
+  - 4.2.5 Day-in-the-Life Scenario
+  - 4.2.6 What Success Looks Like for This User
+- 4.3 Secondary Persona: Small Firm Managing Partner
+  - 4.3.1 Background and Demographics
+  - 4.3.2 Goals and Motivations
+  - 4.3.3 Pain Points
+  - 4.3.4 Technology Comfort Level
+  - 4.3.5 Day-in-the-Life Scenario
+  - 4.3.6 What Success Looks Like for This User
+- 4.4 Secondary Persona: Prospective Client (The Caller)
+  - 4.4.1 Emotional State When Calling
+  - 4.4.2 What They Need from the Experience
+  - 4.4.3 What Would Cause Them to Hang Up
+  - 4.4.4 What Would Make Them Book a Consultation
+- 4.5 User Journey Maps
+  - 4.5.1 Attorney Onboarding Journey
+  - 4.5.2 Attorney Daily Usage Journey
+  - 4.5.3 Prospect Journey (Phone Call)
+  - 4.5.4 Prospect Journey (Website Chat)
+  - 4.5.5 Prospect Journey (Research Chat)
+
+---
+
+**5. Pricing and Tier Structure**
+- 5.1 Growth Tier ($497-997/month)
+  - 5.1.1 Target Customer
+  - 5.1.2 Features Included (Summary)
+  - 5.1.3 Limitations
+  - 5.1.4 Value Proposition
+- 5.2 Professional Tier ($2,500/month)
+  - 5.2.1 Target Customer
+  - 5.2.2 Features Included (Summary)
+  - 5.2.3 Limitations
+  - 5.2.4 Value Proposition
+- 5.3 Complete Tier ($5,000/month) — Version 3+
+  - 5.3.1 Target Customer
+  - 5.3.2 Features Included (Summary)
+  - 5.3.3 Value Proposition
+- 5.4 Firm Tier ($7,500/month) — Version 3+
+  - 5.4.1 Target Customer
+  - 5.4.2 Features Included (Summary)
+  - 5.4.3 Value Proposition
+- 5.5 Firm+ Tier ($10,000/month) — Version 3+
+  - 5.5.1 Target Customer
+  - 5.5.2 Features Included (Summary)
+  - 5.5.3 Value Proposition
+- 5.6 Add-Ons
+  - 5.6.1 Additional Topic Slots (5-pack) — $97/month
+  - 5.6.2 Additional Voice Minutes — TBD
+  - 5.6.3 Marketing Package Add-On — $2,497/month
+  - 5.6.4 Custom Template Development — $497 one-time
+  - 5.6.5 Additional User Seats — $497/month
+  - 5.6.6 Dedicated Phone Numbers — $47/month
+- 5.7 Feature-to-Tier Mapping Table
+  - 5.7.1 Complete Feature Matrix
+  - 5.7.2 Version Availability by Tier
+
+---
+
+**6. Release Strategy**
+- 6.1 Version 1 Scope Summary
+  - 6.1.1 Included Features List
+  - 6.1.2 Supported Tiers (Growth)
+  - 6.1.3 Target Launch Date
+- 6.2 Version 2 Scope Summary
+  - 6.2.1 Included Features List
+  - 6.2.2 Supported Tiers (Growth, Professional)
+  - 6.2.3 Target Launch Date (Relative to V1)
+- 6.3 Version 3+ Scope Summary (Out of Scope, For Reference)
+  - 6.3.1 Feature Categories
+  - 6.3.2 Supported Tiers (Complete, Firm, Firm+)
+  - 6.3.3 Tentative Timeline
+- 6.4 Release Cadence Target
+  - 6.4.1 V1 to V2 Gap (Target: 2-3 Months)
+  - 6.4.2 Ongoing Feature Release Cadence
+  - 6.4.3 Hotfix and Bug Fix Policy
+- 6.5 Version Migration Strategy
+  - 6.5.1 V1 to V2 Upgrade Path
+  - 6.5.2 Automatic vs. Manual Migration
+  - 6.5.3 Data Migration Requirements
+  - 6.5.4 Communication Plan for Existing Customers
+
+---
+
+# PART II: PLATFORM ARCHITECTURE
+
+---
+
+**7. Core Platform Architecture**
+- 7.1 System Overview
+  - 7.1.1 High-Level Architecture Diagram
+  - 7.1.2 Component Overview
+  - 7.1.3 Data Flow Overview
+  - 7.1.4 Multi-Tenant Architecture Explanation
+- 7.2 The Closed Knowledge Base (LogicLegal Engine)
+  - 7.2.1 What "Closed" Means (No Internet Access)
+  - 7.2.2 Why This Matters (Hallucination Prevention)
+  - 7.2.3 What Data Is Included
+  - 7.2.4 What Data Is Excluded
+  - 7.2.5 How the AI Accesses Knowledge
+  - 7.2.6 RAG (Retrieval Augmented Generation) Implementation
+- 7.3 Topic Siloing Logic
+  - 7.3.1 What Topic Siloing Is
+  - 7.3.2 Why It Matters (Precision, Reduced Hallucination)
+  - 7.3.3 How Topics Are Defined
+  - 7.3.4 How the AI Selects the Correct Silo
+  - 7.3.5 What Happens If Topic Is Ambiguous
+  - 7.3.6 Technical Implementation Details
+- 7.4 State Law Defaults
+  - 7.4.1 Data Sources for State Laws
+  - 7.4.2 How Laws Are Structured in the Knowledge Base
+  - 7.4.3 Update Process When Laws Change
+  - 7.4.4 Coverage by State (Initial Launch States)
+- 7.5 Practice Area Templates
+  - 7.5.1 What a Template Contains
+  - 7.5.2 How Templates Are Activated
+  - 7.5.3 Template Customization Options
+  - 7.5.4 Template Versioning
+- 7.6 Future: Acquired Intelligence Layer (Reference Only)
+  - 7.6.1 What It Is (Brief Description)
+  - 7.6.2 How It Will Integrate with LogicLegal
+  - 7.6.3 Data Storage Considerations for Future Compatibility
+  - 7.6.4 No Implementation Required Now—Architecture Awareness Only
+
+---
+
+**8. Technical Infrastructure**
+- 8.1 Infrastructure Overview
+  - 8.1.1 Hosting Environment (Dokploy, DigitalOcean)
+  - 8.1.2 Service Architecture (Microservices vs. Monolith)
+  - 8.1.3 Environment Strategy (Development, Staging, Production)
+- 8.2 Telephony Layer (GoToConnect)
+  - 8.2.1 What GoToConnect Provides
+  - 8.2.2 Per-User Cost ($21/user)
+  - 8.2.3 Features Used (Call Queues, Hold Music, SMS, Custom Greetings)
+  - 8.2.4 Features Not Used
+  - 8.2.5 How Attorneys Are Provisioned
+  - 8.2.6 Phone Number Assignment
+  - 8.2.7 API Capabilities
+  - 8.2.8 Webhook Events Available
+- 8.3 Voice AI Layer (LiveKit)
+  - 8.3.1 What LiveKit Provides
+  - 8.3.2 Why LiveKit Over Vapi/Retell (Cost, Customization)
+  - 8.3.3 How LiveKit Connects to GoToConnect
+  - 8.3.4 Speech-to-Text Configuration
+  - 8.3.5 Text-to-Speech Configuration
+  - 8.3.6 Voice Selection and Customization
+  - 8.3.7 Latency Considerations
+  - 8.3.8 Concurrent Call Handling
+- 8.4 Marketing Automation Layer (GoHighLevel — Headless)
+  - 8.4.1 What "Headless" Means (Backend Only, No Attorney-Facing UI)
+  - 8.4.2 What GoHighLevel Handles
+  - 8.4.3 What GoHighLevel Does NOT Handle
+  - 8.4.4 API Capabilities
+  - 8.4.5 Webhook Events Available
+  - 8.4.6 Per-Account Setup Process
+  - 8.4.7 White-Label Configuration
+- 8.5 Attorney Dashboard (Custom Build)
+  - 8.5.1 Technology Stack (React/Next.js Recommended)
+  - 8.5.2 Why Custom Build Over GoHighLevel UI
+  - 8.5.3 Hosting and Deployment
+  - 8.5.4 State Management Approach
+  - 8.5.5 Styling Framework
+- 8.6 Database Architecture
+  - 8.6.1 Database Technology (PostgreSQL Recommended)
+  - 8.6.2 What Data Lives in Our Database vs. GoHighLevel
+  - 8.6.3 Database Schema Overview
+  - 8.6.4 Data Relationships
+  - 8.6.5 Indexing Strategy
+  - 8.6.6 Backup and Recovery
+- 8.7 Vector Database (For Knowledge Base)
+  - 8.7.1 Technology Selection (Pinecone, Weaviate, pgvector, etc.)
+  - 8.7.2 Embedding Model Selection
+  - 8.7.3 Index Structure (Per-Attorney, Per-Topic)
+  - 8.7.4 Query Strategy
+- 8.8 Data Flow Diagrams
+  - 8.8.1 Incoming Phone Call Flow
+  - 8.8.2 Website Chat Flow
+  - 8.8.3 Research Chat Flow
+  - 8.8.4 Lead Creation Flow
+  - 8.8.5 Calendar Booking Flow
+  - 8.8.6 Marketing Content Generation Flow
+  - 8.8.7 Attorney Dashboard Data Flow
+  - 8.8.8 Attorney Voice Assistant Flow (Version 2)
+- 8.9 Integration Architecture
+  - 8.9.1 Middleware/Orchestration Layer (n8n or Custom)
+  - 8.9.2 Webhook Handler Service
+  - 8.9.3 API Gateway (If Applicable)
+  - 8.9.4 Queue System for Async Processing
+  - 8.9.5 Error Handling and Retry Logic
+- 8.10 Security and Compliance Considerations
+  - 8.10.1 Data Encryption (At Rest)
+  - 8.10.2 Data Encryption (In Transit)
+  - 8.10.3 Authentication Strategy
+  - 8.10.4 Authorization and Role-Based Access
+  - 8.10.5 PII Handling
+  - 8.10.6 HIPAA Considerations (If Applicable)
+  - 8.10.7 State Bar Ethical Considerations
+  - 8.10.8 SOC 2 Readiness (Future)
+
+---
+
+**9. Branding and White-Label Configuration**
+- 9.1 Attorney-Facing Branding
+  - 9.1.1 Dashboard Branding (LogicLegal by Oxford Pierpont)
+  - 9.1.2 Login Page Appearance
+  - 9.1.3 Email Communications Branding
+- 9.2 Prospect-Facing Branding
+  - 9.2.1 AI Personality and Naming
+    - 9.2.1.1 Default Name ("Hi, I'm the virtual assistant for [Law Firm Name]...")
+    - 9.2.1.2 Custom Name Option
+    - 9.2.1.3 Personality Traits (Professional, Warm, Empathetic)
+  - 9.2.2 Chat Widget Appearance
+    - 9.2.2.1 Color Customization
+    - 9.2.2.2 Logo/Avatar Options
+    - 9.2.2.3 Position on Page
+  - 9.2.3 Research Chat Interface Appearance
+    - 9.2.3.1 Branding Elements
+    - 9.2.3.2 Customization Options
+  - 9.2.4 Voice AI Introduction Script
+    - 9.2.4.1 Default Script Template
+    - 9.2.4.2 Custom Script Option
+    - 9.2.4.3 Required Disclosures (See Compliance Section)
+- 9.3 Website Integration Branding
+  - 9.3.1 Embed Code Customization
+  - 9.3.2 Stylesheet Override Options
+  - 9.3.3 Mobile Responsiveness Requirements
+- 9.4 Content Branding
+  - 9.4.1 SEO Articles (Attorney's Name/Firm)
+  - 9.4.2 LinkedIn Posts (Attorney's Voice)
+  - 9.4.3 FAQ Content (Firm-Specific)
+
+---
+
+**10. Compliance and Legal Requirements**
+- 10.1 AI Disclosure Requirements
+  - 10.1.1 Legal Requirement to Disclose AI
+  - 10.1.2 Phone Call Disclosure Script
+  - 10.1.3 Chat Interface Disclosure
+  - 10.1.4 Timing of Disclosure (Beginning of Interaction)
+  - 10.1.5 Acceptance Criteria
+- 10.2 Call Recording and Consent
+  - 10.2.1 One-Party vs. Two-Party Consent States
+  - 10.2.2 State-by-State Consent Requirements Table
+  - 10.2.3 Recording Consent Script
+  - 10.2.4 How Consent Is Captured and Stored
+  - 10.2.5 What Happens If Consent Is Declined
+  - 10.2.6 Acceptance Criteria
+- 10.3 Data Privacy
+  - 10.3.1 Privacy Policy Requirements
+  - 10.3.2 Data Collection Disclosure
+  - 10.3.3 Data Usage Limitations
+  - 10.3.4 Data Sharing Policy (We Don't Share)
+  - 10.3.5 CCPA Compliance Considerations
+  - 10.3.6 GDPR Considerations (If Applicable)
+- 10.4 Attorney-Client Privilege Considerations
+  - 10.4.1 When Privilege Attaches
+  - 10.4.2 How LogicLegal Protects Privilege
+  - 10.4.3 Disclaimer Language
+- 10.5 Legal Disclaimers
+  - 10.5.1 "Not Legal Advice" Disclaimer
+  - 10.5.2 Placement in Chat Interface
+  - 10.5.3 Placement in Voice Interaction
+  - 10.5.4 Acceptance Criteria
+
+---
+
+**11. Failover and Error Handling**
+- 11.1 Voice AI Failover
+  - 11.1.1 What Happens If LiveKit Goes Down
+  - 11.1.2 Fallback to Voicemail
+  - 11.1.3 Fallback to Attorney's Cell (Optional Configuration)
+  - 11.1.4 Error Detection and Alerting
+  - 11.1.5 Automatic Recovery
+- 11.2 GoToConnect Failover
+  - 11.2.1 What Happens If GoToConnect Goes Down
+  - 11.2.2 Monitoring and Alerting
+  - 11.2.3 Manual Intervention Procedures
+- 11.3 GoHighLevel Failover
+  - 11.3.1 What Happens If GoHighLevel Goes Down
+  - 11.3.2 Critical vs. Non-Critical Functions
+  - 11.3.3 Data Queuing for Retry
+- 11.4 Database Failover
+  - 11.4.1 High Availability Configuration
+  - 11.4.2 Automatic Failover
+  - 11.4.3 Data Recovery Procedures
+- 11.5 Voice AI Conversation Errors
+  - 11.5.1 What Happens If AI Can't Understand Caller
+  - 11.5.2 Clarification Prompts
+  - 11.5.3 Graceful Handoff to Voicemail
+  - 11.5.4 "I'm Having Trouble Understanding" Script
+  - 11.5.5 Maximum Retry Attempts Before Handoff
+- 11.6 Chat Errors
+  - 11.6.1 Connection Lost Handling
+  - 11.6.2 Session Timeout Handling
+  - 11.6.3 AI Response Failure Handling
+- 11.7 General Error Logging
+  - 11.7.1 Error Logging Strategy
+  - 11.7.2 Error Categorization
+  - 11.7.3 Alerting Thresholds
+  - 11.7.4 Error Dashboard (Internal)
+
+---
+
+# PART III: VERSION 1 FEATURES (MVP)
+
+---
+
+**12. Prospect-Facing Features (Version 1)**
+- 12.1 Research Chat Interface
+  - 12.1.1 Description and Purpose
+    - What It Is (Perplexity-Style Legal Research)
+    - Why It Exists (Build Trust, Qualify Leads Passively)
+    - Where It Appears on Website
+  - 12.1.2 User Flow
+    - Step 1: Prospect Lands on Page
+    - Step 2: Prospect Enters Question
+    - Step 3: AI Retrieves from Knowledge Base
+    - Step 4: AI Responds with Sourced Information
+    - Step 5: Prospect Asks Follow-Up Questions
+    - Step 6: AI Assesses Lead Quality (Background)
+    - Step 7: AI Offers to Schedule Consultation (When Appropriate)
+    - Step 8: Transition to Intake Flow
+  - 12.1.3 Voice Capability
+    - How Prospect Activates Voice Mode
+    - Voice-to-Text Processing
+    - Text-to-Voice Response
+    - Same AI Backend as Text
+  - 12.1.4 Transition to Intake
+    - Trigger Conditions (Prospect Ready, AI Prompt)
+    - Handoff Experience (Seamless, Not Jarring)
+    - Data Carryover from Research to Intake
+  - 12.1.5 Knowledge Base Access
+    - Which Knowledge Is Accessible
+    - Which Knowledge Is Restricted
+    - Citation Display (How Sources Appear)
+  - 12.1.6 UI Components
+    - Chat Input Field
+    - Message Display Area
+    - Source Citations Display
+    - Voice Toggle Button
+    - "Schedule Consultation" CTA
+  - 12.1.7 Acceptance Criteria
+    - Functional Requirements
+    - Performance Requirements (Response Time &lt; X seconds)
+    - Accuracy Requirements
+- 12.2 Corner Chatbot (Smart Contact Form)
+  - 12.2.1 Description and Purpose
+    - What It Is (Intake-Focused Chat Widget)
+    - How It Differs from Research Chat
+    - Why Both Exist (Different User Intents)
+    - Where It Appears (Corner of Every Page)
+  - 12.2.2 User Flow
+    - Step 1: Prospect Clicks Widget
+    - Step 2: AI Greets with Attorney Name
+    - Step 3: AI Asks Initial Qualifying Question
+    - Step 4: Intelligent Intake Begins
+    - Step 5: Lead Qualification Happens
+    - Step 6: Scheduling Offered
+    - Step 7: Confirmation and Next Steps
+  - 12.2.3 Intake Focus
+    - Goal: Get to Scheduling Quickly
+    - Minimal Research, Maximum Qualification
+    - Practice-Area-Specific Question Trees
+  - 12.2.4 UI Components
+    - Minimized Widget Appearance
+    - Expanded Chat Window
+    - Input Field
+    - Message Display
+    - Scheduling Interface (Inline)
+  - 12.2.5 Acceptance Criteria
+- 12.3 AI Phone Answering
+  - 12.3.1 Description and Purpose
+    - 24/7 Phone Answering
+    - Intelligent Conversation, Not IVR
+    - Lead Qualification and Scheduling
+  - 12.3.2 Call Flow
+    - Step 1: Call Comes to GoToConnect Number
+    - Step 2: Call Queue/Hold Music (If Configured)
+    - Step 3: Call Routed to LiveKit Voice AI
+    - Step 4: AI Greeting with Disclosure
+    - Step 5: AI Asks How It Can Help
+    - Step 6: Intelligent Intake Conversation
+    - Step 7: Qualification and Scoring (Background)
+    - Step 8: Scheduling Offered
+    - Step 9: Confirmation and Wrap-Up
+    - Step 10: Call Ends, Data Saved
+  - 12.3.3 LiveKit + GoToConnect Integration
+    - Technical Connection Method
+    - Call Transfer Mechanism
+    - Audio Quality Requirements
+    - Latency Targets
+  - 12.3.4 Greeting Script Template
+    - Default Script
+    - Custom Script Configuration
+    - Required Disclosure Inclusion
+  - 12.3.5 Error Handling
+    - Caller Can't Be Understood
+    - Caller Requests Human
+    - Technical Failure Mid-Call
+  - 12.3.6 Call Recording
+    - When Recording Starts
+    - Where Recordings Are Stored
+    - Retention Period
+    - Access Controls
+  - 12.3.7 Transcript Generation
+    - Real-Time vs. Post-Call
+    - Transcript Format
+    - Storage Location
+  - 12.3.8 Acceptance Criteria
+- 12.4 Intelligent Intake Conversations
+  - 12.4.1 Overview
+    - Same Logic for Phone, Corner Chat, and Research Chat (When Transitioning)
+    - Practice-Area-Specific Question Trees
+    - Dynamic Adaptation Based on Responses
+  - 12.4.2 Criminal Defense Intake Flow
+    - Initial Questions (What Happened, When, Where)
+    - Charge-Specific Questions
+    - Court Date Questions
+    - Detention Status Questions
+    - Prior Record Questions
+    - Urgency Assessment
+    - Question Tree Diagram
+  - 12.4.3 Family Law Intake Flow
+    - Initial Questions (Divorce, Custody, Support, Other)
+    - Marriage/Relationship Status
+    - Children Questions
+    - Asset Questions
+    - Urgency Questions (Safety Concerns, Pending Deadlines)
+    - Opposing Counsel Questions
+    - Question Tree Diagram
+  - 12.4.4 Personal Injury Intake Flow
+    - Incident Type (Auto, Slip/Fall, Medical, Other)
+    - Incident Date (Statute of Limitations Check)
+    - Injury Questions
+    - Medical Treatment Questions
+    - Other Party/Insurance Questions
+    - Existing Attorney Questions
+    - Question Tree Diagram
+  - 12.4.5 Immigration Law Intake Flow
+    - Current Status Questions
+    - Desired Outcome Questions
+    - Timeline/Deadline Questions
+    - Document Status Questions
+    - Question Tree Diagram
+  - 12.4.6 General Practice Intake Flow
+    - Catch-All for Unspecified Practice Areas
+    - Generic Qualifying Questions
+    - Question Tree Diagram
+  - 12.4.7 Acceptance Criteria
+- 12.5 Dynamic Follow-Up Questions
+  - 12.5.1 What It Is
+    - AI Generates Questions Based on Responses
+    - Not Just Static Question Trees
+    - Probing for Key Details
+  - 12.5.2 Logic and Triggers
+    - When to Ask Follow-Up (Incomplete Answer, Red Flag, Opportunity)
+    - When to Move On
+    - Maximum Follow-Up Depth
+  - 12.5.3 Examples by Practice Area
+    - Criminal: "You mentioned you were arrested last Tuesday—do you have a court date yet?"
+    - Family: "You said there are children involved—how many, and what are their ages?"
+    - PI: "You mentioned back pain—have you seen a doctor for this?"
+  - 12.5.4 Implementation Details
+    - Prompt Engineering Approach
+    - Context Window Management
+    - Response Parsing
+  - 12.5.5 Acceptance Criteria
+- 12.6 Lead Qualification and Scoring
+  - 12.6.1 What Scoring Means
+    - Numeric Score (1-100 Recommended)
+    - Indicates Case Viability and Lead Quality
+    - Used for Prioritization
+  - 12.6.2 Scoring Criteria by Practice Area
+    - Criminal Defense Scoring Factors
+      - Charge Severity
+      - Court Date Proximity
+      - Detention Status
+      - Prior Record
+      - Ability to Pay (If Discussed)
+    - Family Law Scoring Factors
+      - Case Complexity
+      - Urgency (Safety, Deadlines)
+      - Children Involved
+      - Asset Complexity
+    - Personal Injury Scoring Factors
+      - Liability Clarity
+      - Injury Severity
+      - Statute of Limitations Status
+      - Insurance Situation
+      - Existing Attorney
+    - Immigration Scoring Factors
+      - Case Type Complexity
+      - Deadline Urgency
+      - Document Readiness
+  - 12.6.3 Score Calculation Logic
+    - Weighted Factors
+    - Formula or Model
+    - Score Normalization
+  - 12.6.4 Red Flag Detection
+    - What Constitutes a Red Flag
+    - How Red Flags Affect Score
+    - Red Flag Storage for Display (Version 2)
+  - 12.6.5 Data Storage
+    - Score Stored with Lead Record
+    - Factor Breakdown Stored (For Version 2 Display)
+    - Red Flags Stored
+  - 12.6.6 Acceptance Criteria
+- 12.7 Automatic Calendar Scheduling
+  - 12.7.1 Overview
+    - Qualified Leads Get Scheduled
+    - No Attorney Intervention Required
+    - Attorney Can Cancel Later
+  - 12.7.2 Calendar Integration (Google)
+    - OAuth Connection Flow
+    - Permission Scopes Required
+    - Calendar Selection (Which Calendar to Use)
+    - Availability Detection
+  - 12.7.3 Calendar Integration (Outlook/Microsoft 365)
+    - OAuth Connection Flow
+    - Permission Scopes Required
+    - Calendar Selection
+    - Availability Detection
+  - 12.7.4 Availability Detection
+    - How Free/Busy Is Determined
+    - Buffer Time Between Appointments
+    - Business Hours Configuration
+    - Time Zone Handling
+  - 12.7.5 Booking Flow
+    - AI Offers Available Times
+    - Prospect Selects Time
+    - Appointment Created in Calendar
+    - Confirmation Sent to Prospect
+    - Notification Sent to Attorney
+  - 12.7.6 Appointment Data
+    - What's Included in Calendar Event
+    - Link to Lead Record
+    - Brief Summary of Case
+  - 12.7.7 Acceptance Criteria
+- 12.8 Prospect Research Mode
+  - 12.8.1 What It Is
+    - Part of Research Chat Experience
+    - Prospect Explores Before Committing
+    - AI Answers Questions Without Pressure
+  - 12.8.2 Knowledge Base Queries
+    - What Questions Can Be Answered
+    - What Questions Are Declined ("I can't give legal advice, but...")
+    - Citation of Sources
+  - 12.8.3 Lead Quality Assessment (Background)
+    - Scoring Happens Even Without Intake
+    - Based on Questions Asked
+    - Lower Confidence Score (Incomplete Data)
+  - 12.8.4 Acceptance Criteria
+
+---
+
+**13. Attorney Dashboard Features (Version 1 — Basic)**
+- 13.1 Dashboard Home (Basic Version)
+  - 13.1.1 Purpose
+    - Quick Overview of Practice Activity
+    - Entry Point to Other Sections
+  - 13.1.2 Layout and Components
+    - Today's Appointments Widget
+    - New Leads Widget (Count, Basic List)
+    - Quick Stats Widget (Leads This Week, Consultations Booked)
+    - Navigation Menu
+  - 13.1.3 Data Displayed
+    - Appointments: Time, Prospect Name, Case Type
+    - Leads: Name, Date, Case Type (No Score in V1)
+    - Stats: Simple Counts
+  - 13.1.4 UI Wireframe Reference
+  - 13.1.5 Acceptance Criteria
+- 13.2 Leads View (Basic Version)
+  - 13.2.1 Purpose
+    - See All Leads
+    - Access Lead Details
+  - 13.2.2 List Display
+    - Table Format
+    - Columns: Name, Date, Practice Area, Status, Actions
+  - 13.2.3 Basic Lead Information (On Click/Expand)
+    - Contact Information
+    - Practice Area
+    - Brief Summary (AI-Generated, Short)
+    - Intake Channel (Phone, Chat, Research)
+    - Appointment Status
+  - 13.2.4 Filters
+    - By Date Range
+    - By Practice Area
+    - By Status (New, Scheduled, Contacted, Closed)
+  - 13.2.5 Actions
+    - View Details
+    - Schedule (If Not Scheduled)
+    - Mark Status
+  - 13.2.6 UI Wireframe Reference
+  - 13.2.7 Acceptance Criteria
+- 13.3 Calendar View
+  - 13.3.1 Purpose
+    - See Upcoming Appointments
+    - Visual Calendar Interface
+  - 13.3.2 Appointment Display
+    - Day/Week/Month Views
+    - Appointment Blocks with Prospect Name
+    - Click to See Details
+  - 13.3.3 Calendar Sync
+    - Reflects Connected Google/Outlook Calendar
+    - Shows LogicLegal-Booked Appointments
+    - May Show Other Appointments (Based on Config)
+  - 13.3.4 UI Wireframe Reference
+  - 13.3.5 Acceptance Criteria
+- 13.4 Settings Panel
+  - 13.4.1 Account Settings
+    - Attorney Name
+    - Firm Name
+    - Email
+    - Phone
+    - Password Change
+  - 13.4.2 Calendar Connection
+    - Connect Google Calendar
+    - Connect Outlook Calendar
+    - Disconnect/Reconnect
+    - Select Which Calendar
+  - 13.4.3 Practice Area Configuration
+    - Select Active Practice Areas
+    - Activate/Deactivate Templates
+    - View Topic Slot Usage
+  - 13.4.4 Business Hours Configuration
+    - Set Available Hours
+    - Set Consultation Duration
+    - Set Buffer Time
+  - 13.4.5 Phone System Configuration
+    - View Assigned Number
+    - Voicemail Settings
+    - Greeting Customization (If Available)
+  - 13.4.6 AI Personality Configuration
+    - AI Name
+    - Greeting Script Preview
+  - 13.4.7 UI Wireframe Reference
+  - 13.4.8 Acceptance Criteria
+
+---
+
+**14. Attorney Notification System (Version 1)**
+- 14.1 Notification Channels
+  - 14.1.1 Email Notifications
+    - Format and Branding
+    - From Address
+    - Reply Handling
+  - 14.1.2 SMS Notifications
+    - From Number
+    - Message Format (Brief)
+  - 14.1.3 In-App Notifications (Dashboard)
+    - Notification Bell/Icon
+    - Notification List
+    - Read/Unread Status
+- 14.2 Notification Triggers
+  - 14.2.1 New Lead Received
+    - Immediate Notification
+    - Summary Information Included
+  - 14.2.2 Appointment Booked
+    - Confirmation Notification
+    - Appointment Details
+  - 14.2.3 Appointment Reminder
+    - Configurable Timing (1 Hour, 1 Day Before)
+    - Lead Context Included
+  - 14.2.4 Lead Requires Attention (Optional)
+    - High-Score Lead Alert
+    - Urgent Case Alert
+  - 14.2.5 System Notifications
+    - Billing Issues
+    - Integration Disconnected
+    - Important Updates
+- 14.3 Notification Preferences
+  - 14.3.1 Per-Channel Toggle (Email, SMS, In-App)
+  - 14.3.2 Per-Type Toggle
+  - 14.3.3 Quiet Hours Configuration
+  - 14.3.4 Preference UI Location (Settings Panel)
+- 14.4 Acceptance Criteria
+
+---
+
+**15. Marketing Automation Features (Version 1)**
+- 15.1 SEO Content Production
+  - 15.1.1 What It Is
+    - Blog Articles for Attorney's Website
+    - Optimized for Search Engines
+    - Topics Relevant to Practice Area
+  - 15.1.2 Content Generation Process
+    - Topic Selection (From Practice Area Templates)
+    - AI Generation from Knowledge Base
+    - Keyword Optimization
+    - Internal Review (By LogicLegal Team or Automated)
+  - 15.1.3 Content Approval Workflow
+    - Option A: Fully Automated (No Attorney Review)
+    - Option B: Attorney Approval Required
+    - Approval Interface (Email or Dashboard)
+    - Revision Request Process
+    - Default Setting
+  - 15.1.4 Publishing Workflow
+    - Connection to Attorney's Website (WordPress, Squarespace, etc.)
+    - Publishing Method (API, Manual, Scheduled)
+    - Formatting and Images
+  - 15.1.5 Frequency and Volume
+    - Default: X Articles per Month
+    - Configurable by Attorney
+  - 15.1.6 Content Quality Standards
+    - Minimum Word Count
+    - Originality Check
+    - Legal Accuracy (From Knowledge Base)
+  - 15.1.7 Acceptance Criteria
+- 15.2 LinkedIn Thought Leadership Content
+  - 15.2.1 What It Is
+    - Professional Posts for LinkedIn
+    - Positions Attorney as Expert
+    - Knowledge-Based, Not Gimmicky
+  - 15.2.2 Content Types
+    - Short Insights (1-2 Paragraphs)
+    - Tips and Advice
+    - Case Study Highlights (Anonymized)
+    - Legal Updates/News Commentary
+  - 15.2.3 Content Generation Process
+    - Same Knowledge Base as SEO
+    - Tone Adjusted for LinkedIn
+    - Hashtag/Formatting Optimization
+  - 15.2.4 Content Approval Workflow
+    - Same Options as SEO
+    - Approval Interface
+  - 15.2.5 Publishing Workflow
+    - Connection to LinkedIn (OAuth)
+    - Scheduled Posting
+    - Posting Frequency
+  - 15.2.6 Acceptance Criteria
+- 15.3 FAQ Content Generation
+  - 15.3.1 What It Is
+    - FAQ Pages for Attorney's Website
+    - AI-Optimized for Search and AI Assistants
+    - Answers Common Questions
+  - 15.3.2 AI-Optimized Structure
+    - Question/Answer Format
+    - Schema Markup for SEO
+    - Natural Language Phrasing
+  - 15.3.3 Practice Area Coverage
+    - Criminal Defense FAQs
+    - Family Law FAQs
+    - Personal Injury FAQs
+    - Immigration FAQs
+  - 15.3.4 Generation Process
+    - Initial Generation (Batch)
+    - Ongoing Updates
+  - 15.3.5 Publishing Workflow
+    - Same as SEO Content
+  - 15.3.6 Acceptance Criteria
+- 15.4 Appointment Reminders
+  - 15.4.1 What They Are
+    - Automated Messages to Prospects
+    - Reduce No-Shows
+  - 15.4.2 SMS Reminders
+    - Timing (1 Day Before, 1 Hour Before—Configurable)
+    - Message Template
+    - Personalization (Prospect Name, Attorney Name, Time)
+  - 15.4.3 Email Reminders
+    - Same Timing
+    - Email Template
+    - Calendar Attachment
+  - 15.4.4 Timing Logic
+    - Default Schedule
+    - Custom Configuration
+    - Time Zone Handling
+  - 15.4.5 Powered By GoHighLevel
+    - Automation Configuration
+    - Trigger Setup
+  - 15.4.6 Acceptance Criteria
+- 15.5 Lead Nurture Sequences
+  - 15.5.1 What They Are
+    - Automated Follow-Up for Non-Booked Leads
+    - Email and SMS Sequences
+    - Keep Firm Top-of-Mind
+  - 15.5.2 Trigger Conditions
+    - Lead Did Not Schedule
+    - Lead Started But Abandoned Intake
+    - Time Since Last Contact
+  - 15.5.3 Sequence Content
+    - Email 1: "We're Here When You're Ready"
+    - Email 2: "Common Questions About [Practice Area]"
+    - Email 3: "Limited Time—Schedule Your Free Consultation"
+    - SMS: Brief Check-In
+  - 15.5.4 Duration and Frequency
+    - Sequence Length (7 Days, 14 Days, 30 Days)
+    - Message Spacing
+    - Stop Conditions (Scheduled, Opted Out, Marked Closed)
+  - 15.5.5 Powered By GoHighLevel
+    - Workflow Configuration
+    - Template Setup
+  - 15.5.6 Acceptance Criteria
+
+---
+
+**16. Onboarding Experience (Version 1)**
+- 16.1 Onboarding Wizard Flow
+  - 16.1.1 Overview
+    - Goal: Get Attorney Live Quickly
+    - Target Time: &lt; 30 Minutes
+    - Guided Step-by-Step
+  - 16.1.2 Step 1: Account Setup
+    - Input: Name, Email, Firm Name
+    - Password Creation
+    - Terms of Service Acceptance
+    - Privacy Policy Acceptance
+  - 16.1.3 Step 2: State Selection
+    - Dropdown of US States
+    - Why We Ask (State Law Defaults)
+    - What Happens (State Laws Loaded)
+  - 16.1.4 Step 3: Practice Area Selection
+    - Checkbox List of Practice Areas
+    - Description of Each
+    - Can Select Multiple
+    - Limit Based on Tier (5 Slots for Growth)
+  - 16.1.5 Step 4: Template Activation
+    - Preview of Selected Templates
+    - Confirmation of Topics to Load
+    - Visual Indicator of Slot Usage
+  - 16.1.6 Step 5: Calendar Connection
+    - Choose Google or Outlook
+    - OAuth Flow
+    - Calendar Selection
+    - Business Hours Setup
+  - 16.1.7 Step 6: Phone System Setup
+    - Phone Number Assignment
+    - Preview of Number
+    - Optional: Port Existing Number (Note: Complex, Maybe Later)
+    - Voicemail Greeting Recording/Upload (Optional)
+  - 16.1.8 Step 7: Website Integration
+    - Provide Website URL
+    - Generate Embed Codes
+    - Instructions for Installation
+    - Option: We Install for You (Professional Service)
+  - 16.1.9 Step 8: AI Personality Configuration
+    - AI Name (Default or Custom)
+    - Review Greeting Script
+    - Test Call Option
+  - 16.1.10 Step 9: Review and Launch
+    - Summary of Configuration
+    - Test Chat Widget
+    - Go Live Button
+- 16.2 Post-Onboarding
+  - 16.2.1 Welcome Email
+  - 16.2.2 First Lead Alert Setup Confirmation
+  - 16.2.3 Dashboard Tour (In-App Walkthrough)
+- 16.3 Time to Value Target
+  - 16.3.1 Goal: First Interaction Within 24 Hours
+  - 16.3.2 Measuring Time to Value
+- 16.4 Acceptance Criteria
+
+---
+
+**17. Knowledge Base Configuration (Version 1)**
+- 17.1 State Law Defaults
+  - 17.1.1 Data Sources
+    - Where We Get State Laws
+    - Verification Process
+    - Legal Review (If Any)
+  - 17.1.2 Loading Process
+    - When Laws Are Loaded (Onboarding)
+    - How Long It Takes
+    - Progress Indicator
+  - 17.1.3 Update Cadence
+    - How Often Laws Are Updated
+    - How Updates Are Applied to Existing Accounts
+    - Notification of Updates
+  - 17.1.4 Coverage by State
+    - Initial Launch States (All 50 or Subset?)
+    - Priority States
+- 17.2 Practice Area Templates
+  - 17.2.1 Criminal Defense Template
+    - Topics Covered
+    - Sub-Topics
+    - Sample Questions It Can Answer
+    - Sample Intake Questions It Asks
+  - 17.2.2 Family Law Template
+    - Topics Covered
+    - Sub-Topics
+    - Sample Questions It Can Answer
+    - Sample Intake Questions It Asks
+  - 17.2.3 Personal Injury Template
+    - Topics Covered
+    - Sub-Topics
+    - Sample Questions It Can Answer
+    - Sample Intake Questions It Asks
+  - 17.2.4 Immigration Law Template
+    - Topics Covered
+    - Sub-Topics
+    - Sample Questions It Can Answer
+    - Sample Intake Questions It Asks
+  - 17.2.5 General Practice Template
+    - Topics Covered
+    - When to Use (Catch-All)
+- 17.3 Topic Slot Allocation
+  - 17.3.1 Growth Tier: 5 Slots
+  - 17.3.2 How Slots Are Counted
+  - 17.3.3 What Happens If Attorney Needs More
+  - 17.3.4 UI for Slot Management
+- 17.4 Acceptance Criteria
+
+---
+
+**18. GoToConnect Integration (Version 1)**
+- 18.1 Account Provisioning
+  - 18.1.1 How Attorney Account Is Created
+  - 18.1.2 Automated vs. Manual Provisioning
+  - 18.1.3 Timeline for Provisioning
+- 18.2 Phone Number Assignment
+  - 18.2.1 New Number Assignment
+  - 18.2.2 Area Code Selection
+  - 18.2.3 Number Porting (If Supported)
+- 18.3 Call Queue Configuration
+  - 18.3.1 Default Queue Setup
+  - 18.3.2 Hold Time Settings
+  - 18.3.3 Overflow Handling
+- 18.4 Hold Music and Greetings
+  - 18.4.1 Default Hold Music
+  - 18.4.2 Custom Hold Music Upload
+  - 18.4.3 Custom Greeting Recording
+- 18.5 SMS Capability
+  - 18.5.1 Enabling SMS on Number
+  - 18.5.2 SMS Routing to LogicLegal System
+- 18.6 Webhook Configuration
+  - 18.6.1 Events to Capture
+    - Incoming Call
+    - Call Answered
+    - Call Ended
+    - Voicemail Received
+    - SMS Received
+  - 18.6.2 Webhook Endpoint Setup
+  - 18.6.3 Payload Format
+  - 18.6.4 Security (Signature Verification)
+- 18.7 API Usage
+  - 18.7.1 APIs Used
+  - 18.7.2 Rate Limits
+  - 18.7.3 Error Handling
+- 18.8 Acceptance Criteria
+
+---
+
+**19. LiveKit Voice AI Integration (Version 1)**
+- 19.1 Architecture Overview
+  - 19.1.1 How LiveKit Fits in the Stack
+  - 19.1.2 Component Diagram
+- 19.2 Connection to GoToConnect
+  - 19.2.1 Technical Method (SIP, WebRTC, etc.)
+  - 19.2.2 Call Routing Configuration
+  - 19.2.3 Audio Stream Handling
+- 19.3 Speech-to-Text Configuration
+  - 19.3.1 STT Provider Selection
+  - 19.3.2 Language Settings
+  - 19.3.3 Accuracy Optimization
+- 19.4 Text-to-Speech Configuration
+  - 19.4.1 TTS Provider Selection
+  - 19.4.2 Voice Selection
+  - 19.4.3 Voice Customization (Speed, Pitch)
+  - 19.4.4 Voice Quality Settings
+- 19.5 Conversation Handling
+  - 19.5.1 Session Management
+  - 19.5.2 Context Maintenance During Call
+  - 19.5.3 LLM Integration (Claude/GPT)
+  - 19.5.4 Prompt Engineering for Voice
+  - 19.5.5 Handling Interruptions
+  - 19.5.6 Handling Silence
+- 19.6 Transcript Generation
+  - 19.6.1 Real-Time vs. Post-Call
+  - 19.6.2 Transcript Format
+  - 19.6.3 Speaker Identification
+  - 19.6.4 Storage Location and Format
+- 19.7 Handoff Logic
+  - 19.7.1 When to Handoff to Voicemail
+  - 19.7.2 When to Handoff to Live Person (If Configured)
+  - 19.7.3 Handoff Announcement Script
+- 19.8 AI Personality Configuration
+  - 19.8.1 System Prompt Structure
+  - 19.8.2 Per-Attorney Customization
+  - 19.8.3 Tone and Style Guidelines
+- 19.9 Compliance Integration
+  - 19.9.1 Disclosure Script Injection
+  - 19.9.2 Consent Capture
+  - 19.9.3 Recording Toggle Based on Consent
+- 19.10 Error Handling
+  - 19.10.1 STT Failure
+  - 19.10.2 TTS Failure
+  - 19.10.3 LLM Failure
+  - 19.10.4 Connection Failure
+  - 19.10.5 Graceful Degradation
+- 19.11 Performance Requirements
+  - 19.11.1 Latency Targets (Response Time)
+  - 19.11.2 Concurrent Call Capacity
+  - 19.11.3 Audio Quality Standards
+- 19.12 Acceptance Criteria
+
+---
+
+**20. GoHighLevel Configuration (Version 1 — Headless Backend)**
+- 20.1 Account Structure
+  - 20.1.1 Agency Account (Oxford Pierpont Master)
+  - 20.1.2 Sub-Account Per Attorney
+  - 20.1.3 Naming Conventions
+- 20.2 CRM/Contact Management
+  - 20.2.1 Contact Fields Required
+  - 20.2.2 Custom Fields for LogicLegal Data
+  - 20.2.3 Contact Creation via API
+  - 20.2.4 Contact Update via API
+- 20.3 Pipeline Setup
+  - 20.3.1 Default Pipeline Stages
+    - New Lead
+    - Contacted
+    - Scheduled
+    - Consultation Complete
+    - Retained
+    - Closed (Not Retained)
+  - 20.3.2 Pipeline Automation Rules
+- 20.4 Email Marketing Configuration
+  - 20.4.1 Sending Domain Setup
+  - 20.4.2 Email Templates
+  - 20.4.3 Deliverability Considerations
+- 20.5 SMS Configuration
+  - 20.5.1 SMS Provider (Twilio via GHL)
+  - 20.5.2 Sending Number
+  - 20.5.3 SMS Templates
+  - 20.5.4 Compliance (TCPA)
+- 20.6 Automation Workflows
+  - 20.6.1 Lead Nurture Workflow
+  - 20.6.2 Appointment Reminder Workflow
+  - 20.6.3 Post-Consultation Follow-Up Workflow
+  - 20.6.4 Workflow Triggers and Actions
+- 20.7 Webhook Integration with Dashboard
+  - 20.7.1 Events to Send to Dashboard
+    - Contact Created
+    - Contact Updated
+    - Appointment Created
+    - Email Sent
+    - SMS Sent
+  - 20.7.2 Webhook Configuration
+  - 20.7.3 Payload Format
+- 20.8 API Usage
+  - 20.8.1 APIs Used
+  - 20.8.2 Authentication
+  - 20.8.3 Rate Limits
+  - 20.8.4 Error Handling
+- 20.9 Acceptance Criteria
+
+---
+
+# PART IV: VERSION 2 FEATURES
+
+---
+
+**21. Case Briefings Features (Version 2)**
+- 21.1 Case Briefing Generation
+  - 21.1.1 What a Case Briefing Is
+    - Structured Summary of Prospect/Lead
+    - AI-Generated from Intake Data
+    - Designed for Quick Attorney Review
+  - 21.1.2 Data Inputs
+    - Intake Conversation Transcript
+    - Scoring Data
+    - Red Flag Data
+    - Contact Information
+    - Practice Area
+  - 21.1.3 Summary Structure
+    - Header: Name, Contact, Practice Area, Score
+    - Key Facts Section (Bullet Points)
+    - Timeline (If Applicable)
+    - Potential Issues Section
+    - AI Recommendation Section
+    - Full Transcript Link
+  - 21.1.4 Generation Trigger
+    - Generated Immediately After Intake
+    - Stored with Lead Record
+    - Updated If New Information Received
+  - 21.1.5 Generation Method
+    - LLM Prompt Structure
+    - Output Format (JSON or Markdown)
+    - Validation Checks
+  - 21.1.6 Acceptance Criteria
+- 21.2 Lead Scoring Display
+  - 21.2.1 Score Presentation
+    - Numeric Score (1-100)
+    - Visual Indicator (Color Coding, Stars, etc.)
+    - Score Category (Hot, Warm, Cold)
+  - 21.2.2 Score Breakdown View
+    - Factor-by-Factor Breakdown
+    - Explanation of Each Factor
+    - Expandable/Collapsible UI
+  - 21.2.3 Where Score Appears
+    - Leads List (Column)
+    - Lead Detail View (Prominent)
+    - Dashboard Home (High-Score Leads)
+  - 21.2.4 Acceptance Criteria
+- 21.3 Red Flag Identification
+  - 21.3.1 What Red Flags Are
+    - Potential Issues Identified During Intake
+    - May Affect Case Viability
+    - May Affect Client Fit
+  - 21.3.2 Red Flag Categories
+    - Legal Red Flags (Statute of Limitations Expired, Existing Attorney)
+    - Practical Red Flags (Unrealistic Expectations, Difficulty Communicating)
+    - Urgency Red Flags (Imminent Court Date, Safety Concerns)
+  - 21.3.3 Detection Logic
+    - Keyword/Phrase Detection
+    - AI Inference
+    - Rule-Based Detection
+  - 21.3.4 Display in Briefing
+    - Red Flag Section with Icons
+    - Explanation of Each Flag
+    - Severity Indicator (If Applicable)
+  - 21.3.5 Acceptance Criteria
+- 21.4 AI Recommendations
+  - 21.4.1 What Recommendations Are
+    - AI's Suggestion Based on Scoring and Red Flags
+    - Not a Directive, Just a Suggestion
+  - 21.4.2 Recommendation Types
+    - "Recommend scheduling consultation" (High Score)
+    - "Recommend reviewing before scheduling" (Medium Score, Red Flags)
+    - "Low priority—consider declining" (Low Score)
+    - "Urgent—recommend immediate follow-up" (Urgency Detected)
+  - 21.4.3 Recommendation Logic
+    - Score Thresholds
+    - Red Flag Overrides
+    - Practice-Area-Specific Rules
+  - 21.4.4 Display in Briefing
+    - Prominent Position
+    - Clear Visual Indicator
+  - 21.4.5 Acceptance Criteria
+- 21.5 Full Transcript Access
+  - 21.5.1 What Transcripts Include
+    - Full Conversation (AI and Prospect)
+    - Timestamps
+    - Speaker Labels
+  - 21.5.2 Transcript Storage
+    - Database Location
+    - Retention Period
+  - 21.5.3 Transcript Display
+    - Scrollable View
+    - Collapsible (Default Collapsed)
+    - Download Option
+  - 21.5.4 Search Within Transcript
+    - Keyword Search
+    - Highlight Matches
+  - 21.5.5 Acceptance Criteria
+
+---
+
+**22. Attorney Dashboard Features (Version 2 — Smart Dashboard)**
+- 22.1 Dashboard Home (Enhanced)
+  - 22.1.1 Score Summaries
+    - High-Score Leads Section
+    - Average Score This Week
+    - Score Distribution Chart
+  - 22.1.2 Priority Lead Highlighting
+    - Top 3 Leads Requiring Attention
+    - Reason for Priority (Score, Red Flag, Urgency)
+  - 22.1.3 Quick Stats (Enhanced)
+    - Leads This Week (With Scores)
+    - Consultations Booked
+    - Conversion Rate (Leads to Consultations)
+    - Marketing Performance Snapshot
+  - 22.1.4 Activity Feed
+    - Recent Actions (Calls, Chats, Emails)
+    - Chronological View
+  - 22.1.5 UI Wireframe Reference
+  - 22.1.6 Acceptance Criteria
+- 22.2 Leads View (Enhanced)
+  - 22.2.1 Score Column and Sorting
+    - Score Displayed in List
+    - Sort by Score (Default: Highest First)
+    - Filter by Score Range
+  - 22.2.2 Red Flag Indicators
+    - Icon/Badge on Lead Row
+    - Tooltip with Red Flag Summary
+  - 22.2.3 One-Click Expand to Full Briefing
+    - Inline Expansion
+    - Or Modal View
+  - 22.2.4 Bulk Actions
+    - Select Multiple Leads
+    - Mark Status
+    - Export
+  - 22.2.5 UI Wireframe Reference
+  - 22.2.6 Acceptance Criteria
+- 22.3 Lead Detail View (Full Case Briefing)
+  - 22.3.1 Layout Overview
+    - Header with Key Info and Score
+    - Tabbed or Sectioned Layout
+  - 22.3.2 AI Summary Section
+    - Brief Paragraph Summary
+    - Key Takeaways
+  - 22.3.3 Key Facts Section
+    - Structured Data Display
+    - Practice-Area-Specific Fields
+  - 22.3.4 Red Flags Section
+    - List of Flags with Explanations
+    - Visual Severity Indicators
+  - 22.3.5 AI Recommendation Section
+    - Recommendation Display
+    - Reasoning (If Available)
+  - 22.3.6 Full Transcript Section
+    - Collapsible
+    - Searchable
+  - 22.3.7 Action Buttons
+    - Schedule Consultation
+    - Decline Lead
+    - Request More Information
+    - Mark as Contacted
+    - Edit Contact Info
+  - 22.3.8 Activity History
+    - All Interactions with This Lead
+    - Calls, Chats, Emails, Notes
+  - 22.3.9 UI Wireframe Reference
+  - 22.3.10 Acceptance Criteria
+- 22.4 Pipeline View
+  - 22.4.1 Visual Pipeline Display
+    - Kanban-Style Board
+    - Stage Columns
+    - Lead Cards
+  - 22.4.2 Drag and Drop Functionality
+    - Move Leads Between Stages
+    - Confirmation (If Needed)
+  - 22.4.3 GoHighLevel Sync
+    - Changes Reflected in GHL Pipeline
+    - Bidirectional Sync
+  - 22.4.4 Filters and Views
+    - Filter by Practice Area
+    - Filter by Score
+    - Filter by Date
+  - 22.4.5 UI Wireframe Reference
+  - 22.4.6 Acceptance Criteria
+
+---
+
+**23. Attorney Voice Assistant Features (Version 2)**
+- 23.1 Overview
+  - 23.1.1 What It Is
+    - Phone-Based AI Assistant for Attorneys
+    - Call a Number, Get Briefed
+    - No App or Login Required
+  - 23.1.2 Why It Matters
+    - Attorneys Often Mobile (Driving, Walking)
+    - Hands-Free Access to Practice Information
+    - Feels Like a Real Assistant
+- 23.2 Call-In Briefings
+  - 23.2.1 Dedicated Phone Number
+    - Separate from Client-Facing Number
+    - Per-Attorney Assignment
+    - Easy to Remember
+  - 23.2.2 Authentication/Recognition
+    - Caller ID Recognition (Attorney's Phone)
+    - Optional PIN Code
+    - Voice Recognition (Future)
+  - 23.2.3 Greeting
+    - Personalized ("Hi [Attorney Name], how can I help?")
+  - 23.2.4 Acceptance Criteria
+- 23.3 "What's Next" Queries
+  - 23.3.1 Query Examples
+    - "What's on my calendar today?"
+    - "What's my next appointment?"
+    - "When is my 2pm with?"
+  - 23.3.2 Calendar Data Access
+    - Pull from Connected Calendar
+    - Include LogicLegal Appointments
+  - 23.3.3 Response Format
+    - Conversational, Not Robotic
+    - Include Brief Lead Context
+    - Example: "Your next appointment is at 2pm with John Smith, a potential DUI case."
+  - 23.3.4 Acceptance Criteria
+- 23.4 "What Came In" Queries
+  - 23.4.1 Query Examples
+    - "What came in overnight?"
+    - "Any new leads today?"
+    - "What did I miss?"
+  - 23.4.2 Lead Data Access
+    - Pull from Lead Database
+    - Filter by Timeframe
+  - 23.4.3 Filtering Options
+    - Today
+    - Since Last Check
+    - This Week
+    - Custom (Yesterday, Last 2 Days, etc.)
+  - 23.4.4 Response Format
+    - Summary Count First
+    - Brief Highlights of Top Leads
+    - Offer to Hear More Details
+    - Example: "You have 3 new leads since yesterday. One is a high-score family law case—Maria Rodriguez, child custody dispute. Want to hear more?"
+  - 23.4.5 Acceptance Criteria
+- 23.5 Lead Detail on Demand
+  - 23.5.1 Query Examples
+    - "Tell me about the Rodriguez lead."
+    - "What was that DUI case about?"
+    - "Brief me on my 2pm."
+  - 23.5.2 Lead Lookup Logic
+    - Match by Name
+    - Match by Appointment Time
+    - Match by Recent Intake
+    - Clarification If Multiple Matches
+  - 23.5.3 Briefing Delivery (Verbal)
+    - Key Facts
+    - Score
+    - Red Flags
+    - Recommendation
+    - Natural Conversational Style
+  - 23.5.4 Follow-Up Questions
+    - Attorney Can Ask More
+    - "What did they say about the accident?"
+    - Context Maintained During Call
+  - 23.5.5 Acceptance Criteria
+- 23.6 Red Flag Queries
+  - 23.6.1 Query Examples
+    - "Any concerns with this one?"
+    - "What are the red flags?"
+    - "Anything I should watch out for?"
+  - 23.6.2 Concern Retrieval
+    - Pull Red Flags from Case Briefing
+    - Contextual to Current Lead Discussion
+  - 23.6.3 Response Format
+    - Clear Explanation
+    - Severity Indication
+    - Example: "One concern: they mentioned they spoke with another attorney already. That might indicate shopping around or complications."
+  - 23.6.4 Acceptance Criteria
+- 23.7 Calendar-Aware Intelligence
+  - 23.7.1 Calendar Integration
+    - Read Attorney's Calendar
+    - Understand Current Status
+  - 23.7.2 Availability Detection
+    - In Court
+    - In Meeting
+    - Free
+    - After Hours
+  - 23.7.3 Behavior Modification Based on Status
+    - Proactive Calls Respect Calendar
+    - Notifications Adjusted
+    - Urgency Thresholds Change
+  - 23.7.4 Acceptance Criteria
+- 23.8 Proactive Outbound Calls
+  - 23.8.1 What It Is
+    - AI Calls Attorney for Urgent Matters
+    - Not a Notification—An Actual Phone Call
+  - 23.8.2 Urgency Detection Criteria
+    - High-Score Lead with Time Sensitivity
+    - Court Date Within 48 Hours
+    - Safety Concern Mentioned
+    - Configurable Thresholds
+  - 23.8.3 Call Initiation Logic
+    - Check Calendar First
+    - Don't Interrupt Court/Meetings
+    - Retry Logic If No Answer
+  - 23.8.4 Calendar Respect Rules
+    - Blocked Time = No Calls
+    - Configurable Quiet Hours
+    - Override for Extreme Urgency (Optional)
+  - 23.8.5 Call Content
+    - Brief Explanation of Urgency
+    - Key Lead Information
+    - Action Options
+  - 23.8.6 Acceptance Criteria
+- 23.9 Upcoming Appointment Briefings
+  - 23.9.1 Pre-Appointment Trigger
+    - Configurable Timing (30 Min Before, 1 Hour Before)
+    - Automatic or On-Demand
+  - 23.9.2 Briefing Content
+    - Same as Lead Detail
+    - Tailored for Upcoming Meeting
+    - Reminder of Key Points
+  - 23.9.3 Delivery Method
+    - If Automatic: Outbound Call or SMS with Option to Call
+    - If On-Demand: Attorney Calls and Asks
+  - 23.9.4 Acceptance Criteria
+
+---
+
+**24. Omnichannel Communication Features (Version 2)**
+- 24.1 Unified Inbox
+  - 24.1.1 What It Is
+    - Single View of All Communications
+    - Email, LinkedIn, Facebook, SMS, Calls
+    - Chronological or Grouped View
+  - 24.1.2 Email Integration
+    - OAuth Connection (Gmail, Outlook)
+    - Read and Display Emails
+    - Reply Capability (Optional V2, Maybe Later)
+  - 24.1.3 LinkedIn Message Integration
+    - OAuth Connection
+    - Read LinkedIn Messages
+    - Limitations (LinkedIn API Restrictions)
+  - 24.1.4 Facebook Message Integration
+    - OAuth Connection (Facebook Page)
+    - Read Page Messages
+    - Response Capability
+  - 24.1.5 Unified View Design
+    - Conversation Threads
+    - Source Indicator (Icon per Channel)
+    - Timestamp
+    - Lead Association
+  - 24.1.6 UI Wireframe Reference
+  - 24.1.7 Acceptance Criteria
+- 24.2 Email Monitoring
+  - 24.2.1 Connection Setup
+    - Gmail OAuth
+    - Outlook OAuth
+    - Permission Scopes
+  - 24.2.2 Flagging Logic
+    - Priority Detection (Client Name, Urgent Keywords)
+    - AI Categorization
+  - 24.2.3 Summarization
+    - AI-Generated Email Summaries
+    - Key Points Extraction
+  - 24.2.4 Display in Dashboard
+    - Email Widget or Tab
+    - Summary View vs. Full View
+  - 24.2.5 Voice Assistant Integration
+    - "Do I have any important emails?"
+    - Summary Delivered Verbally
+  - 24.2.6 Acceptance Criteria
+- 24.3 Social Media Message Capture
+  - 24.3.1 LinkedIn Integration
+    - Connection Method
+    - Message Retrieval
+    - Limitations and Considerations
+  - 24.3.2 Facebook Integration
+    - Page Connection
+    - Message Retrieval
+    - Response Capability
+  - 24.3.3 Lead Creation from Social
+    - If New Prospect Messages on Social
+    - Create Lead Record
+    - Same Intake Logic (Via Chat Response)
+  - 24.3.4 Acceptance Criteria
+- 24.4 Channel-Agnostic Lead Intake
+  - 24.4.1 Unified Intake Logic
+    - Same AI Handles All Channels
+    - Same Questions
+    - Same Scoring
+  - 24.4.2 Source Tracking
+    - Lead Record Indicates Source
+    - Phone, Chat, Research, LinkedIn, Facebook
+    - Useful for Analytics
+  - 24.4.3 Acceptance Criteria
+
+---
+
+**25. Marketing Analytics Integration (Version 2)**
+- 25.1 Google Ads Integration
+  - 25.1.1 Connection Setup
+    - OAuth Connection
+    - Account/Campaign Selection
+  - 25.1.2 Data Retrieved
+    - Spend
+    - Clicks
+    - Impressions
+    - Conversions (If Configured)
+  - 25.1.3 Display in Dashboard
+    - Campaign Performance Widget
+    - Key Metrics
+  - 25.1.4 Acceptance Criteria
+- 25.2 Facebook Ads Integration
+  - 25.2.1 Connection Setup
+    - OAuth Connection
+    - Ad Account Selection
+  - 25.2.2 Data Retrieved
+    - Spend
+    - Reach
+    - Clicks
+    - Conversions
+  - 25.2.3 Display in Dashboard
+    - Campaign Performance Widget
+    - Key Metrics
+  - 25.2.4 Acceptance Criteria
+- 25.3 Campaign Performance Dashboard
+  - 25.3.1 Unified View
+    - All Ad Platforms Combined
+    - Total Spend
+    - Total Results
+  - 25.3.2 Metrics Displayed
+    - Cost Per Lead
+    - Lead Source Breakdown
+    - ROI (If Revenue Tracked)
+  - 25.3.3 Date Range Filters
+    - This Week, This Month, Custom
+  - 25.3.4 UI Wireframe Reference
+  - 25.3.5 Acceptance Criteria
+- 25.4 Voice Assistant Campaign Queries
+  - 25.4.1 Query Examples
+    - "How are my campaigns doing?"
+    - "What's my cost per lead this month?"
+    - "How much have I spent on Google Ads?"
+  - 25.4.2 Response Format
+    - Summary Stats
+    - Comparison to Previous Period
+    - Natural Language
+  - 25.4.3 Acceptance Criteria
+
+---
+
+**26. Knowledge Base Expansion (Version 2)**
+- 26.1 Expanded Topic Slots
+  - 26.1.1 Professional Tier: 15 Slots
+  - 26.1.2 Upgrade Path from Growth Tier
+  - 26.1.3 Slot Management UI
+- 26.2 Custom Material Upload
+  - 26.2.1 What Attorneys Can Upload
+    - Internal Guides
+    - Specialized Knowledge
+    - Firm-Specific Procedures
+  - 26.2.2 Supported File Types
+    - PDF
+    - Word Documents
+    - Text Files
+    - (Maybe: Audio/Video Transcription)
+  - 26.2.3 Processing Pipeline
+    - Upload → Extract Text → Chunk → Embed → Store
+    - Processing Time Expectations
+    - Progress Indicator
+  - 26.2.4 Storage Location
+    - Per-Attorney Knowledge Base
+    - Separate from Shared Templates
+  - 26.2.5 Acceptance Criteria
+- 26.3 Case Studies Repository
+  - 26.3.1 What Case Studies Are
+    - Examples of Past Cases
+    - Anonymized Outcomes
+    - AI Can Reference in Conversations
+  - 26.3.2 Case Study Entry Format
+    - Case Type
+    - Facts Summary
+    - Outcome
+    - Lessons/Notes
+  - 26.3.3 Entry Interface
+    - Form-Based Entry
+    - Or Document Upload with Extraction
+  - 26.3.4 AI Access to Case Studies
+    - Reference in Prospect Conversations
+    - Reference in Attorney Prep
+  - 26.3.5 Acceptance Criteria
+
+---
+
+# PART V: VERSION 3+ FEATURES (OUT OF SCOPE — FOR REFERENCE)
+
+---
+
+**27. Case Preparation Features (Version 3+ / Complete Tier)**
+- 27.1 Case Document Repository Access
+  - 27.1.1 Overview
+  - 27.1.2 Supported Integrations (Clio, Google Drive, Dropbox, OneDrive)
+  - 27.1.3 Document Access Method (Proxy, Not Storage)
+  - 27.1.4 Security Considerations
+- 27.2 Case Preparation Mode
+  - 27.2.1 Overview
+  - 27.2.2 Conversation Flow
+  - 27.2.3 Document RAG Pipeline
+- 27.3 Document Q&A
+  - 27.3.1 Overview
+  - 27.3.2 Query Types Supported
+- 27.4 Argument Preparation
+  - 27.4.1 Overview
+  - 27.4.2 Debate Mode
+- 27.5 Evidence Review
+  - 27.5.1 Overview
+  - 27.5.2 Supported Evidence Types
+- 27.6 On-Demand Case Summaries
+  - 27.6.1 Overview
+  - 27.6.2 Trigger Methods
+
+---
+
+**28. Integration Features (Version 3+)**
+- 28.1 Clio Integration
+  - 28.1.1 Overview
+  - 28.1.2 Data Synced
+  - 28.1.3 Document Access
+- 28.2 Google Drive Integration
+  - 28.2.1 Overview
+  - 28.2.2 Folder Structure Expectations
+- 28.3 Dropbox Integration
+  - 28.3.1 Overview
+- 28.4 OneDrive Integration
+  - 28.4.1 Overview
+- 28.5 Additional CRM Integrations
+  - 28.5.1 MyCase
+  - 28.5.2 PracticePanther
+  - 28.5.3 Smokeball
+  - 28.5.4 Others
+- 28.6 Custom Integrations
+  - 28.6.1 Overview
+  - 28.6.2 Scoping Process
+
+---
+
+**29. Multi-User and Firm Features (Version 3+ / Firm Tiers)**
+- 29.1 Multiple User Seats
+- 29.2 Firm-Wide Dashboard
+- 29.3 Per-Attorney Views
+- 29.4 Shared Knowledge Base
+- 29.5 Individual Knowledge Bases
+- 29.6 White-Label Options
+
+---
+
+**30. Advanced Support Features (Version 3+)**
+- 30.1 Priority Support
+- 30.2 Phone Support
+- 30.3 Dedicated Onboarding
+- 30.4 Quarterly/Monthly Strategy Calls
+- 30.5 Dedicated Account Manager
+
+---
+
+**31. Add-On Features (All Versions)**
+- 31.1 Additional Topic Slots (5-pack) — $97/month
+- 31.2 Additional Voice Minutes — TBD
+- 31.3 Marketing Package Add-On — $2,497/month
+- 31.4 Custom Template Development — $497 one-time
+- 31.5 Additional User Seats — $497/month
+- 31.6 Dedicated Phone Numbers — $47/month
+
+---
+
+# PART VI: TECHNICAL SPECIFICATIONS
+
+---
+
+**32. Data Model**
+- 32.1 Entity Relationship Diagram
+- 32.2 Lead/Prospect Schema
+  - 32.2.1 Fields
+  - 32.2.2 Relationships
+  - 32.2.3 Indexes
+- 32.3 Intake Conversation Schema
+  - 32.3.1 Fields
+  - 32.3.2 Relationships
+  - 32.3.3 Indexes
+- 32.4 Case Briefing Schema
+  - 32.4.1 Fields
+  - 32.4.2 Relationships
+  - 32.4.3 Indexes
+- 32.5 Scoring Data Schema
+  - 32.5.1 Fields
+  - 32.5.2 Relationships
+- 32.6 Appointment Schema
+  - 32.6.1 Fields
+  - 32.6.2 Relationships
+- 32.7 Knowledge Base Schema
+  - 32.7.1 Topic Schema
+  - 32.7.2 Document Chunk Schema
+  - 32.7.3 Embedding Storage
+- 32.8 User/Attorney Schema
+  - 32.8.1 Fields
+  - 32.8.2 Relationships
+  - 32.8.3 Authentication Data
+- 32.9 Firm Schema (For Version 3+)
+  - 32.9.1 Fields
+  - 32.9.2 Relationships
+- 32.10 Notification Schema
+  - 32.10.1 Fields
+  - 32.10.2 Relationships
+- 32.11 Marketing Content Schema
+  - 32.11.1 Fields
+  - 32.11.2 Relationships
+- 32.12 Transcript Schema
+  - 32.12.1 Fields
+  - 32.12.2 Storage Considerations
+
+---
+
+**33. API Specifications**
+- 33.1 Internal APIs Overview
+  - 33.1.1 API Architecture (REST, GraphQL)
+  - 33.1.2 Authentication Method
+  - 33.1.3 Versioning Strategy
+- 33.2 Lead API
+  - 33.2.1 Endpoints
+  - 33.2.2 Request/Response Formats
+  - 33.2.3 Error Codes
+- 33.3 Appointment API
+  - 33.3.1 Endpoints
+  - 33.3.2 Request/Response Formats
+  - 33.3.3 Error Codes
+- 33.4 Knowledge Base API
+  - 33.4.1 Endpoints
+  - 33.4.2 Request/Response Formats
+  - 33.4.3 Error Codes
+- 33.5 User/Attorney API
+  - 33.5.1 Endpoints
+  - 33.5.2 Request/Response Formats
+  - 33.5.3 Error Codes
+- 33.6 Notification API
+  - 33.6.1 Endpoints
+  - 33.6.2 Request/Response Formats
+- 33.7 GoToConnect API Usage
+  - 33.7.1 Endpoints Used
+  - 33.7.2 Authentication
+  - 33.7.3 Rate Limits
+  - 33.7.4 Error Handling
+- 33.8 GoHighLevel API Usage
+  - 33.8.1 Endpoints Used
+  - 33.8.2 Authentication
+  - 33.8.3 Rate Limits
+  - 33.8.4 Error Handling
+- 33.9 Calendar API Integration (Google)
+  - 33.9.1 OAuth Flow
+  - 33.9.2 Endpoints Used
+  - 33.9.3 Scopes Required
+  - 33.9.4 Error Handling
+- 33.10 Calendar API Integration (Outlook)
+  - 33.10.1 OAuth Flow
+  - 33.10.2 Endpoints Used
+  - 33.10.3 Scopes Required
+  - 33.10.4 Error Handling
+- 33.11 Social Media APIs
+  - 33.11.1 LinkedIn API
+  - 33.11.2 Facebook API
+  - 33.11.3 Limitations and Considerations
+- 33.12 Webhook Endpoints
+  - 33.12.1 Incoming Webhooks (Receiving)
+  - 33.12.2 Outgoing Webhooks (Sending)
+  - 33.12.3 Security (Signature Verification)
+  - 33.12.4 Retry Logic
+
+---
+
+**34. User Interface Specifications**
+- 34.1 Design System
+  - 34.1.1 Design Principles
+  - 34.1.2 Color Palette
+  - 34.1.3 Typography
+  - 34.1.4 Component Library
+  - 34.1.5 Responsive Breakpoints
+- 34.2 Prospect-Facing Interfaces
+  - 34.2.1 Research Chat UI
+    - Layout Specification
+    - Component Breakdown
+    - Interaction States
+    - Mobile Adaptation
+  - 34.2.2 Corner Chatbot UI
+    - Widget Specification
+    - Expanded View Specification
+    - Interaction States
+    - Mobile Adaptation
+  - 34.2.3 Website Integration Requirements
+    - Embed Code Structure
+    - CSS Isolation
+    - Z-Index Considerations
+    - Performance Requirements
+- 34.3 Attorney Dashboard UI
+  - 34.3.1 Navigation Structure
+    - Menu Items
+    - Hierarchy
+    - Mobile Navigation
+  - 34.3.2 Dashboard Home Wireframe (V1)
+  - 34.3.3 Dashboard Home Wireframe (V2)
+  - 34.3.4 Leads View Wireframe (V1)
+  - 34.3.5 Leads View Wireframe (V2)
+  - 34.3.6 Lead Detail/Briefing View Wireframe (V2)
+  - 34.3.7 Calendar View Wireframe
+  - 34.3.8 Pipeline View Wireframe (V2)
+  - 34.3.9 Unified Inbox Wireframe (V2)
+  - 34.3.10 Settings Panel Wireframe
+  - 34.3.11 Analytics Dashboard Wireframe (V2)
+- 34.4 Onboarding Wizard UI
+  - 34.4.1 Step-by-Step Wireframes
+  - 34.4.2 Progress Indicator
+  - 34.4.3 Help/Tooltip Content
+- 34.5 Mobile Responsiveness
+  - 34.5.1 Mobile-First Approach
+  - 34.5.2 Touch Interactions
+  - 34.5.3 Reduced Feature Set (If Any)
+  - 34.5.4 Testing Requirements
+
+---
+
+**35. Reporting and Analytics (Internal to Dashboard)**
+- 35.1 Lead Funnel Metrics
+  - 35.1.1 Leads → Scheduled → Consultations → Retained
+  - 35.1.2 Conversion Rates
+  - 35.1.3 Display in Dashboard
+- 35.2 Source Tracking
+  - 35.2.1 Leads by Source (Phone, Chat, Research, Social)
+  - 35.2.2 Performance by Source
+- 35.3 Time-Based Reports
+  - 35.3.1 Daily/Weekly/Monthly Views
+  - 35.3.2 Trend Charts
+- 35.4 Exportable Reports
+  - 35.4.1 Export Formats (CSV, PDF)
+  - 35.4.2 Data Included
+- 35.5 Acceptance Criteria
+
+---
+
+# PART VII: NON-FUNCTIONAL REQUIREMENTS
+
+---
+
+**36. Performance Requirements**
+- 36.1 Response Time Targets
+  - 36.1.1 Dashboard Page Load (&lt; 2 seconds)
+  - 36.1.2 Chat AI Response (&lt; 3 seconds)
+  - 36.1.3 Voice AI Response (&lt; 1.5 seconds latency)
+  - 36.1.4 API Response (&lt; 500ms)
+- 36.2 Throughput Requirements
+  - 36.2.1 Concurrent Users Supported
+  - 36.2.2 Concurrent Calls Supported
+  - 36.2.3 Concurrent Chat Sessions Supported
+- 36.3 Performance Testing Approach
+
+---
+
+**37. Availability and Uptime**
+- 37.1 Uptime Target (99.9%)
+- 37.2 Planned Maintenance Windows
+- 37.3 Incident Response SLA
+- 37.4 Monitoring and Alerting
+  - 37.4.1 What's Monitored
+  - 37.4.2 Alerting Channels
+  - 37.4.3 On-Call Procedures
+
+---
+
+**38. Scalability**
+- 38.1 Horizontal Scaling Strategy
+- 38.2 Database Scaling
+- 38.3 Voice AI Scaling
+- 38.4 Growth Projections and Capacity Planning
+
+---
+
+**39. Security Requirements**
+- 39.1 Authentication
+  - 39.1.1 Attorney Login (Email/Password, OAuth)
+  - 39.1.2 Session Management
+  - 39.1.3 Password Requirements
+  - 39.1.4 Two-Factor Authentication (Optional/Required)
+- 39.2 Authorization
+  - 39.2.1 Role-Based Access Control
+  - 39.2.2 Roles Defined
+  - 39.2.3 Permission Matrix
+- 39.3 Data Encryption
+  - 39.3.1 At Rest
+  - 39.3.2 In Transit
+- 39.4 Input Validation
+  - 39.4.1 Sanitization
+  - 39.4.2 Injection Prevention
+- 39.5 Audit Logging
+  - 39.5.1 What's Logged
+  - 39.5.2 Log Retention
+  - 39.5.3 Log Access
+- 39.6 Vulnerability Management
+  - 39.6.1 Dependency Scanning
+  - 39.6.2 Penetration Testing (Cadence)
+- 39.7 Incident Response Plan
+
+---
+
+**40. Data Privacy and Compliance**
+- 40.1 Data Collection
+  - 40.1.1 What Data Is Collected
+  - 40.1.2 Purpose of Each Data Type
+  - 40.1.3 Consent Mechanisms
+- 40.2 Data Retention
+  - 40.2.1 Retention Periods by Data Type
+  - 40.2.2 Deletion Procedures
+- 40.3 Data Subject Rights
+  - 40.3.1 Access Requests
+  - 40.3.2 Deletion Requests
+  - 40.3.3 Export Requests
+- 40.4 CCPA Compliance
+- 40.5 GDPR Considerations
+- 40.6 HIPAA Considerations
+- 40.7 Privacy Policy Requirements
+
+---
+
+**41. Browser and Device Support**
+- 41.1 Supported Browsers
+  - 41.1.1 Chrome (Latest 2 Versions)
+  - 41.1.2 Firefox (Latest 2 Versions)
+  - 41.1.3 Safari (Latest 2 Versions)
+  - 41.1.4 Edge (Latest 2 Versions)
+- 41.2 Supported Devices
+  - 41.2.1 Desktop (Windows, Mac)
+  - 41.2.2 Tablet (iPad, Android Tablets)
+  - 41.2.3 Mobile (iPhone, Android Phones)
+- 41.3 Minimum Screen Resolutions
+- 41.4 Accessibility Requirements
+  - 41.4.1 WCAG 2.1 Level AA Target
+  - 41.4.2 Screen Reader Compatibility
+  - 41.4.3 Keyboard Navigation
+
+---
+
+# PART VIII: TESTING AND QUALITY ASSURANCE
+
+---
+
+**42. Testing Strategy**
+- 42.1 Testing Levels
+  - 42.1.1 Unit Testing
+  - 42.1.2 Integration Testing
+  - 42.1.3 End-to-End Testing
+  - 42.1.4 User Acceptance Testing
+- 42.2 Testing Environments
+  - 42.2.1 Development
+  - 42.2.2 Staging
+  - 42.2.3 Production
+
+---
+
+**43. Test Cases by Feature Area**
+- 43.1 Voice AI Testing
+  - 43.1.1 Call Flow Tests
+  - 43.1.2 Speech Recognition Tests
+  - 43.1.3 Response Quality Tests
+  - 43.1.4 Error Handling Tests
+  - 43.1.5 Compliance Disclosure Tests
+- 43.2 Chat AI Testing
+  - 43.2.1 Conversation Flow Tests
+  - 43.2.2 Knowledge Base Accuracy Tests
+  - 43.2.3 Intake Completion Tests
+  - 43.2.4 Error Handling Tests
+- 43.3 Dashboard Testing
+  - 43.3.1 Functional Tests
+  - 43.3.2 UI/UX Tests
+  - 43.3.3 Responsive Design Tests
+  - 43.3.4 Performance Tests
+- 43.4 Integration Testing
+  - 43.4.1 GoToConnect Integration Tests
+  - 43.4.2 GoHighLevel Integration Tests
+  - 43.4.3 Calendar Integration Tests
+  - 43.4.4 Webhook Tests
+- 43.5 Marketing Automation Testing
+  - 43.5.1 Email Delivery Tests
+  - 43.5.2 SMS Delivery Tests
+  - 43.5.3 Automation Trigger Tests
+- 43.6 Security Testing
+  - 43.6.1 Authentication Tests
+  - 43.6.2 Authorization Tests
+  - 43.6.3 Penetration Tests
+
+---
+
+**44. Load Testing**
+- 44.1 Load Test Scenarios
+- 44.2 Expected Load Profiles
+- 44.3 Pass/Fail Criteria
+- 44.4 Tools and Methodology
+
+---
+
+**45. Acceptance Testing Criteria**
+- 45.1 Definition of Done
+- 45.2 Sign-Off Process
+- 45.3 Bug Severity Classification
+- 45.4 Release Criteria
+
+---
+
+# PART IX: LAUNCH AND OPERATIONS
+
+---
+
+**46. Launch Requirements**
+- 46.1 Version 1 Launch Checklist
+  - 46.1.1 Infrastructure Readiness
+  - 46.1.2 Feature Completeness
+  - 46.1.3 Testing Completeness
+  - 46.1.4 Documentation Readiness
+  - 46.1.5 Support Readiness
+  - 46.1.6 Legal/Compliance Readiness
+  - 46.1.7 Marketing Readiness
+- 46.2 Version 2 Launch Checklist
+  - 46.2.1 Same Categories as V1
+  - 46.2.2 Migration Testing
+  - 46.2.3 Existing Customer Communication
+- 46.3 Go/No-Go Decision Process
+- 46.4 Rollback Plan
+
+---
+
+**47. Billing and Payment System**
+- 47.1 Payment Processor
+  - 47.1.1 Stripe Integration
+  - 47.1.2 Payment Methods Accepted
+- 47.2 Subscription Management
+  - 47.2.1 Plan Selection
+  - 47.2.2 Billing Cycle (Monthly)
+  - 47.2.3 Upgrade/Downgrade Flows
+  - 47.2.4 Cancellation Flow
+- 47.3 Usage-Based Billing (For Add-Ons)
+  - 47.3.1 Usage Tracking
+  - 47.3.2 Overage Handling
+- 47.4 Invoicing
+  - 47.4.1 Invoice Generation
+  - 47.4.2 Invoice Delivery
+- 47.5 Failed Payment Handling
+  - 47.5.1 Retry Logic
+  - 47.5.2 Grace Period
+  - 47.5.3 Account Suspension
+- 47.6 Acceptance Criteria
+
+---
+
+**48. Oxford Pierpont Admin Panel**
+- 48.1 Purpose
+  - 48.1.1 Internal Tool for Managing LogicLegal
+  - 48.1.2 Not Visible to Attorneys
+- 48.2 Attorney Onboarding Tools
+  - 48.2.1 Create New Attorney Account
+  - 48.2.2 Provision GoToConnect
+  - 48.2.3 Provision GoHighLevel Sub-Account
+  - 48.2.4 Configure Knowledge Base
+- 48.3 Account Management
+  - 48.3.1 View All Accounts
+  - 48.3.2 Account Status (Active, Suspended, Cancelled)
+  - 48.3.3 Account Details View
+  - 48.3.4 Edit Account Settings
+- 48.4 System Health Monitoring
+  - 48.4.1 Service Status Dashboard
+  - 48.4.2 Error Rates
+  - 48.4.3 Performance Metrics
+  - 48.4.4 Alerts and Notifications
+- 48.5 Support Tools
+  - 48.5.1 Impersonate Attorney (View Their Dashboard)
+  - 48.5.2 View Attorney's Leads/Activity
+  - 48.5.3 Trigger Manual Actions (Re-send Email, etc.)
+- 48.6 Reporting
+  - 48.6.1 Total Accounts
+  - 48.6.2 Revenue Metrics
+  - 48.6.3 Usage Metrics
+  - 48.6.4 Churn Metrics
+- 48.7 Acceptance Criteria
+
+---
+
+**49. Attorney Documentation and Training**
+- 49.1 Help Center
+  - 49.1.1 Platform (Zendesk, Notion, Custom)
+  - 49.1.2 Article Categories
+  - 49.1.3 Search Functionality
+- 49.2 Documentation Content
+  - 49.2.1 Getting Started Guide
+  - 49.2.2 Feature Guides
+  - 49.2.3 FAQ
+  - 49.2.4 Troubleshooting
+- 49.3 Video Tutorials
+  - 49.3.1 Onboarding Walkthrough
+  - 49.3.2 Feature Demonstrations
+  - 49.3.3 Tips and Best Practices
+- 49.4 In-App Guidance
+  - 49.4.1 Tooltips
+  - 49.4.2 Guided Tours (First Login)
+  - 49.4.3 Contextual Help
+- 49.5 Acceptance Criteria
+
+---
+
+**50. Support Operations**
+- 50.1 Support Channels
+  - 50.1.1 Email Support
+  - 50.1.2 In-App Chat (Future)
+  - 50.1.3 Phone Support (Higher Tiers)
+- 50.2 Support Hours
+  - 50.2.1 Standard Hours
+  - 50.2.2 Extended Hours (Higher Tiers)
+- 50.3 Response Time SLAs
+  - 50.3.1 By Tier
+  - 50.3.2 By Severity
+- 50.4 Ticketing System
+  - 50.4.1 Platform Selection
+  - 50.4.2 Workflow Configuration
+- 50.5 Escalation Procedures
+- 50.6 Knowledge Base for Support Team
+
+---
+
+# PART X: PROJECT MANAGEMENT
+
+---
+
+**51. Risks and Mitigations**
+- 51.1 Technical Risks
+  - 51.1.1 Risk: LiveKit Integration Complexity
+  - 51.1.2 Risk: Voice AI Quality Issues
+  - 51.1.3 Risk: Third-Party API Reliability
+  - 51.1.4 Risk: Scaling Challenges
+  - 51.1.5 Mitigation Strategies
+- 51.2 Market Risks
+  - 51.2.1 Risk: Slow Attorney Adoption
+  - 51.2.2 Risk: Competitive Response
+  - 51.2.3 Risk: Pricing Sensitivity
+  - 51.2.4 Mitigation Strategies
+- 51.3 Operational Risks
+  - 51.3.1 Risk: Support Overwhelm
+  - 51.3.2 Risk: Content Production Bottleneck
+  - 51.3.3 Risk: Key Personnel Dependency
+  - 51.3.4 Mitigation Strategies
+- 51.4 Compliance Risks
+  - 51.4.1 Risk: State Bar Concerns
+  - 51.4.2 Risk: AI Disclosure Violations
+  - 51.4.3 Risk: Data Privacy Violations
+  - 51.4.4 Mitigation Strategies
+
+---
+
+**52. Dependencies**
+- 52.1 External Dependencies
+  - 52.1.1 GoToConnect (Telephony)
+  - 52.1.2 LiveKit (Voice AI)
+  - 52.1.3 GoHighLevel (Marketing Automation)
+  - 52.1.4 Google/Microsoft (Calendar)
+  - 52.1.5 Stripe (Payments)
+  - 52.1.6 LLM Provider (Claude/GPT)
+- 52.2 Internal Dependencies
+  - 52.2.1 Knowledge Base Content
+  - 52.2.2 Marketing Content Templates
+  - 52.2.3 Legal Review
+  - 52.2.4 Design Assets
+- 52.3 Content Dependencies
+  - 52.3.1 State Law Data
+  - 52.3.2 Practice Area Templates
+  - 52.3.3 Intake Question Trees
+  - 52.3.4 Compliance Scripts
+
+---
+
+**53. Timeline and Milestones**
+- 53.1 Version 1 Timeline
+  - 53.1.1 Phase 1: Infrastructure Setup (Weeks 1-2)
+    - Tasks
+    - Deliverables
+    - Dependencies
+  - 53.1.2 Phase 2: Core AI Development (Weeks 3-6)
+    - Voice AI Integration
+    - Chat AI Integration
+    - Knowledge Base Setup
+    - Tasks
+    - Deliverables
+    - Dependencies
+  - 53.1.3 Phase 3: Dashboard Development (Weeks 5-8)
+    - Basic Dashboard
+    - Lead Views
+    - Calendar Integration
+    - Settings
+    - Tasks
+    - Deliverables
+    - Dependencies
+  - 53.1.4 Phase 4: Marketing Automation Configuration (Weeks 7-9)
+    - GoHighLevel Setup
+    - Workflows
+    - Templates
+    - Tasks
+    - Deliverables
+    - Dependencies
+  - 53.1.5 Phase 5: Integration and Testing (Weeks 9-11)
+    - End-to-End Testing
+    - Bug Fixes
+    - Performance Testing
+    - Tasks
+    - Deliverables
+    - Dependencies
+  - 53.1.6 Phase 6: Beta Launch (Week 12)
+    - Limited Release
+    - Feedback Collection
+    - Tasks
+    - Deliverables
+  - 53.1.7 Phase 7: Version 1 General Availability (Week 14)
+    - Full Launch
+    - Marketing Push
+    - Tasks
+    - Deliverables
+- 53.2 Version 2 Timeline
+  - 53.2.1 Phase 1: Case Briefings Engine (Weeks 15-17)
+    - Tasks
+    - Deliverables
+    - Dependencies
+  - 53.2.2 Phase 2: Smart Dashboard Development (Weeks 17-20)
+    - Tasks
+    - Deliverables
+    - Dependencies
+  - 53.2.3 Phase 3: Attorney Voice Assistant (Weeks 19-22)
+    - Tasks
+    - Deliverables
+    - Dependencies
+  - 53.2.4 Phase 4: Omnichannel Integration (Weeks 21-24)
+    - Tasks
+    - Deliverables
+    - Dependencies
+  - 53.2.5 Phase 5: Marketing Analytics (Weeks 23-25)
+    - Tasks
+    - Deliverables
+    - Dependencies
+  - 53.2.6 Phase 6: Testing and QA (Weeks 25-27)
+    - Tasks
+    - Deliverables
+  - 53.2.7 Phase 7: Version 2 Release (Week 28)
+    - Tasks
+    - Deliverables
+- 53.3 Summary Timeline
+  - 53.3.1 Version 1: ~14 Weeks (3.5 Months)
+  - 53.3.2 Version 2: ~14 Weeks After V1 (3.5 Months)
+  - 53.3.3 Total V1 + V2: ~28 Weeks (7 Months)
+- 53.4 Gantt Chart Reference
+
+---
+
+# PART XI: APPENDICES
+
+---
+
+**54. Appendix A: Glossary of Terms**
+- 54.1 LogicLegal-Specific Terms
+- 54.2 Legal Industry Terms
+- 54.3 Technical Terms
+
+---
+
+**55. Appendix B: Intake Question Trees (Full Detail)**
+- 55.1 Criminal Defense Questions
+  - 55.1.1 Full Question List
+  - 55.1.2 Branching Logic
+  - 55.1.3 Scoring Impact per Question
+- 55.2 Family Law Questions
+  - 55.2.1 Full Question List
+  - 55.2.2 Branching Logic
+  - 55.2.3 Scoring Impact per Question
+- 55.3 Personal Injury Questions
+  - 55.3.1 Full Question List
+  - 55.3.2 Branching Logic
+  - 55.3.3 Scoring Impact per Question
+- 55.4 Immigration Law Questions
+  - 55.4.1 Full Question List
+  - 55.4.2 Branching Logic
+  - 55.4.3 Scoring Impact per Question
+
+---
+
+**56. Appendix C: Sample Marketing Content Examples**
+- 56.1 Sample SEO Article (Criminal Defense)
+- 56.2 Sample SEO Article (Family Law)
+- 56.3 Sample LinkedIn Post
+- 56.4 Sample FAQ Page Content
+
+---
+
+**57. Appendix D: Competitor Analysis Reference**
+- 57.1 LegalClerk.ai
+- 57.2 Smith.ai
+- 57.3 Clio Grow
+- 57.4 Lawmatics
+- 57.5 Feature Comparison Matrix
+- 57.6 Pricing Comparison
+- 57.7 LogicLegal Differentiation
+
+---
+
+**58. Appendix E: Full Feature List by Tier (Reference Table)**
+- 58.1 Complete Feature Matrix
+- 58.2 Version Availability Matrix
+
+---
+
+**59. Appendix F: Scoring Criteria Detail**
+- 59.1 Criminal Defense Scoring Rubric
+- 59.2 Family Law Scoring Rubric
+- 59.3 Personal Injury Scoring Rubric
+- 59.4 Immigration Scoring Rubric
+- 59.5 General Scoring Principles
+
+---
+
+**60. Appendix G: State Recording Consent Laws Reference**
+- 60.1 One-Party Consent States
+- 60.2 Two-Party Consent States
+- 60.3 Implications for LogicLegal
+
+---
+
+**61. Appendix H: AI Disclosure Script Templates**
+- 61.1 Phone Greeting with Disclosure
+- 61.2 Chat Disclosure Message
+- 61.3 Recording Consent Script
+- 61.4 "Not Legal Advice" Disclaimer Script
+
+---
+
+**62. Appendix I: Notification Templates**
+- 62.1 New Lead Email Notification
+- 62.2 New Lead SMS Notification
+- 62.3 Appointment Confirmation Email
+- 62.4 Appointment Reminder SMS
+- 62.5 Appointment Reminder Email
+- 62.6 Nurture Sequence Emails
+
+---
+
+**63. Appendix J: Error Messages and User-Facing Copy**
+- 63.1 Error Message Guidelines
+- 63.2 Error Message Catalog
+- 63.3 Success Message Catalog
+
+---
+
+**64. Appendix K: Third-Party Service Documentation Links**
+- 64.1 GoToConnect API Documentation
+- 64.2 LiveKit Documentation
+- 64.3 GoHighLevel API Documentation
+- 64.4 Google Calendar API Documentation
+- 64.5 Microsoft Graph API Documentation
+- 64.6 Stripe API Documentation
+
+---
+
+## Outline Summary
+
+| Part | Sections | Purpose |
+|------|----------|---------|
+| I | 1-6 | Foundation (Overview, Problem, Vision, Personas, Pricing, Release Strategy) |
+| II | 7-11 | Platform Architecture (Technical Foundation, Branding, Compliance, Failover) |
+| III | 12-20 | Version 1 Features (MVP) |
+| IV | 21-26 | Version 2 Features |
+| V | 27-31 | Version 3+ Features (Reference Only) |
+| VI | 32-35 | Technical Specifications (Data Model, APIs, UI, Analytics) |
+| VII | 36-41 | Non-Functional Requirements (Performance, Security, Compliance) |
+| VIII | 42-45 | Testing and QA |
+| IX | 46-50 | Launch and Operations (Billing, Admin, Docs, Support) |
+| X | 51-53 | Project Management (Risks, Dependencies, Timeline) |
+| XI | 54-64 | Appendices (Reference Materials) |
+
+---
+
+**Total Sections: 64**
+**Estimated Final Document Length: 150-200 Pages**
+
+---

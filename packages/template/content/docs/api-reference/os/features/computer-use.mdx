@@ -1,0 +1,35 @@
+---
+title: "Computer use"
+description: "Feature-level API contract for browser or computer-use actions performed by personas under aiConnectedOS governance."
+---
+## Contract status
+
+`Derived implementation contract`
+
+## Source document
+
+- [Computer use](/docs/knowledge-base/aiconnected-os/aiconnected-os-10-computer-use-for-personas)
+
+## Feature purpose
+
+Defines tool-mediated computer-use execution, approvals, and audit requirements for persona-driven actions.
+
+## Required operations
+
+- Request a computer-use session
+- Execute browser or UI actions as a governed tool stream
+- Log approvals, denials, and high-risk actions
+- Persist results, screenshots, and artifacts
+
+## Suggested resources
+
+- `computer_use_sessions`
+- `computer_use_actions`
+- `computer_use_artifacts`
+- `computer_use_approvals`
+
+## Implementation notes
+
+- Keep this feature workspace-scoped and persona-aware where applicable.
+- Preserve authorship, timestamps, and auditability for all state changes.
+- Treat the source doc as the behavioral specification even where final route names remain open.

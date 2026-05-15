@@ -1,0 +1,308 @@
+---
+title: "Manifest contracts"
+description: "The v1 platform app manifest, validator rules, contract kinds, extension modes, examples, failure cases, and importer expectations from the original aiConnected platform build."
+---
+## Contract status
+
+`Canonical interface contract`
+
+This page is based on the actual implementation in:
+
+- `platform.sec-admn.com-2/packages/app-sdk/src/imports.js`
+- `platform.sec-admn.com-2/sdk/packages/manifest/src/index.ts`
+- `platform.sec-admn.com-2/docs/platform-app-package-format.md`
+
+## Why this page matters
+
+The manifest is the contract the platform uses to understand what a module consumes, exposes, extends, and renders. If the manifest is wrong, the platform cannot wire the module safely.
+
+## Two manifest shapes in v1
+
+The original repo contains two closely related manifest models:
+
+1. The platform package-import manifest used by `packages/app-sdk`
+2. The SDK validator manifest used by `@aiconnected/manifest`
+
+They overlap heavily, but they are not identical.
+
+## Golden path example
+
+Use this as a starting point for importer-facing module packages:
+
+```json
+{
+  "schemaVersion": 1,
+  "app": {
+    "key": "voice-ai",
+    "name": "Voice AI",
+    "version": "1.0.0",
+    "category": "customer-facing",
+    "description": "Adds real-time voice to the platform.",
+    "adminSurface": true,
+    "publicRuntime": false,
+    "settingsSchemaKey": "voice-ai-config",
+    "brandingSlots": ["main-surface"],
+    "capabilities": ["voice-calls", "transcription"]
+  },
+  "inputs": [
+    {
+      "key": "knowledge-base.search",
+      "kind": "capability",
+      "required": true,
+      "title": "Knowledge base search"
+    },
+    {
+      "key": "chat.session",
+      "kind": "context",
+      "required": true,
+      "title": "Chat session context"
+    }
+  ],
+  "outputs": [
+    {
+      "key": "voice.transcript",
+      "kind": "data",
+      "title": "Voice transcript"
+    }
+  ],
+  "extensionPoints": [
+    {
+      "key": "response-pipeline",
+      "title": "Response pipeline"
+    }
+  ],
+  "extends": [
+    {
+      "targetApp": "chat",
+      "featureKey": "voice-mode",
+      "mode": "feature-extension",
+      "required": true,
+      "title": "Enable voice inside chat"
+    }
+  ],
+  "permissions": [],
+  "metadata": {},
+  "ui": {
+    "components": [
+      {
+        "type": "full_page",
+        "title": "Voice settings",
+        "nav_label": "Voice",
+        "nav_icon": "Phone",
+        "route": "/voice",
+        "description": "Manage voice configuration."
+      }
+    ]
+  }
+}
+```
+
+## Platform app package manifest
+
+The importer-oriented manifest uses this shape:
+
+- `schemaVersion`
+- `app`
+- `inputs`
+- `outputs`
+- `extensionPoints`
+- `extends`
+- `permissions`
+- `metadata`
+- `ui.components`
+
+## Valid app categories
+
+From `packages/app-sdk/src/imports.js`:
+
+- `customer-facing`
+- `operations`
+- `training`
+
+## Valid contract kinds
+
+From `packages/app-sdk/src/imports.js`:
+
+- `action`
+- `capability`
+- `context`
+- `data`
+- `event`
+
+## Valid extension modes
+
+From `packages/app-sdk/src/imports.js`:
+
+- `feature-extension`
+- `runtime-channel`
+- `sidecar`
+
+## Key normalization behavior
+
+The manifest normalizer supports multiple aliases while producing a canonical shape:
+
+- `schemaVersion` or `schema_version`
+- `app.key` or `key`
+- `extensionPoints` or `extension_points`
+- `targetApp` or `target_app`
+- `featureKey` or `feature_key`
+- `ui.components` or `uiComponents`
+
+That means the importer is flexible on input format, but the normalized output should be treated as the real contract shape.
+
+## App key rules
+
+The importer uses this kebab-case app key regex:
+
+```text
+/^[a-z0-9]+(?:-[a-z0-9]+)*$/
+```
+
+The repo also notes protected platform-managed app keys such as `chat` and `kb-studio`.
+
+## SDK validator manifest
+
+The `@aiconnected/manifest` package validates a more function-oriented manifest:
+
+```json
+{
+  "app_id": "voice-ai",
+  "display_name": "Voice AI",
+  "version": "1.0.0",
+  "description": "Adds real-time voice to the platform.",
+  "functions": [
+    {
+      "name": "start_call",
+      "description": "Starts a call",
+      "method": "POST",
+      "endpoint": "/api/voice-ai/start_call",
+      "inputs": [],
+      "outputs": [],
+      "event_emitted": "call.started"
+    }
+  ],
+  "events_consumed": ["appointment.no_show"],
+  "ui": {
+    "components": [],
+    "theme_tokens": true
+  }
+}
+```
+
+## SDK validator rules
+
+From `sdk/packages/manifest/src/index.ts`:
+
+- `app_id` must be kebab-case
+- `version` must be semver
+- `functions` must be an array
+- each function name must be `snake_case`
+- each function endpoint must start with `/api/`
+- `event_emitted` and `events_consumed` must use `noun.verb` format
+- UI component names must be `PascalCase`
+- full-page components require a route
+- UI permissions arrays must not be empty
+
+## UI component rules
+
+The validator defines these component types:
+
+- `full_page`
+- `widget`
+- `overlay`
+
+The importer-normalizer also recognizes:
+
+- `full_page`
+- `panel`
+- `widget`
+- `settings`
+
+That mismatch is important when carrying v1 forward into a unified v2 contract.
+
+## Importer behavior
+
+The package-format doc states:
+
+- required inputs and extensions must be satisfiable by the current app catalog
+- the importer blocks registration if a required dependency cannot be satisfied
+- if only one compatible provider exists, the importer stores that connection automatically
+
+The assessment engine also:
+
+- warns on multiple compatible providers
+- warns when no outputs are declared
+- warns when the package declares no inputs, outputs, or extensions
+- generates stable connection keys using `createConnectionKey()`
+
+## Common validation and assessment failures
+
+### Importer-side failures
+
+Examples directly implied by `packages/app-sdk/src/imports.js`:
+
+- `schema_version_unsupported`
+- `app_key_missing`
+- `app_key_invalid`
+- `app_category_missing`
+- `app_category_invalid`
+- `duplicate_input_key`
+- `duplicate_output_key`
+- `duplicate_extension_point_key`
+- `contract_key_invalid`
+- `extension_target_invalid`
+- `extension_feature_invalid`
+- `required_input_missing`
+- `extension_target_missing`
+- `extension_feature_missing`
+
+### Validator-side failures
+
+Examples directly implied by `sdk/packages/manifest/src/index.ts`:
+
+- `MISSING_APP_ID`
+- `INVALID_APP_ID_FORMAT`
+- `MISSING_VERSION`
+- `INVALID_VERSION_FORMAT`
+- `MISSING_FUNCTION_NAME`
+- `INVALID_FUNCTION_NAME`
+- `INVALID_METHOD`
+- `MISSING_ENDPOINT`
+- `INVALID_ENDPOINT_PREFIX`
+- `INVALID_EVENT_NAME`
+- `MISSING_COMPONENT_NAME`
+- `INVALID_COMPONENT_NAME`
+- `INVALID_COMPONENT_TYPE`
+
+## What to do when validation fails
+
+1. Fix app key format first.
+2. Fix category and contract kind issues next.
+3. Remove duplicate input, output, or extension-point keys.
+4. Ensure every required input has at least one catalog provider.
+5. Ensure every required extension target exists and exposes the requested feature key.
+6. Align route names, UI component names, and event names with validator rules.
+
+## v1 reality vs v2 target
+
+### Implemented in v1
+
+- import-time manifest normalization
+- explicit assessment with warnings and blocking issues
+- manifest validator with structured error codes
+
+### Carry forward to v2
+
+- the importer assessment model
+- stable connection key generation
+- explicit required-versus-optional dependency behavior
+
+### Known mismatch or migration risk
+
+- v1 has two manifest contracts instead of one
+- the importer model is app-and-contract oriented, while the validator model is function oriented
+- UI component enums do not match perfectly between packages
+
+## Recommendation
+
+For v2, unify these two manifest shapes into one canonical module contract, but keep the v1 assessment workflow and structured error reporting. Those are the strongest parts of the design.

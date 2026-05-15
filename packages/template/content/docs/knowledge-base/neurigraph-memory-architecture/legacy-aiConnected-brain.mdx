@@ -1,0 +1,699 @@
+---
+title: "Brain by aiConnected: Architecture Specification"
+description: "Date: January 20, 2026 Executive Summary Brain by aiConnected is a three dimensional cognitive memory architecture that enables AI systems to accumulate, org..."
+---
+<Info>
+Normalized for Mintlify from `knowledge-base/neurigraph-memory-architecture/legacy-aiConnected-brain.mdx`.
+</Info>
+# Brain by aiConnected: Architecture Specification
+
+**Version:** 2.0  
+**Date:** January 20, 2026  
+**Author:** Bob / aiConnected, LLC
+
+---
+
+## Executive Summary
+
+Brain by aiConnected is a three-dimensional cognitive memory architecture that enables AI systems to accumulate, organize, and retrieve knowledge across conversations and platforms. Unlike traditional flat memory systems, Brain uses a hierarchical structure inspired by human cognition: a navigable Knowledge Graph for semantic relationships, per-node Index Files for precision targeting, topic-specific RAG databases for contextual retrieval, and complete conversation transcripts for full recall.
+
+This architecture solves the fundamental limitation of current AI systems: the inability to remember, learn, and improve over time without retraining.
+
+---
+
+## Core Architecture Overview
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         BRAIN ARCHITECTURE v2.0                             │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  LAYER 1: KNOWLEDGE GRAPH (Semantic Navigation)                             │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │                                                                      │   │
+│  │    [Sales] ──────── [Support] ──────── [Product Dev]                │   │
+│  │       │                  │                   │                       │   │
+│  │       └──── [Marketing] ─┴─── [Operations] ──┘                      │   │
+│  │                                                                      │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+│         │                                                                   │
+│         ▼                                                                   │
+│  LAYER 1.5: INDEX FILES (Precision Targeting) ◄── NEW                      │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │  sales_index.json                                                    │   │
+│  │  ├── sub_nodes: [Product Knowledge, Objections, Pricing, ...]       │   │
+│  │  ├── keywords: [widget, demo, prospect, close, pipeline]            │   │
+│  │  ├── memory_count: 131                                               │   │
+│  │  └── date_range: "2025-01-01 to 2026-01-20"                         │   │
+│  │                                                                      │   │
+│  │  product_knowledge_index.json                                        │   │
+│  │  ├── sub_nodes: [Widget Pro, Widget Lite, Enterprise Suite]         │   │
+│  │  ├── keywords: [specs, features, comparison, pricing]               │   │
+│  │  ├── memory_count: 47                                                │   │
+│  │  └── entities: ["Widget Pro", "Widget Lite", "Enterprise Suite"]    │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+│         │                                                                   │
+│         ▼ (Surgical selection based on index scan)                         │
+│  LAYER 2: NODE-SPECIFIC RAG DATABASES (Contextual Retrieval)               │
+│  ┌──────────────┐   ┌──────────────┐   ┌──────────────┐                    │
+│  │ Widget Pro   │   │ Widget Lite  │   │ Enterprise   │                    │
+│  │   Vectors    │   │   Vectors    │   │   Vectors    │                    │
+│  │              │   │              │   │              │                    │
+│  │ (summaries   │   │ (summaries   │   │ (summaries   │                    │
+│  │  for this    │   │  for this    │   │  for this    │                    │
+│  │  topic only) │   │  topic only) │   │  topic only) │                    │
+│  └──────┬───────┘   └──────┬───────┘   └──────┬───────┘                    │
+│         │                  │                  │                             │
+│         ▼                  ▼                  ▼                             │
+│  LAYER 3: RECALL FILES (Verbatim Transcripts)                              │
+│  ┌──────────────────────────────────────────────────────────────────────┐  │
+│  │  widget-pro-specs-2025-01-08.json                                    │  │
+│  │  widget-pro-demo-prep-2025-01-12.json                                │  │
+│  │  widget-pro-customer-question-2025-01-15.json                        │  │
+│  │  ...                                                                  │  │
+│  └──────────────────────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Layer Specifications
+
+### Layer 1: Knowledge Graph (Semantic Navigation)
+
+The Knowledge Graph is the semantic scaffold of the Brain. It organizes knowledge into a three-tier hierarchy:
+
+**Hierarchy Structure:**
+
+| Level | Name | Description | Example |
+|-------|------|-------------|---------|
+| 1 | Category | Broad knowledge domain | Business, Law, Healthcare |
+| 2 | Concept | Major area within a category | Sales, Marketing, Operations |
+| 3 | Topic | Specific functional area | Product Knowledge, Objections, Pricing |
+
+**Node Properties:**
+
+```json
+{
+  "node_id": "uuid",
+  "name": "Product Knowledge",
+  "type": "topic",
+  "parent_id": "sales-concept-uuid",
+  "category": "Business",
+  "created_at": "2025-01-01T00:00:00Z",
+  "last_accessed": "2026-01-20T14:30:00Z",
+  "memory_count": 47,
+  "connections": [
+    {
+      "target_node_id": "objections-topic-uuid",
+      "relationship": "informs",
+      "weight": 0.85
+    }
+  ]
+}
+```
+
+**Relationship Types:**
+
+| Relationship | Description | Example |
+|--------------|-------------|---------|
+| `contains` | Parent-child hierarchy | Sales → Product Knowledge |
+| `informs` | Knowledge dependency | Product Knowledge → Objections |
+| `resolves` | Solution relationship | Objection Handling → Buyer Hesitation |
+| `precedes` | Sequential relationship | Discovery Call → Demo Phase |
+| `related_to` | General association | Pricing → Competitor Analysis |
+
+---
+
+### Layer 1.5: Index Files (Precision Targeting)
+
+**Purpose:** Index Files are lightweight metadata manifests attached to each Knowledge Graph node. They enable the system to determine relevance before warming any memories, dramatically reducing computational cost and latency.
+
+**Why Index Files Matter:**
+
+Without indexes, every query would need to warm entire nodes or search all RAG databases to determine relevance. With indexes, the system performs a near-zero-cost lookup first, then surgically warms only the specific memories needed.
+
+**Index File Structure:**
+
+```json
+{
+  "node_id": "product-knowledge-uuid",
+  "node_name": "Product Knowledge",
+  "parent_node": "Sales",
+  "last_updated": "2026-01-20T14:30:00Z",
+  
+  "sub_nodes": [
+    {
+      "name": "Widget Pro",
+      "memory_count": 12,
+      "keywords": ["enterprise", "advanced", "premium"],
+      "date_range": {
+        "oldest": "2025-03-15",
+        "newest": "2026-01-18"
+      }
+    },
+    {
+      "name": "Widget Lite",
+      "memory_count": 8,
+      "keywords": ["starter", "basic", "affordable"],
+      "date_range": {
+        "oldest": "2025-04-01",
+        "newest": "2026-01-10"
+      }
+    },
+    {
+      "name": "Enterprise Suite",
+      "memory_count": 15,
+      "keywords": ["bundle", "complete", "organization"],
+      "date_range": {
+        "oldest": "2025-06-01",
+        "newest": "2026-01-19"
+      }
+    }
+  ],
+  
+  "aggregate_keywords": [
+    "specs", "features", "comparison", "pricing", 
+    "installation", "requirements", "compatibility"
+  ],
+  
+  "key_entities": [
+    "Widget Pro", "Widget Lite", "Enterprise Suite",
+    "Version 2.0", "API Integration"
+  ],
+  
+  "summary": "Product specifications, features, comparisons, and technical details for Widget product line.",
+  
+  "total_memory_count": 47,
+  
+  "date_range": {
+    "oldest": "2025-03-15",
+    "newest": "2026-01-19"
+  }
+}
+```
+
+**Index Fields Explained:**
+
+| Field | Purpose | Query Optimization |
+|-------|---------|-------------------|
+| `sub_nodes` | Lists child topics with their own stats | Enables drilling without database access |
+| `aggregate_keywords` | Quick-match terms for this node | Fast relevance scoring |
+| `key_entities` | Named entities mentioned in memories | Precise entity matching |
+| `summary` | One-liner description | LLM context for ambiguous queries |
+| `total_memory_count` | How many recall files exist | Helps estimate warming cost |
+| `date_range` | Temporal bounds | Filters by recency |
+
+**Index Threshold Rules:**
+
+| Condition | Index Behavior |
+|-----------|----------------|
+| Node has 5+ memories | Full index file created |
+| Node has &lt; 5 memories | No index; warm entire node (negligible cost) |
+| Sub-node has 10+ memories | Sub-node gets its own nested index |
+| Memory added | Index updates in real-time (append) |
+| Memory deleted | Index updates during sleep cycle (batch) |
+
+---
+
+### Layer 2: Node-Specific RAG Databases (Contextual Retrieval)
+
+Each Topic node contains its own vector database storing embedded summaries of conversations. This isolation ensures:
+
+1. Searches are scoped to relevant knowledge domains
+2. Embeddings cluster around semantically similar content
+3. Cross-contamination between unrelated topics is eliminated
+
+**RAG Entry Structure:**
+
+```json
+{
+  "embedding_id": "uuid",
+  "node_id": "widget-pro-topic-uuid",
+  "recall_file_id": "widget-pro-specs-2025-01-08",
+  "summary": "Discussed Widget Pro specifications including 4GB RAM requirement, API rate limits of 1000 requests/minute, and compatibility with legacy systems.",
+  "embedding": [0.0234, -0.0891, ...],
+  "keywords": ["specifications", "RAM", "API", "compatibility"],
+  "created_at": "2025-01-08T14:30:00Z",
+  "importance_score": 0.85
+}
+```
+
+**Why Per-Node RAG:**
+
+| Approach | Memories Searched | Latency | Cost | Accuracy |
+|----------|-------------------|---------|------|----------|
+| Global RAG (one database) | All 10,000,000 | 2-5 seconds | High | Low (noise) |
+| Node-specific RAG | 50-500 relevant | 50-200ms | Low | High (focused) |
+
+---
+
+### Layer 3: Recall Files (Verbatim Transcripts)
+
+Recall Files are the complete, unmodified conversation transcripts. They serve as the source of truth when the AI needs full context beyond what summaries provide.
+
+**Recall File Structure:**
+
+```json
+{
+  "recall_id": "widget-pro-specs-2025-01-08",
+  "node_id": "widget-pro-topic-uuid",
+  "created_at": "2025-01-08T14:30:00Z",
+  "platform": "claude.ai",
+  "conversation_type": "text",
+  
+  "metadata": {
+    "duration_minutes": 23,
+    "message_count": 47,
+    "defining_memory": false,
+    "tags": ["product", "technical", "specifications"]
+  },
+  
+  "summary": "Detailed discussion of Widget Pro technical specifications...",
+  
+  "transcript": [
+    {
+      "role": "user",
+      "content": "What are the system requirements for Widget Pro?",
+      "timestamp": "2025-01-08T14:30:15Z"
+    },
+    {
+      "role": "assistant", 
+      "content": "Widget Pro requires a minimum of 4GB RAM...",
+      "timestamp": "2025-01-08T14:30:18Z"
+    }
+  ]
+}
+```
+
+---
+
+## Search Flow: Index-Guided Precision Retrieval
+
+### Query Example
+
+**User:** "Hey, can you tell me about that product I was looking for?"
+
+### Step-by-Step Flow
+
+**Step 1: Knowledge Graph Navigation**
+
+The system identifies likely parent nodes based on the query term "product":
+
+```
+Query: "product"
+├── Match: Sales node (contains "Product Knowledge" sub-node)
+├── Match: Product Dev node (contains "Product Roadmap" sub-node)
+└── Confidence: Sales (0.89) > Product Dev (0.45)
+```
+
+**Step 2: Index File Scan**
+
+Read the Sales node's index file (near-zero cost):
+
+```
+sales_index.json:
+├── sub_nodes: [Product Knowledge, Objections, Pricing, ...]
+├── Product Knowledge has 47 memories
+└── Keywords match: "product" → Product Knowledge (0.95 confidence)
+```
+
+**Step 3: Drill into Sub-Node Index**
+
+Read Product Knowledge index:
+
+```
+product_knowledge_index.json:
+├── sub_nodes: [Widget Pro, Widget Lite, Enterprise Suite]
+├── No specific product name in query
+└── Decision: Need to check recent activity or ask user
+```
+
+**Step 4: Precision Warming**
+
+Based on index data, warm only relevant memories:
+
+| Scenario | Action |
+|----------|--------|
+| User recently discussed Widget Pro | Warm Widget Pro RAG only (12 memories) |
+| Ambiguous query | Warm top 5 most recent across all products |
+| User clarifies "the enterprise one" | Warm Enterprise Suite RAG only (15 memories) |
+
+**Step 5: RAG Search + Recall Retrieval**
+
+```
+Warmed: Widget Pro (12 memories)
+RAG Search: "product looking for"
+├── Match: widget-pro-customer-question-2025-01-15 (0.92)
+├── Match: widget-pro-demo-prep-2025-01-12 (0.78)
+└── Retrieve full recall files for context
+```
+
+---
+
+## Warm vs. Cold Memory: Index-Guided Optimization
+
+### The Problem with Node-Level Warming
+
+Without indexes, warming requires loading entire nodes into context:
+
+```
+User asks about "Widget Pro specs"
+
+OLD APPROACH - Warm Entire Sales Node:
+├── Product Knowledge (47 conversations) ← WARMED
+├── Objections (23 conversations)        ← WARMED (unnecessary)
+├── Customer Preferences (31 conversations) ← WARMED (unnecessary)
+├── Pricing (18 conversations)           ← WARMED (unnecessary)
+└── Competitor Info (12 conversations)   ← WARMED (unnecessary)
+
+Total: 131 conversations loaded
+Token cost: ~50,000+ tokens
+Latency: 2-4 seconds
+API cost: ~$0.05-0.10 per query
+```
+
+### Index-Guided Precision Warming
+
+With indexes, the system warms surgically:
+
+```
+User asks about "Widget Pro specs"
+
+NEW APPROACH - Index-Guided Warming:
+Step 1: Scan sales_index.json (free)
+Step 2: Identify "Product Knowledge" sub-node
+Step 3: Scan product_knowledge_index.json (free)
+Step 4: Identify "Widget Pro" specifically
+Step 5: Warm ONLY Widget Pro memories
+
+├── Product Knowledge
+│   ├── Widget Pro (12 conversations)     ← WARMED
+│   ├── Widget Lite (8 conversations)     ← COLD
+│   └── Enterprise Suite (15 conversations) ← COLD
+├── Objections                            ← COLD
+├── Customer Preferences                  ← COLD
+└── ...rest of Sales...                   ← COLD
+
+Total: 12 conversations loaded
+Token cost: ~4,800 tokens
+Latency: <500ms
+API cost: ~$0.005 per query
+```
+
+### Cost Comparison at Scale
+
+| Metric | Node-Level Warming | Precision Warming | Savings |
+|--------|-------------------|-------------------|---------|
+| Memories loaded | 131 | 12 | 91% reduction |
+| Tokens per query | ~50,000 | ~4,800 | 90% reduction |
+| Latency | 2-4 seconds | &lt;500ms | 75-88% faster |
+| Cost per query | $0.05-0.10 | ~$0.005 | 90-95% savings |
+
+**At 1M users × 10 queries/day:**
+
+| Approach | Daily Cost | Annual Cost |
+|----------|------------|-------------|
+| Node-Level | $500K-1M | $182M-365M |
+| Precision | ~$50K | ~$18M |
+
+---
+
+## Sub-Node Architecture
+
+### Definition
+
+A **sub-node** is a cluster of smaller topics within a larger topic. Sub-nodes allow unlimited depth while maintaining search efficiency through cascading indexes.
+
+### Example: Sales Node Hierarchy
+
+```
+SALES (Parent Node)
+│
+├── INDEX: sales_index.json
+│   └── Lists all sub-nodes + aggregate stats
+│
+├── Product Knowledge (Sub-Node)
+│   ├── INDEX: product_knowledge_index.json
+│   │   └── Lists all products + their stats
+│   │
+│   ├── Widget Pro (Sub-Sub-Node)
+│   │   ├── INDEX: widget_pro_index.json (if 10+ memories)
+│   │   └── [RAG Database: 12 memories]
+│   │       ├── widget-pro-specs-2025-01-08
+│   │       ├── widget-pro-demo-2025-01-12
+│   │       └── ...
+│   │
+│   ├── Widget Lite (Sub-Sub-Node)
+│   │   └── [RAG Database: 8 memories]
+│   │
+│   └── Enterprise Suite (Sub-Sub-Node)
+│       └── [RAG Database: 15 memories]
+│
+├── Objections (Sub-Node)
+│   ├── INDEX: objections_index.json
+│   │
+│   ├── Price Objections
+│   │   └── [RAG Database]
+│   │
+│   ├── Competitor Comparisons
+│   │   └── [RAG Database]
+│   │
+│   └── "Need to Think About It"
+│       └── [RAG Database]
+│
+├── Customer Preferences (Sub-Node)
+│   └── ...
+│
+└── Pricing (Sub-Node)
+    └── ...
+```
+
+### Sub-Node Creation Rules
+
+| Trigger | Action |
+|---------|--------|
+| New topic mentioned in conversation | Create sub-node if distinct from existing |
+| Existing sub-node reaches 50+ memories | Consider splitting into sub-sub-nodes |
+| User explicitly categorizes | Create sub-node per user instruction |
+| AI detects semantic cluster | Suggest sub-node creation during sleep cycle |
+
+---
+
+## Index Update Protocol
+
+### Real-Time Updates (On Memory Creation)
+
+When a new memory is stored:
+
+1. **Append to index** - Add memory to relevant node's index
+2. **Update counts** - Increment `memory_count` and `total_memory_count`
+3. **Extend keywords** - Add new keywords if novel terms detected
+4. **Update date range** - Extend `newest` timestamp
+
+```
+Memory Created: "Widget Pro API integration guide"
+
+Index Update (Immediate):
+├── product_knowledge_index.json
+│   ├── sub_nodes.widget_pro.memory_count: 12 → 13
+│   ├── sub_nodes.widget_pro.keywords += ["API", "integration"]
+│   ├── sub_nodes.widget_pro.date_range.newest = "2026-01-20"
+│   └── total_memory_count: 47 → 48
+│
+└── sales_index.json
+    └── total_memory_count: 131 → 132
+```
+
+### Batch Updates (During Sleep Cycles)
+
+During the 2-hour sleep cycle:
+
+1. **Cleanup** - Remove deleted memory references
+2. **Recompute keywords** - Regenerate from current memories
+3. **Optimize summaries** - Update node summaries based on new patterns
+4. **Prune stale entries** - Archive indexes for nodes with no activity in 90+ days
+
+---
+
+## Defining Memories
+
+Not all memories are equal. **Defining Memories** are flagged moments representing decisions, milestones, or turning points.
+
+### Detection Triggers
+
+```
+DECISION_TRIGGERS = [
+    "I've decided",
+    "We're going with",
+    "I'm committing to",
+    "Let's do",
+    "Final decision:"
+]
+
+MILESTONE_TRIGGERS = [
+    "We launched",
+    "It's done",
+    "I finished",
+    "Completed",
+    "Shipped"
+]
+
+EVENT_TRIGGERS = [
+    "I'm starting",
+    "I got the job",
+    "We closed the deal",
+    "I'm getting married"
+]
+```
+
+### Defining Memory Structure
+
+```json
+{
+  "id": "dm-2026-01-20-001",
+  "type": "decision",
+  "date": "2026-01-20",
+  "summary": "Decided to add Index Layer to Brain architecture",
+  "context": "Realized index files enable precision warming, reducing costs by 90%+",
+  "source_recall_file": "brain-architecture-index-layer-2026-01-20",
+  "related_nodes": ["Brain", "Architecture", "Memory System"],
+  "tags": ["product", "architecture", "optimization"],
+  "importance_score": 0.95
+}
+```
+
+### Why Separate Defining Memories?
+
+When someone asks "When did I decide to start this project?" they shouldn't have to search through 10,000 conversations. Defining Memories provide instant access to pivotal moments.
+
+---
+
+## Technical Implementation Notes
+
+### Database Schema (PostgreSQL)
+
+```sql
+-- Knowledge Graph Nodes
+CREATE TABLE nodes (
+    id UUID PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    type VARCHAR(50) NOT NULL, -- category, concept, topic
+    parent_id UUID REFERENCES nodes(id),
+    category VARCHAR(100),
+    created_at TIMESTAMP DEFAULT NOW(),
+    last_accessed TIMESTAMP,
+    memory_count INTEGER DEFAULT 0
+);
+
+-- Node Relationships
+CREATE TABLE node_relationships (
+    id UUID PRIMARY KEY,
+    source_node_id UUID REFERENCES nodes(id),
+    target_node_id UUID REFERENCES nodes(id),
+    relationship VARCHAR(50),
+    weight DECIMAL(3,2),
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Index Files (stored as JSONB for flexibility)
+CREATE TABLE node_indexes (
+    node_id UUID PRIMARY KEY REFERENCES nodes(id),
+    index_data JSONB NOT NULL,
+    last_updated TIMESTAMP DEFAULT NOW()
+);
+
+-- RAG Entries
+CREATE TABLE rag_entries (
+    id UUID PRIMARY KEY,
+    node_id UUID REFERENCES nodes(id),
+    recall_file_id VARCHAR(255),
+    summary TEXT,
+    embedding VECTOR(1536), -- pgvector
+    keywords TEXT[],
+    created_at TIMESTAMP DEFAULT NOW(),
+    importance_score DECIMAL(3,2)
+);
+
+-- Recall Files
+CREATE TABLE recall_files (
+    id VARCHAR(255) PRIMARY KEY,
+    node_id UUID REFERENCES nodes(id),
+    platform VARCHAR(50),
+    conversation_type VARCHAR(50),
+    metadata JSONB,
+    summary TEXT,
+    transcript JSONB,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Defining Memories
+CREATE TABLE defining_memories (
+    id VARCHAR(255) PRIMARY KEY,
+    type VARCHAR(50),
+    date DATE,
+    summary TEXT,
+    context TEXT,
+    source_recall_file VARCHAR(255) REFERENCES recall_files(id),
+    related_nodes UUID[],
+    tags TEXT[],
+    importance_score DECIMAL(3,2)
+);
+```
+
+### Index File Storage Options
+
+| Option | Pros | Cons | Recommendation |
+|--------|------|------|----------------|
+| JSONB in PostgreSQL | Transactional, queryable | Slightly slower reads | Best for consistency |
+| Separate JSON files | Fast reads, easy debugging | No transactions | Good for prototyping |
+| Redis cache | Fastest reads | Memory cost | Best for hot indexes |
+
+**Recommended:** Store in PostgreSQL JSONB with Redis cache for frequently accessed indexes.
+
+---
+
+## Privacy & Security
+
+### User Data Isolation
+
+- Each user's Brain is completely isolated
+- No cross-user data access
+- Encryption at rest and in transit
+
+### Index File Security
+
+Index files contain metadata only, never raw conversation content. Even if exposed, they reveal only:
+- Topic names
+- Keyword lists
+- Memory counts
+- Date ranges
+
+No PII, no conversation content, no sensitive details.
+
+---
+
+## Appendix: Comparison to Existing Systems
+
+| Feature | Brain by aiConnected | Traditional RAG | MCP Memory Server | LangChain KG |
+|---------|---------------------|-----------------|-------------------|--------------|
+| Hierarchical structure | ✅ Category → Concept → Topic | ❌ Flat | ❌ Flat | ⚠️ Limited |
+| Per-node databases | ✅ Each topic has own RAG | ❌ Global | ❌ Global | ❌ No |
+| Index-guided search | ✅ Precision warming | ❌ Search all | ❌ Search all | ❌ No |
+| Warm/cold memory | ✅ Surgical activation | ❌ N/A | ❌ N/A | ❌ N/A |
+| Full transcripts | ✅ Recall files | ❌ Summaries only | ❌ Observations only | ❌ No |
+| Cross-platform | ✅ MCP protocol | ❌ Single platform | ⚠️ MCP only | ❌ Single |
+| Defining memories | ✅ Flagged milestones | ❌ No | ❌ No | ❌ No |
+
+---
+
+## Version History
+
+| Version | Date | Changes |
+|---------|------|---------|
+| 1.0 | 2025-01-11 | Initial three-layer architecture |
+| 2.0 | 2026-01-20 | Added Index Layer (1.5), precision warming, sub-node architecture |
+
+---
+
+*Brain by aiConnected — Connecting all AIs on the memory layer.*

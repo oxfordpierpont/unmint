@@ -1,0 +1,398 @@
+---
+title: "Live document feature"
+description: "Prompt: I'd like to create another feature for instances called live documents. So a live document is basically if I have, let's say I'm putting together an..."
+---
+<Info>
+Converted from `aiConnected OS - 3. Live document feature.md`.
+</Info>
+# Live document feature
+
+**User:** Oxford Pierpont  
+**Created:** 12/10/2025 6:30:41  
+**Updated:** 12/10/2025 6:47:50  
+**Exported:** 2/11/2026 7:07:16  
+**Link:** [https://chatgpt.com/g/g-p-69395d9991108191841f1dac1fd8d1a1-oxpi-aiconnected-ui-features/c/693959e0-f8fc-8326-8650-bb6e718d9239](https://chatgpt.com/g/g-p-69395d9991108191841f1dac1fd8d1a1-oxpi-aiconnected-ui-features/c/693959e0-f8fc-8326-8650-bb6e718d9239)  
+
+## Prompt:
+I'd like to create another feature for instances called live documents. So a live document is basically if I have, let's say I'm putting together an idea for a particular feature, and along the way I'm pinning various things, but I don't want to push those things to the whiteboard, and I want something that's more linear, like a live document. So what I can basically do is I can take any message and I can add it to the live document, I can take several messages, and I can always open the current live document, kind of like in a canvas or an artifact or something, within any individual chat. And what this allows me to do is basically take the content that I'm currently creating within individual chats and edit it, but I can edit the same document across multiple chats. That's the difference here, because what that ends up giving me is a more comprehensive, let's say a PRD, a very complicated document. Well, I can have one conversation about feature A, another conversation about feature B, and another conversation about feature C, and I can open each of those individual chats, I can open the live document in each of those individual chats, and I can update that same document, but with these different features, right? Or I can just go straight to the instance dashboard and just open the document itself, and I can even talk to the document and I can say like, hey, can you edit this part? Can you add this part? Can you do whatever? And it's going to essentially work the document. And then when it's all finished, I can export it to either another program, like let's say Google Docs, or I can download it as a PDF, I can add images to it, so maybe I want to add a header, I want to add my logo, I want to do any number of things, I can add a table, right? So this live document essentially allows me to not just organize my ideas, but also formalize them into a format that is going to be something I can send to other people or have as official documentation. And document doesn't necessarily just have to mean like Word document, right? It could also mean presentation style document. So that's what live documents means to me.
+
+## Response:
+Live documents in your instance ecosystem are basically **shared, always-on, cross-chat artifacts** that sit _inside_ an instance and grow over time as you talk.
+
+Let me lay this out as if we’re speccing the feature for dev.
+
+* * *
+
+1\. What a “Live Document” is in this system
+--------------------------------------------
+
+**Definition (behavioral, not just UI):**
+
+A **Live Document** is a persistent document object that belongs to an **instance**, not to a single chat. Any chat under that instance can:
+
+*   Open the same document
+*   Append or edit content
+*   Pull in messages or summaries from that chat
+*   Ask the AI to edit or restructure the document
+
+It’s:
+
+*   **Linear** (like a PRD, spec, or written plan)
+*   **Editable across multiple chats**
+*   **Exportable** (Google Docs, PDF, maybe Slides)
+*   **AI-aware** (you can “talk to” the doc: “add this feature,” “rewrite that section,” etc.)
+
+It’s distinct from:
+
+*   **Pins** → quick references to messages
+*   **Whiteboard** → nonlinear, spatial, brainstorm canvas
+*   **Tasks** → action items
+*   **Folders** → organizational structure of chats/instances
+
+Live Documents = the _formalization layer_ where messy conversations become “real” documentation.
+
+* * *
+
+2\. Core principles & constraints
+---------------------------------
+
+To keep this useful and sane:
+
+1.  **Instance-scoped, chat-agnostic**
+    *   Every live document is tied to an **instance**.
+    *   Any chat in the instance can open/edit the same doc.
+2.  **Message → Document, not Document → Message**
+    *   You don’t edit messages by changing the doc.
+    *   You _pull from messages into the doc_, and then the doc becomes its own, editable artifact.
+3.  **AI-editable, but human-readable**
+    *   Under the hood, store it as **structured markdown** (or a block model).
+    *   The UI shows a clean editor.
+    *   The AI gets the structured version so it can target specific sections.
+4.  **Versioned, not fragile**
+    *   Every AI or human edit updates the doc version.
+    *   You can revert or at least see history.
+5.  **Supports multiple “output types”**
+    *   Default: **document mode** (PRD, spec, brief).
+    *   Secondary: **presentation mode** (slide outline based on headings).
+    *   Same underlying object, different export views.
+
+* * *
+
+3\. Data model (conceptual)
+---------------------------
+
+At a high level:
+
+### 3.1 LiveDocument
+
+*   `id`
+*   `instance_id`
+*   `title` – e.g., “Cognigraph PRD v1”
+*   `type` – `text_document`, `presentation_outline`, etc.
+*   `status` – `draft`, `in_progress`, `review`, `final`
+*   `created_by_user_id`
+*   `created_at`, `updated_at`
+
+### 3.2 LiveDocumentContent
+
+Two ways you could implement, depending on how ambitious you want to be.
+
+**Option A — Simple (MVP):**
+
+*   `document_id`
+*   `content_markdown` – full markdown blob
+*   `version_number`
+*   `updated_by`
+*   `updated_at`
+
+**Option B — Block-based (future-friendly):**
+
+*   `blocks[]`:
+    *   `id`
+    *   `type` – `paragraph`, `heading`, `list`, `quote`, `code`, `image`, `table`
+    *   `content` – markdown/structured text
+    *   `origin` – `{conversation_id, message_id}` (optional)
+    *   `order_index`
+
+Option B lets you say: “AI, edit this section” or “rewrite the ‘Feature B: Tasks’ block” with much more precision.
+
+### 3.3 DocumentMessageLink (traceability)
+
+Even if you copy text into the doc, you’ll want to **remember where it came from**:
+
+*   `document_id`
+*   `block_id` (or text span if doing ranges)
+*   `conversation_id`
+*   `message_id`
+
+This lets you:
+
+*   Jump back from the doc to the original chat message.
+*   Later add things like “show me all doc contributions from this chat.”
+
+* * *
+
+4\. Interaction inside a chat
+-----------------------------
+
+Imagine you’re inside a chat under an instance.
+
+### 4.1 Opening the Live Document
+
+From the chat UI:
+
+*   A **“Live Docs”** icon or button in the right sidebar/top bar.
+*   Clicking it opens:
+    *   A list of live docs for this instance, or
+    *   Directly the “primary” document if you’ve pinned one as default for the instance.
+
+Behavior:
+
+*   Opens in a **side panel** or full-page, with a toggle:
+    *   _Chat view_ on the left
+    *   _Live Document editor_ on the right (like an artifact/canvas)
+
+### 4.2 Adding messages to the Live Document
+
+On any message (user or AI), context menu has:
+
+*   **“Add to Live Document…”**
+    *   Choose:
+        *   Which live doc (if multiple)
+        *   How to add:
+            *   `Append to bottom`
+            *   `New section titled: [auto-detected or user-entered]`
+            *   `Summarize this message and add`
+            *   `Extract bullet points and add`
+
+System behavior:
+
+*   Pulls the text (or a summary) into the doc.
+*   Creates a new block (or updates `content_markdown`).
+*   Creates a `DocumentMessageLink` with `conversation_id` + `message_id`.
+
+Optional nice-to-have: a **small toast**: “Added to ‘Cognigraph PRD’ under ‘Feature C – Live Docs’.”
+
+### 4.3 Editing the document while chatting
+
+You have two parallel streams:
+
+1.  **You typing directly in the editor**
+    *   Regular rich-text / markdown editing: headings, bullets, bold, links, etc.
+2.  **You asking the AI to manipulate the doc**
+    *   Example commands in the chat:
+        *   “Update the Live Document: add a section called ‘Live Document – Editing Across Chats’ that summarizes what we just discussed.”
+        *   “Rewrite the introduction to emphasize that live docs are cross-chat artifacts.”
+        *   “Create a table in the doc comparing Whiteboard vs Live Document vs Tasks.”
+
+When a Live Document is open, the AI:
+
+*   Automatically has the current doc (or relevant sections) in context.
+*   Interprets “the document” as _the currently open live doc._
+
+Under the hood:
+
+*   You either:
+    *   Send the doc (or a slice) plus the instruction to the LLM.
+    *   Let the LLM produce a patch or new content.
+*   Then update `content_markdown` or specific blocks.
+*   Save a new version.
+
+* * *
+
+5\. Instance dashboard & document hub
+-------------------------------------
+
+From the **Instance Dashboard**, add a new tab:
+
+### 5.1 “Documents” tab for the instance
+
+This shows:
+
+*   A table/grid of all live docs:
+    *   Title
+    *   Type (PRD, Spec, Meeting Notes, Presentation Outline, etc.)
+    *   Status
+    *   Last edited (time + by whom)
+    *   Linked chats count
+
+Actions:
+
+*   New Live Document
+*   Open
+*   Duplicate
+*   Archive
+
+### 5.2 Opening from the dashboard
+
+When you open a live doc here:
+
+*   You get a **full-page editor**:
+    *   Larger workspace than the in-chat panel
+    *   Document outline sidebar (headings)
+    *   Export options
+    *   “Linked Conversations” section, listing chats that contributed to this doc
+
+### 5.3 Talking directly to the document from the dashboard
+
+You can also have a **“Document Chat”** mode here:
+
+*   Small chat panel anchored to this document, where prompts are implicitly about “this doc.”
+    *   “Tighten up the wording in section 3.2.”
+    *   “Add an executive summary at the top.”
+    *   “Generate slide titles from each H2 and add a ‘Presentation Outline’ section at the bottom.”
+
+This is the same AI behavior as in a regular chat, just with the doc as the primary context instead of a free-form conversation.
+
+* * *
+
+6\. Export and formatting
+-------------------------
+
+You explicitly mentioned:
+
+> “When it's all finished, I can export it to either another program, like Google Docs, or I can download it as a PDF, I can add images to it, header, logo, tables…”
+
+So:
+
+### 6.1 Export targets
+
+*   **Google Docs**
+    *   Use the Docs API to:
+        *   Create a new doc
+        *   Push the structured content (headings, lists, tables)
+    *   Optionally store the Google Doc URL back on the document.
+*   **PDF**
+    *   Render the markdown/blocks to HTML and then to PDF (server-side rendering).
+*   **Presentation format (optional)**  
+    (PowerPoint / Google Slides)
+    *   Map each **H1 or H2** heading → slide.
+    *   Use the first paragraph/bullets under each heading as slide body.
+    *   AI can propose slide notes or speaker notes.
+
+### 6.2 Layout & branding
+
+In the document settings:
+
+*   **Branding options:**
+    *   Header logo
+    *   Company name
+    *   Footer text (e.g., “Confidential – Oxford Pierpont / aiConnected”)
+*   **Style presets:**
+    *   “Simple PRD”
+    *   “Formal Spec”
+    *   “Presentation Outline”
+
+These don’t have to be full-blown template engines at v1; even a small set of consistent layout rules would be enough.
+
+### 6.3 Rich content
+
+Inside the editor, allow:
+
+*   **Tables**
+*   **Images**
+    *   Embed from upload or from generated diagrams (later).
+*   **Code blocks**
+*   **Callout boxes** (Notes, Risks, Decisions)
+
+For AI, you can prompt: “insert a risk table” or “summarize key decisions in a table.”
+
+* * *
+
+7\. Relationship to other features
+----------------------------------
+
+### 7.1 vs Whiteboard
+
+*   **Whiteboard**:
+    *   Nonlinear
+    *   Spatial layout of ideas
+    *   Great for brainstorming, clustering, concept mapping
+*   **Live Document**:
+    *   Linear narrative
+    *   Organized spec, plan, or write-up
+    *   Ready to send to others as “official” docs
+
+Future bridge:
+
+*   From whiteboard → “Generate Document from selected items.”
+*   From document → “Send this section to whiteboard as sticky notes.”
+
+### 7.2 vs Tasks
+
+*   **Tasks**:
+    *   “Do X later”
+    *   Have due dates, statuses, etc.
+*   **Live Document**:
+    *   The narrative and structure of what X _is_.
+
+Integration:
+
+*   Highlight text in doc → “Create task”
+    *   Task stores a reference to `{document_id, block_id}`.
+
+### 7.3 Conversation referencing & linking
+
+*   When a chat heavily contributes to a live doc, you can:
+    *   Show in the chat: “This conversation is linked to Documents: \[Cognigraph PRD\]”
+    *   Show in the doc: “Linked Chats: \[Cognigraph – Specializations chat\], \[Live Docs Feature Design chat\]”
+
+This makes it easy to:
+
+*   Jump back and forth between conceptual discussion and “final” documentation.
+
+* * *
+
+8\. Collaboration & multi-edit handling (even if it’s just you for now)
+-----------------------------------------------------------------------
+
+Even if it’s single-user at first, it’s worth thinking like it’s multi-user:
+
+*   **Locking** (optional for MVP):
+    *   Soft-lock: “Bob is editing this document” banner.
+*   **Auto-save**:
+    *   Save every N seconds or on change.
+*   **Version history**:
+    *   “Show previous versions”
+    *   “Restore version”
+
+AI edits should also generate new versions so you can undo bad rewrites.
+
+* * *
+
+9\. MVP scope vs extended vision
+--------------------------------
+
+### MVP
+
+*   Per-instance Live Documents table.
+*   Basic text/markdown editor.
+*   In-chat:
+    *   Open Live Document panel.
+    *   “Add to Live Document…” on messages (append + optional summarize).
+*   AI:
+    *   When Live Doc is open, allow “Update the live document…” commands that:
+        *   Append new sections
+        *   Rewrite specific sections by name.
+*   Export:
+    *   Markdown download
+    *   PDF export
+*   Simple version history.
+
+### Extended
+
+*   Block-based model with precise AI edits.
+*   Slide/presentation export.
+*   Google Docs/Slides sync.
+*   Whiteboard ↔ Live Document bridges.
+*   Task creation from highlighted document content.
+*   Fine-grained permissions and multi-user editing.
+
+* * *
+
+If you’d like, next step I can **turn this into an actual PRD section for “Live Documents”** that matches the structure we’ve been using for Cognigraph / aiConnected—requirements, APIs, events, and UI wireframe notes—so you can drop it directly into your instance spec.
+
+
+
+---
+Powered by [ChatGPT Exporter](https://www.chatgptexporter.com)

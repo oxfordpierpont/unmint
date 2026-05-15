@@ -1,0 +1,15 @@
+{
+  "title": "Product",
+  "pages": [
+    "index",
+    "bp-prod-01-master-product-architecture",
+    "bp-prod-02-business-platform-summary",
+    "bp-prod-03-aiconnectedos-summary",
+    "bp-prod-04-product-roadmap",
+    "bp-prod-05-neurigraph-nontechnical-summary",
+    "bp-prod-06-product-status-matrix",
+    "bp-prod-07-engine-module-revenue-analysis",
+    "bp-prod-08-platform-glossary"
+  ],
+  "defaultOpen": true
+}

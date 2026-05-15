@@ -1,0 +1,450 @@
+---
+title: "KB Generator Onboarding — Design Build Instructions"
+---
+
+# KB Generator Onboarding — Design Build Instructions
+
+These instructions are for Claude to follow when building the aiConnected Knowledge Base Generator onboarding flow. This document is the single source of truth for design decisions. Do not deviate. Do not improvise. Do not take shortcuts.
+
+---
+
+## 1. ANTI-SLOP RULES (Read First, Follow Always)
+
+These are the specific failure modes that have appeared in every recent build. Each one must be actively avoided.
+
+### What NOT to do:
+
+- **No emojis anywhere.** Not in headings, not in labels, not in placeholder text, not in feature descriptions. Zero.
+- **No centered paragraph text.** All body text and labels are left-aligned. The only centered text allowed is on interstitial screens (headline + feature cards) and the final launch screen.
+- **No uniform rounded corners on everything.** Use `rounded-xl` (12px) on cards and containers. Use `rounded-full` on pill buttons only. Use `rounded-lg` (8px) on input fields. Use `rounded-2xl` (16px) on the main screen container. Vary the radii deliberately.
+- **No purple gradients.** The palette is derived from the agency's primary color (HSL custom property). Gradients use the agency hue, not purple/violet.
+- **No Inter font.** Use DM Sans (already imported). Headers at 600 weight, body at 400. Do not use system fonts.
+- **No thin, barely-visible progress bars.** The progress bar segments must be at least 6px tall (`h-1.5`) with 8px gaps.
+- **No placeholder-quality SVG icons.** Every icon must be a proper, detailed SVG path — not a circle with a letter in it. If a real icon is needed (business, location, industry, website, document), draw a real recognizable SVG.
+- **No cramped layouts.** Minimum 24px horizontal padding on mobile. 32px on tablet+. Generous vertical spacing between all elements — 20px minimum between form fields, 32px between sections.
+- **No disabled buttons that look barely different from active.** Disabled state must be obviously, unmistakably different: `opacity-40` + `cursor-not-allowed` + desaturated bg. Active state must be bold and confident.
+
+### What TO do:
+
+- Build each screen as if it were the only screen a designer would judge you on.
+- Treat whitespace as a design element, not leftover space. More whitespace = more premium.
+- Every interactive element must have three clearly distinct visual states: default, hover, active/selected.
+- Test the visual hierarchy by squinting: can you tell what's most important?
+
+---
+
+## 2. DESIGN SYSTEM TOKENS
+
+### Agency Theming
+
+The entire color system derives from three CSS custom properties set once at the root:
+
+```css
+:root {
+  --agency-h: 210;   /* hue — swapped per white-label agency */
+  --agency-s: 80%;   /* saturation */
+  --agency-l: 50%;   /* lightness */
+}
+```
+
+All brand colors are computed from these:
+
+| Token | Value | Usage |
+|---|---|---|
+| `--agency` | `hsl(var(--agency-h), var(--agency-s), var(--agency-l))` | Primary brand color |
+| `--agency-light` | `hsl(var(--agency-h), var(--agency-s), 95%)` | Subtle tinted backgrounds |
+| `--agency-dark` | `hsl(var(--agency-h), calc(var(--agency-s) - 10%), 25%)` | Dark gradient base |
+| `--agency-mid` | `hsl(var(--agency-h), var(--agency-s), 40%)` | Dark gradient mid-tone |
+
+### Color Palette (Non-Agency)
+
+| Token | Hex | Usage |
+|---|---|---|
+| Surface white | `#FAFAFA` | Form screen backgrounds (not pure white) |
+| Text primary | `#111111` | Headings, primary body text |
+| Text secondary | `#6B7280` | Subtitles, helper text, secondary labels |
+| Text tertiary | `#9CA3AF` | Placeholder text, disabled text |
+| Border default | `#E5E7EB` | Input borders, card borders, dividers |
+| Border hover | `#D1D5DB` | Input focus pre-ring |
+| Success | `#10B981` | Validation success, connected indicators |
+| Error | `#EF4444` | Validation errors, limit warnings |
+
+### Typography
+
+| Role | Font | Size | Weight | Line Height |
+|---|---|---|---|---|
+| Screen heading | DM Sans | 28px (1.75rem) | 600 | 1.2 |
+| Screen subheading | DM Sans | 16px (1rem) | 400 | 1.5 |
+| Input label | DM Sans | 14px (0.875rem) | 500 | 1.4 |
+| Input value | DM Sans | 16px (1rem) | 400 | 1.5 |
+| Button text | DM Sans | 16px (1rem) | 600 | 1.0 |
+| Helper text | DM Sans | 13px (0.8125rem) | 400 | 1.4 |
+| Interstitial headline | DM Sans | 32px (2rem) | 700 | 1.15 |
+| Interstitial body | DM Sans | 15px (0.9375rem) | 400 | 1.5 |
+
+### Spacing Scale
+
+Use Tailwind spacing, but maintain these minimums:
+- Screen horizontal padding: `px-6` (24px) mobile, `px-8` (32px) sm+
+- Between form fields: `space-y-5` (20px)
+- Between sections (heading → first field): `mt-8` (32px)
+- Button bottom padding from last element: `mt-8` (32px)
+- Interstitial card internal padding: `p-6` (24px)
+
+### Shadows
+
+| Level | Value | Usage |
+|---|---|---|
+| Subtle | `0 1px 2px rgba(0,0,0,0.05)` | Input fields at rest |
+| Card | `0 2px 8px rgba(0,0,0,0.08)` | Elevated cards, connectors |
+| Lifted | `0 4px 16px rgba(0,0,0,0.12)` | Hover states on cards, selected items |
+| Dramatic | `0 8px 32px rgba(0,0,0,0.16)` | Modal overlays, bottom sheets |
+
+### Border Radius Scale
+
+| Token | Value | Usage |
+|---|---|---|
+| `rounded-lg` | 8px | Input fields, small cards |
+| `rounded-xl` | 12px | Selection cards, connector cards |
+| `rounded-2xl` | 16px | Screen container, large cards |
+| `rounded-full` | 9999px | Pill buttons, tags, counter badges |
+
+---
+
+## 3. SCREEN FLOW ARCHITECTURE
+
+The flow follows the Vibecoder pattern: form screens on light backgrounds, interstitials on dark agency-gradient backgrounds. The dark↔light alternation creates emotional rhythm.
+
+```
+[SignUp]           → dark agency gradient (conditional — invited users only)
+   ↓
+[BusinessIdentity] → light (#FAFAFA)
+   ↓
+[Industry]         → light (#FAFAFA)
+   ↓
+[Interstitial 1]   → dark agency gradient ("We'll scan your website...")
+   ↓
+[WebsiteURL]       → light (#FAFAFA)
+   ↓
+[Interstitial 2]   → dark agency gradient, DIFFERENT hue shift ("Add your expert knowledge...")
+   ↓
+[KnowledgeSources] → light (#FAFAFA)
+   ↓
+[Launch]           → dark agency gradient ("Ready to build your AI")
+```
+
+### Progress Bar
+
+- Appears ONLY on form screens (Business, Industry, URL, Sources) — 4 segments.
+- Does NOT appear on interstitials, sign-up, or launch.
+- Segments are thick: `h-1.5` (6px), separated by `gap-2` (8px).
+- Filled segments use the agency color. Unfilled segments use `#E5E7EB`.
+- Full width of the content area.
+- Positioned below the back arrow, with `mb-8` before the heading.
+
+### Back Navigation
+
+- A back arrow (left chevron SVG, not a text link) appears on all form screens and interstitials except the first screen in the flow.
+- The arrow is 20×20px, positioned at top-left of the content area.
+- Tap target is at least 44×44px.
+
+---
+
+## 4. SCREEN-BY-SCREEN SPECIFICATIONS
+
+### Screen: Sign Up (Conditional)
+
+**Layout:** Split — top 45% is a dark agency gradient with the agency logo centered. Bottom 55% is a white card with rounded top corners (`rounded-t-3xl`), sliding up over the gradient.
+
+**Agency logo:** A proper SVG placeholder — a rounded square (radius 12px) with the agency's primary color fill + a subtle lighter highlight shape inside. No text in the logo. The logo should be 64×64px on this screen.
+
+**White card contents:**
+- "Create your account" — 24px, weight 600, left-aligned
+- "Set up your AI assistant in minutes." — 16px, weight 400, text-secondary, left-aligned
+- Full name input field
+- Password input field with show/hide toggle (eye icon SVG)
+- Password requirement: "At least 8 characters" in helper text below
+- Primary button: "Get Started" — full-width, agency-colored bg, white text, `rounded-full`, `h-12`
+- Below button: "Already have an account? Sign in" — text link in agency color
+
+**States:**
+- Button disabled (gray, `opacity-40`) until both fields valid
+- Password field: eye icon toggles between open/closed, field type switches
+
+---
+
+### Screen: Business Identity
+
+**Layout:** Light background (#FAFAFA). Back arrow + progress bar (segment 1 of 4 filled). Left-aligned heading.
+
+**Heading:** "Let's set up your AI"
+**Subheading:** "Tell us about your business so we can build the smartest assistant possible."
+
+**Fields (stacked vertically, `space-y-5`):**
+1. Business Name — text input, full width
+2. Street Address — text input, full width, labeled "Street Address (optional)"
+3. City / State / Zip — responsive grid:
+   - Mobile: City full width, then State (50%) + Zip (50%)
+   - Desktop: City (flex-1) + State (120px dropdown) + Zip (100px)
+4. State: a native `<select>` with all US states + DC
+
+**Input field styling:**
+- `h-12` (48px), `rounded-lg`, border `#E5E7EB`
+- On focus: border transitions to agency color, subtle box-shadow ring in agency color at 20% opacity
+- Label above each input: 14px, weight 500, `#111111`, `mb-1.5`
+- Placeholder: `#9CA3AF`
+
+**Button:** "Continue" — full-width, `rounded-full`, `h-12`. Disabled until business name + city + state filled.
+
+**Enter key:** Pressing Enter when all required fields are valid triggers the Continue action.
+
+---
+
+### Screen: Industry
+
+**Layout:** Light background. Back arrow + progress bar (segment 2 of 4). Left-aligned heading.
+
+**Heading:** "What industry are you in?"
+**Subheading:** "This helps us tailor your AI to your specific field."
+
+**Search input:** Sticky at top of the list area. Has a search icon (magnifying glass SVG) on the left inside the input. "Search industries..." placeholder. Clear (×) button appears when text is entered.
+
+**Industry list:** Below the search. Full-height scrollable container using `flex-1 min-h-0 overflow-y-auto`. Industries grouped alphabetically with sticky single-letter headers (`text-xs font-600 text-secondary uppercase tracking-wider`). Each letter header has a `border-b` below it.
+
+**Each industry item:**
+- Full width row, `py-3.5 px-4`, with subtle `border-b` (#F3F4F6)
+- Text: 16px, weight 400, `#111111`
+- Hover state: agency-color left border (3px), background `agency-light`
+- Selected state: agency-colored background at 10% opacity, agency-color left border (3px), text weight bumps to 500, a small checkmark icon in agency color appears on the right
+- Touch target: minimum 48px height
+
+**Scroll-to-selected:** If user navigates back to this screen, the list scrolls to their previous selection.
+
+**Search behavior:** Filters the list in real time. Letter headers only show if they have matching industries. "No results" message if nothing matches.
+
+**Button:** "Continue" — disabled until an industry is selected.
+
+---
+
+### Screen: Benefit Interstitial (variant: "scan")
+
+**Layout:** Full-screen agency gradient. No progress bar. No back arrow visible (but back gesture/swipe still works). Everything is centered vertically.
+
+**Background:** Gradient from `--agency-dark` (top-left) to `--agency-mid` (center) to agency primary (bottom-right). Subtle CSS-only decorative element: a large (300px) semi-transparent circle (`opacity-10`, `blur-3xl`) positioned off-center to add depth.
+
+**Content (centered, max-width 320px):**
+1. Agency logo: 48×48px, in a frosted-glass container (`backdrop-blur-xl bg-white/10 rounded-2xl p-3`)
+2. Headline: "We'll scan your website and extract everything" — 28px, weight 700, white, centered, `mt-8`
+3. Feature items (3 items, stacked, `mt-8 space-y-4`):
+   - Each: a row with a small circle icon (white at 20% opacity background, white SVG icon inside) + text
+   - "Services & pricing" / "Brand voice & tone" / "Business details & contact info"
+   - Text: 15px, weight 400, white at 90% opacity
+   - Items stagger-animate in: each delayed by 100ms more than the previous (CSS `animation-delay`)
+4. Continue button: `mt-10`, white bg, agency-color text, `rounded-full`, `h-12`, full-width (within the 320px max)
+
+---
+
+### Screen: Benefit Interstitial (variant: "knowledge")
+
+**Same structure as above** but with different gradient angle (rotated 180° so gradient direction is reversed — visual variety), different headline, and different features.
+
+**Headline:** "Add your expert knowledge"
+**Features:**
+- "Upload internal documents & SOPs"
+- "Connect Google Drive files"
+- "Pull from GitHub repos"
+
+The decorative circle is positioned on the opposite side from the "scan" interstitial.
+
+---
+
+### Screen: Website URL
+
+**Layout:** Light background. Back arrow + progress bar (segment 3 of 4). Left-aligned heading.
+
+**Heading:** "What's your website?"
+**Subheading:** "We'll scan your site to find services, pricing, and brand voice."
+
+**URL Input:**
+- Large, prominent input card: elevated container with `rounded-xl`, `shadow-card`, white bg, `p-5`
+- Inside: `https://` prefix as fixed gray text on the left, then the editable input field
+- Input: `h-12`, no separate border (the card IS the container), 16px text
+- On focus: card border transitions to agency color
+
+**URL Validation (debounced 300ms):**
+- Invalid URL → subtle red border, small error message below
+- Valid URL → card gets a success treatment: green border flash, then settles to agency color border
+- Valid URL also reveals a "preview strip" below the card:
+  - Domain initial letter in a small circle (agency bg, white text)
+  - Domain name
+  - "Ready to scan" label in green
+  - A subtle shimmer animation running left-to-right on the strip (CSS `@keyframes shimmer`)
+
+**"I don't have a website" checkbox:**
+- Below the URL card, `mt-6`
+- Standard checkbox + label: "I don't have a website yet"
+- When checked: URL card fades to `opacity-50`, input disables, a helper paragraph appears: "No problem — you can add your website later from the dashboard. We'll use your uploaded documents to build your AI."
+
+**Info section (when URL input is empty and checkbox is unchecked):**
+- Three small info items stacked, each with:
+  - A small agency-tinted icon circle (24px) on the left
+  - Title (14px, weight 500): "Services & pricing" / "Brand voice" / "Contact details"
+  - Subtitle (13px, weight 400, text-secondary): brief explanation
+- These fade out when a URL is entered or the checkbox is checked.
+
+**Button:** "Continue" — enabled when either a valid URL is entered OR the checkbox is checked.
+
+---
+
+### Screen: Knowledge Sources
+
+**Layout:** Light background. Back arrow + progress bar (segment 4 of 4). Left-aligned heading.
+
+**Heading:** "Add extra knowledge"
+**Subheading:** "Upload documents your website doesn't cover. You can always add more later."
+
+**Source counter badge:** Positioned at top-right of the content area. Pill shape (`rounded-full`), agency-light bg, agency-color text: "0 / 10 sources". Transitions to red bg when at limit.
+
+**Upload zone:**
+- Dashed border container (`border-2 border-dashed rounded-xl`), `border-color: #D1D5DB`, `py-8`
+- Centered content: Upload cloud SVG icon (40px, agency color), "Drag files here" text (15px, weight 500), "or" divider text, "Browse files" text link in agency color
+- Supported formats note below: "PDF, DOCX, TXT, MD, CSV — up to 25 MB each" in helper text
+- On drag-over: border color transitions to agency, bg gets `agency-light`
+
+**Connector cards:**
+- Below the upload zone, preceded by a visual divider: a horizontal line with "or connect" text centered on it (text-secondary, bg-surface to mask the line)
+- Two cards side by side in a 2-column grid (`gap-4`):
+
+**Google Drive card:**
+- `rounded-xl`, `p-4`, white bg, `shadow-card`, `border border-transparent`
+- Top: Actual Google Drive SVG logo (the triangular colored logo — draw the real thing with proper colors: blue #4285F4, green #0F9D58, yellow #F4B400)
+- Below logo: "Google Drive" (15px, weight 600)
+- Below name: "Select files from your Drive" (13px, text-secondary)
+- Below: "Connect" pill button (`rounded-full`, agency border, agency text, bg transparent, on hover: agency bg + white text)
+- On hover: entire card lifts (`shadow-lifted`), border becomes agency color
+
+**GitHub card:**
+- Same structure
+- GitHub Octocat logo SVG (proper black octocat silhouette — draw the real recognizable shape)
+- "GitHub" / "Pull from your repos"
+- Same "Connect" pill and hover behavior
+
+**Source list (appears when sources are added):**
+- Below the connectors, separated by `border-t mt-6 pt-4`
+- Label: "Added sources" (13px, weight 600, text-secondary, uppercase tracking)
+- Each source row: icon (file type or source type SVG), filename (truncated), file size, remove button (×)
+- Remove button: hidden on desktop (appears on hover), always visible on touch (`@media (hover: none)`)
+- Removing a source: row animates out (height collapses)
+
+**Button:** "Continue" — ALWAYS enabled (sources are optional). Also show "Skip — I'll add these later" as a secondary text link below the button.
+
+---
+
+### Screen: Launch
+
+**Layout:** Dark agency gradient background (same gradient as interstitials but subtler — less saturated). Everything centered.
+
+**Pre-launch state:**
+1. Agency logo: 56×56px in frosted glass container, centered
+2. Heading: "Ready to build your AI" — 28px, weight 700, white, centered, `mt-6`
+3. Summary card: `rounded-2xl`, `bg-white/10 backdrop-blur-md`, `p-6`, `mt-8`, max-width 360px
+   - Each collected data point as a row:
+     - Small icon (real SVG: building for business, map-pin for location, briefcase for industry, globe for website, folder for sources)
+     - Icons sit in small circles with `bg-white/15` backgrounds
+     - Label text: white at 80% opacity, 14px
+     - Value text: white, 15px, weight 500
+   - Rows separated by `border-b border-white/10`
+4. CTA Button: "Build My AI" — white bg, agency-dark text, `rounded-full`, `h-14` (taller than other buttons — this is THE action), weight 700, `mt-8`, full-width within max-width
+5. Microcopy below: "Usually takes 5–10 minutes. We'll let you know when it's ready." — 13px, white/60, centered
+
+**Post-launch state (after button click):**
+- Button transforms into a progress indicator: the button text fades, replaced by a thin animated progress bar inside the button shape
+- After 1.5s simulated delay: the entire screen transitions
+- New content fades in:
+  - Animated checkmark (SVG line-draw animation)
+  - "Your AI is being built" — 24px, white, weight 600
+  - Subtitle: "Head to your dashboard to track progress"
+  - "Go to Dashboard" button — white bg, agency-dark text, `rounded-full`, `h-12`
+
+---
+
+## 5. ANIMATION & TRANSITION SPECS
+
+### Page transitions
+- Screens slide/fade: entering screen fades in + slides up 20px over 300ms with `ease-out`
+- This is CSS only: `@keyframes fadeSlideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }`
+
+### Stagger animations (interstitials)
+- Each feature item delays 100ms after the previous
+- Use CSS `animation-delay` on nth children: 300ms, 400ms, 500ms
+
+### Micro-interactions
+- Input focus: border color transitions over 200ms
+- Button enable/disable: opacity transitions over 200ms
+- Card hover: shadow and border transitions over 150ms
+- URL validation preview: slides down with height animation (200ms)
+- Source removal: row height collapses over 200ms
+
+### Shimmer animation (URL preview strip)
+```css
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.shimmer {
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.4) 50%, transparent 100%);
+  background-size: 200% 100%;
+  animation: shimmer 2s ease-in-out infinite;
+}
+```
+
+---
+
+## 6. RESPONSIVE BEHAVIOR
+
+**Mobile first.** The design is built for 375px viewport width and scales up.
+
+| Breakpoint | Width | Changes |
+|---|---|---|
+| Base | < 640px | Single column, `px-6`, all stacked |
+| `sm` | ≥ 640px | City/State/Zip go to single row, `px-8`, connector grid stays 2-col |
+| `md` | ≥ 768px | Max-width container (480px) centered, more generous spacing |
+| `lg` | ≥ 1024px | Max-width container (520px), can add decorative side elements |
+
+The screen container itself should be `max-w-lg mx-auto` on tablet+ to prevent the form from stretching too wide.
+
+---
+
+## 7. COMPONENT CHECKLIST
+
+Before shipping, verify each component meets these criteria:
+
+- [ ] Agency logo SVG renders correctly (not a broken placeholder)
+- [ ] All SVG icons are real, recognizable shapes (not circles with letters)
+- [ ] Google Drive logo has correct 3 colors (blue, green, yellow triangle)
+- [ ] GitHub logo is the actual octocat silhouette
+- [ ] Progress bar is visually prominent (6px+ tall, clear fill vs unfill contrast)
+- [ ] All inputs have visible focus states with agency color ring
+- [ ] Disabled buttons are obviously disabled (not subtly grayed)
+- [ ] Interstitial gradients use agency hue, not hardcoded purple/blue
+- [ ] No emoji characters anywhere in any screen
+- [ ] No `text-center` on form labels or body text (only on interstitial/launch headlines)
+- [ ] Whitespace is generous — nothing feels cramped
+- [ ] Industry list scrolls properly without the button disappearing
+- [ ] URL debounce works (no flashing validation states)
+- [ ] Typography hierarchy is clear: heading > subheading > labels > helper text
+- [ ] Touch targets are 44px minimum on all interactive elements
+- [ ] Dark/light alternation follows the flow architecture exactly
+
+---
+
+## 8. BUILD PROCESS
+
+1. Initialize fresh project: `bash /sessions/adoring-serene-knuth/mnt/.skills/skills/web-artifacts-builder/scripts/init-artifact.sh aiconnected-onboarding-v2`
+2. Replace `src/index.css` with the agency-themed design tokens
+3. Build `src/App.tsx` with the flow architecture + AgencyLogo component
+4. Build each screen component in `src/screens/`
+5. Build from scratch — do NOT copy from the v1 project
+6. Bundle: `bash /sessions/adoring-serene-knuth/mnt/.skills/skills/web-artifacts-builder/scripts/bundle-artifact.sh`
+7. Copy `bundle.html` to `/sessions/adoring-serene-knuth/mnt/aiConnected/aiconnected-onboarding-v2.html`
+8. Self-review: visually inspect the bundled output via browser screenshot before delivering

@@ -1,0 +1,109 @@
+---
+title: "Memory and context"
+description: "Neurigraph-backed memory contracts for session, user, tenant, and module-aware recall."
+---
+## Contract status
+
+`Canonical interface contract`
+
+The OS and platform docs are explicit about memory categories, retrieval behavior, and shared access expectations. The storage implementation is intentionally swappable.
+
+## Source documents
+
+- [aiConnectedOS developer documentation](/docs/knowledge-base/aiconnected-os/aiconnected-os-developer-documentation)
+- [aiConnected Platform foundation PRD](/docs/knowledge-base/aiconnected-business-platform/aiconnected-platform-foundation-prd)
+- [Neurigraph tool references](/docs/knowledge-base/neurigraph-memory-architecture/neurigraph-tool-references/01-MCP-Knowledge-Graph-Memory-Server)
+
+## Memory classes
+
+The OS documentation defines four persistent memory classes:
+
+| Memory class | Meaning |
+|---|---|
+| Episodic | What happened, and when |
+| Semantic | What the system learned about a domain |
+| Somatic | Learned behavioral patterns and preferences |
+| Emotional | Relationship history, mood, and preference evolution |
+
+## Foundation memory scope
+
+The platform foundation PRD narrows the first build to:
+
+- Session memory
+- User memory
+- Tenant memory
+- Module memory
+
+This means the first production service should be a stable shared data layer and API contract, even before the full Neurigraph reasoning layer is complete.
+
+## Required memory resources
+
+| Resource | Purpose |
+|---|---|
+| `memory_entries` | Typed units of stored memory |
+| `memory_indexes` | Retrieval and search structures |
+| `memory_links` | Association edges across topics, contacts, and artifacts |
+| `recall_files` | Archived conversation bundles and artifacts |
+| `memory_preferences` | Durable user or tenant preferences |
+| `memory_artifacts` | Linked files, outputs, and supporting material |
+
+## Required memory operations
+
+- Write a memory entry with type and scope
+- Search memories by semantic, temporal, and scoped filters
+- Retrieve a recall bundle for a persona or thread
+- Link new facts or artifacts to existing memories
+- Mark memory relevance, retention, or archive status
+- Expose module-safe reads and writes through a common service
+
+## Required scoping dimensions
+
+Every memory write must carry enough context to prevent leakage:
+
+- `persona_id`
+- `instance_id`
+- `workspace_id`
+- `memory_type`
+- `source_module`
+- `actor`
+- `created_at`
+
+## Retrieval expectations
+
+The OS docs describe a retrieval flow that mixes:
+
+- Temporal indexing
+- Semantic similarity
+- Pattern matching
+- Emotional relevance
+
+Even if the first release simplifies ranking, the API contract should leave room for all four inputs.
+
+## Shared module behavior
+
+The foundation PRD requires module memory to be shared. That means:
+
+- Voice can write call outcomes into shared memory.
+- Chat can read the same business context and prior conversation cues.
+- Knowledge can publish structured updates that influence later interactions.
+- Persona behavior can adapt based on long-lived preference signals.
+
+## Recommended read contract
+
+```json
+{
+  "query": "recent legal intake preferences",
+  "workspace_id": "ws_123",
+  "instance_id": "inst_456",
+  "persona_id": "prs_789",
+  "filters": {
+    "memory_types": ["episodic", "semantic"],
+    "source_modules": ["logiclegal", "voice"],
+    "lookback_days": 90
+  }
+}
+```
+
+## Implementation note
+
+Do not hide memory behind one opaque transcript blob. The repo repeatedly calls for structured, typed, queryable memory.

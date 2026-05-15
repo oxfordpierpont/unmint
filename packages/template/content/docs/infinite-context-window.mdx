@@ -1,0 +1,71 @@
+---
+title: "Infinite Context Window"
+---
+**Concept Author:** Bob Hunter\
+**Date:** March 12, 2026\
+**Status:** Defined — Native to aiConnected OS\
+**Classification:** aiConnected OS — Memory Architecture Layer 1 (Native)
+
+---
+
+## What It Is
+
+The Infinite Context Window is the native memory model for aiConnected OS — the full-stack implementation where there is no externally imposed token ceiling to work around. In this model, the conversation itself is a live database. There is no rotation, no imposed limit, and no architectural workaround required.
+
+It is not a feature. It is the natural state of a conversation-as-database when you control the full stack.
+
+---
+
+## The Simple Principle
+
+On platforms Bob does not control — Claude.ai, GPT, third-party APIs — a token limit is imposed externally. The Rotating Context Window was designed to work intelligently within that constraint.
+
+On aiConnected OS, no such constraint exists. The conversation is the database. The database has no ceiling other than available storage. Storage is cheap.
+
+Therefore: **there is no context window to manage.**
+
+---
+
+## How It Differs From the Rotating Context Window
+
+|  | Rotating Context Window | Infinite Context Window |
+| --- | --- | --- |
+| **Platform** | Third-party (Claude, GPT, etc.) | aiConnected OS (owned stack) |
+| **Token ceiling** | Externally imposed | Does not exist |
+| **Live/RAG split** | Required workaround | Not applicable |
+| **Rotation** | Required | Not required |
+| **Chunking** | Background process to manage ceiling | Optional — for retrieval efficiency only |
+| **Retrieval** | Required to bring content back into live window | Everything is already live |
+
+---
+
+## What Stays the Same
+
+Even without a ceiling, certain practices from the Rotating Context Window remain valuable:
+
+- **Chunking for retrieval efficiency** — not because you have to, but because well-formed chunks with enriched metadata make search faster and more precise across very long conversation histories
+- **Semantic search on every turn** — still valuable for surfacing relevant history in long sessions
+- **Timestamps and version history** — still essential for conflict resolution
+- **Micro-database per conversation** — still the right model for isolation and permissions
+
+The difference is these are **optimization choices**, not survival requirements.
+
+---
+
+## Relationship to Neurigraph
+
+Same as the Rotating Context Window — the Infinite Context Window is Layer 1, intra-conversation. Neurigraph remains Layer 2, handling cross-conversation and long-term memory at the graph level.
+
+The Infinite Context Window feeds Neurigraph more richly because nothing was ever compressed or rotated out — the full fidelity of every conversation is available to the graph.
+
+---
+
+## Why This Matters for aiConnected OS
+
+The Rotating Context Window gives aiConnected competitive capability on platforms it doesn't own. The Infinite Context Window is what makes aiConnected OS itself a fundamentally different product — not constrained by the architectural compromises baked into every third-party platform.
+
+Users on aiConnected OS are never told a conversation is "too long." The system never forgets. History never degrades. The conversation just grows.
+
+---
+
+_Originated by Bob Hunter, March 12, 2026. Developed through iterative conversation with Claude (Anthropic). All conceptual authorship belongs to Bob Hunter._

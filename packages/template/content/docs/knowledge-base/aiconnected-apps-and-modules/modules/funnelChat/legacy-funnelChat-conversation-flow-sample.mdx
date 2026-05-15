@@ -1,0 +1,117 @@
+---
+title: "legacy funnelChat conversation flow sample"
+description: "Got it — you're referring to your funnelChat philosophy : “The best funnel is the one leads don’t know they’re in.” And the goal is to collect lead data pass..."
+---
+<Info>
+Normalized for Mintlify from `knowledge-base/aiconnected-apps-and-modules/modules/funnelChat/legacy-funnelChat-conversation-flow-sample.mdx`.
+</Info>
+Got it — you're referring to your **funnelChat philosophy**:
+
+*“The best funnel is the one leads don’t know they’re in.”*
+
+And the goal is to **collect lead data passively and naturally** during a rich, helpful, Perplexity-style conversation — *not through obvious form-filling behavior.*
+
+Let’s reframe the solution around this **invisible lead capture** idea.
+
+---
+
+## **✅ funnelChat Lead Capture – Passive & Conversational Flow**
+
+Instead of direct prompts like “What’s your name?”, the AI should:
+
+1. **Guide the conversation like a helpful research assistant.**
+
+2. **Casually prompt for info** only when it feels *relevant* or *earned.*
+
+3. **Use AI tools to extract structured data** from unstructured, free-flowing dialogue.
+
+---
+
+### **🧠 How to Implement This in n8n**
+
+#### **1\. Define Passive Goals for the Agent**
+
+In the AI Agent node:
+
+`{`  
+  `"persona": "An ultra-helpful, respectful research assistant who offers solutions without pressure.",`  
+  `"goal": "Guide the user through an insightful conversation and, where natural, capture their name, email, and business interest for follow-up.",`  
+  `"tone": "Engaged, light, helpful — never pushy or robotic.",`  
+  `"rules": [`  
+    `"Do not directly ask for contact info unless it arises naturally.",`  
+    `"If the user asks a detailed question, you may offer to send more info by email.",`  
+    `"Make email or name collection feel like a service, not a requirement."`  
+  `]`  
+`}`
+
+---
+
+#### **2\. Enable Soft Prompts During Key Moments**
+
+Examples of prompts the AI can drop **only after giving value**:
+
+* *“I actually wrote a short summary of this last week — want me to send it over?”*
+
+* *“If you’d like a downloadable version of these steps, I can email it to you. Totally optional.”*
+
+* *“Happy to turn this into a checklist — want me to email it over?”*
+
+These feel **like bonuses**, not asks.
+
+---
+
+#### **3\. Extract Lead Fields Invisibly**
+
+Use OpenAI / Claude / Regex to extract:
+
+| Field | Extraction Approach |
+| ----- | ----- |
+| **Name** | “My name is...” / Email signature / Greeting |
+| **Email** | Detect using regex or prompt: *“Can I send this to your email?”* |
+| **Intent** | Inferred from multi-turn topic (“I’m trying to solve…” / “My business needs…”) |
+
+You don’t need a form — just **pass messages through a parsing node** (e.g. JS \+ LLM) every 2–3 turns.
+
+---
+
+#### **4\. Save to Memory \+ CRM Silently**
+
+Once fields are inferred:
+
+* Store them into memory
+
+* Update user context
+
+* Save lead quietly in background (e.g. Airtable, GHL, Supabase)
+
+If user returns later, the agent can say:
+
+“Welcome back\! Last time we were talking about your sales funnel. Want to pick up from there?”
+
+---
+
+#### **5\. Show Empathy, Not Automation**
+
+When it’s time to ask for info, don’t "collect," just *offer help.*
+
+✔️ Instead of:
+
+“Please provide your email.”
+
+Try:
+
+“Would you like a quick PDF of these strategies? I can email it to you.”
+
+Even if they say “Sure,” that’s enough to extract and store — without breaking immersion.
+
+---
+
+### **⚙️ n8n Node Tips**
+
+* **LLM Entity Extractor**: Custom JS node or OpenAI node to pull name/email from chat stream.
+
+* **Memory Check**: `If` node to detect what’s missing and route the conversation softly.
+
+* **Lead Saver**: Background webhook or HTTP Request node that pushes to your CRM.
+
+* **Re-engagement Prompt**: Use stored memory to tailor follow-ups if user returns.

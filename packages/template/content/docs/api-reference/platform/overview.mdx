@@ -1,0 +1,99 @@
+---
+title: "Platform overview"
+description: "The core aiConnected shell contract, module model, and platform-wide design rules."
+---
+## Contract status
+
+`Canonical interface contract`
+
+The shell responsibilities, shared entities, module architecture, and isolation rules are explicitly documented in the platform foundation PRD, MVP specification, and shell notes. Most route names are intentionally dynamic or manifest-driven.
+
+## Source documents
+
+- [aiConnected Platform foundation PRD](/docs/knowledge-base/aiconnected-business-platform/aiconnected-platform-foundation-prd)
+- [aiConnected Platform MVP specification](/docs/knowledge-base/aiconnected-business-platform/aiconnected-platform-v1-mvp-specification)
+- [What is the platform shell](/docs/knowledge-base/aiconnected-business-platform/what-is-the-platform-shell)
+- [aiConnected Platform v2 port map](/docs/knowledge-base/aiconnected-business-platform/aiconnected-platform-v2-port-map)
+
+## Platform purpose
+
+The shell is the permanent operating layer for a white-label, multi-tenant AI sales platform. It owns identity, routing, permissions, billing, themes, layouts, shared entities, and inter-module communication.
+
+The shell does **not** own module-specific business logic. Voice, chat, knowledge, and future apps must live outside the shell in isolated runtimes.
+
+## Required shell responsibilities
+
+| Responsibility | What it must do |
+|---|---|
+| Authentication | Establish identity and session state across all tenants |
+| Tenant provisioning | Create and manage super, agency, business, developer, and personal contexts |
+| Permission enforcement | Enforce role checks at the API layer |
+| Navigation and routing | Register routes dynamically from module manifests |
+| Billing | Manage platform tax, module activation, subscriptions, and account billing |
+| Module registry | Track installed modules, manifests, capabilities, and lifecycle state |
+| Event bus | Relay cross-module events through shared contracts |
+| API gateway | Route module traffic with auth, workspace, and rate-limit context |
+| Theme engine | Apply layered white-label branding per tenant |
+| Layout manager | Support visual editing and AI-assisted creation of screens and modules |
+
+## Platform-wide design rules
+
+These rules are repeated across the source docs and should be treated as hard requirements:
+
+- Modules communicate through contracts, events, and the gateway, not direct imports.
+- Every module is containerized and isolated from the shell and from other modules.
+- Every module has a manifest that declares routes, permissions, capabilities, and events.
+- Shared entities belong to the shell.
+- Module-owned tables belong to the module that creates them.
+- Cross-module communication flows through the event bus or declared gateway contracts.
+- The architecture must stay open for future third-party developer modules.
+
+## User layers
+
+The platform is designed around five user classes:
+
+| User class | Primary concern |
+|---|---|
+| Super user | Platform operations, support, governance, billing, global configuration |
+| Agency user | White-label product owner and reseller |
+| Business user | Agency client using deployed modules |
+| Developer | Sandboxed module creator and importer |
+| Personal user | Isolated single-user mode outside agency hierarchy |
+
+The MVP focuses on super, agency, and business users, but the architecture must not block developer or personal accounts.
+
+## Deployment model
+
+The repo describes a monorepo shell plus isolated module runtimes:
+
+| Layer | Example packages or apps |
+|---|---|
+| Shell apps | `apps/platform`, `apps/chat`, `apps/kb-studio` |
+| Shared packages | `permissions`, `app-sdk`, `kb-engine`, `chat-core`, `branding`, `db`, `ui` |
+| Data layer | Shared shell entities plus module-owned tables |
+| Runtime | Containerized modules behind an API gateway |
+
+## Required build order
+
+The source docs consistently imply this sequence:
+
+1. Shell and permissions
+2. Shared entities and gateway
+3. Event bus and capability registry
+4. Theme engine and layout manager
+5. Knowledge and chat
+6. Voice, contact forms, chat monitor, and co-browser
+7. Developer import and ecosystem tooling
+
+## What developers should stabilize first
+
+Before building new modules, stabilize:
+
+- Workspace and permission context propagation
+- Shared contacts and events contracts
+- Manifest validation
+- Gateway request forwarding
+- Theme inheritance
+- Layout versioning and publish flow
+
+If those pieces drift, every module becomes harder to build and maintain.

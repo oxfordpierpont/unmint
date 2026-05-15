@@ -1,0 +1,259 @@
+---
+title: "Content Strategist AI"
+description: "Product Summary Last Updated: January 2, 2026 Owner: Oxford Pierpont Corporation Executive Summary Content Strategist AI is a white label SaaS platform that..."
+---
+<Info>
+Normalized for Mintlify from `knowledge-base/aiconnected-apps-and-modules/modules/aiConnected-paper/paper-product-overview.mdx`.
+</Info>
+# Content Strategist AI
+## Product Summary
+
+**Version:** 1.0  
+**Last Updated:** January 2, 2026  
+**Owner:** Oxford Pierpont Corporation
+
+---
+
+## Executive Summary
+
+Content Strategist AI is a white-label SaaS platform that generates professional, research-backed thought leadership content for agencies and their clients. Unlike commoditized blog content, this platform produces executive-quality documents comparable to consulting firm whitepapers—complete with original research, statistics, data visualizations, and professionally designed PDF output.
+
+The platform is designed to be sold to marketing agencies who resell the service to their clients. It operates primarily as a programmatic content engine, with a minimal frontend serving as a sales demonstration tool.
+
+---
+
+## The Problem
+
+1. **Blog content is commoditized.** Everyone can produce SEO articles with AI. They have no differentiated value.
+
+2. **True thought leadership is expensive.** Consulting firms charge $2,000-5,000 per whitepaper. Agencies can't afford to produce this at scale.
+
+3. **Design is the bottleneck.** Even good AI-written content looks like "AI garbage" without professional formatting. The design is what signals quality.
+
+4. **Agencies need white-label solutions.** They can't resell products that expose the underlying vendor. Everything must be brandable.
+
+---
+
+## The Solution
+
+Content Strategist AI delivers:
+
+| Component | Description |
+|-----------|-------------|
+| **Deep Research** | AI conducts thorough research on any topic—reading dozens to hundreds of sources depending on scope. Not predetermined. Not shallow. |
+| **Original Content** | 5-10 page thought leadership documents with statistics, insights, and actionable recommendations. |
+| **Dynamic Design** | Professional PDF output with charts, callout boxes, data visualizations, and brand-matched colors. |
+| **Multi-Platform Distribution** | One-click publishing to LinkedIn, Facebook, Twitter/X, and Google Business. |
+| **Full White-Label** | Custom domains, logos, colors, and branding. The agency's clients never see Oxford Pierpont. |
+
+---
+
+## Target Users
+
+### Primary: Marketing Agencies
+- Purchase annual/monthly subscription
+- Manage multiple clients from single dashboard
+- Upload CSV schedules for automated content generation
+- Use their own API keys (Pro) or included usage (Enterprise)
+
+### Secondary: Direct Clients
+- Access their own dashboard via agency's white-labeled platform
+- View generated content
+- Trigger on-demand generation (depending on plan)
+- Approve/distribute content
+
+---
+
+## User Roles
+
+| Role | Access Level |
+|------|--------------|
+| **Super Admin** | System owner (Oxford Pierpont). Manages agencies, templates, plans, global settings. |
+| **Agency Admin** | Manages their clients, team members, settings, API keys. Views all content across clients. |
+| **Agency Team Member** | Generates content, reviews, distributes. Limited settings access. |
+| **End Client** | Views their content, may request generation. Very limited access. |
+
+---
+
+## Core Features
+
+### 1. Content Generation
+
+**Input Options:**
+- Topic (required)
+- Client website
+- Related services (for sales-oriented content)
+- Target keywords (optional—AI researches regardless)
+- Custom direction ("Tell me what you want to talk about")
+- Tone: Professional / Casual Blog / Authoritative Whitepaper
+- Industry (free text, not dropdown)
+- Additional context field
+
+**Generation Process:**
+1. Keyword/topic analysis
+2. Deep web research (scope-dependent)
+3. Industry report analysis
+4. Outline creation
+5. Content composition
+6. Statistics integration
+7. Chart/graphic generation
+8. Template application
+9. PDF rendering
+10. Quality review
+
+**Output:**
+- Professionally designed PDF (5-10 pages)
+- Brand-matched colors
+- Dynamic charts and data visualizations
+- Cover image (Freepik stock or client-uploaded on higher tiers)
+- Multiple template options (based on plan)
+
+### 2. White-Label Branding
+
+**Platform Customization:**
+- Dark mode / Light mode toggle
+- 3 accent colors
+- Horizontal logo
+- Vertical/square logo
+- Round/profile logo
+- Company name
+- Industry
+- Website URL
+- Social media accounts
+- Custom footer text
+
+**PDF Customization:**
+- Brand colors applied to all design elements
+- Logo placement
+- Custom cover styling
+- Footer branding
+
+**Domain Options:**
+- Pro: Unbranded shared domain (authAPI.net or sec-admn.com)
+- Enterprise: Custom agency domain
+
+### 3. Content Management
+
+**Client Dashboard:**
+- Configuration settings display
+- Vertical list of generated content
+- Document metadata:
+  - Composition settings
+  - Distribution settings
+  - Timestamps (created, distributed)
+- 3-year document retention
+
+**Agency Dashboard:**
+- Client list table (Company, Contact, Phone, View Dashboard)
+- Click-through to any client dashboard
+
+### 4. Distribution
+
+**Supported Platforms:**
+- LinkedIn
+- Facebook
+- Twitter/X
+- Google Business
+
+**Distribution Modes:**
+- Manual (review then distribute)
+- Auto-distribute (Enterprise feature consideration)
+
+**OAuth:** Agency's responsibility to configure per client.
+
+### 5. Scheduled Generation (Agency Feature)
+
+**CSV Upload:**
+- Schedule content for any client
+- Fields: Date, Topic, Template Code, Keywords, Custom Direction, etc.
+- Bulk scheduling for 365+ pieces
+- Template codes map to available templates
+
+### 6. Template System
+
+**Template Access by Plan:**
+- Pro: 5 templates
+- Enterprise: All available templates
+
+**Template Properties:**
+- Unique template code (for CSV scheduling)
+- Color scheme adaptation
+- Layout variations
+- Cover image styles
+- Chart/graphic styles
+
+**Template Updates:**
+- Super Admin publishes new templates
+- Agencies gain access based on plan tier
+
+---
+
+## Pricing Tiers
+
+| Feature | Pro Annual | Pro Monthly | Enterprise Annual | Enterprise Monthly |
+|---------|------------|-------------|-------------------|-------------------|
+| **Price** | $10,000/yr | $2,000/mo | $20,000/yr | $5,000/mo |
+| **Seats (Clients)** | 50 | 50 | 200 | 200 |
+| **Templates** | 5 | 5 | All | All |
+| **Domain** | Unbranded | Unbranded | Custom | Custom |
+| **API Keys** | BYOK | BYOK | Included ($1k/mo) | Included ($1k/mo) |
+| **Client Image Upload** | No | No | Yes | Yes |
+
+---
+
+## Technical Overview
+
+**Stack:**
+- Frontend: React/Next.js (agency designs their own)
+- Backend: FastAPI (Python)
+- PDF Generation: WeasyPrint + Custom HTML/CSS Templates
+- Task Queue: Celery + Redis
+- Database: PostgreSQL
+- File Storage: Private server (authAPI.net / sec-admn.com)
+- Image Source: Freepik API
+
+**API-First Design:**
+- Agencies primarily interact via API/CSV
+- Frontend is secondary (demo/sales tool)
+- Programmatic generation is the priority
+
+---
+
+## Success Metrics
+
+| Metric | Target |
+|--------|--------|
+| Agency signups (Year 1) | 50-100 |
+| Revenue (Year 1) | $500K - $2.6M |
+| Content pieces generated | 100,000+ |
+| Agency retention | 80%+ |
+
+---
+
+## Competitive Advantage
+
+1. **Design quality** — Output looks like McKinsey, not Jasper.ai
+2. **Research depth** — Not shallow blog content. Real thought leadership.
+3. **True white-label** — Agencies own the client relationship entirely.
+4. **Programmatic-first** — Built for scale, not one-off generation.
+5. **Dynamic visuals** — Charts and graphics generated automatically.
+
+---
+
+## Roadmap Considerations (Post-MVP)
+
+- Conversational input flow (brainstorming mode)
+- Engagement metrics integration
+- Website distribution
+- OAuth bridge product integration
+- Enhanced search/sort/status for content library
+- Auto-distribute as premium feature
+- Light in-app editing capability
+
+---
+
+## Document History
+
+| Version | Date | Author | Changes |
+|---------|------|--------|---------|
+| 1.0 | Jan 2, 2026 | Oxford Pierpont | Initial product definition |

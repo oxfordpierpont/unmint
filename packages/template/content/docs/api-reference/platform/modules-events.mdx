@@ -1,0 +1,130 @@
+---
+title: "Modules and events"
+description: "Manifest-first registration, capability contracts, event topics, and gateway behavior."
+---
+## Contract status
+
+`Canonical interface contract`
+
+The source docs are explicit that module manifests, capability declarations, and the event bus are foundational and non-optional.
+
+## Source documents
+
+- [aiConnected Platform foundation PRD](/docs/knowledge-base/aiconnected-business-platform/aiconnected-platform-foundation-prd)
+- [aiConnected Platform MVP specification](/docs/knowledge-base/aiconnected-business-platform/aiconnected-platform-v1-mvp-specification)
+- [aiConnected Platform v2 port map](/docs/knowledge-base/aiconnected-business-platform/aiconnected-platform-v2-port-map)
+
+## Module manifest contract
+
+Every module must declare itself through a manifest. The MVP spec gives this example shape:
+
+```json
+{
+  "id": "voice-hub",
+  "name": "Voice AI Hub",
+  "version": "1.0.0",
+  "developer": "aiConnected",
+  "routes": ["/voice", "/voice/calls", "/voice/settings"],
+  "permissions": ["contacts.read", "contacts.write", "events.emit"],
+  "capabilities": {
+    "inputs": ["contact_id", "script", "voice_profile_id"],
+    "outputs": ["call_record", "transcript", "call_status"],
+    "events_emitted": ["voice.call.started", "voice.call.completed", "voice.call.failed"],
+    "events_consumed": ["contact.updated", "kb.updated"]
+  },
+  "data_schemas": ["voice_calls", "voice_profiles", "transcripts"]
+}
+```
+
+The v2 port map extends the manifest with top-level `events_emitted` and `events_consumed` arrays if your package model separates them from `capabilities`.
+
+## What the shell does with a manifest
+
+When a valid manifest is registered, the shell is expected to:
+
+- Validate the contract
+- Register routes
+- Add navigation metadata
+- Enforce declared permissions
+- Subscribe the module to relevant events
+- Publish the module's capabilities to the registry
+- Connect the manifest to its isolated runtime target
+
+## Capability registry expectations
+
+The capability registry is the searchable index of reusable building blocks. At minimum it should support:
+
+- Module identity
+- Inputs
+- Outputs
+- Events emitted
+- Events consumed
+- Permissions
+- Runtime target
+- Status
+- Version
+- Installability by workspace
+
+The layout manager and AI module creator depend on this registry for reuse checks and builder automation.
+
+## Event bus rules
+
+Events are the only approved cross-module interconnection mechanism besides declared gateway interfaces.
+
+Required properties:
+
+| Field | Purpose |
+|---|---|
+| `event_name` | Stable topic name such as `voice.call.completed` |
+| `module_key` | Producing module |
+| `workspace_id` | Tenant scope |
+| `payload` | Event data |
+| `occurred_at` | Ordering and audit |
+| `correlation_id` | Cross-service traceability |
+| `contact_id` | Shared lead context when applicable |
+
+## Known event patterns from source docs
+
+| Topic | Source context |
+|---|---|
+| `chat.session.started` | Chat manifest example in the v2 port map |
+| `chat.message.sent` | Chat manifest example in the v2 port map |
+| `chat.lead.captured` | Chat manifest example in the v2 port map |
+| `chat.lead.warmed` | Chat manifest example in the v2 port map |
+| `chat.session.ended` | Chat manifest example in the v2 port map |
+| `kb.published` | Chat consumes this in the v2 port map |
+| `voice.call.completed` | Chat and shared shell logic consume this in platform docs |
+| `contact.updated` | Shared entity update event mentioned across platform docs |
+
+## Gateway behavior
+
+The API gateway must:
+
+- Authenticate the caller
+- Resolve workspace and permission context
+- Forward the request to the correct module runtime
+- Enforce rate limits
+- Preserve audit and correlation metadata
+- Prevent direct module-to-module trust bypass
+
+The gateway must route dynamically. It cannot rely on hardcoded knowledge of only first-party modules.
+
+## Import and extension model
+
+The foundation PRD describes a longer-term import system for GitHub repos, WordPress plugins, and n8n workflows. The API implications are:
+
+- Imported apps still end in a validated manifest
+- Original code is preserved
+- Normalized artifacts are separate
+- New unsupported behavior creates new SDK entries rather than hidden one-off logic
+
+## Validation checklist
+
+Before a module is published:
+
+1. Manifest passes schema validation.
+2. Route targets resolve to an isolated runtime.
+3. Permissions are least-privilege.
+4. Events use stable namespaced topics.
+5. Shared entity reads are declared.
+6. No private-table cross-access exists.

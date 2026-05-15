@@ -1,0 +1,35 @@
+---
+title: "Fluid UI architecture"
+description: "Feature-level API contract for activity-based UI state, invisible OS behavior, and cross-surface interface adaptation."
+---
+## Contract status
+
+`Derived implementation contract`
+
+## Source document
+
+- [Fluid UI architecture](/docs/knowledge-base/aiconnected-os/aiconnected-os-19-fluid-ui-architecture)
+
+## Feature purpose
+
+Defines adaptive interface behavior that changes with environment, activity, and surface constraints.
+
+## Required operations
+
+- Resolve UI state from activity and device context
+- Switch interface modes without losing task continuity
+- Persist ambient or invisible OS state transitions
+- Feed routing and display preferences into downstream modules
+
+## Suggested resources
+
+- `ui_contexts`
+- `ui_modes`
+- `surface_adaptations`
+- `ui_state_transitions`
+
+## Implementation notes
+
+- Keep this feature workspace-scoped and persona-aware where applicable.
+- Preserve authorship, timestamps, and auditability for all state changes.
+- Treat the source doc as the behavioral specification even where final route names remain open.

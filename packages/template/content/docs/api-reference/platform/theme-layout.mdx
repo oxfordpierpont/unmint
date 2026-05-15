@@ -1,0 +1,122 @@
+---
+title: "Themes and layouts"
+description: "The white-label theme engine and the Layout Manager API surface used to edit and generate screens."
+---
+## Contract status
+
+- `Canonical interface contract` for theme inheritance and visual builder behavior
+- `Canonical route contract` for the Layout Manager APIs documented in the layout manager PRD
+
+## Source documents
+
+- [aiConnected Platform foundation PRD](/docs/knowledge-base/aiconnected-business-platform/aiconnected-platform-foundation-prd)
+- [aiConnected v2 layout manager PRD](/docs/knowledge-base/aiconnected-business-platform/layout-manager/layout-manager-codex-prd)
+- [aiConnected Platform v2 port map](/docs/knowledge-base/aiconnected-business-platform/aiconnected-platform-v2-port-map)
+
+## Theme model
+
+The platform uses shadcn/ui through `@aiconnected/ui` and tenant theming through CSS variables.
+
+### Theme inheritance
+
+```text
+Platform defaults
+  └── Agency theme
+        └── Business theme
+```
+
+### Required theme rules
+
+- No hardcoded color values in platform-owned UI
+- All colors resolve through CSS variables
+- Theme changes are previewable before publish
+- Theme inheritance is explicit and auditable
+- Module-built first-party UI must use the shared UI package
+
+## Layout manager scope
+
+The Layout Manager has two operating modes:
+
+1. Edit existing screens
+2. Create new modules through AI-assisted generation
+
+It is the visual authoring layer for layouts, not the owner of backend business logic.
+
+## Canonical route contract
+
+The layout manager PRD defines these routes directly.
+
+### Session and draft APIs
+
+| Method | Route | Purpose |
+|---|---|---|
+| `POST` | `/api/layout-manager/sessions` | Start an editing session from a screen or module context |
+| `GET` | `/api/layouts/{layoutId}/draft` | Load the current draft |
+| `POST` | `/api/layouts/{layoutId}/save` | Save a draft snapshot |
+| `POST` | `/api/layouts/{layoutId}/autosave` | Persist autosave state |
+
+### Lifecycle APIs
+
+| Method | Route | Purpose |
+|---|---|---|
+| `POST` | `/api/layouts/{layoutId}/preview` | Build a preview artifact |
+| `POST` | `/api/layouts/{layoutId}/test` | Run validation and test workflows |
+| `POST` | `/api/layouts/{layoutId}/publish` | Publish the layout |
+| `POST` | `/api/layouts/{layoutId}/rollback` | Restore a prior version |
+
+### Binding APIs
+
+| Method | Route | Purpose |
+|---|---|---|
+| `GET` | `/api/capabilities/search` | Find reusable components or capabilities |
+| `POST` | `/api/layouts/{layoutId}/bindings/connect-existing` | Bind an existing capability |
+| `POST` | `/api/layouts/{layoutId}/bindings/create-new/start` | Begin creation of a new binding |
+| `GET` | `/api/layouts/{layoutId}/bindings/create-new/{jobId}` | Poll binding creation state |
+
+### AI orchestration APIs
+
+| Method | Route | Purpose |
+|---|---|---|
+| `POST` | `/api/layout-manager/ai/jobs` | Start an AI builder job |
+| `GET` | `/api/layout-manager/ai/jobs/{jobId}` | Fetch job status |
+| `POST` | `/api/layout-manager/ai/jobs/{jobId}/approve-plan` | Approve the generated plan |
+| `POST` | `/api/layout-manager/ai/jobs/{jobId}/return-to-builder` | Merge AI output back into builder state |
+
+### Registry search example
+
+```http
+GET /api/layout-manager/component-registry/search?q=phone&category=input
+```
+
+## Event stream contract
+
+The PRD defines a session event stream named `layout.session.events` over SSE or WebSocket.
+
+Supported event types:
+
+- `AUTOSAVE_SUCCESS`
+- `VALIDATION_UPDATED`
+- `AI_WORKFLOW_STATE_CHANGED`
+- `HISTORY_APPENDED`
+- `PREVIEW_READY`
+- `TEST_RESULT_READY`
+- `PUBLISH_COMPLETED`
+- `ROLLBACK_COMPLETED`
+
+## AI workflow state machine
+
+The mandatory AI workflow is:
+
+```text
+intent_captured -> clarifying -> reuse_check -> plan_ready -> draft_generated -> builder_returned
+```
+
+The PRD also states:
+
+- Prefer reuse over net-new generation.
+- Never auto-publish.
+- Quarantine failed AI artifacts from user drafts.
+
+## Build guidance
+
+Treat the Layout Manager as a versioned authoring subsystem with strict rollback rules. It should be safe for non-technical operators precisely because draft and publish boundaries are explicit.

@@ -1,0 +1,35 @@
+---
+title: "Persona skill slots"
+description: "Feature-level API contract for persona skill-slot assignment, capability constraints, and explainable refusals."
+---
+## Contract status
+
+`Derived implementation contract`
+
+## Source document
+
+- [Persona skill slots](/docs/knowledge-base/aiconnected-os/aiconnected-os-12-persona-skill-slots)
+
+## Feature purpose
+
+Defines fixed or governed capability slots that shape what a persona is allowed to do.
+
+## Required operations
+
+- Assign skill slots to a persona
+- Validate whether a requested action fits available skills
+- Return explainable refusals when a capability is missing
+- Support administrator changes to slot assignments
+
+## Suggested resources
+
+- `persona_skill_slots`
+- `skill_assignments`
+- `capability_constraints`
+- `refusal_logs`
+
+## Implementation notes
+
+- Keep this feature workspace-scoped and persona-aware where applicable.
+- Preserve authorship, timestamps, and auditability for all state changes.
+- Treat the source doc as the behavioral specification even where final route names remain open.

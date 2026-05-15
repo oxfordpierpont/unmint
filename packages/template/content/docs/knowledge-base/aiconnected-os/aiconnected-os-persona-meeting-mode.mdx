@@ -1,0 +1,323 @@
+---
+title: "Meeting Mode — PRD Section"
+description: "Feature Overview Meeting Mode is a single button behavioral toggle that switches any persona from active conversationalist to passive listener. When activate..."
+---
+<Info>
+Normalized for Mintlify from `knowledge-base/aiconnected-os/aiConnectedOS-persona-meeting-mode.mdx`.
+</Info>
+# Meeting Mode — PRD Section
+
+## Feature Overview
+
+Meeting Mode is a single-button behavioral toggle that switches any persona from active conversationalist to passive listener. When activated, the persona records, transcribes, and contextualizes everything it hears — but it does not respond, interject, or surface anything unless the user explicitly calls on it by name.
+
+This is not a virtual meeting bot. This is not an AI notetaker that joins a Google Meet or Zoom call. Meeting Mode is designed for **real-world, in-person situations** — the user is in a room with other people, and their AI persona is present through their phone, laptop, tablet, or eventually wearable devices like smart glasses or watches. The persona is listening to everything, building understanding in real time, but staying completely silent unless directly addressed.
+
+The importance of this feature cannot be overstated. Every current AI assistant — Siri, Google Assistant, Alexa, ChatGPT voice — has the same fundamental problem: it responds to everything. If you have an AI running and you're in a conversation with another human, the AI will try to participate. It will try to answer questions that weren't directed at it. It will try to be helpful when helpfulness is unwanted. Meeting Mode solves this by giving the user a single, decisive control: **press the button, and your persona shuts up and listens.**
+
+This becomes exponentially more important as AI moves into wearable form factors. When people are wearing AI-enabled glasses, when AI is running on their watch, when AI is truly ambient — the ability to quickly toggle between "talk to me" and "just listen" is not a nice-to-have. It is the most basic requirement for AI to function in social environments without being disruptive.
+
+---
+
+## 1. Core Concept
+
+Meeting Mode is a **persona behavioral state**, not a separate tool or feature. It uses the same persona identity, memory, personality, and cognitive systems that already exist. The only thing that changes is the persona's output behavior.
+
+### Normal State
+- Persona listens and responds
+- Persona offers suggestions, asks questions, participates
+- Persona behaves as an active collaborator
+
+### Meeting Mode State
+- Persona listens and records — continuously
+- Persona processes and understands everything it hears — continuously
+- Persona says and surfaces **nothing** unless explicitly invoked by the user
+- When invoked, persona responds with full awareness of everything heard so far
+- When not invoked, persona is completely silent — no nudges, no suggestions, no alerts
+
+The toggle is binary. Meeting Mode is on or off. When it's on, the persona is a long-running transcript and recording engine with full contextual intelligence behind it — but zero unsolicited output.
+
+---
+
+## 2. Why This Matters
+
+### 2.1 AI Has a "Won't Shut Up" Problem
+
+Every voice-enabled AI system today assumes that if it can hear you, it should respond to you. This works fine in a one-on-one interaction. It breaks completely in any multi-person social context. If the user is in a meeting with their attorney and their AI persona hears the attorney ask a question, the persona will try to answer it. If the user is at a dinner party and someone says something that sounds like a prompt, the persona activates. This is not just annoying — it's socially unacceptable and potentially harmful in sensitive contexts like legal, medical, or financial conversations.
+
+Meeting Mode is the fix. One button. Persona goes quiet. Problem solved.
+
+### 2.2 Real-World Presence for Personas
+
+Without Meeting Mode, personas only exist inside the aiConnected environment — inside the app, inside the browser, inside the desktop. With Meeting Mode, personas step out into the user's physical world. The user walks into a client meeting, presses the Meeting Mode button, and their persona is now in the room with them. Not visibly, not disruptively, but present — absorbing everything, ready to help when asked.
+
+This is the bridge between digital assistant and ambient intelligence. It's what makes aiConnected feel like an extension of the user rather than a tool they switch to.
+
+### 2.3 Future-Proofing for Wearables
+
+When AI glasses become mainstream — and they will — the number one UX challenge will be: how does the AI know when to talk and when to listen? You can't have glasses that respond to every sentence they hear. You can't have a watch that buzzes with AI commentary every time someone speaks. Meeting Mode establishes the interaction pattern now, on phones and laptops, so that when the hardware catches up, the behavioral model is already proven.
+
+The gesture could evolve: a button tap on the phone today, a temple tap on glasses tomorrow, a wrist flick on a watch. The underlying concept is the same — the user signals "listen, don't talk" and the persona obeys immediately.
+
+---
+
+## 3. The Button
+
+### 3.1 Placement and Access
+
+Meeting Mode is activated via a prominent, single-tap button. It should be accessible from:
+
+- **Persona avatar/bubble**: Tap and hold or dedicated Meeting Mode icon within the persona's floating presence
+- **Command Bar (⌘K)**: Type "meeting mode" → instant toggle
+- **Quick action**: On mobile, a lock-screen widget or notification shade toggle (similar to Do Not Disturb)
+- **Persistent shell**: A small, always-accessible icon in the system tray / dock area
+- **Voice**: "Sally, meeting mode" — this is the last voice command the persona responds to before going silent
+
+### 3.2 Visual Feedback
+
+When Meeting Mode is active:
+
+- The persona's avatar shifts to a distinct visual state — a subtle listening indicator (small waveform, pulsing ring, or a mic icon overlay)
+- The indicator is **minimal and private** — it should not draw attention from other people in the room. No bright animations. No large banners. Just enough for the user to confirm at a glance that recording is active.
+- On mobile: a small persistent indicator in the status bar (similar to how iOS shows a colored dot when the mic is active)
+- On desktop: a subtle change in the persona bubble or dock icon
+
+### 3.3 One-Tap On, One-Tap Off
+
+No configuration screens on activation. No modals. No "are you sure?" dialogs. The user presses the button, Meeting Mode starts immediately. The user presses it again, Meeting Mode ends. Speed matters here — if the user is about to walk into a room, they need to be able to toggle this in under one second.
+
+All configuration (default behaviors, summary preferences, recording quality) is set ahead of time in persona settings or Meeting Mode preferences. The button itself is instant.
+
+---
+
+## 4. Behavior During Meeting Mode
+
+### 4.1 What the Persona Does
+
+- **Records audio** continuously from the device microphone
+- **Transcribes** in real time (the transcript is being built live, even if the user doesn't see it until later)
+- **Processes contextually**: The persona doesn't just transcribe — it understands. It knows who the user is, what projects they're working on, what was discussed yesterday. It applies this context to what it hears.
+- **Identifies speakers** where possible (speaker diarization)
+- **Flags significant moments** internally — decisions made, questions asked, commitments given, contradictions with known information — but does not surface any of this unless asked
+
+### 4.2 What the Persona Does NOT Do
+
+- Does not speak, type, or surface any output unprompted
+- Does not send notifications, nudges, or alerts
+- Does not react to questions or statements heard in the room — even if they sound like they're directed at the AI
+- Does not attempt to answer on behalf of the user
+- Does not make sounds, vibrations, or visual alerts (beyond the minimal recording indicator)
+
+This is absolute. Meeting Mode means the persona is **inert** from an output perspective. The only exception is if the user explicitly invokes it.
+
+### 4.3 Invoking the Persona During Meeting Mode
+
+The user can call on the persona at any time during Meeting Mode. This doesn't end Meeting Mode — it's a momentary interaction within the ongoing silent recording.
+
+Invocation methods:
+
+- **Voice**: "Sally, [question]" — the persona responds to its wake word/name, answers the question, then returns to silent mode
+- **Text**: The user types a question in the chat interface — the persona responds in text, silently, without audio output (important: if the user is in a room with people, the response should be text-only by default so others don't hear it)
+- **Gesture**: Tap the persona bubble → type or whisper a question → get a text response
+
+When invoked, the persona has full context of everything recorded so far. The user can ask:
+
+- "What did they just say about the timeline?"
+- "Does that number match what we had in the proposal?"
+- "Summarize the last 10 minutes"
+- "What questions have they asked that I haven't answered yet?"
+
+After responding, the persona returns to silent observation. Meeting Mode continues.
+
+---
+
+## 5. Output When Meeting Mode Ends
+
+### 5.1 Immediate Output
+
+When the user taps the button to end Meeting Mode, the persona produces:
+
+- **Full transcript**: Timestamped, with speaker labels where identified
+- **Meeting summary**: A contextually intelligent summary — not a generic "here's what was discussed" but a summary informed by the persona's existing knowledge of the user's projects, goals, and relationships
+
+### 5.2 Summary Structure
+
+The summary is persona-authored. It reflects what the persona knows, not just what it heard. It includes:
+
+- **What happened**: Brief overview (2-3 sentences)
+- **Decisions made**: What was agreed upon during the meeting
+- **Action items**: Tasks mentioned, with attribution where identifiable
+- **Open questions**: Things that were raised but not resolved
+- **Contextual notes**: Observations the persona makes based on its broader knowledge — e.g., "The client mentioned considering a competitor. This hasn't come up before." or "The timeline they proposed conflicts with the deadline we discussed last week."
+- **Connections**: Links to related conversations, tasks, or artifacts already in the user's workspace
+
+### 5.3 Memory Integration
+
+Everything from the meeting is absorbed into the persona's memory through the standard CogniGraph pipeline. The meeting becomes a referenceable event in the persona's lived experience. Days or weeks later, the user can say:
+
+- "What did my attorney say about the contract clause?"
+- "In that client meeting last Tuesday, did they agree to the revised price?"
+- "Pull up everything from my meetings this month about the product launch"
+
+The persona answers from memory, not from a transcript search. It remembers the meeting the way a human assistant who was in the room would remember it.
+
+---
+
+## 6. Virtual Meeting Integration (Extension Feature)
+
+While Meeting Mode is fundamentally designed for in-person, real-world use, there is a natural extension: joining virtual meetings as a participant.
+
+This would work as a sub-feature within Meeting Mode:
+
+- If the user has a Google Meet, Zoom, or Teams meeting, the persona can optionally join as a bot participant (similar to Otter.ai or Fireflies)
+- The persona operates under the same Meeting Mode rules — silent unless called upon
+- The advantage over standalone AI notetakers is that the persona already has context about the user, the project, and the participants (if they've been mentioned before)
+- The persona's summary is richer because it connects what was said in the virtual meeting to everything else it knows
+
+This is a separate implementation effort from core Meeting Mode and should be treated as a Phase 2 extension. Core Meeting Mode — the button, the local recording, the behavioral toggle — ships first and works independently of any virtual meeting integration.
+
+---
+
+## 7. Settings and Configuration
+
+These settings are configured **in advance**, not at the moment of activation. The button is always instant.
+
+### 7.1 Per-Persona Meeting Mode Defaults
+
+Located in the persona's settings panel:
+
+- **Default recording quality**: Standard / High / Maximum
+- **Transcription language**: Auto-detect / Specified language
+- **Auto-summary on end**: Yes / No / Ask me
+- **Summary detail level**: Brief / Standard / Comprehensive
+- **Response mode when invoked**: Text only (silent) / Whisper audio / Full voice — the user chooses based on their typical use case. A lawyer meeting is text-only. A solo brainstorm walk might be voice.
+- **Storage**: Local only / Sync to cloud / Instance-specific storage
+
+### 7.2 Global Meeting Mode Settings
+
+Located in the system-level settings:
+
+- **Quick access**: Enable/disable lock screen widget, notification shade toggle, keyboard shortcut
+- **Recording indicator style**: Minimal dot / Waveform / Icon overlay
+- **Auto-end conditions**: End after X minutes of silence / End when calendar event ends / Manual only
+- **Privacy defaults**: Local-only storage by default / Notification reminders for consent
+
+---
+
+## 8. Privacy and Legal Considerations
+
+### 8.1 Recording Consent
+
+Meeting Mode records audio from the device microphone. Depending on jurisdiction, recording conversations may require one-party or all-party consent.
+
+The system should:
+
+- Display a clear, persistent visual indicator that recording is active (both a UX requirement and a legal safeguard)
+- Offer an optional pre-meeting consent reminder: a brief prompt the user can dismiss, reminding them to disclose recording if required by their jurisdiction
+- Store recordings locally by default — cloud sync is opt-in
+- Provide easy, immediate deletion of any recording at any time
+- Never record without explicit user activation (no background recording, no auto-start without the user pressing the button)
+
+### 8.2 Data Handling
+
+- Transcripts and recordings are tied to the specific persona and Instance
+- They are subject to the same data retention and privacy policies as all other persona memory
+- If the user deletes a persona, all associated Meeting Mode data is deleted
+- If the user opts into the Dream Sharing system, Meeting Mode transcripts are **excluded by default** — raw meeting content is inherently more likely to contain proprietary or sensitive information than normal persona interactions
+
+---
+
+## 9. Technical Considerations
+
+### 9.1 Audio Pipeline
+
+Meeting Mode requires a real-time audio processing pipeline:
+
+- **Capture**: Device microphone access (browser API or native app permissions)
+- **Streaming transcription**: Audio streamed to a speech-to-text service (Whisper, Deepgram, or equivalent) for real-time transcription
+- **Speaker diarization**: Identifying distinct speakers in the audio stream
+- **Buffering**: Local audio buffer so that if connectivity drops, no content is lost
+- **Compression**: Efficient audio storage for potentially long recordings (meetings can run hours)
+
+### 9.2 Context Window Management
+
+A one-hour meeting can produce 8,000-12,000 words of transcript. This exceeds what can fit in a single LLM context window alongside the persona's existing context. The system should:
+
+- Use rolling summarization during the meeting — the persona maintains a compressed running understanding that fits within its working context
+- Store the full transcript externally (in CogniGraph or document storage) for later retrieval
+- When the user invokes the persona mid-meeting, assemble a focused context: current running summary + the last few minutes of raw transcript + the user's specific question
+- When generating the post-meeting summary, process the full transcript in chunks if necessary
+
+### 9.3 Battery and Performance
+
+On mobile devices, continuous audio recording and real-time transcription are battery-intensive. The system should:
+
+- Optimize for low-power audio capture where possible
+- Offer a "lightweight mode" that records audio locally but defers transcription until after the meeting ends (saves significant processing power)
+- Warn the user if battery is low when Meeting Mode is activated
+- Provide estimated battery drain ("Meeting Mode will use approximately X% battery per hour")
+
+---
+
+## 10. Use Cases
+
+### 10.1 Attorney Meeting
+The user is meeting with their lawyer to discuss a contract. They press the Meeting Mode button before walking in. The persona listens to the entire conversation. Afterward, it produces a summary with every clause discussed, every concern raised, and every action item. The user can later ask the persona to cross-reference what the attorney said against the actual contract text.
+
+### 10.2 Client Presentation
+The user is presenting a website they built to a client. The persona was involved in building it and already knows every design decision. During the meeting, the client asks about the color choices. The user discreetly texts the persona: "What was our rationale for the blue palette?" The persona responds silently with the exact reasoning from their earlier conversations.
+
+### 10.3 Conference or Lecture
+The user attends a conference talk. They activate Meeting Mode and pocket their phone. After the talk, the persona provides a full summary, highlights the most relevant points based on the user's known interests and projects, and suggests follow-up actions.
+
+### 10.4 Medical Appointment
+The user visits their doctor. Meeting Mode records the entire appointment. Afterward, the persona provides a clear summary of the diagnosis, prescribed medications, dosages, follow-up instructions, and any questions the user forgot to ask. This is especially valuable for users who struggle to retain medical information under stress.
+
+### 10.5 Networking Event (Future: Wearable AI)
+The user is wearing AI-enabled glasses. They're at a networking event. Meeting Mode is on. They're having natural conversations with people. Their persona is silently cataloging names, companies, topics discussed, and follow-up opportunities. After the event, the persona provides a structured summary of everyone the user spoke with and what was discussed.
+
+### 10.6 Casual Social Situations
+The user is at a dinner with friends and someone recommends a book, a restaurant, a travel destination. Meeting Mode catches all of it. Later, the user asks: "What was that restaurant my friend mentioned at dinner?" The persona knows.
+
+---
+
+## 11. Relationship to Existing Architecture
+
+### 11.1 Chat Backbone
+Meeting Mode operates within the chat backbone as described in the Fluid UI Architecture. Chat is "always listening, always logging" — Meeting Mode formalizes this into an explicit user-controlled state with audio input and strict output suppression.
+
+### 11.2 Persona Engine
+Meeting Mode is a behavioral state within the existing Persona Engine. The persona's identity, memory, personality, and skills remain unchanged. Only its output behavior is modified.
+
+### 11.3 Interaction State Engine
+Meeting Mode is registered as an interaction state. The Embodiment Resolver knows that during Meeting Mode, the persona's manifestation is: silent background cognition with on-demand text or whisper response. No chat bubbles. No suggestions. No proactive behavior.
+
+### 11.4 CogniGraph
+Meeting transcripts and summaries flow into CogniGraph like any other memory event. The open thinking layer processes what was heard. The closed thinking layer integrates it into the persona's deeper understanding over time (potentially during the persona's sleep cycle).
+
+### 11.5 Instance Context
+If Meeting Mode is activated within a specific Instance (e.g., "Client – Med Spa C"), all meeting data is associated with that Instance. The persona's summary and memory integration are informed by everything else in that Instance.
+
+---
+
+## 12. Implementation Priority
+
+Meeting Mode should be built in two phases:
+
+### Phase 1: Core Toggle (Ship First)
+- The button (activate/deactivate — one tap, instant, no configuration at activation time)
+- Audio recording and local storage
+- Real-time or deferred transcription
+- Silent behavioral state (zero output unless invoked)
+- Text-based invocation during recording
+- Post-meeting transcript and summary
+- Memory integration via CogniGraph
+
+### Phase 2: Extensions (Ship Later)
+- Speaker diarization
+- Virtual meeting bot integration (Google Meet, Zoom, Teams)
+- Advanced contextual summaries with cross-reference to existing Instance data
+- Wearable device support (glasses, watches)
+- Calendar-triggered auto-prompts ("Meeting starting in 5 minutes — activate Meeting Mode?")
+- Lightweight / battery-saver recording mode
+- Configurable nudge mode (optional — persona can send private nudges if user explicitly opts in, breaking from the strict silent default)

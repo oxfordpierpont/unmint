@@ -1,0 +1,288 @@
+---
+title: "funnelChat AI Website Chat Assistant"
+description: "A comprehensive AI powered chat system for WordPress websites that captures leads and provides intelligent customer support. Built for service based business..."
+---
+<Info>
+Normalized for Mintlify from `knowledge-base/aiconnected-apps-and-modules/modules/funnelChat/legacy-funnelChat-overview.mdx`.
+</Info>
+# **funnelChat \- AI Website Chat Assistant**
+
+A comprehensive AI-powered chat system for WordPress websites that captures leads and provides intelligent customer support. Built for service-based businesses, particularly in debt collection and accounts receivable.
+
+## **🌟 Features**
+
+* **Emotionally Intelligent AI**: Detects user tone and responds empathetically  
+* **Adaptive Lead Capture**: Naturally collects user information during conversation  
+* **Live Web Research**: AI searches for current information to provide accurate answers  
+* **Multi-language Support**: Supports English, Spanish, French, German, and Portuguese  
+* **Flexible Interface**: Chat widget, inline bar, and fullscreen modes  
+* **Usage-based Billing**: Integrated with Stripe for metered billing  
+* **Privacy Compliant**: Consent management and data protection built-in  
+* **Real-time Analytics**: Track conversations, emotional tones, and conversion rates
+
+## **📁 File Structure**
+
+```
+funnelchat/
+├── funnelchat.php                 # Main plugin file
+├── admin/
+│   └── settings-page.php          # Admin settings interface
+├── templates/
+│   └── chat-interface.php         # Chat UI template
+├── assets/
+│   ├── js/
+│   │   └── funnelchat.js          # Frontend JavaScript
+│   └── css/
+│       └── funnelchat.css         # Styling
+├── lang/
+│   ├── en.json                    # English translations
+│   ├── es.json                    # Spanish translations
+│   ├── fr.json                    # French translations
+│   ├── de.json                    # German translations
+│   └── pt.json                    # Portuguese translations
+├── includes/
+│   ├── api-endpoints.php          # Additional REST API endpoints
+│   └── utilities.php              # Utility functions
+└── n8n/
+    └── workflow.json              # n8n automation workflow
+```
+
+## **🚀 Installation & Setup**
+
+### **1\. WordPress Plugin Installation**
+
+1. Upload the `funnelchat` folder to `/wp-content/plugins/`  
+2. Activate the plugin through the WordPress admin  
+3. Navigate to **funnelChat** in the admin menu
+
+### **2\. Supabase Database Setup**
+
+1. Create a new Supabase project  
+2. Run the SQL schema from `supabase_schema.sql`  
+3. Note your Supabase URL and anon key
+
+### **3\. n8n Workflow Setup**
+
+1. Import the workflow from `n8n/workflow.json`  
+2. Configure environment variables:
+
+```
+SUPABASE_URL=your_supabase_urlSUPABASE_ANON_KEY=your_supabase_keySTRIPE_SECRET_KEY=your_stripe_secret_keySERP_API_KEY=your_serpapi_keyGEMINI_API_KEY=your_gemini_api_key
+```
+
+3. Activate the workflow and note the webhook URL
+
+### **4\. Plugin Configuration**
+
+In WordPress admin, configure:
+
+* **Assistant Name**: Your AI's name (e.g., "Emma")  
+* **Target Industry**: Your business industry  
+* **Business Website**: Your main website URL  
+* **Language**: Primary chat language  
+* **Client ID**: Your unique identifier  
+* **API Endpoint**: Your n8n webhook URL  
+* **Terms & Privacy URLs**: Legal compliance links
+
+### **5\. Stripe Integration**
+
+1. Create Stripe products for your pricing tiers:
+
+   * Free: $0/month  
+   * Basic: $99.97/month (5,000 messages)  
+   * Premium: $149.97/month (12,500 messages)  
+2. Set up metered billing for overages at $0.015/message
+
+3. Configure webhook endpoint: `yoursite.com/wp-json/funnelchat/v1/webhook/stripe`
+
+## **💬 Chat Interface Usage**
+
+### **Chat Widget (Floating Bubble)**
+
+* Appears on all pages as a floating button  
+* Expands into a chat panel when clicked  
+* Suitable for desktop and mobile
+
+### **Chat Bar (Inline)**
+
+* Fixed at bottom of page  
+* Always visible input field  
+* Switches to fullscreen on mobile
+
+### **Fullscreen Chat**
+
+* Dedicated chat experience  
+* Full conversation history  
+* Optimal for extended conversations
+
+## **🔧 Customization**
+
+### **Styling**
+
+Modify `assets/css/funnelchat.css` or add custom CSS:
+
+```css
+:root {
+  --funnelchat-primary: #your-brand-color;
+  --funnelchat-radius: 8px;
+}
+```
+
+### **Language Support**
+
+Add new language files in `/lang/` directory:
+
+```json
+{
+  "greeting_message": "Your translated greeting...",
+  "chat_placeholder": "Your translated placeholder..."
+}
+```
+
+### **AI Prompts**
+
+Customize AI behavior in the n8n workflow:
+
+* **System Prompt**: Define AI personality and role  
+* **Emotional Responses**: Adjust tone adaptation  
+* **Field Extraction**: Customize data collection
+
+## **📊 Analytics & Reporting**
+
+### **Built-in Analytics**
+
+Access via WordPress admin:
+
+* Total conversations  
+* Daily/weekly/monthly trends  
+* Emotional tone analysis  
+* Industry breakdowns  
+* Conversion rates
+
+### **API Endpoints**
+
+```
+GET /wp-json/funnelchat/v1/analytics
+GET /wp-json/funnelchat/v1/usage
+GET /wp-json/funnelchat/v1/status
+```
+
+## **🔒 Privacy & Compliance**
+
+### **Data Storage**
+
+* Conversations stored locally in WordPress  
+* Only usage statistics sent to central system  
+* User consent required before chat initiation
+
+### **GDPR Compliance**
+
+* Consent modal with clear terms  
+* Data retention controls  
+* User data export/deletion capabilities
+
+### **Security**
+
+* API key authentication  
+* Session-based access control  
+* Rate limiting and abuse prevention
+
+## **🛠️ Troubleshooting**
+
+### **Common Issues**
+
+**Chat not appearing:**
+
+* Check if client ID and API endpoint are configured  
+* Verify n8n workflow is active  
+* Check browser console for JavaScript errors
+
+**API connection failed:**
+
+* Test connection in settings page  
+* Verify webhook URL is accessible  
+* Check n8n logs for errors
+
+**High usage alerts:**
+
+* Monitor usage in admin dashboard  
+* Upgrade plan if approaching limits  
+* Check for unusual conversation patterns
+
+### **Debug Mode**
+
+Enable debug logging:
+
+```php
+update_option('funnelchat_enable_logging', true);
+```
+
+View logs in `/wp-content/uploads/funnelchat/debug.log`
+
+## **🔄 Workflow Process**
+
+1. **User initiates chat** → Consent check  
+2. **Message sent** → Client authentication via Supabase  
+3. **AI processing** → Emotional tone detection \+ field extraction  
+4. **Web research** → Live search for current information  
+5. **Response generation** → Gemini AI with context  
+6. **Usage tracking** → Update counts and billing  
+7. **Data logging** → Store conversation in WordPress  
+8. **Response delivery** → Send to user interface
+
+## **💰 Billing Model**
+
+### **Plans**
+
+* **Free**: $0/month, $0.03/message  
+* **Basic**: $99.97/month, 5,000 included messages, $0.015 overage  
+* **Premium**: $149.97/month, 12,500 included messages, $0.015 overage  
+* **Enterprise**: Custom pricing and limits
+
+### **Cost Calculation**
+
+```
+Monthly Cost = Base Plan + (Overage Messages × $0.015)
+```
+
+## **🤝 Support**
+
+### **Documentation**
+
+* Full API documentation: [docs.aiconnected.com](https://docs.aiconnected.com/)  
+* Video tutorials: [youtube.com/aiconnected](https://youtube.com/aiconnected)
+
+### **Contact**
+
+* Email: support@aiconnected.com  
+* Discord: [discord.gg/aiconnected](https://discord.gg/aiconnected)  
+* Phone: 1-800-AI-CONNECT
+
+## **📈 Roadmap**
+
+### **Upcoming Features**
+
+* \[ \] Voice chat integration  
+* \[ \] Video call scheduling  
+* \[ \] CRM integrations (HubSpot, Salesforce)  
+* \[ \] Advanced analytics dashboard  
+* \[ \] Mobile app for chat management  
+* \[ \] AI model fine-tuning  
+* \[ \] Multi-tenant SaaS platform
+
+### **Version History**
+
+* **v1.0.0**: Initial release with core chat functionality  
+* **v1.1.0**: Added emotional intelligence and field extraction  
+* **v1.2.0**: Multi-language support and improved UI  
+* **v1.3.0**: Usage-based billing and analytics
+
+## **📄 License**
+
+funnelChat is proprietary software by aiConnected. Licensed for use with valid subscription only.
+
+---
+
+**Built with ❤️ by aiConnected**
+
+Transform your website visitors into qualified leads with intelligent conversation.

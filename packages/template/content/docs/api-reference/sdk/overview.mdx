@@ -1,0 +1,196 @@
+---
+title: "SDK overview"
+description: "End-to-end guide to the v1 aiConnected SDK surfaces: manifest contracts, client APIs, schemas, CLI scaffolding, and platform-side import flows."
+---
+## Contract status
+
+`Canonical interface contract`
+
+The original v1 platform build in `/Users/MrBobHunter-MacPro/Code/platform.sec-admn.com-2` defines a substantial SDK surface. This section documents how a module developer actually uses it from scaffold to install.
+
+## Source documents
+
+- `platform.sec-admn.com-2/AGENTS.md`
+- `platform.sec-admn.com-2/sdk/README.md`
+- `platform.sec-admn.com-2/docs/platform-app-package-format.md`
+- `platform.sec-admn.com-2/docs/v1-audit/03b-module-manifest-system.md`
+
+## Start here
+
+If you are building a module, follow this path:
+
+1. Scaffold the module with `create-aiconnected-module`.
+2. Fill out `platform-app.json`.
+3. Reuse shared models from `@aiconnected/schemas`.
+4. Expose authenticated function endpoints for declared outputs.
+5. Emit platform events and report usage.
+6. Validate the manifest and package structure.
+7. Import the package through the platform app import APIs.
+8. Verify install, capability wiring, and any required dependencies.
+
+The pages in this section map to that flow:
+
+- [Manifest contracts](/docs/api-reference/sdk/manifest-contracts)
+- [Schemas](/docs/api-reference/sdk/schemas)
+- [Client and CLI](/docs/api-reference/sdk/client-cli)
+- [Platform app APIs](/docs/api-reference/sdk/platform-app-apis)
+- [Capabilities APIs](/docs/api-reference/sdk/capabilities-apis)
+
+## Golden path
+
+### 1. Scaffold the module
+
+```bash
+npx create-aiconnected-module
+```
+
+### 2. Fill out the manifest
+
+```json
+{
+  "schemaVersion": 1,
+  "app": {
+    "key": "voice-ai",
+    "name": "Voice AI",
+    "version": "1.0.0",
+    "category": "customer-facing",
+    "description": "Adds real-time voice to the platform."
+  },
+  "inputs": [
+    {
+      "key": "knowledge-base.search",
+      "kind": "capability",
+      "required": true,
+      "title": "Knowledge base search"
+    }
+  ],
+  "outputs": [
+    {
+      "key": "voice.transcript",
+      "kind": "data",
+      "title": "Voice transcript"
+    }
+  ],
+  "extends": []
+}
+```
+
+### 3. Reuse shared models
+
+```ts
+import type { Contact, Call, UsageRecord } from "@aiconnected/schemas";
+```
+
+### 4. Use the platform client
+
+```ts
+import { createPlatformClientFromEnv } from "@aiconnected/client";
+
+const platform = createPlatformClientFromEnv();
+
+await platform.emit("call.started", { call_id: "call_123", contact_id: "contact_456" });
+await platform.usage("calls_initiated", 1, "calls");
+```
+
+### 5. Import into the platform
+
+Use the platform-side admin import API documented in [Platform app APIs](/docs/api-reference/sdk/platform-app-apis).
+
+## Two SDK layers
+
+The v1 repo explicitly describes two active SDK layers.
+
+### Layer 1: Connection layer
+
+Source package:
+
+- `packages/app-sdk`
+
+Responsibilities:
+
+- Normalize module manifests
+- Validate manifest correctness
+- Assess compatibility against the app catalog
+- Generate connection suggestions
+- Normalize imported UI and color usage during app import
+
+Core functions called out in the repo:
+
+- `normalizeAppManifest()`
+- `validateAppManifest()`
+- `assessAppManifest()`
+
+### Layer 2: Services layer
+
+Source packages:
+
+- `sdk/packages/client`
+- `sdk/packages/manifest`
+- `sdk/packages/schemas`
+- `sdk/packages/ui`
+- `sdk/packages/cli`
+
+Responsibilities:
+
+- Shared data models
+- Manifest schema and validation
+- Platform event, function-call, and usage-reporting client
+- Shared UI components
+- Module scaffolding
+
+## Hard rules from the v1 SDK docs
+
+- App keys are kebab-case.
+- Modules ship a manifest file.
+- Shared models come from `@aiconnected/schemas`.
+- Shared UI imports come from `@aiconnected/ui`.
+- Modules do not connect directly to one another.
+- Cross-module calls go through platform registry or event-bus contracts.
+
+## Compatibility matrix
+
+| Surface | Source of truth | v1 status | Carry into v2 |
+|---|---|---|---|
+| Package import manifest | `packages/app-sdk` | implemented | yes |
+| Validator manifest | `sdk/packages/manifest` | implemented | yes, but unify shape |
+| Shared schemas | `sdk/packages/schemas` | implemented | yes |
+| Platform client | `sdk/packages/client` | implemented | yes |
+| CLI scaffold | `sdk/packages/cli` | implemented | yes |
+| UI package | `sdk/packages/ui` | implemented | yes |
+| Platform app import/catalog APIs | platform routes | implemented | yes |
+| Capabilities import/install APIs | platform routes | implemented | yes |
+
+## v1 reality vs v2 target
+
+### Implemented in v1
+
+- manifest normalization and validation
+- registry-mediated client calls
+- platform app import
+- capability import and install flows
+- shared schema package
+
+### Carry forward to v2
+
+- manifest-first module registration
+- shared schema ownership
+- event and usage reporting
+- admin import and assessment workflow
+
+### Known migration risks
+
+- two overlapping manifest shapes exist in v1
+- app key naming is stricter than some older comments and examples
+- UI component models differ slightly between importer and validator packages
+
+## Common failure points
+
+- module uses snake_case app IDs instead of kebab-case
+- manifest declares required inputs with no provider in the catalog
+- module emits events but never exposes declared outputs
+- module redefines shared models instead of importing them
+- importer accepts the package but returns warnings the team ignores
+
+## What to improve next
+
+If you are implementing v2, the biggest SDK cleanup is to converge the importer manifest and validator manifest into one canonical contract while preserving the good parts of the v1 import-assessment flow.

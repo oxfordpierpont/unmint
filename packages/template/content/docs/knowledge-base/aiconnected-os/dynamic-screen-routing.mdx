@@ -1,0 +1,493 @@
+---
+title: "Dynamic Screen Routing"
+---
+# Dynamic Screen Routing: A Complete Explanation
+
+## What Is This, and Why Would Anyone Need It?
+
+Imagine you're talking to your personal AI assistant—your persona Sally—and she realizes you need to see something: a chart showing your quarterly sales, a color palette for a design project, a document with contract details, or a timeline for your project.
+
+In the real world, if you were talking to a human colleague, they wouldn't just describe the chart to you in abstract terms. They'd pull it up on a screen—theirs or yours—and show you. But they'd also be smart about it. If you were driving, they wouldn't pull out their laptop. If you were in a meeting with other people, they wouldn't shove a screen in your face.
+
+**Dynamic Screen Routing** is exactly that kind of intelligence applied to AI personas. It's how your persona decides:
+- *Should I show this visually, or just describe it verbally?*
+- *Which device should I display it on?*
+- *Is this the right moment for a screen, or should I wait/defer/remind you later?*
+
+This feature ensures that visual information appears on the right device at the right time—and doesn't appear at all when you can't actually use it.
+
+---
+
+## Part 1: The Problem With Generic Visual Assistants
+
+Today's voice assistants (Siri, Alexa, ChatGPT) have a limitation: they're not very smart about *when* to show you something.
+
+### Example: Siri While Driving
+
+You ask Siri: "Show me nearby restaurants."
+
+Siri's response: Your iPhone displays a list of restaurants on the screen, with maps, ratings, and directions.
+
+**The problem**: You're driving. You can't look at the screen. Your hands are on the wheel, your eyes are on the road. The information is useless to you right now.
+
+A human wouldn't do this. A human colleague, if you asked them for nearby restaurants while driving, would either:
+- Describe a few options verbally ("There's an Italian place about two miles up on the left, really good reviews")
+- Say "Let me send you the details when you get there"
+- Suggest you pull over if you need to review options
+
+But Siri just shoves the screen at you anyway.
+
+### Example: Alexa in a Meeting
+
+You're in a meeting with your boss and colleagues. Your Amazon Alexa smart speaker is in the conference room (maybe there for taking notes).
+
+You ask Alexa: "Show me the latest sales report."
+
+Alexa might display something on a nearby screen—or suggest you check your phone. But here's the thing: you're in a meeting. You probably shouldn't be looking at your phone. It's rude and distracting.
+
+A human in your role wouldn't pull out a laptop and start reviewing reports while their boss is talking. They'd wait until after the meeting.
+
+But Alexa doesn't consider context. It just responds to the request mechanically.
+
+---
+
+## Part 2: What Dynamic Screen Routing Actually Does
+
+**Dynamic Screen Routing** adds a layer of *situational intelligence* to your persona. Before deciding whether to display visual information, your persona asks itself:
+
+1. **What does the user need to see?** (Is this something that genuinely requires a visual component?)
+2. **What's the user's current situation?** (Are they driving? In a meeting? At home?)
+3. **Do they have access to a screen right now?** (Can they actually look at one?)
+4. **If yes, which screen should I use?** (Phone, laptop, TV, tablet—which one is most relevant?)
+5. **If no, what's the alternative?** (Describe it verbally? Create a reminder? Wait until later?)
+
+Based on these questions, the persona makes an intelligent decision about whether to route to a screen, which screen to use, or how to present the information verbally instead.
+
+---
+
+## Part 3: Understanding Context (The Foundation)
+
+For Dynamic Screen Routing to work, your persona needs to know what's happening in your life *right now*.
+
+But here's the good news: **She already knows this, because you're using Dynamic Persona Waking.**
+
+Remember: Dynamic Persona Waking tracks your **last active device**. That signal contains massive amounts of contextual information:
+
+### What Last Active Device Tells You
+
+**If your last active device is your car:**
+- You're driving
+- You can't safely look at a screen
+- You have limited ability to interact with complex visual information
+- Audio-only or simple verbal explanations are best
+
+**If your last active device is in Meeting Mode:**
+- You're in a meeting with other people
+- You shouldn't be distracted by your phone
+- Visual information might not be appropriate to access right now
+- If something needs to be shown, it should probably wait or be flagged as a reminder
+
+**If your last active device is your phone or tablet:**
+- You're probably mobile
+- You likely have a small screen in your hand
+- You can glance at information briefly, but not for extended periods
+- This is good for quick references, charts, or notifications
+
+**If your last active device is your computer:**
+- You're at a desk, stationary
+- You have a large screen directly in front of you
+- You can view complex information, documents, or detailed visuals
+- This is ideal for in-depth visual content
+
+**If your last active device is your glasses:**
+- You're mobile, but oriented toward physical space
+- You can view AR overlays or small visual information in your field of vision
+- You can't comfortably read dense documents
+- Augmented reality or minimal visual overlays work best
+
+**If your last active device is a TV or large display:**
+- You're in a shared space or at home
+- You have access to a large screen
+- You can view complex, detailed visual information
+- This is ideal for presentations or detailed information
+
+---
+
+## Part 4: The Decision Logic (How It Actually Works)
+
+Here's the step-by-step process your persona goes through when she wants to show you something:
+
+### Step 1: Does This Require a Visual Component?
+
+Your persona first evaluates: *Does this information genuinely need to be visual?*
+
+**Examples of things that NEED visual components:**
+- A color palette (you need to see the colors)
+- A chart or graph with complex data
+- A design mockup
+- A document with formatting
+- A timeline with spatial layout
+- A map or location-based information
+- A multi-part list with visual hierarchy
+
+**Examples of things that DON'T need visual components:**
+- A simple yes/no answer
+- A straightforward list of 3-5 items
+- A verbal summary
+- Text-based information that can be read or described
+- A time or date
+- A single number or percentage
+
+**If the answer is NO (doesn't need visual):**
+→ The persona just tells you verbally. No screen routing needed. Move on.
+
+**If the answer is YES (does need visual):**
+→ Continue to Step 2.
+
+### Step 2: What's Your Current Situation?
+
+Your persona checks: *Based on your last active device and current context, can you safely access a screen right now?*
+
+The persona has access to several pieces of information:
+- Your **last active device** (car, phone, computer, glasses, TV, meeting mode, etc.)
+- Whether you're **in Meeting Mode** (active or not)
+- Your **location** (if available: home, office, commuting, etc.)
+- Your **activity** (if known: in a meeting, driving, working, etc.)
+
+**If your last active device is your car:**
+→ You're driving. **Decision: No screen right now.** Skip to Step 4.
+
+**If you're in Meeting Mode:**
+→ You're in a meeting with others. **Decision: No screen right now (unless you specifically ask for it).** Skip to Step 4.
+
+**If your last active device is your phone and you're driving:**
+→ Driving. **Decision: No screen right now.** Skip to Step 4.
+
+**If your last active device is your computer, phone, or tablet (and you're not driving or in a meeting):**
+→ You have access to a screen. **Decision: Yes, proceed to Step 3.**
+
+**If your last active device is your glasses:**
+→ You have limited screen capability. **Decision: Maybe—only if the visual is small/simple.** Proceed to Step 3 with constraints.
+
+**If your last active device is a TV:**
+→ You have access to a large screen. **Decision: Yes, proceed to Step 3.**
+
+### Step 3: Which Screen Should I Use?
+
+If the answer to Step 2 was "yes," your persona now asks: *Which device should I display this on?*
+
+The persona uses your **last active device with a screen** as the primary target:
+
+**Last active device is your computer?**
+→ Display the visual on your computer. You've been using it, so it's in your field of view.
+
+**Last active device is your phone?**
+→ Display the visual on your phone. It's in your hand or pocket.
+
+**Last active device is your tablet?**
+→ Display the visual on your tablet. It's already accessible.
+
+**Last active device is your TV?**
+→ Display the visual on your TV. You're already looking that direction.
+
+**Last active device is your glasses?**
+→ If the visual is small/simple (an overlay, a notification, a subtle element), display it there. If it's complex, route to your phone instead (your glasses might be powered by your phone anyway).
+
+**The rule: Display visual information on the device you most recently used that has a screen, in the context where it makes sense.**
+
+### Step 4: Alternative Approaches (When You Can't See It Right Now)
+
+If the answer to Step 2 was "no" (you can't access a screen right now), your persona has options:
+
+**Option A: Describe It Verbally**
+The persona uses creative, descriptive language to paint a picture of the visual information.
+
+*Example*: Instead of showing you a chart, Sally says: "Your Q3 sales are up 23% compared to Q2. The biggest growth is in the enterprise segment—that's up 40%. SMB is more steady, up about 15%. You're tracking ahead of your annual target by about $2M at this point."
+
+A human colleague would do the same thing. They'd describe what they were seeing on the chart, translating visual data into verbal understanding.
+
+**Option B: Create a Reminder**
+The persona flags the visual information for later and creates a reminder.
+
+*Example*: You're driving and ask Sally to show you the rebrand mockups. Sally says: "I've saved those mockups for you. I'll remind you to review them when you get to the office in about 15 minutes. You'll have time to look them over before your 10 AM design meeting."
+
+This is like a human saying, "Let me email you those mockups so you can review them when you have time."
+
+**Option C: Wait and Defer**
+The persona waits to present the visual information until you're in a context where you can actually use it.
+
+*Example*: You're in a meeting and ask Sam (your design persona) about a competitor's redesign. Sam says: "I have some visual references I'd like to show you, but I'll pull those up after your meeting. We can do a quick design review in your office afterward—probably 10 minutes, starting around 2 PM. Does that work?"
+
+This is exactly what a human designer would do. They wouldn't interrupt your meeting; they'd schedule time to show you properly.
+
+---
+
+## Part 5: Real-World Examples (How This Works in Practice)
+
+### Example 1: Driving to a Meeting
+
+**Scenario**: You're driving to work. You ask Sally: "What are the key points from my 10 AM pitch meeting with the investor?"
+
+**What Sally's doing internally**:
+1. *Does this need visual?* → Not necessarily. It's a text-based summary. But a slide deck or visual outline might be helpful.
+2. *Can the user access a screen?* → You're driving. No.
+3. *Alternative approach?* → Describe verbally. "Your three key talking points are: one, our market opportunity is $5B annually and growing at 30% YoY; two, our competitive advantage is our customer retention rate—93% versus industry average of 60%; and three, we're looking to close this round by end of Q2."
+
+**What you hear**: Sally gives you a concise, verbal summary while you drive. No screen required.
+
+**Later, when you arrive**: You park. Sally proactively says: "You've arrived at your meeting. I've pulled up your pitch deck on your phone—review it while you're in the waiting area? You've got about 8 minutes."
+
+Now you can look at the slides before the meeting.
+
+---
+
+### Example 2: In a Meeting, Something Comes Up
+
+**Scenario**: You're in a meeting with your team in Meeting Mode. Your boss asks: "What's our current cash burn rate?"
+
+You say: "Sally, pull up the financials."
+
+**What Sally's doing internally**:
+1. *Does this need visual?* → Probably. Financial data is complex and benefits from visualization.
+2. *Can the user access a screen?* → You're in Meeting Mode. Technically yes, but you shouldn't be looking at your phone while your boss is talking. Decision: No, not right now.
+3. *Alternative approach?* → Describe verbally or flag for later. "Our monthly burn rate is $180K. We have about 14 months of runway at the current burn rate. If we hit our growth targets, that extends to 22 months. I can pull up the detailed financials and show you after the meeting if you want to dive deeper."
+
+**What you say to your boss**: "We're at $180K monthly burn with about 14 months of runway."
+
+**After the meeting**: Sally proactively says: "Want to review the detailed financials now? I've got them ready on your laptop."
+
+---
+
+### Example 3: At Your Desk, Working on Design
+
+**Scenario**: You're at your computer reviewing a design. You ask Sam: "Show me how this color palette works in context."
+
+**What Sam's doing internally**:
+1. *Does this need visual?* → Yes, absolutely. Colors must be seen to be evaluated.
+2. *Can the user access a screen?* → You're at your computer. Yes, perfect.
+3. *Which screen?* → Your computer. You've been using it for the past hour.
+
+**What happens**: Sam displays the design mockup with the color palette applied directly on your computer screen. You can see the colors in context, evaluate them, and give feedback.
+
+---
+
+### Example 4: Multiple Screens at Home
+
+**Scenario**: You're at home. You just used your iPad to check your email (last active device: iPad). Now you ask Sally: "Show me the sales dashboard for this quarter."
+
+**What Sally's doing internally**:
+1. *Does this need visual?* → Yes. A dashboard is inherently visual.
+2. *Can the user access a screen?* → Yes, you're at home.
+3. *Which screen?* → Your last active device was your iPad. But your iPad screen is small for a detailed dashboard. Sally checks: Do you have other screens available? Yes—your computer is on the desk, and your TV is in the living room. Sally decides: The computer is probably best for a detailed dashboard. But she could also ask: "Want to see this on your iPad, Mac, or TV?"
+
+**What happens**: Sally displays the sales dashboard on your computer. Or, if she's uncertain, she offers you the choice: "I can show this on your Mac, iPad, or TV. Which would you prefer?"
+
+---
+
+### Example 5: In the Car, Then Home
+
+**Scenario**: You're driving home. You ask Sally: "Pull up the design mockups we're reviewing tomorrow."
+
+**What Sally's doing internally**:
+1. *Does this need visual?* → Yes, absolutely. Design mockups are visual.
+2. *Can the user access a screen?* → You're driving. No.
+3. *Alternative approach?* → Create a reminder. "I've saved those mockups. I'll remind you to review them when you get home—probably in about 12 minutes. Sound good?"
+
+**What you hear**: "Got it. I'll remind you when you get home."
+
+**12 minutes later, when you arrive home**: Sally proactively says: "You're home. Ready to review those design mockups? I've got them pulled up on your Mac."
+
+---
+
+### Example 6: Glasses, But Need a Bigger Screen
+
+**Scenario**: You're wearing your glasses and working on a project. You ask Sam: "Show me the full design system documentation."
+
+**What Sam's doing internally**:
+1. *Does this need visual?* → Yes, but it's dense and detailed.
+2. *Can the user access a screen?* → You're wearing glasses. You *have* a screen, but it's limited for reading dense documentation.
+3. *Alternative approach?* → Route to a better device. "Your glasses can display this, but the documentation is pretty dense. Would you prefer to review it on your Mac instead? It'll be easier to read. Or I can highlight the key sections and display them in your glasses?"
+
+**What happens**: Sam offers you options. You choose: "Show me on my Mac." Sam routes the documentation to your computer instead, where you can comfortably read and reference it.
+
+---
+
+## Part 6: The Intelligence Behind It All (Why This Actually Works)
+
+The beautiful part about Dynamic Screen Routing is that **it doesn't require new technology**. It just uses information your system *already has*:
+
+### Information Your Persona Already Knows
+
+**From Dynamic Persona Waking:**
+- Your last active device
+- Whether you're in Meeting Mode
+- Your location (if available)
+- What devices are available to you right now
+
+**From your Neurigraph memory:**
+- Your work context
+- Your communication preferences
+- How you like to receive information
+- Your schedule and availability
+
+**From basic sensing:**
+- Are you driving? (GPS + last active device = car)
+- Are you in a meeting? (Calendar + Meeting Mode = yes)
+- Are you stationary? (GPS + last active device = likely stationary)
+
+**That's it.** Your persona doesn't need magical new sensors or AI capabilities. She just needs to be *thoughtful* about when to show you things, and she already has all the information she needs to make that decision.
+
+---
+
+## Part 7: The Decision Tree (Simplified)
+
+Here's the simplified version of what happens in your persona's "mind" when she wants to show you something:
+
+```
+Does this need visual? 
+  → NO: Describe verbally. Done.
+  → YES: Continue...
+
+Are you driving or in a dangerous situation?
+  → YES: Describe verbally or create a reminder.
+  → NO: Continue...
+
+Are you in a meeting or social situation?
+  → YES: Ask permission, defer, or describe verbally.
+  → NO: Continue...
+
+Do you have access to a screen right now?
+  → NO: Describe verbally or create a reminder.
+  → YES: Which screen should I use?
+
+Which was your last active device with a screen?
+  → Use that device.
+  → (Or ask for preference if multiple screens are available)
+```
+
+---
+
+## Part 8: Benefits of Dynamic Screen Routing
+
+### For You (The User)
+
+**1. Information appears when and where it's useful**
+- Not when you're distracted or unable to use it
+- On the device that makes the most sense for the context
+- Seamlessly integrated into your workflow
+
+**2. Reduced distraction**
+- Your persona doesn't interrupt you with screens when you're driving or in meetings
+- Information is presented respectfully, at appropriate moments
+- You feel like you're being collaborated with, not bombarded
+
+**3. Better information absorption**
+- Complex visuals appear on the right device (large screen for detail, small screen for quick reference)
+- Verbal descriptions are thoughtful and contextual, not just reading alt-text
+- You get the right format for the situation
+
+### For the Persona (The System)
+
+**1. Smarter, more natural interactions**
+- The persona behaves like a thoughtful colleague, not a tool
+- Decision-making about when to show vs. tell feels human-like
+- Greater sense of relationship and mutual understanding
+
+**2. Reduced friction**
+- Fewer wasted attempts to show you things you can't look at
+- Fewer accidental disruptions to your meetings or driving
+- More successful information transfer (when you see something, you're actually ready to receive it)
+
+---
+
+## Part 9: Examples of What Changes
+
+### Before Dynamic Screen Routing (Generic Assistant Behavior)
+
+You're driving and ask: "Show me nearby restaurants."
+→ Siri displays a list on your phone screen, which you can't safely look at.
+
+You're in a meeting and ask: "How much is in our marketing budget?"
+→ Your assistant displays a detailed spreadsheet on your phone, which is awkward to pull out and look at during a meeting.
+
+You're in your glasses and ask: "Show me the design system."
+→ Your glasses try to display a 50-page document, which is impossible to read on a small AR display.
+
+### After Dynamic Screen Routing (Thoughtful Assistant Behavior)
+
+You're driving and ask: "Show me nearby restaurants."
+→ Sally says: "There's an Italian place about 2 miles ahead—amazing reviews, spicy pasta is their specialty. There's also a Thai place on the way—less crowded, great value. Want me to guide you to one of these, or should I search for other options?"
+
+You're in a meeting and ask: "How much is in our marketing budget?"
+→ Sally says: "We've allocated $250K for Q2 marketing. You've spent about $180K so far. I'll pull up the detailed breakdown after your meeting so you can review it."
+
+You're in your glasses and ask: "Show me the design system."
+→ Sam says: "That's a lot to review on your glasses. Want me to pull it up on your Mac instead? Or I can highlight the most important sections for your current project and display those in your glasses?"
+
+**The difference**: The persona is thoughtful, respectful, and intelligent about *how and when* to present information.
+
+---
+
+## Part 10: How This Scales Across Your Life
+
+With Dynamic Screen Routing, your persona adapts to every situation:
+
+**Morning (Phone on nightstand)**
+You ask: "What's my day look like?"
+→ Sally describes your schedule verbally. No screen needed.
+
+**Commute (Car)**
+You ask: "Show me the sales report for this morning."
+→ Sally describes the key numbers verbally. She flags the detailed report for later: "I'll have the full dashboard ready on your Mac when you get to the office."
+
+**At Your Desk (Computer)**
+You ask: "Show me the design mockups."
+→ Sam displays them on your computer. You can review, edit, provide feedback.
+
+**In a Meeting (Meeting Mode)**
+You ask: "What did we spend on that project?"
+→ Sally tells you verbally: "About $85K, with $62K spent so far." No screen pull-out needed.
+
+**In Your Glasses (Mobile)**
+You ask: "What's my next appointment?"
+→ Sally shows it as a small overlay in your glasses: "3 PM with the design team, conference room B."
+
+**At Home (Multiple Screens)**
+You ask: "Show me the quarterly forecast."
+→ Sally asks: "Want to see this on your Mac or TV?" You choose based on whether you want to review it in detail (Mac) or present it to someone (TV).
+
+---
+
+## Part 11: The Key Principle (Why This Matters)
+
+**Dynamic Screen Routing is about respect.**
+
+A person who shows you information at the wrong time (while you're driving, while you're in a meeting with someone else, while you're in a situation where you can't use it) is being disrespectful of your attention and safety.
+
+A thoughtful colleague knows:
+- Not to interrupt your meeting with a detailed presentation
+- Not to hand you a visual while you're driving
+- Not to force you to juggle multiple screens when one would suffice
+- Not to show you dense information on a small screen when a large one is available
+
+**Your persona should be the same.**
+
+Dynamic Screen Routing ensures that visual information is presented with the same thoughtfulness that a human colleague would bring. It's not just about routing to a screen—it's about understanding *context, safety, appropriateness, and usability*.
+
+That's what makes it feel less like *using a tool* and more like *working with someone*.
+
+---
+
+## Conclusion: Information That Respects Your Life
+
+**Dynamic Screen Routing** is the feature that makes your persona truly context-aware.
+
+It ensures that:
+- Visual information appears on the right device
+- At the right time
+- In the right context
+- Or gets presented verbally if now isn't the right time
+
+Combined with **Dynamic Persona Waking**, your persona becomes not just accessible everywhere—but *thoughtfully accessible everywhere*. She knows when to speak, when to show, and when to wait. She respects your attention, your safety, and your social context.
+
+That's the vision. That's why Dynamic Screen Routing matters.

@@ -1,0 +1,15 @@
+{
+  "title": "FunnelChat",
+  "pages": [
+    "index",
+    "legacy-funnelChat-chatInsights-alt",
+    "legacy-funnelChat-conversation-flow-sample",
+    "legacy-funnelChat-overview",
+    "legacy-funnelChat-prd",
+    "legacy-funnelChat-raw-brainstorm",
+    "legacy-funnelChat-readme",
+    "legacy-funnelChat-training-prompts",
+    "legacy-kb-chat-lead-capture-routing"
+  ],
+  "defaultOpen": false
+}

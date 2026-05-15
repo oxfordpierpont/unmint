@@ -1,0 +1,1102 @@
+---
+title: "Content Strategist AI"
+description: "Developer PRD (Product Requirements Document) Last Updated: January 2, 2026 Target Platform: Dokploy on DigitalOcean Primary Developer Tool: Claude Code Tabl..."
+---
+<Info>
+Normalized for Mintlify from `knowledge-base/aiconnected-apps-and-modules/modules/aiConnected-paper/paper-dev-overview.mdx`.
+</Info>
+# Content Strategist AI
+## Developer PRD (Product Requirements Document)
+
+**Version:** 1.0  
+**Last Updated:** January 2, 2026  
+**Target Platform:** Dokploy on DigitalOcean  
+**Primary Developer Tool:** Claude Code
+
+---
+
+## Table of Contents
+
+1. [Architecture Overview](#architecture-overview)
+2. [Database Schema](#database-schema)
+3. [API Endpoints](#api-endpoints)
+4. [Authentication & Authorization](#authentication--authorization)
+5. [Content Generation Pipeline](#content-generation-pipeline)
+6. [PDF Generation System](#pdf-generation-system)
+7. [Distribution System](#distribution-system)
+8. [File Storage](#file-storage)
+9. [White-Label System](#white-label-system)
+10. [CSV Import System](#csv-import-system)
+11. [Environment Variables](#environment-variables)
+12. [Deployment Configuration](#deployment-configuration)
+
+---
+
+## 1. Architecture Overview
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                         FRONTEND                                 │
+│              (React/Next.js - Agency Designed)                  │
+└─────────────────────────────────────────────────────────────────┘
+                                │
+                                ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                        API GATEWAY                               │
+│                    (FastAPI + Uvicorn)                          │
+├─────────────────────────────────────────────────────────────────┤
+│  • Authentication (JWT)                                         │
+│  • Rate Limiting                                                │
+│  • Request Validation                                           │
+│  • White-label Domain Routing                                   │
+└─────────────────────────────────────────────────────────────────┘
+                                │
+                ┌───────────────┼───────────────┐
+                ▼               ▼               ▼
+┌───────────────────┐ ┌─────────────────┐ ┌─────────────────┐
+│   TASK QUEUE      │ │    DATABASE     │ │  FILE STORAGE   │
+│  (Celery+Redis)   │ │  (PostgreSQL)   │ │   (Local/S3)    │
+├───────────────────┤ ├─────────────────┤ ├─────────────────┤
+│ • Content Gen     │ │ • Users         │ │ • PDFs          │
+│ • Research        │ │ • Agencies      │ │ • Images        │
+│ • PDF Render      │ │ • Clients       │ │ • Covers        │
+│ • Distribution    │ │ • Documents     │ │                 │
+└───────────────────┘ │ • Templates     │ └─────────────────┘
+         │            │ • Schedules     │
+         ▼            └─────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│                    EXTERNAL SERVICES                             │
+├─────────────────┬─────────────────┬─────────────────────────────┤
+│  Claude API     │  Freepik API    │  Social Media APIs          │
+│  (Research +    │  (Stock Images) │  (LinkedIn, FB, X, GMB)     │
+│   Content Gen)  │                 │                             │
+└─────────────────┴─────────────────┴─────────────────────────────┘
+```
+
+### Tech Stack
+
+| Component | Technology | Version |
+|-----------|------------|---------|
+| Backend Framework | FastAPI | 0.109+ |
+| Python Version | Python | 3.11+ |
+| Database | PostgreSQL | 15+ |
+| Task Queue | Celery | 5.3+ |
+| Message Broker | Redis | 7+ |
+| PDF Generation | WeasyPrint | 60+ |
+| ORM | SQLAlchemy | 2.0+ |
+| Migration | Alembic | 1.13+ |
+| Auth | python-jose (JWT) | 3.3+ |
+| HTTP Client | httpx | 0.26+ |
+| Validation | Pydantic | 2.5+ |
+
+---
+
+## 2. Database Schema
+
+### 2.1 Core Tables
+
+```sql
+-- Plans (System-defined tiers)
+CREATE TABLE plans (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name VARCHAR(50) NOT NULL,              -- 'pro_annual', 'pro_monthly', 'enterprise_annual', 'enterprise_monthly'
+    display_name VARCHAR(100) NOT NULL,     -- 'Pro Annual', etc.
+    price_cents INTEGER NOT NULL,
+    billing_period VARCHAR(20) NOT NULL,    -- 'annual', 'monthly'
+    max_seats INTEGER NOT NULL,             -- 50 or 200
+    max_templates INTEGER,                  -- 5 or NULL (unlimited)
+    custom_domain BOOLEAN DEFAULT FALSE,
+    included_api_credits_cents INTEGER DEFAULT 0,  -- 0 for BYOK, 100000 for Enterprise
+    allows_image_upload BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Agencies (Customers of Oxford Pierpont)
+CREATE TABLE agencies (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    plan_id UUID REFERENCES plans(id),
+    name VARCHAR(255) NOT NULL,
+    slug VARCHAR(100) UNIQUE NOT NULL,      -- For subdomain/routing
+    custom_domain VARCHAR(255),             -- Enterprise only
+    
+    -- API Keys (BYOK)
+    anthropic_api_key_encrypted TEXT,
+    freepik_api_key_encrypted TEXT,
+    
+    -- Branding
+    logo_horizontal_url TEXT,
+    logo_vertical_url TEXT,
+    logo_round_url TEXT,
+    color_mode VARCHAR(10) DEFAULT 'light', -- 'light', 'dark'
+    color_accent_1 VARCHAR(7) DEFAULT '#1a4a6e',
+    color_accent_2 VARCHAR(7) DEFAULT '#b8860b',
+    color_accent_3 VARCHAR(7) DEFAULT '#2980b9',
+    footer_text TEXT,
+    
+    -- OAuth Credentials (Agency manages)
+    linkedin_oauth JSONB,
+    facebook_oauth JSONB,
+    twitter_oauth JSONB,
+    google_business_oauth JSONB,
+    
+    -- Billing
+    subscription_status VARCHAR(20) DEFAULT 'active',
+    subscription_started_at TIMESTAMP,
+    subscription_ends_at TIMESTAMP,
+    api_usage_cents_this_period INTEGER DEFAULT 0,
+    
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Users (People who log in)
+CREATE TABLE users (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    agency_id UUID REFERENCES agencies(id),
+    client_id UUID REFERENCES clients(id),  -- NULL for agency users
+    email VARCHAR(255) UNIQUE NOT NULL,
+    password_hash TEXT NOT NULL,
+    role VARCHAR(20) NOT NULL,              -- 'super_admin', 'agency_admin', 'agency_member', 'client'
+    name VARCHAR(255),
+    is_active BOOLEAN DEFAULT TRUE,
+    last_login_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Clients (End customers of agencies)
+CREATE TABLE clients (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    agency_id UUID REFERENCES agencies(id) NOT NULL,
+    
+    -- Basic Info
+    company_name VARCHAR(255) NOT NULL,
+    contact_name VARCHAR(255),
+    contact_email VARCHAR(255),
+    contact_phone VARCHAR(50),
+    website_url TEXT,
+    industry VARCHAR(255),
+    
+    -- Branding (inherits from agency if not set)
+    logo_horizontal_url TEXT,
+    logo_vertical_url TEXT,
+    logo_round_url TEXT,
+    color_accent_1 VARCHAR(7),
+    color_accent_2 VARCHAR(7),
+    color_accent_3 VARCHAR(7),
+    footer_text TEXT,
+    
+    -- Social Media (OAuth tokens)
+    linkedin_oauth JSONB,
+    facebook_oauth JSONB,
+    twitter_oauth JSONB,
+    google_business_oauth JSONB,
+    
+    -- Content Settings
+    default_tone VARCHAR(20) DEFAULT 'professional',
+    related_services TEXT[],
+    target_keywords TEXT[],
+    additional_context TEXT,
+    
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Templates (Managed by Super Admin)
+CREATE TABLE templates (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    code VARCHAR(50) UNIQUE NOT NULL,       -- 'EXEC_01', 'MINIMAL_02', etc.
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    preview_image_url TEXT,
+    html_template TEXT NOT NULL,            -- The actual HTML template
+    css_template TEXT NOT NULL,             -- The CSS
+    is_active BOOLEAN DEFAULT TRUE,
+    is_premium BOOLEAN DEFAULT FALSE,       -- Enterprise only
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Agency Template Access (Many-to-Many)
+CREATE TABLE agency_templates (
+    agency_id UUID REFERENCES agencies(id),
+    template_id UUID REFERENCES templates(id),
+    PRIMARY KEY (agency_id, template_id)
+);
+
+-- Documents (Generated Content)
+CREATE TABLE documents (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    client_id UUID REFERENCES clients(id) NOT NULL,
+    template_id UUID REFERENCES templates(id),
+    
+    -- Content
+    title VARCHAR(500) NOT NULL,
+    topic VARCHAR(500) NOT NULL,
+    content_json JSONB NOT NULL,            -- Structured content for template
+    pdf_url TEXT,
+    cover_image_url TEXT,
+    
+    -- Generation Settings
+    tone VARCHAR(20),
+    industry VARCHAR(255),
+    keywords TEXT[],
+    related_services TEXT[],
+    custom_direction TEXT,
+    additional_context TEXT,
+    
+    -- Research Data
+    research_sources JSONB,                 -- URLs and snippets used
+    statistics_used JSONB,                  -- Stats included in doc
+    
+    -- Status
+    status VARCHAR(20) DEFAULT 'pending',   -- 'pending', 'generating', 'ready', 'distributed', 'failed'
+    generation_started_at TIMESTAMP,
+    generation_completed_at TIMESTAMP,
+    error_message TEXT,
+    
+    -- Distribution
+    distributed_at TIMESTAMP,
+    distribution_channels JSONB,            -- {linkedin: true, facebook: false, ...}
+    distribution_results JSONB,             -- {linkedin: {post_id: '...', url: '...'}, ...}
+    
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW(),
+    
+    -- Retention: Documents auto-deleted after 3 years
+    expires_at TIMESTAMP DEFAULT (NOW() + INTERVAL '3 years')
+);
+
+-- Scheduled Content (CSV Imports)
+CREATE TABLE scheduled_content (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    client_id UUID REFERENCES clients(id) NOT NULL,
+    
+    -- Schedule
+    scheduled_date DATE NOT NULL,
+    scheduled_time TIME DEFAULT '09:00:00',
+    
+    -- Content Settings
+    topic VARCHAR(500) NOT NULL,
+    template_code VARCHAR(50),
+    tone VARCHAR(20),
+    keywords TEXT[],
+    custom_direction TEXT,
+    
+    -- Status
+    status VARCHAR(20) DEFAULT 'pending',   -- 'pending', 'processing', 'completed', 'failed'
+    document_id UUID REFERENCES documents(id),
+    error_message TEXT,
+    
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Generation Jobs (Task Tracking)
+CREATE TABLE generation_jobs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    document_id UUID REFERENCES documents(id),
+    
+    -- Progress Tracking
+    current_step VARCHAR(50),
+    steps_completed TEXT[],
+    progress_percent INTEGER DEFAULT 0,
+    
+    -- Timing
+    started_at TIMESTAMP,
+    completed_at TIMESTAMP,
+    
+    -- Celery
+    celery_task_id VARCHAR(255),
+    
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Indexes
+CREATE INDEX idx_documents_client_id ON documents(client_id);
+CREATE INDEX idx_documents_status ON documents(status);
+CREATE INDEX idx_documents_created_at ON documents(created_at);
+CREATE INDEX idx_scheduled_content_date ON scheduled_content(scheduled_date);
+CREATE INDEX idx_scheduled_content_status ON scheduled_content(status);
+CREATE INDEX idx_clients_agency_id ON clients(agency_id);
+CREATE INDEX idx_users_agency_id ON users(agency_id);
+```
+
+---
+
+## 3. API Endpoints
+
+### 3.1 Authentication
+
+```
+POST   /api/v1/auth/login              # Login, returns JWT
+POST   /api/v1/auth/logout             # Invalidate token
+POST   /api/v1/auth/refresh            # Refresh JWT
+GET    /api/v1/auth/me                 # Current user info
+```
+
+### 3.2 Agency Management (Super Admin)
+
+```
+GET    /api/v1/admin/agencies          # List all agencies
+POST   /api/v1/admin/agencies          # Create agency
+GET    /api/v1/admin/agencies/:id      # Get agency details
+PUT    /api/v1/admin/agencies/:id      # Update agency
+DELETE /api/v1/admin/agencies/:id      # Deactivate agency
+
+GET    /api/v1/admin/templates         # List all templates
+POST   /api/v1/admin/templates         # Create template
+PUT    /api/v1/admin/templates/:id     # Update template
+DELETE /api/v1/admin/templates/:id     # Deactivate template
+```
+
+### 3.3 Agency Operations (Agency Admin)
+
+```
+GET    /api/v1/agency/settings         # Get agency settings
+PUT    /api/v1/agency/settings         # Update agency settings
+PUT    /api/v1/agency/branding         # Update branding (logos, colors)
+PUT    /api/v1/agency/api-keys         # Update API keys (BYOK)
+
+GET    /api/v1/agency/team             # List team members
+POST   /api/v1/agency/team             # Add team member
+PUT    /api/v1/agency/team/:id         # Update team member
+DELETE /api/v1/agency/team/:id         # Remove team member
+
+GET    /api/v1/agency/templates        # List available templates
+```
+
+### 3.4 Client Management
+
+```
+GET    /api/v1/clients                 # List clients (agency view)
+POST   /api/v1/clients                 # Create client
+GET    /api/v1/clients/:id             # Get client details
+PUT    /api/v1/clients/:id             # Update client
+PUT    /api/v1/clients/:id/branding    # Update client branding
+PUT    /api/v1/clients/:id/social      # Update social OAuth
+DELETE /api/v1/clients/:id             # Deactivate client
+```
+
+### 3.5 Document Generation
+
+```
+POST   /api/v1/clients/:id/documents/generate    # Start generation
+GET    /api/v1/documents/:id                     # Get document details
+GET    /api/v1/documents/:id/status              # Get generation status (for polling)
+GET    /api/v1/documents/:id/pdf                 # Download PDF
+DELETE /api/v1/documents/:id                     # Delete document
+
+# WebSocket for real-time progress
+WS     /api/v1/ws/generation/:job_id             # Real-time generation updates
+```
+
+### 3.6 Document Management
+
+```
+GET    /api/v1/clients/:id/documents             # List client documents
+GET    /api/v1/clients/:id/documents?status=ready  # Filter by status
+```
+
+### 3.7 Distribution
+
+```
+POST   /api/v1/documents/:id/distribute          # Distribute to selected channels
+GET    /api/v1/documents/:id/distribution-status # Check distribution results
+```
+
+### 3.8 Scheduled Content
+
+```
+GET    /api/v1/clients/:id/schedule              # List scheduled content
+POST   /api/v1/clients/:id/schedule              # Add single scheduled item
+POST   /api/v1/clients/:id/schedule/import       # CSV import
+DELETE /api/v1/clients/:id/schedule/:id          # Remove scheduled item
+```
+
+### 3.9 Public/Demo Endpoints
+
+```
+POST   /api/v1/demo/generate                     # Demo generation (limited)
+GET    /api/v1/demo/:id/status                   # Demo status
+GET    /api/v1/demo/:id/preview                  # Demo preview (watermarked)
+```
+
+---
+
+## 4. Authentication & Authorization
+
+### 4.1 JWT Structure
+
+```json
+{
+  "sub": "user_uuid",
+  "role": "agency_admin",
+  "agency_id": "agency_uuid",
+  "client_id": null,
+  "exp": 1704567890,
+  "iat": 1704481490
+}
+```
+
+### 4.2 Role Permissions
+
+```python
+PERMISSIONS = {
+    "super_admin": [
+        "admin:*",
+        "agency:*",
+        "client:*",
+        "document:*",
+        "template:*"
+    ],
+    "agency_admin": [
+        "agency:read",
+        "agency:update",
+        "agency:branding",
+        "agency:api_keys",
+        "agency:team:*",
+        "client:*",
+        "document:*",
+        "schedule:*",
+        "template:read"
+    ],
+    "agency_member": [
+        "client:read",
+        "document:create",
+        "document:read",
+        "document:distribute",
+        "schedule:read",
+        "template:read"
+    ],
+    "client": [
+        "client:read:own",
+        "document:read:own",
+        "document:create:own"
+    ]
+}
+```
+
+### 4.3 White-Label Domain Routing
+
+```python
+# Middleware to resolve agency from domain
+async def resolve_agency_middleware(request: Request, call_next):
+    host = request.headers.get("host", "")
+    
+    # Check custom domain
+    agency = await get_agency_by_domain(host)
+    
+    # Check subdomain
+    if not agency:
+        subdomain = host.split(".")[0]
+        agency = await get_agency_by_slug(subdomain)
+    
+    # Default to demo/public
+    request.state.agency = agency
+    return await call_next(request)
+```
+
+---
+
+## 5. Content Generation Pipeline
+
+### 5.1 Generation Steps
+
+```python
+GENERATION_STEPS = [
+    {"id": "topic_analysis", "label": "Analyzing Topic", "weight": 5},
+    {"id": "keyword_research", "label": "Researching Keywords", "weight": 10},
+    {"id": "web_research", "label": "Reading Sources", "weight": 25},
+    {"id": "industry_analysis", "label": "Analyzing Industry Reports", "weight": 15},
+    {"id": "outline_creation", "label": "Creating Outline", "weight": 5},
+    {"id": "content_writing", "label": "Writing Content", "weight": 20},
+    {"id": "statistics_integration", "label": "Adding Statistics", "weight": 5},
+    {"id": "chart_generation", "label": "Generating Charts", "weight": 5},
+    {"id": "template_application", "label": "Applying Design", "weight": 5},
+    {"id": "pdf_rendering", "label": "Rendering PDF", "weight": 3},
+    {"id": "quality_review", "label": "Final Review", "weight": 2},
+]
+```
+
+### 5.2 Celery Task Chain
+
+```python
+@celery.task(bind=True)
+def generate_document(self, document_id: str):
+    """Main generation orchestrator"""
+    
+    # 1. Topic Analysis
+    update_progress(document_id, "topic_analysis")
+    topic_data = analyze_topic(document.topic, document.industry)
+    
+    # 2. Keyword Research
+    update_progress(document_id, "keyword_research")
+    keywords = research_keywords(topic_data, document.keywords)
+    
+    # 3. Web Research (DEEP - this is the differentiator)
+    update_progress(document_id, "web_research")
+    research = conduct_deep_research(
+        topic=topic_data,
+        keywords=keywords,
+        industry=document.industry,
+        min_sources=20,  # Minimum, will expand based on topic complexity
+        max_sources=500  # Upper bound for safety
+    )
+    
+    # 4. Industry Analysis
+    update_progress(document_id, "industry_analysis")
+    industry_insights = analyze_industry_reports(research, document.industry)
+    
+    # 5. Outline Creation
+    update_progress(document_id, "outline_creation")
+    outline = create_content_outline(
+        topic=topic_data,
+        research=research,
+        insights=industry_insights,
+        tone=document.tone,
+        custom_direction=document.custom_direction
+    )
+    
+    # 6. Content Writing
+    update_progress(document_id, "content_writing")
+    content = write_content(
+        outline=outline,
+        research=research,
+        tone=document.tone,
+        related_services=document.related_services
+    )
+    
+    # 7. Statistics Integration
+    update_progress(document_id, "statistics_integration")
+    content_with_stats = integrate_statistics(content, research)
+    
+    # 8. Chart Generation
+    update_progress(document_id, "chart_generation")
+    charts = generate_charts(content_with_stats.statistics)
+    
+    # 9. Template Application
+    update_progress(document_id, "template_application")
+    html = apply_template(
+        template=document.template,
+        content=content_with_stats,
+        charts=charts,
+        client=document.client,
+        cover_image=get_cover_image(document)
+    )
+    
+    # 10. PDF Rendering
+    update_progress(document_id, "pdf_rendering")
+    pdf_path = render_pdf(html, document_id)
+    
+    # 11. Quality Review
+    update_progress(document_id, "quality_review")
+    review_result = quality_check(pdf_path, content_with_stats)
+    
+    # Complete
+    finalize_document(document_id, pdf_path, content_with_stats)
+```
+
+### 5.3 Research System
+
+```python
+async def conduct_deep_research(
+    topic: TopicData,
+    keywords: List[str],
+    industry: str,
+    min_sources: int = 20,
+    max_sources: int = 500
+) -> ResearchResult:
+    """
+    Conduct thorough research on a topic.
+    This is NOT shallow blog research.
+    Research depth scales with topic complexity.
+    """
+    
+    # Determine research scope based on topic complexity
+    complexity = assess_topic_complexity(topic)
+    target_sources = min(
+        max_sources,
+        max(min_sources, complexity.recommended_sources)
+    )
+    
+    # Phase 1: Broad search
+    broad_results = await search_web(
+        queries=generate_search_queries(topic, keywords),
+        max_results=target_sources * 2
+    )
+    
+    # Phase 2: Deep read of relevant sources
+    relevant_sources = filter_relevant_sources(broad_results, topic)
+    deep_content = await read_sources_deeply(relevant_sources[:target_sources])
+    
+    # Phase 3: Extract insights, statistics, quotes
+    insights = extract_insights(deep_content)
+    statistics = extract_statistics(deep_content)
+    expert_quotes = extract_quotes(deep_content)
+    
+    # Phase 4: Industry-specific augmentation
+    industry_data = await fetch_industry_data(industry, topic)
+    
+    return ResearchResult(
+        sources=deep_content,
+        insights=insights,
+        statistics=statistics,
+        quotes=expert_quotes,
+        industry_data=industry_data,
+        source_count=len(deep_content)
+    )
+```
+
+---
+
+## 6. PDF Generation System
+
+### 6.1 Template Structure
+
+```
+/templates
+  /executive_01
+    template.html      # Main HTML structure
+    styles.css         # Base styles
+    variables.css      # Color/font variables (overwritten per client)
+    components/
+      cover.html
+      section.html
+      callout.html
+      chart.html
+      footer.html
+```
+
+### 6.2 Template Variable Injection
+
+```python
+TEMPLATE_VARIABLES = {
+    # Brand Colors (from client settings)
+    "PRIMARY_COLOR": "#1a4a6e",
+    "SECONDARY_COLOR": "#b8860b",
+    "ACCENT_COLOR": "#2980b9",
+    "TEXT_COLOR": "#333333",
+    
+    # Brand Assets
+    "LOGO_URL": "https://...",
+    "COMPANY_NAME": "Client Corp",
+    "FOOTER_TEXT": "© 2026 Client Corp. All rights reserved.",
+    
+    # Content
+    "DOCUMENT_TITLE": "...",
+    "DOCUMENT_SUBTITLE": "...",
+    "SECTIONS": [...],
+    "STATISTICS": [...],
+    "CHARTS": [...],
+}
+```
+
+### 6.3 Chart Generation
+
+```python
+def generate_charts(statistics: List[Statistic]) -> List[ChartData]:
+    """Generate chart SVGs/images from statistics"""
+    
+    charts = []
+    for stat in statistics:
+        if stat.type == "comparison":
+            chart = generate_bar_chart(stat)
+        elif stat.type == "trend":
+            chart = generate_line_chart(stat)
+        elif stat.type == "percentage":
+            chart = generate_donut_chart(stat)
+        elif stat.type == "breakdown":
+            chart = generate_pie_chart(stat)
+        else:
+            chart = generate_stat_callout(stat)
+        
+        charts.append(chart)
+    
+    return charts
+```
+
+### 6.4 PDF Rendering
+
+```python
+from weasyprint import HTML, CSS
+
+def render_pdf(html_content: str, document_id: str) -> str:
+    """Render HTML to PDF using WeasyPrint"""
+    
+    output_path = f"/storage/documents/{document_id}.pdf"
+    
+    html = HTML(string=html_content)
+    css = CSS(string="""
+        @page {
+            size: letter;
+            margin: 0;
+        }
+        body {
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+    """)
+    
+    html.write_pdf(output_path, stylesheets=[css])
+    
+    return output_path
+```
+
+---
+
+## 7. Distribution System
+
+### 7.1 Distribution Handler
+
+```python
+async def distribute_document(
+    document: Document,
+    channels: List[str]  # ['linkedin', 'facebook', 'twitter', 'google_business']
+) -> DistributionResult:
+    """Distribute document to selected social channels"""
+    
+    results = {}
+    
+    # Get client OAuth credentials
+    client = document.client
+    
+    for channel in channels:
+        try:
+            if channel == "linkedin":
+                result = await post_to_linkedin(
+                    oauth=client.linkedin_oauth,
+                    title=document.title,
+                    summary=generate_social_summary(document, "linkedin"),
+                    pdf_url=document.pdf_url
+                )
+            elif channel == "facebook":
+                result = await post_to_facebook(...)
+            elif channel == "twitter":
+                result = await post_to_twitter(...)
+            elif channel == "google_business":
+                result = await post_to_google_business(...)
+            
+            results[channel] = {"success": True, "post_id": result.id, "url": result.url}
+        
+        except Exception as e:
+            results[channel] = {"success": False, "error": str(e)}
+    
+    return DistributionResult(results=results)
+```
+
+---
+
+## 8. File Storage
+
+### 8.1 Storage Configuration
+
+```python
+STORAGE_CONFIG = {
+    "provider": "local",  # or "s3"
+    "base_path": "/var/storage/content-strategist",
+    "public_base_url": "https://authAPI.net/files",  # or sec-admn.com
+    
+    "paths": {
+        "documents": "documents/{agency_id}/{client_id}/{document_id}.pdf",
+        "covers": "covers/{agency_id}/{client_id}/{document_id}.jpg",
+        "logos": "logos/{agency_id}/{filename}",
+        "client_images": "images/{agency_id}/{client_id}/{filename}",
+    },
+    
+    "retention_days": 1095,  # 3 years
+}
+```
+
+### 8.2 Custom Domain Support
+
+```python
+def get_public_url(path: str, agency: Agency) -> str:
+    """Generate public URL respecting custom domains"""
+    
+    if agency.custom_domain:
+        return f"https://{agency.custom_domain}/files/{path}"
+    else:
+        return f"https://authAPI.net/files/{agency.slug}/{path}"
+```
+
+---
+
+## 9. White-Label System
+
+### 9.1 Branding Resolution
+
+```python
+def resolve_branding(client: Client) -> BrandingConfig:
+    """Resolve branding with client -> agency fallback"""
+    
+    agency = client.agency
+    
+    return BrandingConfig(
+        logo_horizontal=client.logo_horizontal_url or agency.logo_horizontal_url,
+        logo_vertical=client.logo_vertical_url or agency.logo_vertical_url,
+        logo_round=client.logo_round_url or agency.logo_round_url,
+        color_accent_1=client.color_accent_1 or agency.color_accent_1,
+        color_accent_2=client.color_accent_2 or agency.color_accent_2,
+        color_accent_3=client.color_accent_3 or agency.color_accent_3,
+        footer_text=client.footer_text or agency.footer_text,
+        color_mode=agency.color_mode,
+    )
+```
+
+### 9.2 Domain Configuration
+
+```nginx
+# Nginx config for custom domains
+server {
+    listen 443 ssl;
+    server_name ~^(?<agency>.+)\.contentstrategist\.com$;
+    
+    location / {
+        proxy_pass http://app:8000;
+        proxy_set_header X-Agency-Slug $agency;
+        proxy_set_header Host $host;
+    }
+}
+
+server {
+    listen 443 ssl;
+    server_name custom.agency-domain.com;
+    
+    location / {
+        proxy_pass http://app:8000;
+        proxy_set_header X-Custom-Domain $host;
+        proxy_set_header Host $host;
+    }
+}
+```
+
+---
+
+## 10. CSV Import System
+
+### 10.1 CSV Format
+
+```csv
+scheduled_date,scheduled_time,topic,template_code,tone,keywords,custom_direction
+2026-01-15,09:00,AI Implementation Best Practices,EXEC_01,authoritative,"AI,implementation,strategy","Focus on ROI metrics"
+2026-01-16,09:00,Data Security in Cloud Computing,MINIMAL_02,professional,"cloud,security,compliance",
+2026-01-17,09:00,Future of Remote Work,EXEC_01,conversational,"remote work,hybrid,productivity",
+```
+
+### 10.2 Import Endpoint
+
+```python
+@router.post("/clients/{client_id}/schedule/import")
+async def import_schedule_csv(
+    client_id: UUID,
+    file: UploadFile,
+    current_user: User = Depends(get_current_user)
+):
+    """Import scheduled content from CSV"""
+    
+    # Parse CSV
+    content = await file.read()
+    rows = parse_csv(content)
+    
+    # Validate
+    errors = []
+    valid_rows = []
+    
+    for i, row in enumerate(rows):
+        validation = validate_schedule_row(row, client_id)
+        if validation.errors:
+            errors.append({"row": i + 2, "errors": validation.errors})
+        else:
+            valid_rows.append(validation.data)
+    
+    if errors:
+        return {"success": False, "errors": errors, "valid_count": len(valid_rows)}
+    
+    # Insert
+    for row in valid_rows:
+        await create_scheduled_content(client_id, row)
+    
+    return {"success": True, "imported_count": len(valid_rows)}
+```
+
+---
+
+## 11. Environment Variables
+
+```bash
+# Application
+APP_ENV=production
+APP_DEBUG=false
+APP_SECRET_KEY=your-secret-key-here
+APP_URL=https://api.contentstrategist.com
+
+# Database
+DATABASE_URL=postgresql://user:pass@localhost:5432/content_strategist
+
+# Redis
+REDIS_URL=redis://localhost:6379/0
+
+# Storage
+STORAGE_PROVIDER=local
+STORAGE_PATH=/var/storage/content-strategist
+PUBLIC_FILE_URL=https://authAPI.net/files
+
+# External APIs (Default, agencies can override)
+ANTHROPIC_API_KEY=sk-ant-...
+FREEPIK_API_KEY=...
+
+# Social Media App Credentials (for OAuth)
+LINKEDIN_CLIENT_ID=...
+LINKEDIN_CLIENT_SECRET=...
+FACEBOOK_APP_ID=...
+FACEBOOK_APP_SECRET=...
+TWITTER_CLIENT_ID=...
+TWITTER_CLIENT_SECRET=...
+GOOGLE_CLIENT_ID=...
+GOOGLE_CLIENT_SECRET=...
+
+# Encryption
+ENCRYPTION_KEY=your-32-byte-key-here
+
+# Rate Limiting
+RATE_LIMIT_REQUESTS=100
+RATE_LIMIT_PERIOD=60
+```
+
+---
+
+## 12. Deployment Configuration
+
+### 12.1 Docker Compose
+
+```yaml
+version: '3.8'
+
+services:
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/content_strategist
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      - db
+      - redis
+    volumes:
+      - ./storage:/var/storage/content-strategist
+
+  worker:
+    build: .
+    command: celery -A app.worker worker --loglevel=info
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/content_strategist
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      - db
+      - redis
+    volumes:
+      - ./storage:/var/storage/content-strategist
+
+  scheduler:
+    build: .
+    command: celery -A app.worker beat --loglevel=info
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/content_strategist
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      - db
+      - redis
+
+  db:
+    image: postgres:15
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=content_strategist
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redis_data:/data
+
+volumes:
+  postgres_data:
+  redis_data:
+```
+
+### 12.2 Dokploy Configuration
+
+```yaml
+# dokploy.yaml
+name: content-strategist
+services:
+  - name: api
+    type: docker
+    dockerfile: Dockerfile
+    port: 8000
+    healthcheck: /health
+    env_file: .env.production
+    
+  - name: worker
+    type: docker
+    dockerfile: Dockerfile
+    command: celery -A app.worker worker --loglevel=info
+    env_file: .env.production
+    
+  - name: scheduler
+    type: docker
+    dockerfile: Dockerfile
+    command: celery -A app.worker beat --loglevel=info
+    env_file: .env.production
+
+databases:
+  - name: postgres
+    type: postgresql
+    version: "15"
+    
+  - name: redis
+    type: redis
+    version: "7"
+
+domains:
+  - api.contentstrategist.com
+  - "*.contentstrategist.com"
+```
+
+---
+
+## Appendix A: Error Codes
+
+| Code | Description |
+|------|-------------|
+| AUTH_001 | Invalid credentials |
+| AUTH_002 | Token expired |
+| AUTH_003 | Insufficient permissions |
+| GEN_001 | Generation failed - API error |
+| GEN_002 | Generation failed - Research timeout |
+| GEN_003 | Generation failed - Template error |
+| DIST_001 | Distribution failed - OAuth invalid |
+| DIST_002 | Distribution failed - Platform error |
+| PLAN_001 | Seat limit exceeded |
+| PLAN_002 | Template not available on plan |
+
+---
+
+## Appendix B: WebSocket Events
+
+```typescript
+// Client -> Server
+{ "type": "subscribe", "job_id": "uuid" }
+{ "type": "unsubscribe", "job_id": "uuid" }
+
+// Server -> Client
+{ "type": "progress", "step": "web_research", "percent": 45, "detail": "Reading 127 sources..." }
+{ "type": "complete", "document_id": "uuid", "pdf_url": "https://..." }
+{ "type": "error", "code": "GEN_001", "message": "..." }
+```

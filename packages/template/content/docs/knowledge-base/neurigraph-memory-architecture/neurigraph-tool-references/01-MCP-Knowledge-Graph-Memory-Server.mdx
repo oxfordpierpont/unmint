@@ -1,0 +1,1002 @@
+---
+title: "Clean Room Specification 01: MCP Knowledge Graph Memory Server"
+description: "Document Purpose This specification describes a persistent knowledge graph memory server that exposes graph operations (entities, relations, observations) th..."
+---
+<Info>
+Normalized for Mintlify from `knowledge-base/neurigraph-memory-architecture/neurigraph-tool-references/01-MCP-Knowledge-Graph-Memory-Server.mdx`.
+</Info>
+# Clean-Room Specification 01: MCP Knowledge Graph Memory Server
+
+## Document Purpose
+
+This specification describes a **persistent knowledge graph memory server** that exposes graph operations (entities, relations, observations) through the **Model Context Protocol (MCP)**. An AI coding model should be able to read this document and produce a functionally identical, working implementation without any additional references.
+
+---
+
+## 1. System Overview
+
+### 1.1 What This System Does
+
+This is a **single-file TypeScript application** that provides an AI assistant with persistent memory by storing a knowledge graph on disk. The server exposes **9 tools** via MCP that allow an AI to create, query, and delete entities, relations, and observations. All data is stored in a single **JSONL (JSON Lines)** file — one JSON object per line.
+
+### 1.2 Core Architecture
+
+```
+┌─────────────────────────────────────────────────┐
+│                  MCP Server                      │
+│  (StdioServerTransport — communicates via stdin/ │
+│   stdout using JSON-RPC over MCP protocol)       │
+│                                                  │
+│  ┌─────────────────────────────────────────────┐ │
+│  │          9 Registered MCP Tools             │ │
+│  │  create_entities, create_relations,         │ │
+│  │  add_observations, delete_entities,         │ │
+│  │  delete_observations, delete_relations,     │ │
+│  │  read_graph, search_nodes, open_nodes       │ │
+│  └──────────────────┬──────────────────────────┘ │
+│                     │                            │
+│  ┌──────────────────▼──────────────────────────┐ │
+│  │       KnowledgeGraphManager Class           │ │
+│  │                                             │ │
+│  │  In-memory state:                           │ │
+│  │    KnowledgeGraph {                         │ │
+│  │      entities: Entity[]                     │ │
+│  │      relations: Relation[]                  │ │
+│  │    }                                        │ │
+│  │                                             │ │
+│  │  Methods:                                   │ │
+│  │    loadGraph() → read entire JSONL file     │ │
+│  │    saveGraph() → write entire JSONL file    │ │
+│  │    createEntities(entities)                 │ │
+│  │    createRelations(relations)               │ │
+│  │    addObservations(observations)            │ │
+│  │    deleteEntities(entityNames)              │ │
+│  │    deleteObservations(deletions)            │ │
+│  │    deleteRelations(relations)               │ │
+│  │    searchNodes(query)                       │ │
+│  │    openNodes(names)                         │ │
+│  │    readGraph()                              │ │
+│  └──────────────────┬──────────────────────────┘ │
+│                     │                            │
+│  ┌──────────────────▼──────────────────────────┐ │
+│  │         JSONL File on Disk                  │ │
+│  │   (default: memory.jsonl in CWD)            │ │
+│  │   Each line: one JSON object                │ │
+│  │   Entity lines + Relation lines             │ │
+│  └─────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────┘
+```
+
+### 1.3 Key Design Decisions
+
+1. **Full file read/write on every operation**: `loadGraph()` reads the entire file; `saveGraph()` writes the entire file. There is no incremental append or partial update. This is intentional simplicity — the file is small enough for typical use.
+
+2. **No database**: Pure file-based storage. No SQLite, no external dependencies for persistence.
+
+3. **Single-file implementation**: The entire server is one TypeScript file (~300 lines). No separate modules.
+
+4. **JSONL format**: One JSON object per line. Entities first, then relations. Each object has a `type` discriminator field (`"entity"` or `"relation"`).
+
+5. **Deduplication by name**: Entity names are unique identifiers. No numeric IDs. Entity deduplication uses exact string match on `name`. Relation deduplication uses exact match on the tuple `(from, to, relationType)`.
+
+6. **Case-insensitive search**: The `searchNodes` method lowercases the query and compares against lowercased entity fields.
+
+7. **Cascading deletes**: Deleting an entity also removes all relations where that entity appears as either `from` or `to`.
+
+---
+
+## 2. Data Model
+
+### 2.1 Core Types
+
+```typescript
+interface Entity {
+  name: string;          // Unique identifier (e.g., "John_Smith")
+  entityType: string;    // Category (e.g., "person", "organization", "concept")
+  observations: string[]; // Array of factual strings about this entity
+}
+
+interface Relation {
+  from: string;       // Source entity name (must reference existing entity)
+  to: string;         // Target entity name (must reference existing entity)
+  relationType: string; // Describes the relationship (e.g., "works_at", "knows")
+}
+
+interface KnowledgeGraph {
+  entities: Entity[];
+  relations: Relation[];
+}
+```
+
+### 2.2 JSONL File Format
+
+The persistence file stores one JSON object per line. Each object includes a `type` discriminator field that is **only present in the file format**, not in the in-memory data structures.
+
+**Entity line format:**
+```json
+{"type":"entity","name":"John_Smith","entityType":"person","observations":["Is 30 years old","Works at Acme Corp","Likes hiking"]}
+```
+
+**Relation line format:**
+```json
+{"type":"relation","from":"John_Smith","to":"Acme_Corp","relationType":"works_at"}
+```
+
+**Complete file example (4 lines):**
+```
+{"type":"entity","name":"John_Smith","entityType":"person","observations":["Is 30 years old","Lives in Portland"]}
+{"type":"entity","name":"Acme_Corp","entityType":"organization","observations":["Founded in 2010","Has 500 employees"]}
+{"type":"relation","from":"John_Smith","to":"Acme_Corp","relationType":"works_at"}
+{"type":"relation","from":"John_Smith","to":"Acme_Corp","relationType":"knows_about"}
+```
+
+**CRITICAL: Write order** — When saving, ALL entity lines are written first, then ALL relation lines. This is the canonical ordering.
+
+### 2.3 Loading and Saving
+
+**Loading (`loadGraph`):**
+1. Read the entire file as a UTF-8 string
+2. Split by newline character (`\n`)
+3. Filter out empty lines
+4. Parse each line as JSON
+5. Use a `reduce` operation to accumulate into a `KnowledgeGraph`:
+   - If `item.type === "entity"`: strip the `type` field, push to `entities` array
+   - If `item.type === "relation"`: strip the `type` field, push to `relations` array
+```text
+6. If the file doesn't exist, return `{ entities: [], relations: [] }`
+
+```
+**IMPORTANT**: When loading, the `type` field is **stripped** from each object. The in-memory `Entity` and `Relation` objects do NOT contain a `type` property. The `type` field only exists in the serialized JSONL format.
+
+**Saving (`saveGraph`):**
+```text
+1. Map each entity to JSON string with `type: "entity"` prepended: `JSON.stringify({ type: "entity", ...entity })`
+```
+```text
+2. Map each relation to JSON string with `type: "relation"` prepended: `JSON.stringify({ type: "relation", ...relation })`
+```
+3. Concatenate all entity lines, then all relation lines, joined by `\n`
+4. Write the entire string to the file (overwriting completely)
+
+---
+
+## 3. KnowledgeGraphManager Class — Complete Method Specifications
+
+### 3.1 Constructor and Initialization
+
+The class takes a single constructor parameter: the file path (string) for the JSONL storage file.
+
+```typescript
+class KnowledgeGraphManager {
+  private memoryFilePath: string;
+
+  constructor(memoryFilePath: string) {
+    this.memoryFilePath = memoryFilePath;
+  }
+}
+```
+
+### 3.2 `loadGraph(): Promise<KnowledgeGraph>`
+
+Reads and parses the entire JSONL file.
+
+**Algorithm:**
+```
+1. Try to read file at this.memoryFilePath as UTF-8 string
+2. If file does not exist (ENOENT error), return { entities: [], relations: [] }
+3. Split the string by "\n"
+4. Filter out empty strings (handles trailing newline)
+5. Parse each remaining string as JSON
+6. Reduce the parsed objects into { entities: [], relations: [] }:
+   For each item:
+     - If item.type === "entity":
+       Create new object WITHOUT the "type" field: { name, entityType, observations }
+       Push to entities array
+     - If item.type === "relation":
+       Create new object WITHOUT the "type" field: { from, to, relationType }
+       Push to relations array
+7. Return the KnowledgeGraph
+```
+
+```text
+**Key detail**: The `type` field is destructured out and discarded. Use object rest/spread: `const { type, ...rest } = item` then push `rest`.
+
+```
+### 3.3 `saveGraph(graph: KnowledgeGraph): Promise<void>`
+
+Writes the entire graph to disk.
+
+**Algorithm:**
+```
+1. Map each entity to: JSON.stringify({ type: "entity", ...entity })
+2. Map each relation to: JSON.stringify({ type: "relation", ...relation })
+3. Concatenate: [...entityLines, ...relationLines].join("\n")
+4. Write to this.memoryFilePath (overwrites entire file)
+```
+
+### 3.4 `createEntities(entities: Entity[]): Promise<Entity[]>`
+
+Adds new entities, skipping any whose name already exists.
+
+**Algorithm:**
+```
+1. Load the full graph from disk
+2. Filter the input entities: keep only those where NO existing entity has the same name
+   - Comparison: exact string match on entity.name (case-SENSITIVE)
+3. Append the filtered new entities to graph.entities
+4. Save the full graph to disk
+5. Return ONLY the newly created entities (the filtered list, not the full graph)
+```
+
+**Return value**: The array of entities that were actually created (excluding duplicates).
+
+### 3.5 `createRelations(relations: Relation[]): Promise<Relation[]>`
+
+Adds new relations, skipping exact duplicates.
+
+**Algorithm:**
+```
+1. Load the full graph from disk
+2. Filter the input relations: keep only those where NO existing relation matches ALL THREE fields:
+   - relation.from === existing.from  (exact match)
+   - relation.to === existing.to      (exact match)
+   - relation.relationType === existing.relationType (exact match)
+3. Append the filtered new relations to graph.relations
+4. Save the full graph to disk
+5. Return ONLY the newly created relations
+```
+
+**Note**: Two relations with the same `from` and `to` but different `relationType` values are NOT duplicates. They are distinct relations.
+
+```text
+### 3.6 `addObservations(observations: Array<{entityName: string, contents: string[]}>): Promise<Array<{entityName: string, addedObservations: string[]}>>`
+
+```
+Adds observation strings to existing entities, skipping duplicate observation strings.
+
+**Algorithm:**
+```
+1. Load the full graph from disk
+2. For each item in the observations array:
+   a. Find the entity where entity.name === item.entityName
+   b. If NOT found: throw an Error with message "Entity with name {entityName} not found"
+   c. Filter item.contents: keep only strings NOT already in entity.observations
+      - Comparison: exact string match (case-SENSITIVE)
+   d. Append the filtered new observations to entity.observations
+   e. Record { entityName: item.entityName, addedObservations: [the filtered new ones] }
+3. Save the full graph to disk
+4. Return the array of { entityName, addedObservations } records
+```
+
+**CRITICAL ERROR BEHAVIOR**: If an entity name is not found, the method throws an error. This aborts the entire operation — no partial saves occur if the error happens mid-iteration (because the save happens after the loop).
+
+### 3.7 `deleteEntities(entityNames: string[]): Promise<void>`
+
+Removes entities AND all relations connected to those entities (cascading delete).
+
+**Algorithm:**
+```
+1. Load the full graph from disk
+2. Filter graph.entities: keep entities whose name is NOT in the entityNames array
+3. Filter graph.relations: keep relations where NEITHER from NOR to is in the entityNames array
+   - A relation is removed if relation.from is in entityNames OR relation.to is in entityNames
+4. Save the full graph to disk
+```
+
+**Return value**: void (no return data).
+
+```text
+### 3.8 `deleteObservations(deletions: Array<{entityName: string, observations: string[]}>): Promise<void>`
+
+```
+Removes specific observation strings from entities.
+
+**Algorithm:**
+```
+1. Load the full graph from disk
+2. For each deletion item:
+   a. Find the entity where entity.name === item.entityName
+   b. If entity is found:
+      Filter entity.observations: keep only those NOT in item.observations
+   c. If entity is NOT found: silently skip (no error thrown)
+3. Save the full graph to disk
+```
+
+**IMPORTANT DIFFERENCE from `addObservations`**: `deleteObservations` does NOT throw an error when an entity is not found. It silently ignores the deletion request for non-existent entities.
+
+### 3.9 `deleteRelations(relations: Relation[]): Promise<void>`
+
+Removes specific relations by exact match on all three fields.
+
+**Algorithm:**
+```
+1. Load the full graph from disk
+2. Filter graph.relations: keep relations where NO item in the input array matches ALL THREE:
+   - relation.from === item.from
+   - relation.to === item.to
+   - relation.relationType === item.relationType
+3. Save the full graph to disk
+```
+
+### 3.10 `readGraph(): Promise<KnowledgeGraph>`
+
+Returns the complete graph.
+
+**Algorithm:**
+```
+1. Load the full graph from disk
+2. Return it as-is
+```
+
+This is just a passthrough to `loadGraph()`.
+
+### 3.11 `searchNodes(query: string): Promise<KnowledgeGraph>`
+
+Performs case-insensitive substring search across entity names, types, and observations.
+
+**Algorithm:**
+```
+1. Load the full graph from disk
+2. Lowercase the query string
+3. Filter entities where ANY of the following contains the lowercased query as a substring:
+   a. entity.name.toLowerCase()
+   b. entity.entityType.toLowerCase()
+   c. ANY string in entity.observations where observation.toLowerCase() contains the query
+4. Collect the names of all matching entities into a Set
+5. Filter relations where:
+   relation.from is in the matching names Set OR relation.to is in the matching names Set
+   (At least ONE endpoint must be a matching entity)
+6. Return { entities: [matching entities], relations: [matching relations] }
+```
+
+**Key details:**
+- The search is SUBSTRING matching, not exact match. If query is "john", it matches "Johnny", "john_smith", etc.
+- The search is case-INSENSITIVE — both query and target are lowercased before comparison.
+- Relations are included if EITHER endpoint matches — not just both.
+
+### 3.12 `openNodes(names: string[]): Promise<KnowledgeGraph>`
+
+Retrieves specific entities by exact name match, plus their connected relations.
+
+**Algorithm:**
+```
+1. Load the full graph from disk
+2. Filter entities where entity.name is in the names array (exact match, case-SENSITIVE)
+3. Collect the matched entity names into a Set
+4. Filter relations where:
+   relation.from is in the matched names Set OR relation.to is in the matched names Set
+   (At least ONE endpoint must be in the requested names)
+5. Return { entities: [matched entities], relations: [connected relations] }
+```
+
+**Key details:**
+- Entity lookup is EXACT string match (case-sensitive), unlike `searchNodes` which is case-insensitive substring.
+- Relations are returned if AT LEAST ONE endpoint matches a requested name. This means you may get relations pointing to/from entities that are NOT in the returned entities list.
+
+---
+
+## 4. MCP Tool Definitions
+
+The server registers exactly **9 tools**. Each tool has a name, description, input schema (defined with Zod), and a handler function. Below is the complete specification for each.
+
+### 4.1 `create_entities`
+
+**Description:** "Create multiple new entities in the knowledge graph"
+
+**Input Schema:**
+```
+{
+  entities: Array<{
+    name: string,        // The name of the entity
+    entityType: string,  // The type of the entity
+    observations: string[] // An array of observation contents
+  }>
+}
+```
+
+**Handler:**
+1. Extract `entities` from parsed input arguments
+2. Call `manager.createEntities(entities)`
+3. Return the result (array of created entities) as a JSON-stringified text content response
+
+**Response format:** MCP text content containing JSON array of the newly created entities.
+
+### 4.2 `create_relations`
+
+**Description:** "Create multiple new relations between entities in the knowledge graph. Relations are directed edges."
+
+**Input Schema:**
+```
+{
+  relations: Array<{
+    from: string,         // The name of the entity the relation starts from
+    to: string,           // The name of the entity the relation points to
+    relationType: string  // The type of the relation
+  }>
+}
+```
+
+**Handler:**
+1. Extract `relations` from parsed input arguments
+2. Call `manager.createRelations(relations)`
+3. Return result as JSON-stringified text content
+
+### 4.3 `add_observations`
+
+**Description:** "Add new observations to existing entities in the knowledge graph"
+
+**Input Schema:**
+```
+{
+  observations: Array<{
+    entityName: string,  // The name of the entity to add observations to
+    contents: string[]   // An array of observation strings to add
+  }>
+}
+```
+
+**Handler:**
+1. Extract `observations` from parsed input arguments
+2. Call `manager.addObservations(observations)`
+3. Return result as JSON-stringified text content
+
+**Error case:** If entityName doesn't match any existing entity, this will throw and the MCP framework surfaces the error to the caller.
+
+### 4.4 `delete_entities`
+
+**Description:** "Delete multiple entities and their associated relations from the knowledge graph"
+
+**Input Schema:**
+```
+{
+  entityNames: string[]  // An array of entity names to delete
+}
+```
+
+**Handler:**
+1. Extract `entityNames` from parsed input arguments
+2. Call `manager.deleteEntities(entityNames)`
+3. Return confirmation message: `"Entities deleted successfully"`
+
+### 4.5 `delete_observations`
+
+**Description:** "Delete specific observations from entities in the knowledge graph"
+
+**Input Schema:**
+```
+{
+  deletions: Array<{
+    entityName: string,    // The name of the entity
+    observations: string[] // The observations to delete
+  }>
+}
+```
+
+**Handler:**
+1. Extract `deletions` from parsed input arguments
+2. Call `manager.deleteObservations(deletions)`
+3. Return confirmation message: `"Observations deleted successfully"`
+
+### 4.6 `delete_relations`
+
+**Description:** "Delete multiple relations from the knowledge graph"
+
+**Input Schema:**
+```
+{
+  relations: Array<{
+    from: string,
+    to: string,
+    relationType: string
+  }>
+}
+```
+
+**Handler:**
+1. Extract `relations` from parsed input arguments
+2. Call `manager.deleteRelations(relations)`
+3. Return confirmation message: `"Relations deleted successfully"`
+
+### 4.7 `read_graph`
+
+**Description:** "Read the entire knowledge graph"
+
+```text
+**Input Schema:** `{}` (empty object — no parameters)
+
+```
+**Handler:**
+1. Call `manager.readGraph()`
+2. Return the full KnowledgeGraph object as JSON-stringified text content
+
+### 4.8 `search_nodes`
+
+**Description:** "Search for nodes in the knowledge graph based on a query"
+
+**Input Schema:**
+```
+{
+  query: string  // The search query string
+}
+```
+
+**Handler:**
+1. Extract `query` from parsed input arguments
+2. Call `manager.searchNodes(query)`
+3. Return the matching KnowledgeGraph as JSON-stringified text content
+
+### 4.9 `open_nodes`
+
+**Description:** "Open specific nodes in the knowledge graph by their names"
+
+**Input Schema:**
+```
+{
+  names: string[]  // An array of entity names to retrieve
+}
+```
+
+**Handler:**
+1. Extract `names` from parsed input arguments
+2. Call `manager.openNodes(names)`
+3. Return the matching KnowledgeGraph as JSON-stringified text content
+
+---
+
+## 5. MCP Server Setup and Transport
+
+### 5.1 Server Initialization
+
+The server uses the **MCP SDK** (`@modelcontextprotocol/sdk`) with the following setup:
+
+```typescript
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { z } from "zod";  // Note: zod is a transitive dependency of the MCP SDK
+```
+
+Server creation:
+```typescript
+const server = new McpServer({
+  name: "memory",
+  version: "1.0.0",
+});
+```
+
+### 5.2 Tool Registration Pattern
+
+Each tool is registered using `server.tool()` with this signature:
+```typescript
+server.tool(
+  toolName: string,
+  description: string,
+  inputSchema: Record<string, ZodType>,  // Zod schemas for each parameter
+  handler: async (args) => { content: [{ type: "text", text: string }] }
+);
+```
+
+**IMPORTANT**: The input schema passed to `server.tool()` is a **flat object of Zod schemas**, NOT a nested Zod object. For example:
+
+```typescript
+server.tool(
+  "create_entities",
+  "Create multiple new entities in the knowledge graph",
+  {
+    entities: z.array(z.object({
+      name: z.string().describe("The name of the entity"),
+      entityType: z.string().describe("The type of the entity"),
+      observations: z.array(z.string()).describe("An array of observation contents"),
+    })).describe("Array of entities to create"),
+  },
+  async ({ entities }) => {
+    const result = await manager.createEntities(entities);
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  }
+);
+```
+
+### 5.3 Server Startup
+
+```typescript
+const transport = new StdioServerTransport();
+await server.connect(transport);
+```
+
+The server communicates entirely over **stdin/stdout** using the MCP protocol (JSON-RPC). There is no HTTP server, no port binding.
+
+### 5.4 Process Entry Point
+
+The startup flow:
+1. Determine the memory file path (see Section 6)
+2. Instantiate `KnowledgeGraphManager` with the file path
+3. Register all 9 tools
+4. Create `StdioServerTransport` and connect
+
+---
+
+## 6. File Path Resolution and Migration
+
+### 6.1 Memory File Path Resolution
+
+The storage file path is determined by a function `ensureMemoryFilePath()`:
+
+**Algorithm:**
+```
+1. Check for MEMORY_FILE_PATH environment variable
+2. If set and is an absolute path: use it as-is
+3. If set and is a relative path: resolve it relative to the current working directory
+4. If not set: use "memory.jsonl" in the current working directory
+5. Run legacy migration check (see 6.2)
+6. Return the resolved path
+```
+
+### 6.2 Legacy Migration (.json → .jsonl)
+
+The system migrates from an older `.json` format to the current `.jsonl` format:
+
+**Algorithm:**
+```
+1. If the resolved JSONL file already exists: return (no migration needed)
+2. Derive the legacy path: replace the .jsonl extension with .json
+   (e.g., "/path/to/memory.jsonl" → "/path/to/memory.json")
+3. If the legacy .json file exists:
+   a. Read its contents
+   b. Write the same contents to the new .jsonl path
+   c. Delete the old .json file
+4. If neither file exists: do nothing (fresh start)
+```
+
+**Note**: The migration copies the raw content byte-for-byte. It does NOT re-parse and re-serialize. This works because the original format was already one-JSON-per-line (despite the `.json` extension).
+
+---
+
+## 7. Dependencies and Build Configuration
+
+### 7.1 Runtime Dependencies
+
+| Dependency | Version | Purpose |
+|---|---|---|
+| `@modelcontextprotocol/sdk` | ^1.26.0 | MCP server framework, Zod included transitively |
+
+That's it — ONE runtime dependency (plus its transitive dependencies including `zod`).
+
+### 7.2 Package Configuration
+
+```json
+{
+  "name": "@modelcontextprotocol/server-memory",
+  "version": "0.6.3",
+  "type": "module",
+  "bin": {
+    "mcp-server-memory": "dist/index.js"
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc && node -e \"require('fs').chmodSync('dist/index.js', '755')\"",
+    "watch": "tsc --watch"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.26.0"
+  }
+}
+```
+
+**Key details:**
+- ESM module (`"type": "module"`)
+- Single entry point compiled to `dist/index.js`
+- The `build` script compiles TypeScript and makes the output executable (chmod 755)
+- The `bin` field allows `npx` execution
+
+### 7.3 TypeScript Configuration
+
+- Target: ES2022 or later (uses top-level await)
+- Module: ESM (Node16 or NodeNext module resolution)
+- Strict mode enabled
+- Output to `dist/` directory
+
+### 7.4 Shebang Line
+
+The source file begins with:
+```
+#!/usr/bin/env node
+```
+This allows direct execution as a CLI tool.
+
+---
+
+## 8. Complete Behavioral Test Specifications
+
+These test cases define the exact expected behavior. An implementation must pass all of these.
+
+### 8.1 Entity Operations
+
+**Test: Create basic entities**
+```text
+- Input: Create entities `[{name: "Alice", entityType: "person", observations: ["Is a student"]}]`
+```
+- Expected: Returns array with one entity. Graph now contains one entity.
+
+**Test: Entity deduplication by name**
+- Setup: Create entity with name "Alice"
+- Input: Create entity with name "Alice" again (same or different type/observations)
+- Expected: Returns empty array (no new entity created). Only one "Alice" in graph.
+
+**Test: Multiple entities, some duplicates**
+- Setup: Create entity "Alice"
+- Input: Create entities ["Alice", "Bob"]
+- Expected: Returns array with only "Bob". Both exist in graph.
+
+**Test: Entity name matching is case-SENSITIVE**
+- Setup: Create entity "alice"
+- Input: Create entity "Alice" (capital A)
+- Expected: Returns ["Alice"]. Both "alice" and "Alice" exist as separate entities.
+
+### 8.2 Relation Operations
+
+**Test: Create basic relation**
+```text
+- Input: Create relation `{from: "Alice", to: "Bob", relationType: "knows"}`
+```
+- Expected: Returns array with one relation.
+
+**Test: Relation deduplication**
+```text
+- Setup: Create relation `{from: "Alice", to: "Bob", relationType: "knows"}`
+```
+- Input: Create same relation again
+- Expected: Returns empty array. Only one relation in graph.
+
+**Test: Same endpoints, different relationType**
+```text
+- Setup: Create relation `{from: "Alice", to: "Bob", relationType: "knows"}`
+```
+```text
+- Input: Create relation `{from: "Alice", to: "Bob", relationType: "likes"}`
+```
+- Expected: Returns the new relation. Both relations exist (they are distinct).
+
+**Test: Directionality matters**
+```text
+- Setup: Create relation `{from: "Alice", to: "Bob", relationType: "knows"}`
+```
+```text
+- Input: Create relation `{from: "Bob", to: "Alice", relationType: "knows"}`
+```
+- Expected: Returns the new relation. Both exist (A→B and B→A are different).
+
+### 8.3 Observation Operations
+
+**Test: Add observations to existing entity**
+- Setup: Create entity "Alice" with observations ["Is a student"]
+- Input: Add observations to "Alice": ["Likes pizza"]
+```text
+- Expected: Returns `[{entityName: "Alice", addedObservations: ["Likes pizza"]}]`
+```
+- Entity "Alice" now has observations: ["Is a student", "Likes pizza"]
+
+**Test: Observation deduplication**
+- Setup: Entity "Alice" with observations ["Is a student"]
+- Input: Add observations to "Alice": ["Is a student", "Likes pizza"]
+```text
+- Expected: Returns `[{entityName: "Alice", addedObservations: ["Likes pizza"]}]`
+```
+- Only the new, non-duplicate observation is added.
+
+**Test: Add observations to non-existent entity**
+- Input: Add observations to "Nonexistent": ["anything"]
+- Expected: THROWS Error "Entity with name Nonexistent not found"
+
+**Test: Delete observations**
+- Setup: Entity "Alice" with observations ["Is a student", "Likes pizza"]
+- Input: Delete observations from "Alice": ["Likes pizza"]
+- Expected: Entity "Alice" now has observations: ["Is a student"]
+
+**Test: Delete observations from non-existent entity**
+- Input: Delete observations from "Nonexistent": ["anything"]
+- Expected: NO error. Silent no-op. (Contrast with `addObservations` which DOES throw.)
+
+### 8.4 Delete Operations
+
+**Test: Delete entity cascades to relations**
+- Setup: Entities "Alice" and "Bob". Relation: Alice → Bob "knows"
+- Input: Delete entities ["Alice"]
+- Expected: "Alice" entity removed. The "knows" relation is ALSO removed (cascade).
+
+**Test: Delete entity cascade — relation connected on 'to' side**
+- Setup: Entities "Alice" and "Bob". Relation: Bob → Alice "reports_to"
+- Input: Delete entities ["Alice"]
+- Expected: "Alice" removed. "reports_to" relation ALSO removed (Alice was the 'to' endpoint).
+
+**Test: Delete entity preserves unrelated relations**
+- Setup: Entities A, B, C. Relations: A→B, B→C
+- Input: Delete entities ["A"]
+- Expected: A removed. A→B removed. B→C preserved (neither endpoint is A).
+
+**Test: Delete relations by exact match**
+- Setup: Relations: A→B "knows", A→B "likes"
+```text
+- Input: Delete relations `[{from: "A", to: "B", relationType: "knows"}]`
+```
+- Expected: "knows" removed. "likes" preserved.
+
+### 8.5 Search Operations
+
+**Test: Search by entity name (case-insensitive)**
+- Setup: Entity "John_Smith"
+- Input: Search query "john"
+- Expected: Returns entity "John_Smith"
+
+**Test: Search by entity type (case-insensitive)**
+- Setup: Entity with entityType "Person"
+- Input: Search query "person"
+- Expected: Returns the entity
+
+**Test: Search by observation content (case-insensitive)**
+- Setup: Entity with observation "Works at Google"
+- Input: Search query "google"
+- Expected: Returns the entity
+
+**Test: Search returns connected relations**
+- Setup: Entities A and B. Relation A→B. Only A matches search.
+- Input: Search query matching only A
+- Expected: Returns entity A and relation A→B (because A is an endpoint)
+
+**Test: Search includes relations where at least one endpoint matches**
+- Setup: Entities A, B, C. Relations: A→B, B→C. Search matches only B.
+- Input: Search query matching only B
+- Expected: Returns entity B, relation A→B, and relation B→C
+
+**Test: Search with no matches**
+- Input: Search query "xyznonexistent"
+```text
+- Expected: Returns `{ entities: [], relations: [] }`
+
+```
+### 8.6 Open Nodes Operations
+
+**Test: Open specific nodes**
+- Setup: Entities A and B
+- Input: Open nodes ["A"]
+- Expected: Returns entity A (not B)
+
+**Test: Open nodes returns connected relations**
+- Setup: Entities A, B. Relation A→B.
+- Input: Open nodes ["A"]
+- Expected: Returns entity A and relation A→B
+
+**Test: Open nodes — name matching is case-SENSITIVE**
+- Setup: Entity "Alice"
+- Input: Open nodes ["alice"]
+- Expected: Returns empty (no match — exact case required)
+
+**Test: Open nodes with multiple names**
+- Setup: Entities A, B, C. Relations: A→B, B→C, A→C.
+- Input: Open nodes ["A", "C"]
+- Expected: Returns entities A and C. Returns relations A→B (A matches), B→C (C matches), A→C (both match).
+
+### 8.7 Persistence Tests
+
+**Test: Data survives save/load cycle**
+- Create entities and relations
+- Load graph from disk
+- Verify all data matches
+
+**Test: JSONL format correctness**
+- Create entities and a relation
+- Read the raw file
+- Verify each line is valid JSON
+- Verify entity lines have `"type":"entity"`
+- Verify relation lines have `"type":"relation"`
+- Verify entities come before relations in the file
+
+**Test: Type field stripped on load**
+- Write JSONL manually with type fields
+- Load graph
+- Verify loaded entities/relations do NOT contain `type` property
+
+### 8.8 File Path and Migration Tests
+
+**Test: Default path**
+- No MEMORY_FILE_PATH env var
+```text
+- Expected path: `{cwd}/memory.jsonl`
+
+```
+**Test: Absolute path from env var**
+- Set MEMORY_FILE_PATH to "/tmp/custom.jsonl"
+- Expected path: `/tmp/custom.jsonl`
+
+**Test: Relative path from env var**
+- Set MEMORY_FILE_PATH to "data/graph.jsonl"
+```text
+- Expected path: `{cwd}/data/graph.jsonl`
+
+```
+**Test: Migration from .json to .jsonl**
+- Create a file at "memory.json" with valid content
+- Run ensureMemoryFilePath()
+- Expected: "memory.jsonl" now exists with same content. "memory.json" is deleted.
+
+**Test: No migration if .jsonl already exists**
+- Both "memory.json" and "memory.jsonl" exist
+- Run ensureMemoryFilePath()
+- Expected: Neither file modified (JSONL takes priority)
+
+---
+
+## 9. Recommended System Prompt for AI Client Integration
+
+When this server is used with an AI assistant (e.g., Claude Desktop), the following system prompt pattern is recommended to guide the AI in using the memory tools effectively:
+
+```
+Follow these steps for each interaction:
+
+1. Memory Retrieval:
+   - Always begin by using search_nodes or open_nodes to retrieve relevant information
+   - Use read_graph for a comprehensive view when needed
+
+2. Memory Storage:
+   - After each interaction, identify key facts, preferences, and relationships
+   - Create entities for people, organizations, concepts, events
+   - Create relations between entities
+   - Add observations for specific facts and details
+   - Update existing observations when information changes
+
+3. Memory Maintenance:
+   - Use delete operations to remove outdated or incorrect information
+   - Consolidate related observations when entities grow large
+```
+
+---
+
+## 10. Edge Cases and Implementation Notes
+
+### 10.1 Thread Safety
+
+There is NO concurrency protection. If two operations happen simultaneously, they will both `loadGraph()` and then `saveGraph()`, with the second write overwriting the first. This is acceptable for single-client MCP usage.
+
+### 10.2 Empty Graph
+
+```text
+A fresh install with no file on disk returns `{ entities: [], relations: [] }` for all read operations. All create operations work normally from an empty state.
+
+```
+### 10.3 File Encoding
+
+All file reads and writes use UTF-8 encoding.
+
+### 10.4 No Validation of Referential Integrity
+
+`createRelations` does NOT verify that the `from` and `to` entity names actually exist in the graph. You can create relations referencing non-existent entities. Only `addObservations` validates entity existence.
+
+### 10.5 No Pagination
+
+All operations return full result sets. `readGraph()` returns every entity and relation. There is no pagination, limits, or cursor mechanism.
+
+### 10.6 MCP Error Handling
+
+When a tool handler throws an error (e.g., `addObservations` for non-existent entity), the MCP SDK framework catches it and returns it as an error response to the calling AI. The server itself does not crash — the error is per-tool-call.
+
+### 10.7 Process Lifecycle
+
+The server runs as a long-lived process, communicating over stdin/stdout. It stays alive until the parent process (e.g., Claude Desktop) terminates the connection.
+
+---
+
+## 11. Implementation Checklist
+
+To build a functionally identical system, implement these in order:
+
+1. **Data types**: Define `Entity`, `Relation`, `KnowledgeGraph` interfaces
+2. **KnowledgeGraphManager class**:
+   - `loadGraph()` — JSONL parsing with type field stripping
+   - `saveGraph()` — JSONL serialization with type field addition
+   - All 9 operation methods exactly as specified in Section 3
+3. **File path resolution**: `ensureMemoryFilePath()` with env var support and .json→.jsonl migration
+4. **MCP server setup**: Initialize `McpServer` with name "memory", version "1.0.0"
+5. **Tool registration**: Register all 9 tools with Zod schemas as specified in Section 4
+6. **Transport**: Create `StdioServerTransport` and connect
+7. **Package configuration**: ESM module with shebang line and bin entry
+8. **Test suite**: All test cases from Section 8
+
+**Total expected implementation size**: ~300 lines of TypeScript in a single file.

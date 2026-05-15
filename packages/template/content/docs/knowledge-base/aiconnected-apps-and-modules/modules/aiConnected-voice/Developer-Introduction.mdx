@@ -1,0 +1,714 @@
+---
+title: "Developer Introduction"
+---
+# Voice by aiConnected — A Developer's Introduction
+
+## What This Document Is
+
+This document explains Voice by aiConnected for developers who are new to voice AI, real-time systems, or this specific project. It covers what we're building, how the pieces fit together, and what you need to understand to contribute effectively.
+
+If you're joining this project and want to get up to speed quickly, start here.
+
+---
+
+## What We're Building
+
+### The One-Sentence Version
+
+A platform that connects phone calls to AI agents that can have natural conversations, take actions, and transfer to humans when needed.
+
+### The One-Paragraph Version
+
+Voice by aiConnected is a multi-tenant Voice AI platform. When someone calls a business using our service, the call is answered by an AI that listens (using speech-to-text), thinks (using a large language model), and responds (using text-to-speech). The AI has access to information about the business and can perform actions like scheduling appointments or updating CRM records. When the AI can't handle something, it seamlessly transfers the call to a human.
+
+### The Visual Version
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                          THE VOICE PIPELINE                                  │
+│                                                                              │
+│   Caller                                                                     │
+│     │                                                                        │
+│     │ Phone Call (audio)                                                     │
+│     ▼                                                                        │
+│   ┌─────────────┐                                                            │
+│   │ GoToConnect │  ← Traditional phone system (PBX)                          │
+│   │   (PSTN)    │                                                            │
+│   └──────┬──────┘                                                            │
+│          │                                                                   │
+│          │ WebRTC (audio over internet)                                      │
+│          ▼                                                                   │
+│   ┌─────────────┐                                                            │
+│   │   WebRTC    │  ← Bridges phone audio to our system                       │
+│   │   Bridge    │                                                            │
+│   └──────┬──────┘                                                            │
+│          │                                                                   │
+│          │ Audio stream                                                      │
+│          ▼                                                                   │
+│   ┌─────────────┐                                                            │
+│   │   LiveKit   │  ← Real-time communication infrastructure                  │
+│   │    Room     │                                                            │
+│   └──────┬──────┘                                                            │
+│          │                                                                   │
+│          ├──────────────────┬──────────────────┬────────────────────┐       │
+│          │                  │                  │                    │       │
+│          ▼                  ▼                  ▼                    ▼       │
+│   ┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐  │
+│   │  Deepgram   │    │   Claude    │    │ Chatterbox  │    │  Webhooks   │  │
+│   │    (STT)    │───▶│   (LLM)     │───▶│   (TTS)     │    │   (Tools)   │  │
+│   └─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘  │
+│                                                                              │
+│   "Hi, I need to       "The customer        "Your appointment            │
+│    schedule an          wants to book        is confirmed for              │
+│    appointment"         an appointment.      Tuesday at 3 PM"              │
+│                         Let me check                                        │
+│                         availability..."                                    │
+│                                                                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Core Concepts You Need to Understand
+
+### 1. The Voice Pipeline
+
+Voice AI is essentially a pipeline that transforms audio → text → response → audio:
+
+```text
+Audio In → STT → Text → LLM → Response Text → TTS → Audio Out
+```
+
+Each step has latency, and latency is the enemy. If the AI takes too long to respond, the conversation feels unnatural. Our target is under 1 second from when the caller stops speaking to when they hear the AI's response.
+
+| Stage | What Happens | Target Latency |
+| :-- | :-- | :-- |
+| STT (Speech-to-Text) | Converts caller's voice to text | ~300ms |
+| LLM (Large Language Model) | Generates a response | ~350ms |
+| TTS (Text-to-Speech) | Converts response to speech | ~150ms |
+| Network/Audio | Moving audio around | ~100ms |
+| **Total** |  | **~900ms** |
+
+### 2. Streaming vs. Batch Processing
+
+The key to achieving low latency is **streaming**. Instead of waiting for each stage to complete fully before starting the next, we stream data through the pipeline:
+
+**Batch (slow):**
+
+```text
+[Wait for caller to finish] → [Transcribe all] → [Generate full response] → [Synthesize all] → [Play]
+```
+
+**Streaming (fast):**
+
+```text
+[Transcribe as they speak] → [Start generating on partial transcript] → [Synthesize as tokens arrive] → [Play immediately]
+```
+
+Every component in our stack supports streaming:
+
+- Deepgram provides interim transcription results
+- Claude streams tokens as they're generated
+- Chatterbox synthesizes audio incrementally
+
+### 3. WebRTC
+
+WebRTC (Web Real-Time Communication) is a protocol for real-time audio/video over the internet. It's what powers video calls in your browser.
+
+Key concepts:
+
+- **Peer-to-peer** — Direct connections between participants
+- **SDP (Session Description Protocol)** — How peers negotiate connection parameters
+- **ICE (Interactive Connectivity Establishment)** — How peers find a path to connect
+- **Tracks** — Individual audio or video streams
+
+We use WebRTC to get audio from the phone system (GoToConnect) into our processing pipeline (LiveKit).
+
+### 4. LiveKit
+
+LiveKit is an open-source platform for real-time audio/video. Think of it as "Zoom/WebRTC infrastructure as a service."
+
+Key concepts:
+
+- **Rooms** — Virtual spaces where participants connect
+- **Participants** — Entities in a room (could be users or AI agents)
+- **Tracks** — Audio or video streams published by participants
+- **LiveKit Agents SDK** — Framework for building AI agents that participate in rooms
+
+In our system:
+
+- Each phone call creates a LiveKit room
+- The WebRTC bridge joins as one participant (representing the caller)
+- The AI agent joins as another participant
+- Audio flows between them through the room
+
+### 5. State Machines
+
+Phone calls have states: ringing, connected, on hold, transferred, ended. Managing these transitions correctly is crucial.
+
+```text
+┌─────────┐     ┌───────────┐     ┌────────────┐     ┌─────────┐
+│ RINGING │────▶│ CONNECTED │────▶│ CONVERSING │────▶│  ENDED  │
+└─────────┘     └───────────┘     └────────────┘     └─────────┘
+                      │                  │
+                      │                  │
+                      ▼                  ▼
+               ┌───────────┐     ┌─────────────┐
+               │  ON_HOLD  │     │ TRANSFERRING│
+               └───────────┘     └─────────────┘
+```
+
+We use Redis to store call state because:
+
+- It's fast (in-memory)
+- It's ephemeral (call state doesn't need to persist forever)
+- It supports pub/sub (for real-time notifications)
+
+### 6. Multi-Tenancy
+
+Multiple businesses (tenants) use the same platform. Each tenant has:
+
+- Their own phone numbers
+- Their own AI configuration (personality, knowledge base, tools)
+- Their own usage tracking and billing
+- Isolated data (Tenant A can't see Tenant B's calls)
+
+This is implemented through:
+
+- Tenant IDs on all database records
+- Scoped API keys
+- Request-level tenant context
+
+---
+
+## The Technology Stack
+
+### Languages & Frameworks
+
+| Component | Language | Framework | Why |
+| :-- | :-- | :-- | :-- |
+| WebRTC Bridge | Python | aiortc | Best WebRTC library for Python |
+| AI Agent | Python | LiveKit Agents SDK | Native Python SDK |
+| API Gateway | Python | FastAPI | Async, fast, great docs |
+| Background Workers | Python | Celery or native async | Job processing |
+
+### External Services
+
+| Service | Purpose | Why This One |
+| :-- | :-- | :-- |
+| GoToConnect | Phone system | Existing, full API, unlimited plan |
+| LiveKit Cloud | Real-time audio | Industry standard, Agents SDK |
+| Deepgram | Speech-to-text | Low latency, streaming, accurate |
+| Anthropic Claude | AI reasoning | Best reasoning, streaming |
+| RunPod | GPU hosting | Cost-effective A5000 |
+| Chatterbox | Text-to-speech | Free, MIT license, paralinguistics |
+
+### Databases & Storage
+
+| Service | Purpose | Why This One |
+| :-- | :-- | :-- |
+| PostgreSQL | Relational data | Tenants, configs, call logs |
+| Redis | Cache & state | Call state machine, sessions |
+| DO Spaces | Object storage | Voice samples, recordings |
+
+### Infrastructure
+
+| Service | Purpose |
+| :-- | :-- |
+| DigitalOcean | Cloud hosting |
+| Dokploy | Container orchestration |
+| RunPod | GPU instances for TTS |
+
+---
+
+## Project Structure
+
+Here's how the codebase is organized:
+
+```text
+voice-by-aiconnected/
+├── docs/                          # Documentation (you are here)
+│   ├── 00-MASTER-PROJECT-TASK-LIST.md
+│   ├── 01-system-architecture.md
+│   └── ...
+│
+├── services/                      # Backend services
+│   ├── api-gateway/              # Public API (FastAPI)
+│   │   ├── app/
+│   │   │   ├── main.py
+│   │   │   ├── routers/
+│   │   │   ├── models/
+│   │   │   └── dependencies/
+│   │   ├── Dockerfile
+│   │   └── requirements.txt
+│   │
+│   ├── webrtc-bridge/            # GoToConnect ↔ LiveKit bridge
+│   │   ├── bridge/
+│   │   │   ├── main.py
+│   │   │   ├── goto_client.py
+│   │   │   ├── livekit_client.py
+│   │   │   └── audio_handler.py
+│   │   ├── Dockerfile
+│   │   └── requirements.txt
+│   │
+│   ├── agent-service/            # LiveKit AI agent
+│   │   ├── agent/
+│   │   │   ├── main.py
+│   │   │   ├── pipeline.py       # STT → LLM → TTS
+│   │   │   ├── tools.py          # Function calling
+│   │   │   └── prompts.py
+│   │   ├── Dockerfile
+│   │   └── requirements.txt
+│   │
+│   └── worker-service/           # Background jobs
+│       ├── worker/
+│       │   ├── main.py
+│       │   ├── tasks/
+│       │   └── handlers/
+│       ├── Dockerfile
+│       └── requirements.txt
+│
+├── shared/                        # Shared code
+│   ├── database/
+│   │   ├── models.py             # SQLAlchemy models
+│   │   └── migrations/           # Alembic migrations
+│   ├── schemas/                   # Pydantic schemas
+│   ├── utils/
+│   └── config/
+│
+├── integrations/                  # Provider integrations
+│   ├── gotoconnect/
+│   ├── livekit/
+│   ├── deepgram/
+│   ├── anthropic/
+│   ├── chatterbox/
+│   └── n8n/
+│
+├── tests/
+│   ├── unit/
+│   ├── integration/
+│   └── e2e/
+│
+├── infrastructure/
+│   ├── docker-compose.yml        # Local development
+│   ├── docker-compose.prod.yml   # Production
+│   └── dokploy/                  # Deployment configs
+│
+└── scripts/
+    ├── setup.sh
+    ├── migrate.sh
+    └── seed.sh
+```
+
+---
+
+## Key Files You'll Work With
+
+### WebRTC Bridge (`services/webrtc-bridge/`)
+
+This is the trickiest part of the system. It:
+
+1. Receives calls from GoToConnect via WebRTC
+2. Extracts audio frames
+3. Publishes them to a LiveKit room
+4. Receives AI audio from LiveKit
+5. Sends it back to GoToConnect
+
+```py
+# Simplified example of what the bridge does
+class WebRTCBridge:
+    async def handle_incoming_call(self, call_id: str, sdp_offer: str):
+        # Create a LiveKit room for this call
+        room = await self.livekit.create_room(f"call-{call_id}")
+        
+        # Set up WebRTC connection to GoToConnect
+        pc = RTCPeerConnection()
+        
+        @pc.on("track")
+        async def on_track(track):
+            if track.kind == "audio":
+                # Forward caller's audio to LiveKit
+                await self.forward_to_livekit(track, room)
+        
+        # Complete WebRTC handshake
+        await pc.setRemoteDescription(RTCSessionDescription(sdp=sdp_offer, type="offer"))
+        answer = await pc.createAnswer()
+        await pc.setLocalDescription(answer)
+        
+        return answer.sdp
+```
+
+### AI Agent (`services/agent-service/`)
+
+This is where the magic happens. The agent:
+
+1. Joins a LiveKit room
+2. Listens to the audio track from the bridge
+3. Transcribes it with Deepgram
+4. Generates a response with Claude
+5. Synthesizes speech with Chatterbox
+6. Publishes the audio back to the room
+
+```py
+# Simplified example using LiveKit Agents SDK
+from livekit.agents import Agent, AgentContext
+from livekit.plugins import deepgram, anthropic
+
+class VoiceAgent:
+    def __init__(self, tenant_config: TenantConfig):
+        self.stt = deepgram.STT()
+        self.llm = anthropic.LLM(model="claude-sonnet-4-20250514")
+        self.tts = ChatterboxTTS(tenant_config.voice_id)
+        self.knowledge_base = tenant_config.knowledge_base
+        
+    async def run(self, ctx: AgentContext):
+        # Build the system prompt with business context
+        system_prompt = self.build_prompt(self.knowledge_base)
+        
+        # Create the conversational pipeline
+        pipeline = VoicePipeline(
+            stt=self.stt,
+            llm=self.llm,
+            tts=self.tts,
+            system_prompt=system_prompt,
+            tools=self.get_tools()
+        )
+        
+        # Run until the call ends
+        await pipeline.run(ctx)
+```
+
+### Call State Machine (`shared/state/`)
+
+Manages the lifecycle of each call:
+
+```py
+from enum import Enum
+from redis import Redis
+
+class CallState(Enum):
+    RINGING = "ringing"
+    CONNECTED = "connected"
+    CONVERSING = "conversing"
+    ON_HOLD = "on_hold"
+    TRANSFERRING = "transferring"
+    ENDED = "ended"
+
+class CallStateMachine:
+    def __init__(self, redis: Redis, call_id: str):
+        self.redis = redis
+        self.call_id = call_id
+        self.key = f"call:{call_id}:state"
+    
+    async def transition(self, new_state: CallState) -> bool:
+        """Attempt to transition to a new state."""
+        current = await self.get_state()
+        
+        if self.is_valid_transition(current, new_state):
+            await self.redis.set(self.key, new_state.value)
+            await self.publish_event(current, new_state)
+            return True
+        return False
+    
+    def is_valid_transition(self, from_state: CallState, to_state: CallState) -> bool:
+        """Check if the transition is allowed."""
+        valid_transitions = {
+            CallState.RINGING: [CallState.CONNECTED, CallState.ENDED],
+            CallState.CONNECTED: [CallState.CONVERSING, CallState.ENDED],
+            CallState.CONVERSING: [CallState.ON_HOLD, CallState.TRANSFERRING, CallState.ENDED],
+            CallState.ON_HOLD: [CallState.CONVERSING, CallState.ENDED],
+            CallState.TRANSFERRING: [CallState.ENDED],
+        }
+        return to_state in valid_transitions.get(from_state, [])
+```
+
+---
+
+## Development Workflow
+
+### Setting Up Your Environment
+
+1. **Clone the repository**
+
+```shell
+git clone <repo-url>
+cd voice-by-aiconnected
+```
+
+2. **Copy environment template**
+
+```shell
+cp .env.example .env
+# Fill in your API keys
+```
+
+3. **Start local services**
+
+```shell
+docker-compose up -d
+```
+
+4. **Run migrations**
+
+```shell
+./scripts/migrate.sh
+```
+
+5. **Start development servers**
+
+```shell
+# In separate terminals:
+cd services/api-gateway && uvicorn app.main:app --reload
+cd services/webrtc-bridge && python -m bridge.main
+cd services/agent-service && python -m agent.main
+```
+
+### Testing a Call Locally
+
+For local development, you'll use test audio files instead of real phone calls:
+
+```shell
+# Simulate an inbound call with test audio
+python scripts/simulate_call.py --audio test_audio/hello.wav
+```
+
+### Running Tests
+
+```shell
+# Unit tests
+pytest tests/unit/
+
+# Integration tests (requires services running)
+pytest tests/integration/
+
+# End-to-end tests (requires all services + credentials)
+pytest tests/e2e/
+```
+
+---
+
+## Common Patterns You'll See
+
+### 1. Async Everything
+
+Almost all our code is async because we're dealing with I/O-bound operations (network calls, audio streaming). Get comfortable with:
+
+```py
+async def process_audio(stream: AsyncIterator[bytes]) -> AsyncIterator[str]:
+    async for chunk in stream:
+        result = await transcribe(chunk)
+        yield result
+```
+
+### 2. Dependency Injection
+
+We use FastAPI's dependency injection for database sessions, authentication, tenant context:
+
+```py
+@router.post("/calls")
+async def create_call(
+    request: CreateCallRequest,
+    db: Session = Depends(get_db),
+    tenant: Tenant = Depends(get_current_tenant)
+):
+    # tenant is automatically extracted from the API key
+    call = await create_call_for_tenant(db, tenant, request)
+    return call
+```
+
+### 3. Event-Driven Communication
+
+Services communicate through events, not direct calls:
+
+```py
+# When a call connects
+await event_bus.publish("call.connected", {
+    "call_id": call_id,
+    "tenant_id": tenant_id,
+    "timestamp": datetime.utcnow()
+})
+
+# Another service listens
+@event_handler("call.connected")
+async def handle_call_connected(event: Event):
+    await start_agent_for_call(event.data["call_id"])
+```
+
+### 4. Circuit Breakers
+
+External services can fail. We use circuit breakers to fail fast:
+
+```py
+from circuitbreaker import circuit
+
+@circuit(failure_threshold=5, recovery_timeout=30)
+async def call_deepgram(audio: bytes) -> str:
+    # If this fails 5 times, the circuit opens
+    # and we fail immediately for 30 seconds
+    return await deepgram_client.transcribe(audio)
+```
+
+### 5. Graceful Degradation
+
+When components fail, we degrade gracefully:
+
+```py
+async def synthesize_speech(text: str) -> bytes:
+    try:
+        # Try Chatterbox first
+        return await chatterbox.synthesize(text)
+    except ChatterboxError:
+        # Fall back to Resemble API
+        logger.warning("Chatterbox failed, using fallback")
+        return await resemble_api.synthesize(text)
+    except Exception:
+        # Last resort: pre-recorded message
+        return load_audio("fallback_messages/technical_difficulty.wav")
+```
+
+---
+
+## Key Challenges You'll Face
+
+### 1. Latency Optimization
+
+Every millisecond matters. You'll need to:
+
+- Profile everything
+- Avoid blocking operations
+- Stream wherever possible
+- Cache aggressively
+- Minimize network hops
+
+### 2. Audio Quality
+
+Telephone audio is 8kHz, muddy, and often has background noise. You'll need to:
+
+- Handle different audio formats
+- Resample correctly
+- Understand codec differences
+- Deal with packet loss
+
+### 3. Conversation Flow
+
+Natural conversations have:
+
+- Interruptions (barge-in)
+- Pauses
+- Overlapping speech
+- Misunderstandings
+
+The AI needs to handle all of these gracefully.
+
+### 4. Error Recovery
+
+Lots of things can fail:
+
+- Network issues
+- API rate limits
+- Audio dropout
+- Service outages
+
+Your code needs to handle these without dropping calls.
+
+### 5. Concurrency
+
+Multiple calls happen simultaneously. You need to:
+
+- Avoid race conditions
+- Manage connection pools
+- Handle resource contention
+- Scale horizontally
+
+---
+
+## Glossary
+
+| Term | Definition |
+| :-- | :-- |
+| **STT** | Speech-to-Text. Converting audio to text. |
+| **TTS** | Text-to-Speech. Converting text to audio. |
+| **LLM** | Large Language Model. AI that generates text (like Claude). |
+| **WebRTC** | Web Real-Time Communication. Protocol for real-time audio/video. |
+| **SDP** | Session Description Protocol. How WebRTC peers negotiate. |
+| **PBX** | Private Branch Exchange. A business phone system. |
+| **PSTN** | Public Switched Telephone Network. The traditional phone system. |
+| **SIP** | Session Initiation Protocol. Protocol for VoIP calls. |
+| **VAD** | Voice Activity Detection. Detecting when someone is speaking. |
+| **TTFB** | Time to First Byte. How long until the first response arrives. |
+| **RTF** | Real-Time Factor. If RTF \< 1, synthesis is faster than real-time. |
+| **Barge-in** | When the caller interrupts the AI while it's speaking. |
+| **Warm Transfer** | Transferring a call after briefing the recipient. |
+| **Blind Transfer** | Transferring a call without briefing the recipient. |
+| **Multi-tenant** | One system serving multiple separate customers. |
+
+---
+
+## How to Get Help
+
+### Documentation
+
+1. **This document** — Start here for overview
+2. **Master Project Task List** — Overall project plan
+3. **Individual specification documents** — Deep dives into each component
+4. **Skills folder** — API reference for each provider
+
+### Code
+
+1. **Read the tests** — Tests show how things are supposed to work
+2. **Read the types** — Type hints document expected inputs/outputs
+3. **Read the docstrings** — Functions should explain what they do
+
+### People
+
+1. **Ask questions** — No question is too basic
+2. **Review PRs** — See how others solve problems
+3. **Pair program** — Learn by doing together
+
+---
+
+## Your First Tasks
+
+If you're new to the project, here are good starting points:
+
+### Beginner
+
+1. Set up your local development environment
+2. Run the test suite and make sure everything passes
+3. Read through the API gateway routes to understand the API surface
+4. Add a simple new endpoint (e.g., health check with more details)
+
+### Intermediate
+
+1. Add a new tool that the AI can call (e.g., check business hours)
+2. Improve error messages in a service
+3. Add metrics/logging to an existing component
+4. Write integration tests for an existing feature
+
+### Advanced
+
+1. Implement a new call feature (e.g., call recording)
+2. Optimize latency in the voice pipeline
+3. Add a new STT/TTS provider as a fallback
+4. Implement a complex state machine transition
+
+---
+
+## Final Thoughts
+
+Voice AI is a fascinating intersection of several technologies:
+
+- Real-time systems
+- AI/ML
+- Telecommunications
+- Distributed systems
+
+It's challenging because everything happens in real-time. You can't hide latency behind a loading spinner. You can't ask the user to refresh the page. The conversation has to flow naturally, and if anything goes wrong, it's immediately obvious.
+
+But when it works, it's magical. A computer that you can talk to like a person, that understands you, that helps you — that's the future we're building.
+
+Welcome to the team.
+
+---
+
+_Last updated: 2026-01-16_

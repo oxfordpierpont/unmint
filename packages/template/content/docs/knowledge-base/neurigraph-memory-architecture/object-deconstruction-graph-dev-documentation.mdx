@@ -1,0 +1,585 @@
+---
+title: "Object Deconstruction Graph (ODG)"
+description: "Neurigraph Architecture — Developer Documentation Component: Object Deconstruction Graph Abbreviation: ODG Classification: Dormant Brain Region — Subconsciou..."
+---
+<Info>
+Normalized for Mintlify from `knowledge-base/neurigraph-memory-architecture/object-deconstruction-graph-dev-documentation.mdx`.
+</Info>
+# Object Deconstruction Graph (ODG)
+## Neurigraph Architecture — Developer Documentation
+
+**Component:** Object Deconstruction Graph  
+**Abbreviation:** ODG  
+**Classification:** Dormant Brain Region — Subconscious Layer  
+**Status:** Architectural Specification v1.0  
+**Last Updated:** April 2026
+
+---
+
+## Table of Contents
+
+1. [Overview](#overview)
+2. [Purpose and Problem Statement](#purpose-and-problem-statement)
+3. [Core Concepts](#core-concepts)
+4. [Architecture](#architecture)
+5. [Graph Structure](#graph-structure)
+6. [Heat-Based Retrieval System](#heat-based-retrieval-system)
+7. [Activation States](#activation-states)
+8. [Dormancy and Resource Management](#dormancy-and-resource-management)
+9. [Integration with Neurigraph Regions](#integration-with-neurigraph-regions)
+10. [Amygdala — Dynamic Heat Threshold Control](#amygdala-dynamic-heat-threshold-control)
+11. [Sleep Cycle Behavior](#sleep-cycle-behavior)
+12. [Data Model](#data-model)
+13. [Query Patterns](#query-patterns)
+14. [Implementation Guidance](#implementation-guidance)
+15. [Design Constraints](#design-constraints)
+16. [Glossary](#glossary)
+
+---
+
+## Overview
+
+The Object Deconstruction Graph is a dedicated region of the Neurigraph artificial brain architecture. It has one job: receive any concept, object, or idea and break it down into its most fundamental components — mapping every relationship between those components and everything they connect to — storing the result as a permanently available, independently queryable graph.
+
+The ODG does not participate in normal conversation. It does not process incoming messages. It does not generate responses. It exists entirely to build and maintain a deep structural understanding of what things are made of, so that when other regions of the brain need that understanding, it is already there.
+
+Think of it as a library of wholes, understood as their parts.
+
+---
+
+## Purpose and Problem Statement
+
+Most AI systems understand concepts the way a tourist understands a city. They know the name. They can describe it. They have seen examples. But they do not understand what the concept is made of at a fundamental level — and they cannot take an individual component out, examine it independently, and ask what else it could be used for.
+
+This creates a hard ceiling on creative and novel problem-solving. An AI that knows a house has a door knows a fact. An AI that understands what a door fundamentally is — its components, its function, its properties as an independent object — can recognize that a door is relevant to any problem involving controlled access between two spaces, regardless of whether the problem mentions houses, doors, or anything related.
+
+The Object Deconstruction Graph is the region that closes this gap.
+
+**Without the ODG:** The system knows that things exist and can describe them.
+
+**With the ODG:** The system understands what things are made of and can apply those components to entirely new problems.
+
+---
+
+## Core Concepts
+
+### Object
+
+Any concept, idea, physical thing, process, or system that can be broken into components. An object is the starting point for any deconstruction.
+
+Examples: house, negotiation, supply chain, human attention, electrical circuit, trust.
+
+### Component
+
+Any discrete, independently meaningful part of an object. A component has its own identity, its own properties, and its own potential applications outside the object it was found in.
+
+A door is a component of a house. A hinge is a component of a door. A pin is a component of a hinge. Each is independently meaningful and independently reusable.
+
+### Deconstruction
+
+The process of identifying and mapping all components of an object, the relationships between those components, and the components' relationships to things outside the original object. Deconstruction is bounded at a maximum depth of 10 layers to prevent infinite recursion.
+
+### Node
+
+A single entry in the graph. Every object and every component is stored as a node. Nodes are independent — they do not belong to any one object. A hinge node can be connected to a door, to a biology concept, to a software state machine, or to anything else where the relationship is real.
+
+### Edge
+
+A directional, weighted connection between two nodes. Every edge carries a relationship label (is-component-of, contains, relates-to, functions-similarly-to) and a weight value between 0.0 and 1.0 representing the strength of that relationship.
+
+### Heat
+
+A dynamic relevance score assigned to nodes during active traversal. Heat is not stored — it is calculated at query time based on the distance from the focal node and the weight of intervening edges. Heat determines which nodes surface during retrieval.
+
+---
+
+## Architecture
+
+The Object Deconstruction Graph is implemented as a directed, weighted graph database. The recommended implementation is Neo4j or a compatible graph database. Relational databases are not suitable for this component due to the multi-hop traversal requirements.
+
+```
+┌─────────────────────────────────────────────────────┐
+│              Object Deconstruction Graph             │
+│                                                     │
+│  ┌──────────┐    ┌──────────┐    ┌──────────┐      │
+│  │  Layer 4 │    │  Layer 4 │    │  Layer 4 │      │
+│  │ (finest) │    │ (finest) │    │ (finest) │      │
+│  └────┬─────┘    └────┬─────┘    └────┬─────┘      │
+│       │               │               │             │
+│  ┌────┴─────┐    ┌────┴─────┐         │             │
+│  │  Layer 3 │────│  Layer 3 │─────────┘             │
+│  │          │    │          │                       │
+│  └────┬─────┘    └────┬─────┘                       │
+│       │               │                             │
+│  ┌────┴──────────┬────┘                             │
+│  │    Layer 2    │                                  │
+│  │  (components) │                                  │
+│  └──────┬────────┘                                  │
+│         │                                           │
+│  ┌──────┴────────┐                                  │
+│  │    Layer 1    │                                  │
+│  │   (object)    │                                  │
+│  └───────────────┘                                  │
+│                                                     │
+│  Connections run both horizontally (same layer)     │
+│  and vertically (across layers)                     │
+└─────────────────────────────────────────────────────┘
+```
+
+---
+
+## Graph Structure
+
+### Four-Layer Organization
+
+The ODG organizes nodes across four layers. Layers represent degrees of complexity and specificity — not categories. The layer a node occupies is determined automatically by how many deconstruction steps it is from the original object.
+
+**Layer 1 — The Object**
+The original concept being deconstructed. This is always the anchor layer. Every deconstruction session begins here.
+
+Example: `house`
+
+**Layer 2 — Primary Components**
+The direct, named components of the object. One deconstruction step from the original.
+
+Example: `door`, `wall`, `roof`, `foundation`, `yard`, `electrical system`
+
+**Layer 3 — Sub-Components and Relations**
+The components of the Layer 2 components. Two deconstruction steps from the original. This is also where lateral relationships to other objects begin to appear.
+
+Example: `hinge`, `glass pane`, `door frame`, `grass`, `shingles`, `wiring`
+
+**Layer 4 — Finest Detail**
+The components of Layer 3 components. Three deconstruction steps from the original. At this level, nodes frequently connect to components found in completely unrelated objects — which is where cross-domain utility is discovered.
+
+Example: `pin`, `barrel`, `leaf`, `pollen`, `insects`, `copper strand`
+
+### Layer Assignment
+
+Layer assignment is not a decision made by a human or a separate classification model. It is a natural consequence of the deconstruction process. The layer equals the number of deconstruction steps from the original object node. This means the same physical node (for example, `hinge`) may be assigned to different layers in different deconstruction sessions depending on what the original object was. This is intentional and correct. The hinge's layer is contextual. Its identity as a node is not.
+
+### Horizontal and Vertical Connections
+
+Nodes connect both horizontally and vertically. Vertical connections trace the deconstruction path — from object down to sub-components. Horizontal connections trace relationships between components at the same layer of complexity — a hinge connects horizontally to a lock because both are access-control mechanisms at the same level of detail.
+
+This combination produces the three-dimensional web structure that makes cross-domain discovery possible.
+
+---
+
+## Heat-Based Retrieval System
+
+The heat system is the ODG's core retrieval mechanism. It prevents the graph from overwhelming the system with irrelevant nodes while ensuring genuinely useful connections are surfaced.
+
+### Heat Classification
+
+```
+HOT   — Edge weight >= 0.8 — Always surfaced
+WARM  — Edge weight 0.5–0.79 — Surfaced as candidates
+COLD  — Edge weight < 0.5 — Ignored unless pulled by a hot connection
+```
+
+### How Heat is Calculated
+
+Heat is not stored as a property of any node. It is calculated dynamically at query time by the Graph Search Model. The calculation begins at the focal node — the concept currently being explored — and propagates outward along edges, decaying according to edge weight with each hop.
+
+A node that is directly connected to the focal node with an edge weight of 0.9 is hot. A node that is two hops away with edge weights of 0.7 and 0.6 is warm (0.7 × 0.6 = 0.42 — approaches cold). A node that is three hops away through low-weight edges is cold and is not traversed.
+
+```
+Focal Node → [edge: 0.9] → Node A (HOT)
+Focal Node → [edge: 0.9] → Node A → [edge: 0.85] → Node B (WARM: 0.9 × 0.85 = 0.765)
+Focal Node → [edge: 0.6] → Node C → [edge: 0.5] → Node D (COLD: 0.6 × 0.5 = 0.30)
+```
+
+### Dynamic Threshold Adjustment
+
+The heat threshold is not static. It is dynamically adjusted in real time by the Amygdala region based on the significance signal it is producing during the active conversation. See [Amygdala — Dynamic Heat Threshold Control](#amygdala-dynamic-heat-threshold-control) for full specification.
+
+---
+
+## Activation States
+
+The Object Deconstruction Graph has two states: dormant and active. It is dormant by default.
+
+### Dormant State
+
+Default state. The ODG consumes no computational resources, runs no background processes, and does not receive or process any input during normal conversation. It simply exists as a stored graph, waiting to be called.
+
+### Active State — Trigger 1: Deliberate Call
+
+The ODG activates when the user engages deep thinking mode or creative thinking mode. This is an explicit trigger — the system does not activate the ODG for routine conversational exchanges, factual lookups, or standard task completion.
+
+When activated by deliberate call:
+1. The Prefrontal Cortex passes the current concept or problem to the ODG
+2. The Graph Search Model traverses the ODG from the relevant focal node
+3. Hot and warm nodes are surfaced and passed to the Reasoning Model
+4. The Reasoning Model filters for relevance to the current context
+5. Filtered results are passed to the Prefrontal Cortex
+6. The ODG returns to dormant state when the query is complete
+
+### Active State — Trigger 2: Sleep Cycle
+
+The ODG also activates during the Neurigraph sleep cycle. During this period, all deployed instances of the system compress and share their accumulated daily experiences across the network using anonymized data.
+
+The ODG's role during the sleep cycle is distinct from its role during deliberate call. It is not answering a question. It is processing new knowledge.
+
+Every concept that enters the system during the sleep cycle — through new experiences, shared learnings from other deployed instances, or accumulated conversational data — is passed through the ODG for deconstruction. Each new concept is broken into its components, those components are mapped to the existing graph, new nodes are created where needed, new edges are established, and existing edge weights are updated based on observed co-occurrence and relationship strength.
+
+The result: when the system wakes from the sleep cycle, new knowledge is not merely present. It is already understood at the component level, already connected to existing knowledge, and already available for retrieval through the heat system.
+
+---
+
+## Dormancy and Resource Management
+
+The dormancy-by-default design is a deliberate infrastructure decision.
+
+At scale, across thousands of simultaneously deployed instances, a region that runs continuously would create unsustainable compute costs. The ODG's workload is intensive — graph traversal, heat calculation, and deconstruction processing are not lightweight operations.
+
+By remaining dormant during all normal operation and activating only on explicit trigger, the ODG's compute cost is bounded and predictable. Cost scales with deliberate usage, not with deployment count.
+
+The sleep cycle activation is the one exception to bounded cost. Sleep cycle processing does represent significant compute across all instances simultaneously. This is acceptable because sleep cycles are scheduled, off-peak operations, not real-time user-facing processes. Infrastructure provisioning for the sleep cycle is a separate capacity planning concern from real-time conversation infrastructure.
+
+---
+
+## Integration with Neurigraph Regions
+
+The ODG does not communicate directly with the user. Like all supporting regions, it feeds upward through the brain's processing sequence.
+
+```
+Graph Search Model
+       ↓
+Reasoning Model (filters ODG output for contextual relevance)
+       ↓
+Hippocampus (receives interpreted results, forms episodic context)
+       ↓
+Prefrontal Cortex (interprets all input, generates user-facing response)
+```
+
+The ODG is one input source for the Graph Search Model. The Graph Search Model runs continuously during active conversation, surfacing relevant nodes from the full Neurigraph. When the ODG is active, its nodes are included in that surface layer alongside standard memory nodes.
+
+The ODG does not bypass the Reasoning Model. All output from the Graph Search Model — including ODG-sourced nodes — passes through the Reasoning Model for relevance filtering before reaching the Prefrontal Cortex.
+
+---
+
+## Amygdala — Dynamic Heat Threshold Control
+
+This section documents a secondary function of the Amygdala region as it specifically relates to ODG retrieval.
+
+### Background
+
+The Amygdala's primary function is to measure the emotional weight and significance of what is happening in the live conversation. It produces a continuous significance signal that it passes to the Hippocampus for episodic memory formation.
+
+That same signal has a second application: it serves as the dynamic controller for the ODG's heat threshold during active conversation.
+
+### How It Works
+
+The significance signal the Amygdala produces during conversation maps directly onto what the heat threshold needs to do. A high-significance moment in the conversation — emotionally weighted, contextually complex, or requiring deep reasoning — demands broader access to the graph. A low-significance moment — routine, transactional, simple — demands narrow access for speed.
+
+Rather than requiring a separate threshold management system, the Amygdala's existing output is used directly.
+
+```
+Amygdala Signal HIGH  →  Heat Threshold DROPS  →  Warm + some Cool nodes surface
+Amygdala Signal LOW   →  Heat Threshold RISES  →  Only Hot nodes surface
+```
+
+**High significance example:** A user is working through a novel problem that has no prior precedent in the system. The Amygdala flags this as a high-significance moment. The heat threshold drops. The Graph Search Model casts a wider net through the ODG. Components that are warm — not just hot — become available. Cross-domain connections that would normally stay quiet are surfaced as candidates.
+
+**Low significance example:** A user asks a routine question covered by standard memory. The Amygdala produces a low significance signal. The heat threshold rises. Only the most directly relevant hot nodes surface. The response is fast and clean.
+
+### Sleep Cycle Threshold
+
+During the sleep cycle, when the Amygdala is not processing live conversation, the heat threshold defaults to a baseline value. This baseline is calculated and updated during each sleep cycle based on the patterns observed during the day's interactions. It is never static — it always reflects real accumulated experience — but it provides a stable operating point for the ODG's sleep cycle processing.
+
+### Architectural Significance
+
+This function requires no new components. The Amygdala already produces a significance measurement. The heat threshold already needs a dynamic signal. They are functionally the same operation applied in two places. One signal, two uses, no new infrastructure.
+
+This is an example of the ODG design principle: existing components should be examined for what they are naturally capable of, not just what they were originally specified to do.
+
+---
+
+## Sleep Cycle Behavior
+
+The sleep cycle is the primary mechanism by which the ODG grows. During normal operation, the ODG only answers queries. During the sleep cycle, it learns.
+
+### Sleep Cycle ODG Process
+
+```
+1. Sleep cycle begins across all deployed instances
+2. Daily accumulated experiences are compressed and prepared for processing
+3. Anonymized learnings from other deployed instances are received
+4. Each new concept in the accumulated data is passed to the ODG
+5. ODG deconstructs each new concept to a maximum of 10 layers
+6. New nodes are created for components not already in the graph
+7. New edges are created for relationships not already mapped
+8. Existing edge weights are updated based on observed co-occurrence
+9. Layer assignments are established for new nodes
+10. Sleep cycle ends — ODG returns to dormant state
+11. System wakes with new knowledge already decomposed and mapped
+```
+
+### Weight Update Logic
+
+Edge weights are not fixed at the time of initial deconstruction. They evolve based on observed usage patterns. When two nodes are frequently retrieved together in response to similar queries, their edge weight increases. When a relationship proves consistently irrelevant, its weight decreases. This creates a self-refining graph that becomes more accurate over time.
+
+Weight update calculations occur during the sleep cycle, not during real-time retrieval. Real-time retrieval uses weights as-is and does not modify them.
+
+---
+
+## Data Model
+
+### Node Schema
+
+```typescript
+interface ODGNode {
+  id: string                    // UUID — globally unique
+  label: string                 // Human-readable name (e.g., "hinge")
+  description: string           // Brief definition of this component
+  layer_default: number         // 1–4, determined by most common deconstruction depth
+  object_origin: string[]       // UUIDs of objects this node was first discovered in
+  created_at: timestamp
+  updated_at: timestamp
+  metadata: {
+    domain_tags: string[]       // Optional: broad domain hints (mechanical, biological, etc.)
+    usage_count: number         // How many times this node has been retrieved
+    last_retrieved: timestamp
+  }
+}
+```
+
+### Edge Schema
+
+```typescript
+interface ODGEdge {
+  id: string                    // UUID
+  from_node_id: string          // UUID of source node
+  to_node_id: string            // UUID of target node
+  direction: 'vertical' | 'horizontal' | 'cross_domain'
+  relationship_type: string     // is-component-of | contains | relates-to | functions-similarly-to
+  weight: number                // 0.0 – 1.0
+  layer_from: number            // 1–4
+  layer_to: number              // 1–4
+  created_at: timestamp
+  updated_at: timestamp
+  weight_history: {
+    value: number
+    updated_at: timestamp
+  }[]
+}
+```
+
+### Deconstruction Session Schema
+
+```typescript
+interface DeconstructionSession {
+  id: string                    // UUID
+  trigger: 'deliberate_call' | 'sleep_cycle'
+  focal_object_id: string       // UUID of the object being deconstructed
+  focal_object_label: string    // Human-readable name
+  depth_reached: number         // 1–10, actual depth of this session
+  nodes_created: string[]       // UUIDs of new nodes created
+  edges_created: string[]       // UUIDs of new edges created
+  edges_updated: string[]       // UUIDs of edges with updated weights
+  started_at: timestamp
+  completed_at: timestamp
+  status: 'complete' | 'partial' | 'failed'
+}
+```
+
+### Query Result Schema
+
+```typescript
+interface ODGQueryResult {
+  focal_node_id: string
+  focal_node_label: string
+  heat_threshold_applied: number      // Actual threshold used (adjusted by Amygdala signal)
+  amygdala_signal: number             // 0.0 – 1.0, significance signal at time of query
+  results: {
+    node_id: string
+    node_label: string
+    heat_classification: 'hot' | 'warm'
+    calculated_heat: number
+    path_from_focal: string[]         // Array of node IDs tracing the path
+    relationship_summary: string      // Human-readable description of relationship
+  }[]
+  query_duration_ms: number
+  nodes_traversed: number
+  nodes_surfaced: number
+}
+```
+
+---
+
+## Query Patterns
+
+### Basic Focal Node Query
+
+Retrieve all hot and warm nodes connected to a given focal concept.
+
+```cypher
+// Neo4j Cypher — basic heat traversal from focal node
+MATCH path = (focal:Node {id: $focal_node_id})-[r:RELATES_TO|CONTAINS|IS_COMPONENT_OF*1..4]->(connected:Node)
+WHERE ALL(rel IN relationships(path) WHERE rel.weight >= $heat_threshold)
+RETURN connected, 
+       reduce(heat = 1.0, rel IN relationships(path) | heat * rel.weight) AS calculated_heat,
+       [node IN nodes(path) | node.label] AS path_labels
+ORDER BY calculated_heat DESC
+```
+
+### Cross-Domain Discovery Query
+
+Find nodes that appear in multiple unrelated object graphs — indicators of transferable components.
+
+```cypher
+MATCH (n:Node)
+WHERE size(n.object_origin) > 1
+WITH n, size(n.object_origin) AS origin_count
+WHERE origin_count >= $min_origins
+RETURN n.label, n.id, origin_count
+ORDER BY origin_count DESC
+```
+
+### Component Similarity Query
+
+Find nodes that function similarly to a given node — useful for creative problem solving when an exact match is unavailable.
+
+```cypher
+MATCH (target:Node {id: $target_node_id})-[r:FUNCTIONS_SIMILARLY_TO]-(similar:Node)
+WHERE r.weight >= 0.5
+RETURN similar.label, similar.id, r.weight AS similarity_score
+ORDER BY similarity_score DESC
+```
+
+### Layer-Scoped Query
+
+Retrieve only nodes at a specific layer depth — useful when the search needs to be bounded to a particular level of complexity.
+
+```cypher
+MATCH (focal:Node {id: $focal_node_id})-[r:RELATES_TO|CONTAINS|IS_COMPONENT_OF*1..2]->(layer_node:Node)
+WHERE layer_node.layer_default = $target_layer
+AND r.weight >= $heat_threshold
+RETURN layer_node, r.weight
+ORDER BY r.weight DESC
+```
+
+---
+
+## Implementation Guidance
+
+### Recommended Technology Stack
+
+**Graph Database:** Neo4j Community Edition (self-hosted) or Neo4j AuraDB (managed)
+
+Neo4j is specifically recommended over relational alternatives because the ODG's core operation — multi-hop weighted traversal across a large graph — is a native operation in Neo4j and an expensive workaround in relational databases. Do not attempt to implement the ODG in PostgreSQL with a relationships table. It will not perform adequately at scale.
+
+**Graph Search Model:** A small, purpose-built inference model. This does not need to be a general-purpose large language model. Its only job is to execute traversal queries and calculate heat scores. A model in the 1–3 billion parameter range running locally is appropriate. Speed is more important than reasoning depth for this component.
+
+**Reasoning Model:** A small inference model with enough context capacity to evaluate 10–20 candidate nodes against a full conversation context simultaneously. A model in the 3–7 billion parameter range is appropriate. This model needs to be fast — it operates in the real-time conversation path.
+
+**Deconstruction Model:** Used only during sleep cycle processing to generate initial decompositions of new concepts. This model can be larger since it operates off the real-time path. A general-purpose model with strong structured reasoning is appropriate here.
+
+### Deployment Architecture
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                   Neurigraph Instance                   │
+│                                                         │
+│  ┌─────────────────┐     ┌───────────────────────────┐  │
+│  │  Neo4j ODG DB   │     │   Graph Search Model      │  │
+│  │  (always on,    │◄────│   (activates on trigger,  │  │
+│  │  dormant until  │     │    queries Neo4j)          │  │
+│  │  queried)       │     └──────────────┬────────────┘  │
+│  └─────────────────┘                    │               │
+│                                         ▼               │
+│                          ┌──────────────────────────┐   │
+│                          │    Reasoning Model        │   │
+│                          │    (filters results)      │   │
+│                          └──────────────┬────────────┘   │
+│                                         │               │
+│                          ┌──────────────▼────────────┐   │
+│                          │    Prefrontal Cortex       │   │
+│                          │    (user-facing output)    │   │
+│                          └───────────────────────────┘   │
+│                                                         │
+│  ┌──────────────────────────────────────────────────┐   │
+│  │  Deconstruction Model (sleep cycle only)         │   │
+│  │  Runs off real-time path — scheduled processing  │   │
+│  └──────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────┘
+```
+
+### Deconstruction Depth Limit
+
+The maximum deconstruction depth is 10 layers. This limit is enforced at the Deconstruction Model level, not at the graph database level. The graph database itself has no depth limit — the constraint is applied during the deconstruction session. A counter is incremented with each layer and the process terminates at 10 regardless of whether further components could theoretically be identified.
+
+This limit exists because deconstruction can in principle continue indefinitely. A molecule can be broken into atoms. Atoms can be broken into subatomic particles. Without a boundary, the process never terminates. 10 layers provides sufficient depth for practical cross-domain component discovery without entering domains so fundamental they have no applied utility.
+
+### Initial Graph Seeding
+
+The ODG begins empty. It has no pre-loaded knowledge. It grows through two mechanisms: sleep cycle processing of accumulated experience, and deliberate call sessions where the Deconstruction Model processes newly encountered concepts.
+
+For initial deployment, a seeding process should be run during the system's first sleep cycle to establish a baseline graph from the most common concepts relevant to the persona's domain. This seeding should use the same Deconstruction Model and follow the same depth and edge-weight rules as standard sleep cycle processing.
+
+Do not manually populate the ODG with pre-built knowledge graphs from external sources. The edge weights in the ODG reflect the system's own observed experience and usage patterns. Importing external graphs would introduce weights that do not reflect this system's actual usage, degrading retrieval quality.
+
+### Performance Targets
+
+| Operation | Target Latency |
+|-----------|---------------|
+| Hot node retrieval (focal query) | &lt; 50ms |
+| Warm node retrieval (focal query) | &lt; 150ms |
+| Full deliberate-call query cycle | &lt; 300ms |
+| Sleep cycle deconstruction per concept | &lt; 2s |
+| Edge weight update per edge | &lt; 10ms |
+
+---
+
+## Design Constraints
+
+**The ODG is read-only during active conversation.** No writes occur to the graph database during real-time operation. All graph modifications — new nodes, new edges, edge weight updates — occur exclusively during the sleep cycle. This constraint eliminates write-contention issues and ensures that real-time retrieval performance is never degraded by concurrent write operations.
+
+**The ODG does not generate language.** It surfaces nodes and relationships. All language generation from ODG output is the responsibility of the Reasoning Model and Prefrontal Cortex. The ODG returns structured data, not sentences.
+
+**The ODG does not self-activate.** No internal process within the ODG causes it to activate. Activation is always triggered externally — either by the deliberate call pathway from the Prefrontal Cortex, or by the sleep cycle scheduler. The ODG has no timer, no monitoring process, and no condition-checking loop that could cause spontaneous activation.
+
+**The ODG does not access external data sources.** All knowledge in the ODG comes from the system's own accumulated experience and sleep cycle processing. The ODG does not query the internet, external databases, or any source outside the Neurigraph architecture. This constraint is architectural, not configurable.
+
+**Maximum deconstruction depth is 10 layers.** This limit is non-negotiable and applies universally. No exception pathway exists. See Deconstruction Depth Limit above.
+
+---
+
+## Glossary
+
+**Cold node** — A node whose calculated heat falls below 0.5. Not surfaced during standard retrieval unless pulled into range by a hot connection.
+
+**Deconstruction** — The process of identifying and mapping all components of an object to a maximum depth of 10 layers.
+
+**Dormant state** — The ODG's default operating state. No processes running, no resources consumed, graph data preserved and available.
+
+**Edge weight** — A value between 0.0 and 1.0 representing the strength of a relationship between two nodes. Higher values indicate stronger, more relevant relationships.
+
+**Focal node** — The node representing the concept currently being explored. The starting point for any heat traversal.
+
+**Graph Search Model** — The purpose-built small inference model responsible for executing ODG traversal queries and calculating heat scores.
+
+**Heat** — A dynamic relevance score calculated at query time. Not stored. Reflects how closely a node relates to the current focal concept.
+
+**Hot node** — A node whose calculated heat is 0.8 or above. Always surfaced during retrieval.
+
+**Layer** — One of four levels of complexity in the ODG structure. Layer 1 is the original object. Layer 4 is the finest level of detail. Layer assignment is determined by deconstruction depth from the original object.
+
+**Node** — A single independently stored entry in the graph representing one object or component.
+
+**Object** — Any concept, thing, process, or system passed to the ODG for deconstruction. The starting point of a deconstruction session.
+
+**Reasoning Model** — The purpose-built small inference model responsible for filtering ODG output for relevance to the current conversational context before passing results to the Prefrontal Cortex.
+
+**Sleep cycle** — The scheduled off-peak process during which all deployed Neurigraph instances compress daily experience, share anonymized learnings across the network, and process new knowledge through the ODG.
+
+**Warm node** — A node whose calculated heat falls between 0.5 and 0.79. Surfaced as a candidate during retrieval.
+
+---
+
+*Object Deconstruction Graph — Neurigraph Architecture Documentation*  
+*aiConnected / Oxford Pierpont*  
+*Version 1.0 — April 2026*  
+*Classification: Internal Architecture Documentation*

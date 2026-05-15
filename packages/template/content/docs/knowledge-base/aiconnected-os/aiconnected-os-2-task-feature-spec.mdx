@@ -1,0 +1,611 @@
+---
+title: "Task feature spec"
+description: "Prompt: We also need to include kind of like a task feature or to do list. So it's not as excessive or extensive as a dedicated project planning application,..."
+---
+<Info>
+Converted from `aiConnected OS - 2. Task feature spec.md`.
+</Info>
+# Task feature spec
+
+**User:** Oxford Pierpont  
+**Created:** 12/10/2025 6:26:03  
+**Updated:** 12/10/2025 6:47:43  
+**Exported:** 2/11/2026 7:06:18  
+**Link:** [https://chatgpt.com/g/g-p-69395d9991108191841f1dac1fd8d1a1-oxpi-aiconnected-ui-features/c/693958ca-f3bc-8333-96a5-cfc8b3a20818](https://chatgpt.com/g/g-p-69395d9991108191841f1dac1fd8d1a1-oxpi-aiconnected-ui-features/c/693958ca-f3bc-8333-96a5-cfc8b3a20818)  
+
+## Prompt:
+We also need to include kind of like a task feature or to-do list. So it's not as excessive or extensive as a dedicated project planning application, right? Or a time management application. It's not that serious. But let's say that I am in the middle of a chat and there's something that I need to do later, right? So I don't know, maybe I need to compile this PRD or I need to update a certain document with a new idea that I had from a specific chat. But I just don't have to do it right this second. That's something that I would want to have on a running to-do list. And all it really is saying is, hey, remind me about this message or pin this message to the to-do list or add this to the to-do list. Or I can even make a custom message and say, review this chat later. And like everything else, this is just part of the instances dashboard where I can kind of see as an overview. All right, so here's everything that I need to do for this particular project. And not all instances or instance types will use this, right? So if you're just having a regular conversation with an AI that, you know, you might not need folders, you might not need tasks, you might not need any of that stuff. So in the settings for the dashboard, you might decide to turn that off. But you at least have the option of creating things like tasks within this system here.
+
+## Response:
+Got it—this is the “lightweight brain” for each instance: not a full project manager, just a simple, always-there to-do list that lives with the conversation.
+
+Let me turn what you just described into a clean, concrete feature spec that fits with everything else we’ve been designing (instances, whiteboard, pinning, folders, conversation references).
+
+* * *
+
+1\. Purpose of the Task Feature
+-------------------------------
+
+**Goal:**  
+Give each instance a lightweight way to capture “do this later” items that naturally emerge from the conversation, without leaving the interface or opening a separate tool.
+
+**Constraints:**
+
+*   Not a full project management system.
+*   Fast to add, fast to scan, fast to clear.
+*   Scoped **per instance** (per project), with an optional global “All Tasks” rollup later.
+*   Can be turned **on/off per instance type** in settings.
+
+* * *
+
+2\. Core Concepts
+-----------------
+
+### 2.1 Task (per instance)
+
+Minimal but structured:
+
+*   **id**
+*   **instance\_id**
+*   **title** – short, human-readable (“Compile v1 of PRD from today’s discussion”).
+*   **status** – `todo | in_progress | done` (you could even start with `todo | done` only).
+*   **source\_type** – `message | manual | whiteboard | reference`.
+*   **source\_reference**
+    *   `conversation_id`
+    *   `message_id` (if created from a specific message)
+    *   `whiteboard_item_id` (if created from whiteboard)
+*   **notes** (optional) – slightly longer description if needed.
+*   **due** (optional) – date/time or just date.
+*   **priority** (optional, simple) – `low | normal | high`.
+*   **created\_at**, **completed\_at**
+
+You can keep v1 **very simple**: `title`, `status`, `source_reference`, `created_at`. Everything else is optional.
+
+* * *
+
+3\. How Tasks Are Created
+-------------------------
+
+### 3.1 From a Message
+
+In the chat UI, each message gets an action like:
+
+*   **“Add to Tasks”** or **“Remind me about this later”**
+
+Flow:
+
+1.  User clicks `⋯` on a message.
+2.  Chooses **Add to Tasks**.
+3.  Small inline modal pops:
+    *   **Task title** (pre-filled from a smart summary: “Update X document based on this idea” – can be edited).
+    *   Optional: **Due** and **Notes**.
+    *   \[Save\] button.
+4.  System stores:
+    *   `source_type = message`
+    *   `conversation_id`, `message_id`
+    *   `instance_id` from current instance.
+
+In the task panel, that task shows a tiny “From message” icon; clicking it jumps back to the referenced message.
+
+* * *
+
+### 3.2 Manual Tasks
+
+Sometimes you just want a generic reminder (“Review this chat later”).
+
+In the **Tasks** panel for the instance, have:
+
+*   A simple **“+ New Task”** text input at the top:
+    *   Placeholder: “Add a task…”
+    *   User types: “Review this chat later and extract action items.”
+    *   Press Enter → task created with no specific source\_reference (or linked to current conversation generically).
+
+Optionally, advanced mode: a small “More” button that exposes **Notes**, **Due**, **Priority**, but v1 can be just one-line tasks.
+
+* * *
+
+### 3.3 From the Whiteboard
+
+Since you’re building a whiteboard to collect key insights:
+
+*   Each whiteboard item (note, cluster, card) can have a `⋯` menu with **“Create Task from This”**.
+*   Same flow as messages:
+    *   Pre-filled title from whiteboard item’s text.
+    *   `source_type = whiteboard`
+    *   `whiteboard_item_id` stored.
+
+This ties “idea space” (whiteboard) to “action space” (tasks) cleanly.
+
+* * *
+
+4\. Viewing and Managing Tasks
+------------------------------
+
+### 4.1 Tasks Panel Inside the Instance
+
+In the **Instance Dashboard**, you already have:
+
+*   Overview (summary, key info)
+*   Whiteboard
+*   Pins / References
+*   Folders (if enabled)
+
+Add a **Tasks** section there.
+
+Layout idea:
+
+*   **Panel title:** “Tasks for this Instance”
+*   Segmented view or simple filters:
+    *   `All | To Do | Done`
+*   List of tasks, each row showing:
+    *   Checkbox for status (or status pill).
+    *   Title.
+    *   Small badge for source: “From message”, “Manual”, “From whiteboard”.
+    *   Optional: Due date.
+
+Interactions:
+
+*   Click checkbox → toggles `todo ↔ done`.
+*   Click title → opens a small detail drawer:
+    *   Full notes (if any).
+    *   “Open source” button if it came from a message/whiteboard.
+*   Drag-and-drop reorder (optional v2; for now just sort by `status` then `created_at`).
+
+### 4.2 Lightweight Controls
+
+To keep it simple and not “project-manager heavy”:
+
+*   **Statuses:** start with just `To Do` and `Done`.
+    *   `In Progress` can be added later if you find you need it.
+*   **Priorities:** optional; you can skip at first and only add it if you feel the list gets noisy.
+*   **Due dates:** optional; for now, simple date picker, no scheduling engine required.
+
+* * *
+
+5\. Integration with Other Features
+-----------------------------------
+
+### 5.1 With Conversation Linking
+
+You already have:
+
+*   Ability to take a couple of messages and “start new conversation,” and link them.
+
+Tasks can respect that linkage:
+
+*   If a task is created from a message in Conversation A, and that message is used to spawn Conversation B:
+    *   The task can still reference the original message in A.
+    *   Optionally, you can display “This task is related to Conversation B” if a link exists.
+
+You don’t need to over-engineer this in v1; just make sure the source `conversation_id` and `message_id` are stored so linkage can be used later if needed.
+
+* * *
+
+### 5.2 With Folders
+
+You mentioned folders as instance-groupers (e.g., “User Interface”, “Cognigraph”, “Market Research”).
+
+Since tasks are **per instance**, folders don’t own tasks directly, but:
+
+*   In the **folder view**, you can show a small indicator per instance:
+    *   e.g., “3 open tasks” under each instance name.
+*   Later, you can add a folder-level view:
+    *   “All tasks for instances in this folder” (aggregation only).
+
+This keeps the mental model clean:
+
+*   Folder → collection of instances.
+*   Instance → owns chat, whiteboard, pins, tasks.
+
+* * *
+
+### 5.3 With “Remind Me Later” Behavior
+
+Right now you’re describing tasks as “placeholders” more than scheduled reminders. That’s v1.
+
+If/when you want **actual reminders**:
+
+*   Add an optional **“Remind me at…”** field on tasks.
+*   The backend (n8n or internal scheduler) triggers:
+    *   A notification inside the app.
+    *   Optionally, an email or push.
+
+But this can be a v2 layer on top of the existing `due` field. For now, the dashboard’s “Tasks” pane is the main way to see what’s pending.
+
+* * *
+
+6\. Instance Type Settings
+--------------------------
+
+Since not all instances need this:
+
+Each **Instance Type** (or template) could have a “Dashboard Modules” config:
+
+*   **Modules (toggles):**
+    *   Whiteboard: On / Off
+    *   Pins: On / Off
+    *   Tasks: On / Off
+    *   Folders: On / Off
+    *   References: On / Off
+
+Examples:
+
+*   **Deep Project / Build Instance**
+    *   Whiteboard: On
+    *   Pins: On
+    *   Tasks: On
+    *   Folders: On
+    *   References: On
+*   **Casual Chat / Q&A Instance**
+    *   Whiteboard: Off
+    *   Pins: On
+    *   Tasks: Off
+    *   Folders: Off
+    *   References: On
+
+You’d still allow per-instance overrides:
+
+*   “Enable tasks for this instance” toggle in that instance’s settings.
+
+* * *
+
+7\. Optional: Let the AI Help Create Tasks
+------------------------------------------
+
+Even in v1, you can hook in a light AI assist (without changing the UX):
+
+*   Command example:
+    *   User types: “Summarize what I need to do from today’s chat and add them as tasks.”
+*   System:
+    *   AI scans recent messages.
+    *   Proposes a list of tasks (titles) in a confirmation modal:
+        *    Draft PRD section on instance dashboard
+        *    Update Cognigraph doc with learning sub-architecture
+        *    Create UI sketches for tasks pane
+    *   User checks the ones they want and clicks “Create Tasks”.
+
+This stays aligned with your idea: tasks exist **inside the instance dashboard**, but are easy to create from real conversation content.
+
+* * *
+
+8\. Where This Leaves Us
+------------------------
+
+You now have a defined, scoped feature:
+
+*   **Per-instance to-do list**, visible from the instance dashboard.
+*   **Create tasks** from:
+    *   Messages
+    *   Whiteboard items
+    *   Manual entries
+*   **Simple management**: check off, filter by status, jump back to source.
+*   **Configurable per instance type** so it never feels like forced project management.
+
+If you’d like, the next logical move is to lock in the exact **layout** of the instance dashboard (how Tasks, Whiteboard, Pins, and References share space) or define the exact task schema/endpoints for the backend so a dev can implement this straight away.
+
+## Prompt:
+Let's also add a little bit of an agentic capability to it as well. So I should be able to take any one of these tasks and I should be able to turn it into a reminder. So maybe the AI will remind me the next day or if I come back and I am just kind of trying to see what I'm supposed to be doing. I look at my task list and I can start a new chat from those tasks. I can get an email from any one of those tasks. I can, let's say, get a notification in another app like Slack, right? So I can basically do any number of things with these tasks. So they are more useful, they're live, and they're actionable.
+
+## Response:
+Perfect, this is exactly where tasks become worth having: they’re not just checkboxes — they’re launchpads.
+
+Let’s layer in **agentic behavior** without turning this into full-blown project management.
+
+* * *
+
+1\. Concept Upgrade: Tasks → Live Action Objects
+------------------------------------------------
+
+Right now, a task is:
+
+*   A short description of something to do.
+*   Optionally linked to a message / whiteboard item.
+*   Visible in the instance dashboard.
+
+You now want each task to also act as a **control point** that can trigger things like:
+
+*   “Remind me about this tomorrow.”
+*   “Start a new chat scoped to this task.”
+*   “Email this to me (or someone else).”
+*   “Send this into Slack (or other apps) as a notification.”
+
+So we treat every task as a **node** that the AI and automation layer can operate on.
+
+* * *
+
+2\. Data Model Extension: Actions & Channels
+--------------------------------------------
+
+We can keep the core `Task` object simple, but add fields to support agentic features:
+
+**Task (extended fields)**
+
+*   `id`
+*   `instance_id`
+*   `title`
+*   `status` – `todo | done` (optionally `in_progress`)
+*   `source_type` – `message | manual | whiteboard | reference`
+*   `source_reference` – IDs to jump back to origin
+*   `notes` (optional)
+*   `due_at` (optional)
+*   `created_at`, `updated_at`, `completed_at`
+
+**New: Task Agent Metadata**
+
+*   `reminder_at` (optional)
+*   `reminder_channels` – array: `["in_app", "email", "slack"]`
+*   `email_recipients` (optional)
+*   `slack_destination` (workspace + channel or user)
+*   `automation_profile` (optional) – e.g., “default reminder,” “notify Slack only,” etc.
+
+You can later break these out into separate tables (e.g., `TaskReminders`, `TaskNotifications`), but conceptually this is enough to design the UI and behaviors.
+
+* * *
+
+3\. Task-Level Actions (What You Can Do From a Task)
+----------------------------------------------------
+
+Every task row in the instance dashboard gets a small **Quick Actions** area, for example:
+
+*   ✅ Mark Done
+*   💬 Start Chat
+*   ⏰ Remind Me
+*   ✉️ Email
+*   📨 Notify (Slack / others)
+
+(Actual icons and labels are up to the UI; I’m just naming the behaviors.)
+
+### 3.1 “Remind Me”
+
+From any task, you click **Remind Me**:
+
+**Step 1 – When?**
+
+Preset options:
+
+*   Later today
+*   Tomorrow
+*   Next week
+*   Custom date/time
+
+**Step 2 – Where?**
+
+Channels (based on what’s configured for your account/instance):
+
+*   In-app notification
+*   Email to me (default: workspace email)
+*   Slack (default: your DM or a chosen channel)
+
+Under the hood, this sets:
+
+*   `reminder_at`
+*   `reminder_channels` (e.g. `["in_app","email"]`)
+
+**Execution:**
+
+When `reminder_at` hits, the system:
+
+*   Creates an in-app notification that links back to the task and its source message/whiteboard item.
+*   If email is selected, sends an email like:
+
+> Subject: Reminder – “Compile PRD v1 for aiConnected chat”
+> 
+> Body:
+> 
+> *   Task: Compile PRD v1 for aiConnected chat
+> *   Instance: aiConnected – UI/Chat Design
+> *   Link: \[Open task\]
+> *   Optional AI summary or context pulled from the original message(s).
+>     
+
+*   If Slack is selected, posts a message to the configured destination:
+
+> Reminder: _Compile PRD v1 for aiConnected chat_  
+> \[Open in aiConnected\]
+
+(Email/Slack content can be AI-generated for extra context.)
+
+* * *
+
+### 3.2 “Start Chat From Task”
+
+This is your “I’m back, what should I do next?” flow.
+
+From a task, click **Start Chat**:
+
+*   A **new conversation** opens inside the same instance.
+*   The system pre-loads:
+    *   A link to the task.
+    *   Any source message/whiteboard item the task came from.
+    *   A system prompt for the AI like:
+        > “This chat is focused on helping the user complete Task #123: ‘Compile PRD v1 for aiConnected chat.’ Use the attached context to help them execute.”
+
+Result: You’re instantly in a scoped chat where Cipher already knows:
+
+*   The instance context.
+*   The original discussion that produced the task.
+*   The task’s title, notes, due date, etc.
+
+From there, you can say things like:
+
+*   “Break this task into smaller steps.”
+*   “Draft the initial PRD outline.”
+*   “Summarize what I decided about the folder system and whiteboard.”
+
+The new chat is **linked to the task**, so:
+
+*   The task panel can show: “Active chat: \[link\].”
+*   From the chat, you can see: “This conversation is about Task #123” and toggle status or update notes.
+
+* * *
+
+### 3.3 “Email From Task”
+
+Two primary patterns:
+
+#### a) Email to Yourself (Reminder / Snapshot)
+
+From the task actions: **Email → Me**
+
+*   System composes an email:
+    *   Subject: “Task reminder – \[Task Title\]”
+    *   Body:
+        *   Task title & notes
+        *   Instance name
+        *   Link back to the task
+        *   Optional AI summary of the source message/whiteboard snippet
+
+This is basically a richer, AI-augmented email reminder.
+
+#### b) Email to Someone Else (Action Request)
+
+From the task actions: **Email → Someone Else**
+
+*   Modal:
+    *   Recipients: free-form emails + maybe “pick from contacts”
+    *   Optional: CC/BCC fields
+*   Optional toggle: “Have AI draft the email for me”
+    *   If ON, AI uses:
+        *   Task title + notes
+        *   Instance context (e.g., this is part of aiConnected, or Cognigraph design)
+        *   Source message content
+    *   To draft something like:
+        > “Hey \[Name\],  
+        > I’m working on the aiConnected chat dashboard and I need your input on the task system design. Specifically, I want feedback on…”
+*   You can edit, then send.
+
+All of this is initiated from the **task object**, so the email is directly tied to what you’re actually trying to accomplish.
+
+* * *
+
+### 3.4 “Notify in Another App (Slack)”
+
+For Slack (and later Teams, Discord, etc.), you want the same convenience:
+
+From any task, click **Notify → Slack**:
+
+*   If Slack is not connected yet, you’re asked to connect and choose:
+    *   Default workspace
+    *   Default channel or DM
+*   Once configured:
+    *   A modal lets you choose:
+        *   Destination: default or pick another channel
+        *   Message template (pre-filled):
+            > “New task: \[Task Title\]  
+            > Instance: \[Instance\]  
+            > \[Optional notes\]  
+            > \[Link to view task\]”
+*   You can customize the text or just send.
+
+Once again, the AI can help:
+
+*   Option to “Write a more detailed message”:
+    *   AI reads the task context and generates a more complete explanation for your team.
+
+* * *
+
+4\. Agentic Behavior: AI Working _With_ The Task List
+-----------------------------------------------------
+
+Beyond individual actions, you can give the AI a meta-role as a **Task Agent** inside each instance.
+
+### 4.1 “What should I be doing next?” Mode
+
+Within an instance, you might say:
+
+> “Look at my tasks for this instance and tell me what I should work on next.”
+
+The Task Agent:
+
+*   Reads all open tasks.
+*   Considers due dates, priorities, and maybe last-activity timestamps.
+*   Answers with something like:
+
+> “For this instance, the top three tasks to focus on next are:
+> 
+> 1.  Finalize task action design (due today).
+> 2.  Outline whiteboard UX.
+> 3.  Document folder rules for instances vs. conversations.
+>     
+> 
+> Want me to start a focused chat from Task #1?”
+
+If you say yes, it triggers **Start Chat From Task** automatically.
+
+* * *
+
+### 4.2 “Sweep my tasks” Commands
+
+You could also give instructions like:
+
+*   “Set reminders for all tasks due this week.”
+*   “Email me a summary of all open tasks for aiConnected.”
+*   “Post all high-priority tasks from this instance into Slack.”
+
+The system would:
+
+*   Run through the tasks that match your criteria.
+*   Batch-create reminders / emails / Slack messages.
+*   Confirm what it did (e.g., “Set a Slack reminder for 3 tasks, emailed you a summary”).
+
+This is where **agentic behavior** feels powerful but still controlled.
+
+* * *
+
+5\. Integration Points (High-Level)
+-----------------------------------
+
+Without going too deep into implementation, the flow is something like:
+
+*   **Frontend:**
+    *   Task component exposes actions: Remind, Start Chat, Email, Notify.
+*   **Backend / Orchestration:**
+    *   Each action emits an event: `task.reminder.created`, `task.chat.started`, `task.email.created`, `task.slack.notified`.
+*   **Automation Layer (e.g., n8n):**
+    *   Listens to these events.
+    *   Handles:
+        *   Email sending (via your email provider / Gmail).
+        *   Slack posting (via Slack API).
+        *   Notification scheduling (in-app).
+
+This respects your existing stack and keeps things composable.
+
+* * *
+
+6\. Instance Type Controls (Agentic Edition)
+--------------------------------------------
+
+As before, you can decide which instances are “smart” vs. “simple.”
+
+For each **Instance Type**, add:
+
+*   Tasks: On/Off
+*   Task Actions:
+    *   Reminders: On/Off
+    *   Email: On/Off
+    *   Slack/External: On/Off
+    *   AI Task Agent: On/Off
+
+Examples:
+
+*   **Heavyweight Build Instance (aiConnected, Cognigraph, etc.):**
+    *   Tasks: On
+    *   Reminders: On
+    *   Email: On
+    *   Slack: On
+    *   AI Task Agent: On
+*   **Casual Q&A Instance:**
+    *   Tasks: Off
+    *   Or: Tasks On but Actions Off (no email/Slack integrations, just local notes).
+
+* * *
+
+If you want, next step I can do is:
+
+*   Define **exact UI layout** for a single task row with these actions.
+*   Or outline the **event schema** for how `task.reminder.created` and `task.chat.started` would look so you can wire them straight into n8n.
+
+
+
+---
+Powered by [ChatGPT Exporter](https://www.chatgptexporter.com)

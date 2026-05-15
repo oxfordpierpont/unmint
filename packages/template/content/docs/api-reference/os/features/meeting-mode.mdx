@@ -1,0 +1,35 @@
+---
+title: "Persona meeting mode"
+description: "Feature-level API contract for meeting mode, passive listening behavior, wake-word activation, and privacy-aware transcription."
+---
+## Contract status
+
+`Derived implementation contract`
+
+## Source document
+
+- [Persona meeting mode](/docs/knowledge-base/aiconnected-os/aiconnected-os-persona-meeting-mode)
+
+## Feature purpose
+
+Defines a controlled behavioral mode where personas listen passively and intervene only when context permits.
+
+## Required operations
+
+- Toggle meeting mode for a persona or session
+- Capture passive transcription under configured rules
+- Limit persona output to wake-word or approved triggers
+- Persist meeting notes, action items, and privacy settings
+
+## Suggested resources
+
+- `meeting_mode_sessions`
+- `meeting_transcripts`
+- `meeting_actions`
+- `meeting_privacy_rules`
+
+## Implementation notes
+
+- Keep this feature workspace-scoped and persona-aware where applicable.
+- Preserve authorship, timestamps, and auditability for all state changes.
+- Treat the source doc as the behavioral specification even where final route names remain open.

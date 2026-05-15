@@ -1,0 +1,141 @@
+---
+title: "What is the Platform Shell"
+---
+### Comprehensive Explanation for Developers
+
+The **Platform Shell** is the permanent operating layer of aiConnected. It is the part of the system that should only be built once and then reused by every future module. In practical terms, it is the control plane for identity, workspaces, permissions, routing, branding, billing enforcement, module registration, and cross-module coordination. It is **not** the place where business products like chat, voice, knowledge base generation, or other user-facing application logic should live. Those belong outside the shell as modules. This shell-first, module-based direction is one of the clearest conclusions from the current platform documentation and the v1 audit. 
+
+### 1. What the Platform Shell is
+
+The shell is best understood as a **white-label, multi-tenant SaaS control plane**. It is the central system that agencies log into, configure, brand, and use to manage their own client workspaces. It owns the platform-level concerns that must stay consistent no matter what modules are later added. The shell decides who the user is, what workspace they are in, what they are allowed to see, which modules are enabled, what branding applies, whether the account is in good billing standing, and how modules are connected into the platform.  
+
+Another useful way to think about it is this: the shell is the **fortress**, and modules live around the fortress, not inside it. That metaphor appears repeatedly in the project direction because the goal is to stop rebuilding the whole platform every time one subsystem changes. The shell should remain stable while modules can be added, replaced, isolated, demoed, licensed, or updated independently.
+
+### 2. Why the shell exists
+
+The rebuild exists because v1 proved the vision, but not the long-term structure. The audit shows that v1 got some important things right, especially the multi-tenant shell direction, the app catalog and manifest concept, and the shared package layer. But it also blurred the boundary between platform infrastructure and business app behavior, duplicated logic across apps, allowed deep coupling into package internals, and mixed active code with stale or legacy artifacts. The new shell exists to preserve the right ideas while fixing the architecture.  
+
+So the shell is not just “the admin app.” It is the answer to a structural problem: how do you build a platform that can grow over time without becoming a tangled web of interdependent applications? The shell solves that by centralizing only the platform responsibilities and pushing product-specific behavior outward into modules.
+
+### 3. What the shell owns
+
+The shell owns the **platform-wide systems** that everything else depends on. These include tenant-aware layout and navigation, authentication and authorization, settings inheritance, the app or module catalog, manifest assessment and import, cross-tenant permission enforcement, and database/API patterns that are compatible with row-level security and workspace isolation. These are the exact areas the audit marked as core shell foundation. 
+
+At the application level, the existing `apps/platform` audit already shows the intended responsibilities clearly: auth checks, admin routing, tenant context loading, settings resolution, app catalog workflows, onboarding flows, and supporting APIs for agencies, businesses, platform apps, and capabilities. Even though the v1 implementation is messy in places, the shell/control-plane purpose of that app is real and worth preserving as an idea. 
+
+### 4. What the shell does not own
+
+The shell does **not** own module business logic. It should not contain customer-facing chat behavior, knowledge-base generation workflows, voice runtime behavior, CRM-specific operations, or other domain-specific execution logic. The audit is direct on this point: `apps/chat`, `packages/chat-core`, `apps/kb-studio`, `packages/kb-engine`, and related workers are valuable, but they belong as future modules or module-owned engines, not as shell foundation.
+
+This distinction is extremely important for any developer working on the project. If a feature can be added later as a module without changing shell structure, it should not be built into the shell. The shell is infrastructure. Modules are products. Confusing the two is exactly what created drift in v1. 
+
+### 5. The shell’s core design principles
+
+The shell is built around a few non-negotiable principles.
+
+First, it must be **multi-tenant from day one**. Tenant logic cannot be a later add-on. Workspaces, users, permissions, themes, module access, and billing all have to resolve through tenant-aware rules immediately. 
+
+Second, it must be **white-label from day one**. Agencies should be able to brand the platform as their own, and their clients should experience it as agency-owned software rather than aiConnected software with a logo slapped on top. 
+
+Third, it must be **module-first**. New capabilities should arrive through a formal module path rather than through ad hoc additions to shell code. That means the shell needs a consistent registration, activation, routing, and permission model for modules.  
+
+Fourth, it must be **replaceable by layer**. The founder’s direction is very clear that major categories such as UI, multi-tenancy, and other shell subsystems should be swappable or evolvable in isolation without forcing a whole-platform rebuild. That does not mean “anything goes”; it means the shell should be deliberately modular inside its own architecture as well.
+
+### 6. User model and tenant hierarchy
+
+The platform structurally supports five top-level user layers: **Super**, **Agency**, **Business**, **Developer**, and **Personal**. In practical MVP terms, the shell must fully support real workflows for Super, Agency, and Business first, while still being architected so Developer and Personal can be added later without redesigning the core model. 
+
+There are also effectively **thirteen permission patterns**, because the first four layers can create Admin, Manager, and User variants inside their own level. For example, an Agency can have an Agency Admin, an Agency Manager, and Agency Users with narrower roles such as assistants, salespeople, marketers, or accountants. The same pattern applies to other organizational layers, while Personal remains simpler and more private. This means the shell cannot rely on a tiny set of hardcoded roles. It needs a capability-based permission system underneath. 
+
+A useful mental model is:
+
+* **Super** operates the platform globally.
+* **Agency** owns a top-level customer environment.
+* **Business** is a managed client workspace created under an Agency.
+* **Developer** and **Personal** are future-compatible layers the architecture must allow, even if their full experiences are not yet built. 
+
+### 7. Workspaces and tenancy
+
+The shell should treat **workspaces** as the concrete runtime unit of tenancy. A workspace is the context that determines branding, permissions, settings, enabled modules, and route visibility. Users belong to workspaces through membership rules. Modules are activated in workspaces. Billing status affects workspace access. Themes apply to workspaces. This is the practical unit the shell uses to enforce isolation. 
+
+The parent-child structure matters. Agency workspaces act as parent environments. Business workspaces act as managed child environments. A Super user can operate across or impersonate lower-level contexts. An Agency can create and manage Business workspaces under it. A Business user should only see what exists inside the workspace they are assigned to. 
+
+### 8. Permissions and access control
+
+The shell’s permission model should be **capability-based**, not just role-name based. Role labels like Admin, Manager, and User are useful presets, but the actual enforcement should happen through permission flags and scoped access rules. That allows more precise control over real-world operational roles without expanding the data model every time a new use case appears. 
+
+Examples of shell-level permissions include user invitation and management, branding control, billing management, layout editing, module installation, module activation, and settings access. The shell must enforce those rules at multiple levels, including route access, UI visibility, API access, and where appropriate database access policies. Hiding a screen is not enough.  
+
+### 9. UI foundation and branding model
+
+The shell UI is meant to be standardized around **shadcn/ui** with a centralized theme-token system compatible with **TweakCN-style theming**. That choice is not just aesthetic. It is part of the platform architecture because it gives the shell a predictable component vocabulary, consistent styling behavior, and a reliable foundation for white-label inheritance and future AI-assisted editing.  
+
+The shell owns theme behavior. Theme values should be centralized, token-based, and inheritance-driven. Agency-level brand settings should be able to flow downward into Business workspaces, with room for controlled overrides later. The shell should remain visually consistent across its own surfaces even while different agencies see different branded versions of it.  
+
+### 10. The Layout Manager’s place in the shell
+
+The **Layout Manager** is one of the shell’s most important systems, but it still belongs to the shell as infrastructure, not as a random builder bolt-on. It is the platform-native structural editing environment for composing screens and surfaces from a registered component library. It is explicitly not meant to be a freeform styling playground. Structure belongs in the Layout Manager. Aesthetics belong in the theme system. Business logic belongs in modules and services. 
+
+The implementation-grade Layout Manager PRD goes much deeper, but the key shell-level point is this: the shell must support a safe, privileged authoring layer where certain users can edit layouts, bind data sources, invoke AI for missing capabilities or components, save drafts, preview changes, test, publish, and roll back. That makes the shell not just a control plane, but also the environment where the platform can evolve structurally without constant external coding loops.
+
+At the same time, some builder-adjacent concerns do not belong inside the Layout Manager spec itself. The platform still has to define shell-level policies for module lifecycle, editable zones, inheritance scope, navigation registration, recovery rules, governance, and observability. Those are shell concerns, not pure builder concerns.
+
+### 11. Module system and manifest-driven architecture
+
+The shell becomes a real platform only when new modules can be brought in through a **repeatable, contract-driven process**. That is why the manifest and app catalog pattern is so important. The audit specifically identifies `packages/app-sdk` and the app import lifecycle as some of the strongest reusable assets in v1, not because the code should be copied blindly, but because the architectural idea is right. 
+
+A module should not be something the shell “knows about” in advance through hardcoded routes. Instead, a module should declare itself through a manifest or equivalent contract. That contract tells the shell what the module is, what routes it exposes, what permissions it needs, how it appears in navigation, what shared entities it depends on, what events it emits or consumes, and what runtime target it connects to. The shell then validates, registers, activates, and routes the module rather than baking it in. 
+
+That is what makes the platform modular in practice, not just in marketing language.
+
+### 12. Module import and activation
+
+The shell must provide a consistent **module import and registration flow**. At a high level, that flow should accept a compliant module package or scaffold, validate its manifest, register it in the module registry, create installation records, assign routes and permissions, expose navigation entries, connect gateway targets, and activate it per workspace. This is one of the core functions that turns the shell from “an admin app” into “a platform.” 
+
+This also supports one of the founder’s most important requirements: modules must be able to exist in isolation when needed. The system should not assume that every module is only ever accessed through the full shell. Some modules may need direct links, demos, embeddable usage, standalone licensing, or separate repositories from the beginning. That requirement is part of the reason the shell must treat modules like Lego bricks instead of internal organs.
+
+### 13. Event bus and API gateway
+
+Because modules should not directly reach into one another’s private storage, the shell needs a **shared event bus** and a **gateway layer**. The event bus allows the platform to behave like one connected system while keeping modules loosely coupled. The gateway gives the shell a controlled way to route requests to isolated module runtimes while forwarding auth, workspace, and permission context correctly. 
+
+This is how you get a platform where modules can interoperate without dissolving their boundaries. It also supports auditability, observability, and future governance rules. The platform-wide event and observability standards noted in the supporting documents belong here, not inside one module.
+
+### 14. Shared platform data model
+
+The shell should own the shared entities that all modules may need to reference. The most important shared entities identified so far are: **users**, **workspaces**, **workspace memberships**, **roles**, **permissions**, **themes**, **layout definitions**, **module registry**, **module installations**, **billing accounts**, **subscriptions**, **events**, and **contacts**. These belong to the shell because they define the platform’s common operating language. 
+
+Modules may have their own private tables and data stores, but they should not reinvent shared entities that are meant to be cross-platform. They should reference them through contracts rather than by tunneling directly into another module’s internals. 
+
+### 15. Billing and activation enforcement
+
+Billing is a shell responsibility because billing state affects platform access. The shell should treat billing not as a finance-reporting feature first, but as a **system behavior**. It must know which agency owns which billing account, what subscription state exists, which modules are enabled, and how billing state affects workspace access and module activation.  
+
+The current business model also affects shell implementation. aiConnected takes a **10% platform tax** on agency charges and a **10% API markup** when aiConnected is brokering AI usage. Those rules only matter in the shell to the degree that they influence activation, suspension, and account standing. Stripe is the payment system, but the shell is the enforcement layer. 
+
+### 16. Deployment and isolation model
+
+The shell is not the only deployable unit in the future architecture. The audit and repo map both point toward a **multi-app monorepo deployment pattern** using Docker/Dokploy and app-specific build targets. That matters because it aligns with the modular deployment vision: the shell can remain its own core app while other modules or runtimes can be built and deployed separately.
+
+This is another reason the shell should not absorb module behavior. Once modules are isolated at the deployment and runtime level, the architectural boundary becomes much easier to preserve. That also makes future review, debugging, rollback, and licensing scenarios more realistic.
+
+### 17. What a developer should take away
+
+If you are building on aiConnected, the shell is the place where you solve **platform problems**, not product-specific problems.
+
+Build something in the shell if it answers questions like these:
+
+* Who is this user?
+* What workspace are they in?
+* What are they allowed to do?
+* What branding applies here?
+* What shell surface should they see?
+* What modules are enabled?
+* How is module access enforced?
+* How do modules register, route, and communicate?
+* Is billing state allowing or blocking access?
+
+Do **not** build it into the shell if the feature is fundamentally a customer product, business workflow, or domain engine that could exist as its own module. 
+
+### 18. Final definition
+
+The Platform Shell is the **shared operating layer** that makes aiConnected possible as a modular platform. It is the part that handles identity, tenancy, permissions, branding, routing, module registration, infrastructure-level editing, billing enforcement, and cross-module coordination. It must stay structurally stable while the platform grows around it. If built correctly, it allows the rest of aiConnected to evolve like a system of tested, swappable Lego bricks instead of forcing another full-platform rebuild. 

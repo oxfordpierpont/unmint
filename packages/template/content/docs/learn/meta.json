@@ -1,0 +1,16 @@
+{
+  "title": "Learn",
+  "pages": [
+    "index",
+    "api-keys",
+    "audience",
+    "broadcasts",
+    "domains",
+    "logs",
+    "receiving",
+    "sending",
+    "settings",
+    "templates"
+  ],
+  "defaultOpen": true
+}

@@ -1,0 +1,246 @@
+---
+title: "aiConnected OS Branding Config"
+---
+# Branding Config Page — Design Build Specification
+
+## Section 1: Anti-Slop Rules
+
+### What we WILL do
+- **Font**: Use the existing admin system font stack. This is a Next.js admin page — inherit whatever the admin shell provides. Do not introduce DM Sans or any other font.
+- **No card nesting**: The #1 user complaint. Remove the triple-nested card pattern (FocusCard inside AccordionPanel inside settings rail container). Settings sections should be flat, separated by subtle dividers — not wrapped in cards with shadows.
+- **70/30 layout**: Settings panel takes 70% of the width (left), live preview takes 30% (right, sticky). The current code has this backwards (preview is 80%, settings are 20%).
+- **No preview on Experience tab**: When `activeWorkspaceTab === 'experience'`, the preview column should not render at all. The settings should take 100% width.
+- **Existing inputs preserved**: All `ColorInput`, `ColorInputWithTransparent`, select, text input components stay functionally identical. Only the wrappers change.
+- **Left-aligned labels**: All form labels remain left-aligned (they already are).
+- **Preserve all data structures**: CHAT_THEMES, ADVANCED_THEMES, GOOGLE_FONTS, DEFAULT_BRANDING, PREVIEW_SECTION_LABELS, PREVIEW_FOCUS_GROUPS, and all utility functions remain untouched.
+- **Preserve all state management**: All useState hooks, useEffect hooks, handlers (handleSave, handleThemeSelect, handleAdvancedThemeSelect, handleColorChange, updateBranding, handleGenerateFromWebsite, handleRestoreDefaults, handleWorkspaceTabChange) remain functionally identical.
+- **Preserve ChatPreview**: The full ChatPreview component and its sub-renders remain untouched. It just moves to a narrower column.
+
+### What we WILL NOT do
+- No emojis anywhere
+- No purple/violet gradients
+- No rounded-[32px] containers with dramatic shadows on settings panels
+- No `FocusCard` wrapper component — replace with flat section separators
+- No `AccordionPanel` — replace with always-visible collapsible sections or flat groupings
+- No triple-nested borders (card inside card inside card)
+- No `shadow-[0_18px_50px_-32px_...]` or `shadow-[0_28px_80px_-46px_...]` heavy shadows on settings panels
+- No "Preview focus" badge pill on every section — the preview highlight behavior stays (via onMouseEnter/onFocusCapture) but the visual badge goes away
+
+---
+
+## Section 2: Design System Tokens
+
+Since this is an admin page inside an existing Next.js app, we inherit the admin design system. The tokens below define only what we control within this page:
+
+### Colors (settings panel)
+- Section heading text: `text-slate-900` (#0f172a)
+- Section description text: `text-slate-500` (#64748b)
+- Label text: `text-slate-700` (#334155)
+- Divider between sections: `border-slate-200` (#e2e8f0)
+- Tab pill active: `bg-slate-900 text-white`
+- Tab pill inactive: `text-slate-600`
+- Page background: inherit from admin shell
+- Input fields: existing `rounded-xl border border-slate-200 px-3 py-2 text-sm` pattern (keep)
+
+### Spacing
+- Gap between top-level sections: `32px` (py-8 with top border)
+- Gap between fields within a section: `16px` (gap-4)
+- Section title to first field: `16px` (mt-4)
+- Page horizontal padding: inherit from admin shell
+- Settings/preview gap: `24px` (gap-6)
+
+### Border radius
+- Input fields: `rounded-xl` (12px) — existing, keep
+- Color swatch: `rounded-xl` (12px) — existing, keep
+- Tab pills: `rounded-full` — existing, keep
+- Preview container: `rounded-2xl` (16px) with subtle border
+- No rounded-[20px], rounded-[22px], rounded-[32px] wrapper cards
+
+### Shadows
+- Preview container: `shadow-lg` (modest)
+- Settings sections: **none** — flat with dividers
+- Input fields: none (just border)
+
+---
+
+## Section 3: Layout Architecture
+
+### Overall structure
+```
+┌──────────────────────────────────────────────────────┐
+│ Page header: title, description, context badge        │
+│ [Design] [Experience] tab pills                       │
+│ Action bar: Preview chat | Restore defaults | Save    │
+├────────────────────────────────┬─────────────────────┤
+│ SETTINGS PANEL (70%)           │ PREVIEW (30%)       │
+│                                │ (sticky, scrolls    │
+│ Scrollable sections with       │  independently)     │
+│ flat dividers, no cards        │                     │
+│                                │ Device toggle       │
+│ Simple mode ──────────────     │ ChatPreview         │
+│   Logos section                │                     │
+│   ─── divider ───              │                     │
+│   Brand colors section         │                     │
+│   ─── divider ───              │                     │
+│   Theme selector section       │                     │
+│                                │                     │
+│ Advanced mode ─────────────    │                     │
+│   Color theme section          │                     │
+│   ─── divider ───              │                     │
+│   Sidebar colors section       │                     │
+│   ... etc                      │                     │
+├────────────────────────────────┴─────────────────────┤
+│ (Experience tab: full width, no preview column)       │
+│   Assistant prompt                                    │
+│   ─── divider ───                                     │
+│   Welcome copy                                        │
+│   ─── divider ───                                     │
+│   ... etc                                             │
+└──────────────────────────────────────────────────────┘
+```
+
+### Design tab
+- Grid: `grid-cols-[minmax(0,7fr)_minmax(300px,3fr)]` at `xl` breakpoint
+- Below `xl`: single column, preview stacks below settings
+- Settings column: scrollable, flat sections separated by `border-t border-slate-200`
+- Preview column: `sticky top-24` with `self-start`
+- Mode toggle (Simple / Advanced) rendered as a segmented pill inside the settings column header area
+
+### Experience tab
+- Full-width single column (`max-w-3xl mx-auto` for readability)
+- No preview column at all
+- Same flat section pattern as Design tab settings
+
+### Navigation between sections
+- On Design tab: Simple and Advanced are toggle modes (one active at a time), not nested accordions
+- Switching mode re-renders the settings list for that mode
+- Section focus (for preview highlighting) triggers on mouseEnter of section containers and focusCapture of inputs within
+
+---
+
+## Section 4: Screen-by-Screen Specifications
+
+### 4.1 Page Header
+- `h2` with existing `admin-title-heading` class
+- Subtitle `p` with `admin-muted` class + context badge pill
+- Tab pills below: `[Design] [Experience]` in `rounded-full border border-slate-200 bg-white p-1`
+- Action buttons right-aligned: "Preview chat" link, "Restore defaults" button, "Save changes" primary button
+- This section is **unchanged** from current code
+
+### 4.2 Settings Panel — Design Tab, Simple Mode
+Each section is a `<div>` with `border-t border-slate-200 pt-8 pb-4` (except first section which has no top border).
+
+**Section: Logos**
+- Title: "Logos" — `text-base font-semibold text-slate-900`
+- Description: "Upload sidebar, welcome, and mobile logos." — `text-sm text-slate-500 mt-1`
+- Content: 3x `<LogoUpload>` components stacked vertically with `gap-4`
+- Preview focus: `onMouseEnter={() => handlePreviewFocus('logos')}`
+
+**Section: Brand Colors**
+- Title: "Brand colors"
+- Content: 2-column grid with Primary color and Accent color `<ColorInput>` components
+- Preview focus: `colors`
+
+**Section: Theme Selector**
+- Title: "Theme selector"
+- Subsection: "Generate from website" — URL input + button in a subtle bordered container (`rounded-xl border border-slate-200 p-4`)
+- Subsection: Theme grid — 2-column grid of theme option buttons (keep existing theme button style but simplify to `rounded-xl border-2 p-3`)
+- Preview focus: `theme`
+
+### 4.3 Settings Panel — Design Tab, Advanced Mode
+Same flat section pattern. Each section separated by `border-t border-slate-200`.
+
+Sections (in order):
+1. **Color theme** — Advanced theme grid (same pattern as simple theme grid)
+2. **Sidebar colors** — 2-col grid of 7 ColorInputs
+3. **Button styles** — Grouped by state (Normal/Hover/Disabled), each with 2-3 ColorInputs + border/radius inputs + button preview strip
+4. **Header colors** — 3 ColorInputs
+5. **Footer colors** — 3 ColorInputs
+6. **Typography** — 3 groups (Page headings, Card headings, Body text) each with font/size/weight/line-height/letter-spacing + legacy quick controls
+7. **Page content styles** — Background/card colors + border width/radius
+8. **Text colors** — 3 ColorInputs
+9. **Main chat area** — 3 ColorInputs
+10. **Welcome state** — 5 ColorInputs
+11. **Input bar** — 6 ColorInputs
+12. **Messages** — 3 ColorInputs
+13. **Service cards** — 5 ColorInputs
+14. **Contact cards** — 4 ColorInputs
+15. **Follow-up cards** — 3 ColorInputs
+16. **Guided intake modal** — 5 ColorInputs
+
+All sections preserve their `registerSection` and `onMouseEnter` behavior for preview spotlight.
+
+### 4.4 Settings Panel — Experience Tab (Full Width, No Preview)
+Layout: `max-w-3xl mx-auto`
+Same flat divider pattern.
+
+Sections:
+1. **Cascading info banner** — `rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900`
+2. **Assistant prompt** — textarea
+3. **Welcome copy** — heading + subheading text inputs
+4. **Composer copy** — placeholder text input
+5. **Guided flow and lead capture** — checkbox, 2 inputs, select
+6. **Conversation starters** — checkbox + count select
+7. **Chat behavior** — typing indicator checkbox
+
+### 4.5 Preview Column (Design Tab Only)
+- Container: `rounded-2xl border border-slate-200 bg-white p-4 shadow-lg`
+- Header: "Live preview" label + section spotlight badge (if focused) + device toggle
+- Body: `<ChatPreview>` component (unchanged)
+- Sticky: `sticky top-24 self-start`
+- Width: occupies the 30% column
+
+---
+
+## Section 5: Animation & Transition Specs
+
+- **Preview spotlight**: Existing opacity/filter/transform transitions on sections within ChatPreview (180ms ease) — unchanged
+- **Tab switching**: Instant re-render, no animation needed
+- **Mode toggle (Simple/Advanced)**: Instant re-render
+- **Section hover for preview focus**: Instant via onMouseEnter — unchanged
+- **Save button**: Shows `saving` state text — unchanged
+- **No accordion open/close animations**: Sections are always visible in their respective mode
+
+---
+
+## Section 6: Responsive Behavior
+
+- **Base**: Mobile-first, single column
+- **`xl` breakpoint (1280px)**: 70/30 grid for Design tab; full width for Experience tab
+- **Below `xl`**: Settings stack above preview (Design tab); full width (Experience tab)
+- **Settings panel**: No max-width constraint on Design tab (fills 70% column)
+- **Experience tab**: `max-w-3xl mx-auto` for comfortable line lengths
+- **Preview**: min-width 300px in grid definition to prevent cramping
+- **ChatPreview internal**: Already handles device toggle (desktop/mobile) — unchanged
+
+---
+
+## Section 7: Component Checklist
+
+Before delivery, verify each item:
+
+- [ ] Layout is 70% settings / 30% preview on Design tab at xl+
+- [ ] Experience tab has NO preview column — settings are full width
+- [ ] No FocusCard wrapper component (flat sections with dividers)
+- [ ] No AccordionPanel wrapper component (mode toggle instead)
+- [ ] No triple-nested card borders anywhere in settings
+- [ ] No heavy shadows on settings containers (only on preview container)
+- [ ] "Preview focus" badge pills removed from settings sections
+- [ ] Preview spotlight behavior still works (mouseEnter + focusCapture triggers)
+- [ ] All data structures (CHAT_THEMES, ADVANCED_THEMES, etc.) unchanged
+- [ ] All utility functions (hexToRgb, mixHex, withAlpha, etc.) unchanged
+- [ ] All state management hooks unchanged
+- [ ] All event handlers (handleSave, handleThemeSelect, etc.) unchanged
+- [ ] ChatPreview component and all its sub-renders unchanged
+- [ ] LogoUpload imports and usage unchanged
+- [ ] ColorInput and ColorInputWithTransparent components unchanged
+- [ ] DeviceToggle component unchanged
+- [ ] All ~90 branding token inputs present and functional
+- [ ] Simple mode shows: logos, brand colors, theme selector
+- [ ] Advanced mode shows all 16 sections from sidebar to quiz modal
+- [ ] Experience tab shows: info banner, prompt, welcome copy, composer copy, guided flow, conversation starters, chat behavior
+- [ ] Tab pill navigation updates URL search params (unchanged logic)
+- [ ] Save/restore/generate-from-website all functional (unchanged logic)
+- [ ] Mode toggle (Simple/Advanced) is a segmented pill control
+- [ ] Section headings are text-base font-semibold, descriptions are text-sm text-slate-500
+- [ ] Responsive: stacks properly below xl breakpoint
