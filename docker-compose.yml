@@ -1,0 +1,13 @@
+services:
+  secure-docs:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      HOSTNAME: 0.0.0.0
+      NEXT_PUBLIC_SITE_URL: https://secure-docs.aiconnected.ai
+    ports:
+      - "3000"
+    restart: unless-stopped
