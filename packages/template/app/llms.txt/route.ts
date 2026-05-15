@@ -30,7 +30,7 @@ export async function GET() {
   }
 
   // Add links section if configured
-  const hasLinks = siteConfig.links.github || siteConfig.links.discord || siteConfig.links.support
+  const hasLinks = siteConfig.links.github || siteConfig.links.twitter || siteConfig.links.support
   if (hasLinks) {
     content += `
 ## Links
@@ -39,8 +39,8 @@ export async function GET() {
     if (siteConfig.links.github) {
       content += `- [GitHub](${siteConfig.links.github})\n`
     }
-    if (siteConfig.links.discord) {
-      content += `- [Discord](${siteConfig.links.discord})\n`
+    if (siteConfig.links.twitter) {
+      content += `- [X](${siteConfig.links.twitter})\n`
     }
     if (siteConfig.links.support) {
       content += `- [Support](${siteConfig.links.support})\n`
