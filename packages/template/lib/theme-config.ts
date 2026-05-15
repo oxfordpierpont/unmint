@@ -22,8 +22,7 @@ export const siteConfig = {
 
   // Navigation links
   links: {
-    github: 'https://github.com/oxfordpierpont/docs',
-    discord: '',
+    github: 'https://github.com/oxfordpierpont',
     twitter: 'https://x.com/aiconnected',
     support: 'mailto:support@aiconnected.ai',
   },
@@ -45,7 +44,7 @@ export const themeConfig = {
     // Light mode
     light: {
       accent: '#1c75bc',        // Primary accent color
-      accentForeground: '#ffffff',
+      accentForeground: '#fafcff',
       accentMuted: 'rgba(28, 117, 188, 0.1)',
     },
     // Dark mode
@@ -71,7 +70,7 @@ export const themeConfig = {
   // OG Image generation settings
   ogImage: {
     // Gradient background (CSS gradient string)
-    gradient: 'linear-gradient(135deg, #fafcff 0%, #d7ecff 52%, #2e95f3 100%)',
+    gradient: 'linear-gradient(135deg, #fafcff 0%, #f6fbff 52%, #2e95f3 100%)',
     // Text colors
     titleColor: '#021220',
     sectionColor: '#1c75bc',
