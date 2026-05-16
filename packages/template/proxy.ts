@@ -5,7 +5,7 @@ import {
   getSupabasePublishableKey,
   getSupabaseUrl,
   hasSupabaseConfig,
-  isAllowedSecureDocsEmail,
+  isAllowedSecureDocsUser,
 } from '@/lib/supabase/config'
 
 const PUBLIC_FILE = /\.(?:ico|svg|png|jpg|jpeg|gif|webp|css|js|map|woff2?)$/i
@@ -70,7 +70,7 @@ export async function proxy(request: NextRequest) {
     return supabaseResponse
   }
 
-  if (!user || !isAllowedSecureDocsEmail(user.email)) {
+  if (!isAllowedSecureDocsUser(user)) {
     return NextResponse.redirect(externalUnauthorizedRedirect)
   }
 
