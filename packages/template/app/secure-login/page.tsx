@@ -2,7 +2,7 @@ import Image from 'next/image'
 import { redirect } from 'next/navigation'
 import { LoginForm } from './login-form'
 import { createClient } from '@/lib/supabase/server'
-import { hasSupabaseConfig, isAllowedSecureDocsEmail } from '@/lib/supabase/config'
+import { hasSupabaseConfig, isAllowedSecureDocsUser } from '@/lib/supabase/config'
 
 export const dynamic = 'force-dynamic'
 
@@ -13,7 +13,7 @@ export default async function SecureLoginPage() {
       data: { user },
     } = await supabase.auth.getUser()
 
-    if (user && isAllowedSecureDocsEmail(user.email)) {
+    if (isAllowedSecureDocsUser(user)) {
       redirect('/docs')
     }
   }
