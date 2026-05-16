@@ -1,3 +1,5 @@
+import siteContent from './site-content.json'
+
 /**
  * aiConnected docs theme configuration
  *
@@ -29,12 +31,8 @@ export const siteConfig = {
 
   // Footer configuration
   footer: {
-    companyName: 'aiConnected',
-    links: [
-      { label: 'Website', href: 'https://aiconnected.ai' },
-      { label: 'Sign In', href: 'https://aiconnected.io/login' },
-      { label: 'Get Started', href: 'https://aiconnected.io/signup' },
-    ],
+    companyName: siteContent.footer.companyName,
+    links: siteContent.footer.links,
   },
 }
 
