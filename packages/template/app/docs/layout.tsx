@@ -3,6 +3,7 @@ import { DocsSidebar } from '../components/docs/docs-sidebar'
 import { DocsHeader } from '../components/docs/docs-header'
 import { DocsNavTabs } from '../components/docs/docs-nav-tabs'
 import { siteConfig } from '@/lib/theme-config'
+import siteContent from '@/lib/site-content.json'
 
 export default function DocsLayout({
   children,
@@ -19,7 +20,7 @@ export default function DocsLayout({
       {/* Navigation tabs (Documentation / API Reference) */}
       <div className="sticky top-16 z-30 bg-background border-b border-border hidden lg:block">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <DocsNavTabs />
+          <DocsNavTabs tabs={siteContent.topNav} />
         </div>
       </div>
 
