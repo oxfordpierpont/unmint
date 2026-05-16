@@ -1,0 +1,14 @@
+{
+  "topNav": [
+    { "label": "Documentation", "href": "/docs", "matchPrefix": "/docs" },
+    { "label": "API Reference", "href": "/docs/api-reference", "matchPrefix": "/docs/api-reference" }
+  ],
+  "footer": {
+    "companyName": "aiConnected",
+    "links": [
+      { "label": "Website", "href": "https://aiconnected.ai" },
+      { "label": "Sign In", "href": "https://aiconnected.io/login" },
+      { "label": "Get Started", "href": "https://aiconnected.io/signup" }
+    ]
+  }
+}
