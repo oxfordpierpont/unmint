@@ -9,7 +9,7 @@ import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from '@/c
 import { Input } from '@/components/ui/input'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { createClient } from '@/lib/supabase/client'
-import { hasSupabaseConfig, secureEmailDomain } from '@/lib/supabase/config'
+import { hasSupabaseConfig, isAllowedSecureDocsEmail, secureEmailDomain } from '@/lib/supabase/config'
 
 function normalizeEmail(value: string) {
   return value.trim().toLowerCase()
@@ -28,7 +28,7 @@ export function LoginForm() {
 
   const emailInvalid = useMemo(() => {
     const normalized = normalizeEmail(email)
-    return normalized.length > 0 && !normalized.endsWith(secureEmailDomain)
+    return normalized.length > 0 && !isAllowedSecureDocsEmail(normalized)
   }, [email])
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -44,8 +44,8 @@ export function LoginForm() {
       return
     }
 
-    if (!normalizedEmail.endsWith(secureEmailDomain)) {
-      setError(`Use an ${secureEmailDomain} email address.`)
+    if (!isAllowedSecureDocsEmail(normalizedEmail)) {
+      setError(`Use an ${secureEmailDomain} email address or an approved admin account.`)
       return
     }
 
@@ -148,8 +148,8 @@ export function LoginForm() {
                   required
                 />
               </div>
-              <FieldDescription>Only {secureEmailDomain} addresses can continue.</FieldDescription>
-              {emailInvalid ? <FieldError>Email must end with {secureEmailDomain}.</FieldError> : null}
+              <FieldDescription>Only {secureEmailDomain} addresses or approved admin accounts can continue.</FieldDescription>
+              {emailInvalid ? <FieldError>Email must end with {secureEmailDomain} or be an approved admin account.</FieldError> : null}
             </Field>
             <Field>
               <FieldLabel htmlFor="username">Username</FieldLabel>
