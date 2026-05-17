@@ -53,7 +53,7 @@ export default async function DocsPage({ params }: PageProps) {
   return (
     <div className="flex gap-8">
       {/* Main content */}
-      <article className="flex-1 min-w-0 max-w-3xl">
+      <article className="flex-1 min-w-0">
         {/* Header banner */}
         <header className="mb-8 pb-6 border-b border-border">
           <p className="text-sm text-[var(--accent)] font-medium mb-2">
