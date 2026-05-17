@@ -19,14 +19,14 @@ export default function DocsLayout({
 
       {/* Navigation tabs (Documentation / API Reference) */}
       <div className="sticky top-16 z-30 bg-background border-b border-border hidden lg:block">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="w-full px-4 sm:px-6 lg:px-8">
           <DocsNavTabs tabs={siteContent.topNav} />
         </div>
       </div>
 
       {/* Main content */}
       <div className="flex-1">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex gap-8">
             <DocsSidebar tree={tree} />
             <main className="flex-1 min-w-0">
@@ -38,7 +38,7 @@ export default function DocsLayout({
 
       {/* Footer */}
       <footer className="border-t border-border py-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="w-full px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
             <p className="text-sm text-muted-foreground">
               © {new Date().getFullYear()} {siteConfig.footer.companyName}. All rights reserved.
